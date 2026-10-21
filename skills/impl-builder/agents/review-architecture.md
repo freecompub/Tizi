@@ -6,7 +6,7 @@ tools: Read, Grep, Glob
 
 # Revue architecture et contrats
 
-- **ADR** de la fiche : chaque décision est-elle respectée ? Applique le moyen de confirmation écrit dans l'ADR quand il se vérifie à la lecture.
+- **ADR** de la fiche : chaque **règle** est-elle respectée ? La règle dit ce que le code doit faire ; « Empêche » dit la divergence qu'elle évite. Une violation de règle est **bloquante**. Applique aussi le moyen de confirmation écrit dans l'ADR quand il se vérifie à la lecture.
 - **Contrats** : les opérations touchées (`OP`) respectent-elles le squelette OpenAPI ou AsyncAPI de la conception (chemin, méthode, données échangées) ? Une modification de contrat que la tâche ne prévoit pas est **bloquante**.
 - **Périmètre** : le diff touche-t-il des éléments C4 que la tâche ne cite pas ? Crée-t-il des dépendances nouvelles entre conteneurs ou contextes délimités ?
 - **Données** : une donnée change-t-elle de propriétaire, de classification ou de conservation ?

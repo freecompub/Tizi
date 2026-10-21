@@ -4,8 +4,8 @@
 // Usage : node build-handoff.mjs <plan/<slug>/versions/v<version>/state.yaml>
 import { dirname, join, basename, resolve } from 'node:path';
 import yaml from './lib/vendor/js-yaml.mjs';
-import { arr, txt, table, loadState, writeOut, fail, today, writeHandoff } from './lib/common.mjs';
-import { existsSync } from 'node:fs';
+import { arr, txt, table, loadState, writeOut, fail, today, writeHandoff, fileSha256, approxTokens } from './lib/common.mjs';
+import { existsSync, readFileSync } from 'node:fs';
 import { taskCycles, storyReadiness, coverage } from './lib/rules.mjs';
 
 const statePath = process.argv[2];
@@ -48,7 +48,9 @@ const handoff = {
   definition_of_done: arr(s.definition_of_done),
   held_back: held.map(t => ({ id: t.id, story: t.story, reasons: storyReadiness(s, storyOf(t.story), refs).reasons })),
   tasks: order.map((t, i) => ({ rank: i + 1, id: t.id, kind: t.kind, title: t.title ?? '', story: t.story ?? '', size: t.size ?? '', assignee_type: t.assignee_type ?? 'humain', assignee: t.assignee ?? '',
-    iteration: t.iteration ?? '', depends_on: arr(t.depends_on), waits_for_outside: external(t), context: `versions/v${version}/tasks/${t.id}.md` })),
+    iteration: t.iteration ?? '', depends_on: arr(t.depends_on), waits_for_outside: external(t), context: `versions/v${version}/tasks/${t.id}.md`,
+    // La fiche est gelée par son empreinte : impl-builder refuse une fiche modifiée après le gel.
+    ...(existsSync(join(root, 'versions', `v${version}`, 'tasks', `${t.id}.md`)) ? { context_sha256: fileSha256(join(root, 'versions', `v${version}`, 'tasks', `${t.id}.md`)), context_tokens: approxTokens(readFileSync(join(root, 'versions', `v${version}`, 'tasks', `${t.id}.md`), 'utf8')) } : {}) })),
 };
 const outDir = join(root, 'handoff', `v${version}`);
 const cov = coverage(s, refs);

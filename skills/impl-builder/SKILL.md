@@ -20,7 +20,7 @@ Langue : réponds en français.
 
 | Étape | Ce qui se passe | Ce qui la clôt | Instructions |
 |---|---|---|---|
-| 1. Comprendre | Lire la fiche de contexte, reformuler la tâche, poser ses questions, proposer un plan de tests | Validation humaine de la compréhension | `references/understand.md` |
+| 1. Comprendre | Lire la fiche de contexte, reformuler la tâche, poser ses questions, proposer un plan de tests | Validation humaine, enregistrée et gelée par `approve-understanding.mjs` | `references/understand.md` |
 | 2. Rouge | Écrire les scénarios d'acceptation de la tâche et les tests de contrat, puis le premier test unitaire ; les voir échouer | Une exécution en échec enregistrée | `references/tdd-bdd.md` |
 | 3. Vert, refactoriser | Écrire le minimum de code pour faire passer le test, puis améliorer ; reboucler test par test | Tous les tests de la tâche passent | `references/tdd-bdd.md` |
 | 4. Vérifier | Traçabilité, mutation testing incrémental, sécurité, confirmation des ADR | `pr-gate.mjs` au vert | `references/pr-gate.md` |

@@ -7,7 +7,7 @@
 // Usage : node render-plan.mjs <state.yaml> [--include-proposed]
 import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { arr, txt, table, list, loadState, writeOut, fail, prLabel, today, humanReviewFooter } from './lib/common.mjs';
+import { arr, txt, table, list, loadState, writeOut, fail, prLabel, today, humanReviewFooter, approxTokens } from './lib/common.mjs';
 import { checkPlan, storyReadiness, taskCycles, coverage, iterationStats, capacitySuggestion } from './lib/rules.mjs';
 
 const args = process.argv.slice(2);
@@ -210,6 +210,7 @@ for (const x of stories) {
   writeOut(join(root, 'stories', `${x.id}.md`), md.join('\n'));
 }
 
+const packSizes = [];
 // ── tasks/TK-xxx.md : fiche de contexte ──────────────────────────────────────
 for (const t of tasks) {
   const st = storyById.get(t.story);
@@ -247,12 +248,20 @@ for (const t of tasks) {
   if (arr(t.elements).length) md.push('## Éléments touchés', '', table(['ID', 'Élément', 'Type', 'Technologie', 'Cycle de vie', 'Équipe'], arr(t.elements).map(id => { const e = elIndex.get(id) ?? {}; return [id, e.name, e.kind, e.technology, e.lifecycle, e.owner]; })));
   if (arr(t.operations).length) md.push('## Contrats', '', table(['Opération', 'Interface', 'Type', 'Squelette'], arr(t.operations).map(id => { const o = opIndex.get(id); return [`${id} ${txt(o?.name)}`, o?.api?.name, o?.api?.kind, o ? `contracts/${o.api.id}.${o.api.kind === 'asyncapi' ? 'asyncapi' : 'openapi'}.yaml (conception)` : '—']; })));
   const adrs = adrsFor(t);
-  if (adrs.length) md.push('## Décisions à respecter', '', table(['ADR', 'Décision', 'Option retenue', 'Comment c\'est vérifié'], adrs.map(a => [a.id, a.title, a.outcome, a.confirmation])));
+  if (adrs.length) md.push('## Décisions à respecter', '', table(['ADR', 'Règle', 'Empêche', 'Comment c\'est vérifié'], adrs.map(a => [a.id, a.rule || a.outcome, a.prevents, a.confirmation])));
   if (arr(t.threats).length) md.push('## Mesures de sécurité à réaliser', '', table(['Menace', 'STRIDE', 'Mesures'], arr(t.threats).map(id => { const m = thIndex.get(id); return [id, m?.stride, arr(m?.mitigations).join(' ; ')]; })));
   if (arr(t.verifications).length) md.push('## Vérifications à mettre en place', '', table(['Réponse', 'NFR', 'Méthode', 'Ce qui est vérifié'], arr(t.verifications).map(id => { const v = nrIndex.get(id); return [id, v?.nfr, v?.method, v?.description]; })));
   md.push('## Dépendances', '', list(arr(t.depends_on).map(d => { const dt = tasks.find(x => x.id === d); return `${d} — ${txt(dt?.title)} (${txt(dt?.status)})`; })));
   md.push('## Definition of Done', '', list(arr(s.definition_of_done)));
-  writeOut(join(root, 'tasks', `${t.id}.md`), md.join('\n'));
+  const text = md.join('\n');
+  const tokens = approxTokens(text);
+  packSizes.push({ id: t.id, tokens });
+  writeOut(join(root, 'tasks', `${t.id}.md`), text);
 }
+// Budget des fiches de contexte (S70) : au-delà, l'agent qui implémente perd en précision (dégradation du contexte).
+const budget = settings.context_budget ?? { target: 1600, max: 3000 };
+const over = packSizes.filter(x => x.tokens > budget.max);
+if (over.length) console.warn(`⚠ [S70] fiche(s) de contexte au-delà du budget (${budget.max} tokens environ) : ${over.map(x => `${x.id} ≈ ${x.tokens}`).join(', ')}. Découper la tâche, ou alléger la story.`);
 
+console.log(`Fiches de contexte : ${packSizes.map(x => `${x.id} ≈ ${x.tokens}`).join(', ') || 'aucune'} tokens (cible ${budget.target}, maximum ${budget.max}).`);
 console.log(`Plan généré : ${join(root, 'plan.md')} (${stories.length} story(s) dont ${nReady} prête(s), ${tasks.length} tâche(s), ${findings.length} avertissement(s))`);

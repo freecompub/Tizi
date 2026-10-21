@@ -6,7 +6,7 @@ import { spawnSync } from 'node:child_process';
 import { mkdirSync, rmSync, existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { arr, txt, table, list, loadState, writeOut, fail, today, humanReviewFooter } from './lib/common.mjs';
-import { loadConfig, readRuns, saveState, taskContext } from './lib/impl.mjs';
+import { loadConfig, readRuns, saveState, taskContext, understandingDigest } from './lib/impl.mjs';
 import { readReport } from './lib/testing.mjs';
 import { traceCheck } from './trace-check.mjs';
 
@@ -39,7 +39,8 @@ if (rerun) {
 
 const checks = [];
 const check = (id, label, ok, detail = '') => checks.push({ id, label, ok, detail });
-check('C1', 'Compréhension validée par un humain', !!t.understanding?.approved_by, t.understanding?.approved_by ? `${t.understanding.approved_by}, ${txt(t.understanding.date)}` : 'non validée');
+const frozenOk = !t.understanding?.approved_digest || t.understanding.approved_digest === understandingDigest(t.understanding);
+check('C1', 'Compréhension validée par un humain, et inchangée depuis', !!t.understanding?.approved_by && frozenOk, !t.understanding?.approved_by ? 'non validée' : !frozenOk ? 'modifiée après validation' : `${t.understanding.approved_by}, ${txt(t.understanding.date)}`);
 const openZ = arr(s.shadow_zones).filter(z => z.task === taskId && z.status === 'ouverte');
 check('C2', 'Aucune question ouverte sur la tâche', !openZ.length, openZ.map(z => z.id).join(', '));
 for (const k of suites) check('C3', `Suite ${k} au vert`, !!results[k] && !results[k].failed, results[k] ? `${results[k].total} test(s), ${results[k].failed} en échec` : 'jamais exécutée');
@@ -71,7 +72,7 @@ const md = [`# ${taskId} — ${txt(ctx.task.title)}`, '', `Story : ${txt(st.id)}
 md.push('## Résumé des changements', '', '_À rédiger par l\'auteur : ce qui change, et pourquoi c\'est le minimum pour la tâche._', '');
 md.push('## Porte de l\'étape 5', '', table(['', 'Vérification', 'Détail'], checks.map(c => [c.ok ? '✓' : '✗', c.label, c.detail])));
 md.push('## Tests et traçabilité', '', table(['Identifiant', 'Tests'], ctx.expected.map(id => [id, (tr.found.get(id) ?? []).join(', ') || '**aucun**'])));
-if (ctx.adrs.length) md.push('## Décisions d\'architecture à respecter', '', table(['ADR', 'Décision', 'Comment le vérifier'], ctx.adrs.map(a => [a.id, a.outcome, a.confirmation])));
+if (ctx.adrs.length) md.push('## Décisions d\'architecture à respecter', '', table(['ADR', 'Règle', 'Comment le vérifier'], ctx.adrs.map(a => [a.id, a.rule || a.outcome, a.confirmation])));
 if (ctx.threats.length) md.push('## Mesures de sécurité réalisées', '', list(ctx.threats));
 md.push('## Checklist du relecteur', '', list([
   'Le changement fait ce que dit la fiche de contexte, et seulement cela (aucun comportement, règle ou contrat non prévu).',

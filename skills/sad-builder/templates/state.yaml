@@ -108,7 +108,9 @@ decisions: []              # ADR au format MADR v4 (references/adr.md)
 #    outcome: ""           # nom de l'option retenue
 #    justification: ""
 #    consequences: { good: [], bad: [] }
-#    confirmation: ""      # comment on vérifiera que la décision est respectée (revue, test, fitness function)
+#    prevents: ""          # la divergence que la décision empêche : ce que deux parties construites séparément feraient différemment sans elle
+#    rule: ""              # la règle vérifiable qui l'empêche, formulée pour un développeur ou un agent (« tout accès aux dossiers passe par… »)
+#    confirmation: ""      # comment on vérifiera que la règle est respectée (test d'architecture, vérification de forme, revue)
 #    elements: []          # éléments C4 concernés
 #    decided_by: ""        # déclaré par l'utilisateur, issu de decision_rights
 #    date: ""

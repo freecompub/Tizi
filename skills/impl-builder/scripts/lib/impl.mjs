@@ -41,3 +41,12 @@ export function taskContext(handoffPath, taskId) {
     threats: arr(task.threats), verifications: arr(task.verifications), adrs,
   };
 }
+
+// Empreinte de la compréhension validée : reformulation, questions, hypothèses et plan de tests.
+// Une compréhension modifiée après validation n'est plus celle qui a été validée.
+import { createHash } from 'node:crypto';
+export function understandingDigest(u = {}) {
+  const pick = { restatement: u.restatement ?? '', questions: u.questions ?? [], assumptions: u.assumptions ?? [], test_plan: u.test_plan ?? [] };
+  return createHash('sha256').update(JSON.stringify(pick)).digest('hex');
+}
+export const understandingValid = u => !!u?.approved_by && !!u?.approved_digest && u.approved_digest === understandingDigest(u);

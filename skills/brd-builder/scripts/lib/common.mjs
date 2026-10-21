@@ -98,3 +98,7 @@ export function planStateDigest(state) {
 export function humanReviewFooter(kind = 'document') {
   return `\n---\n\n## Relecture humaine\n\n> Ce ${kind} a été produit avec l'assistance d'une IA, à partir de l'état de session et des sources citées. Il ne remplace ni les entretiens, ni l'observation, ni le jugement des personnes concernées. Il doit être relu par les personnes désignées ; seules les approbations déclarées et enregistrées dans l'état font foi, et aucune n'est déduite de la présence de ce document.\n`;
 }
+
+// Estimation grossière du nombre de tokens d'un texte (environ quatre caractères par token en moyenne).
+// Sert à surveiller la taille d'un document confié à un agent, pas à facturer : c'est un ordre de grandeur.
+export const approxTokens = text => Math.ceil(String(text ?? '').length / 4);

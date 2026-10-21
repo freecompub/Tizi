@@ -303,6 +303,8 @@ export function checkSad(s) {
       if (!a.decided_by) out.push({ rule: 'S17', id: a.id, message: 'ADR accepté sans décideur déclaré' });
       if (!arr(a.consequences?.bad).length) out.push({ rule: 'S25', id: a.id, message: 'ADR accepté sans conséquence négative : toute décision sacrifie quelque chose' });
       if (!a.confirmation) out.push({ rule: 'S25', id: a.id, message: 'ADR accepté sans moyen de confirmation' });
+      if (!a.prevents) out.push({ rule: 'S71', id: a.id, message: 'ADR accepté sans divergence empêchée : que feraient différemment deux parties construites sans lui ?' });
+      if (!a.rule) out.push({ rule: 'S71', id: a.id, message: 'ADR accepté sans règle vérifiable : la décision ne guidera ni un développeur ni un agent' });
       if (a.outcome && !arr(a.options).some(o => o.name === a.outcome)) out.push({ rule: 'S09', id: a.id, message: `option retenue « ${a.outcome} » absente des options` });
     }
     if (a.supersedes) refs(out, 'S09', a, [a.supersedes], adrs, 'ADR remplacé');
@@ -548,6 +550,23 @@ export function checkPlan(s, refs = {}) {
     const st = storyIds.get(t.story);
     if ((t.iteration || (settings.cadence === 'flux' && t.order > 0)) && st && !storyReadiness(s, st, refs).ready) out.push({ rule: 'S40', id: t.id, message: `planifiée alors que sa story ${st.id} n'est pas prête` });
   }
+  // Collisions (S72, reprise du contrôle de BMAD-METHOD) : deux tâches ouvertes sans chemin de dépendance entre elles
+  // qui touchent le même élément C4 ou la même opération de contrat risquent de se marcher dessus.
+  const open = tasks.filter(t => !['terminé', 'abandonné'].includes(t.status) && t.kind !== 'spike');
+  const reach = new Map();
+  const reachable = id => {
+    if (reach.has(id)) return reach.get(id);
+    const seen = new Set(); const stack = [...arr(tasks.find(t => t.id === id)?.depends_on)];
+    while (stack.length) { const x = stack.pop(); if (seen.has(x)) continue; seen.add(x); stack.push(...arr(tasks.find(t => t.id === x)?.depends_on)); }
+    reach.set(id, seen); return seen;
+  };
+  const sameWindow = (a, b) => settings.cadence === 'flux' || !a.iteration || !b.iteration || a.iteration === b.iteration;
+  for (let i = 0; i < open.length; i++) for (let j = i + 1; j < open.length; j++) {
+    const a = open[i], b = open[j];
+    if (!sameWindow(a, b) || reachable(a.id).has(b.id) || reachable(b.id).has(a.id)) continue;
+    const shared = [...arr(a.elements).filter(e => arr(b.elements).includes(e)), ...arr(a.operations).filter(o => arr(b.operations).includes(o))];
+    if (shared.length) out.push({ rule: 'S72', id: `${a.id},${b.id}`, message: `collision possible : ${a.id} et ${b.id} touchent ${shared.join(', ')} sans dépendance entre elles ; les ordonner (depends_on) ou les fusionner` });
+  }
   // Stratégie ouverture / milieu / fin (S61)
   const storyById = new Map(stories.map(x => [x.id, x]));
   const itIdx = id => (id && itIndex.has(id) ? itIndex.get(id) : Infinity);
@@ -720,5 +739,5 @@ export const STRUCT_RULES = {
   S56: 'opportunité non décidée', S57: 'hypothèse risquée non testée', S58: 'itération sans revue', S59: 'release sans mesure des outcomes',
   S60: 'voie rapide non conforme', S61: 'ordre ouverture, milieu, fin', S62: 'story sans titre court',
   S63: 'exigence à source unique', S64: 'exigence sans source', S65: 'porte de synthèse', S66: 'exigence de transition incomplète', S67: 'exploration de concepts',
-  S68: 'espace réservé resté', S69: 'chiffre sans source',
+  S68: 'espace réservé resté', S69: 'chiffre sans source', S70: 'fiche de contexte trop longue', S71: 'ADR sans règle', S72: 'collision entre tâches',
 };

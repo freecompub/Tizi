@@ -27,3 +27,11 @@ Un fichier dans `cases/` : le skill évalué, le jeu de départ (`fixtures/<nom>
 ## Agent simulé
 
 `mock-agent.mjs` se comporte bien quand le skill est installé, mal sinon. Il ne mesure rien des vrais agents : il sert à vérifier le banc lui-même (`--agent-cmd "node evals/mock-agent.mjs {turn}"`). C'est en le faisant tourner que la règle L07 s'est révélée aveugle au vocabulaire d'interface.
+
+## Déclenchement des skills
+
+Un skill ne sert que s'il s'active au bon moment : sa description est la seule chose que le routeur de l'agent lit. `run-triggers.mjs` installe tous les skills avec un **marqueur** que chacun recopie quand il s'active, joue chaque requête de `triggers.yaml` plusieurs fois, et calcule précision et rappel par skill.
+
+La séparation **entraînement / test** (60/40, stratifiée par skill attendu) est fixée par une empreinte de la requête : la même requête tombe toujours du même côté. Pour améliorer une description, on ne regarde que les échecs de l'**entraînement**, puis on mesure sur le **test**, dont le rapport ne détaille volontairement pas les échecs. On garde la nouvelle description seulement si le test s'améliore. Méthode reprise de bmad-eval (BMAD-METHOD).
+
+Les requêtes les plus utiles sont les **requêtes proches** : même vocabulaire, autre intention (« explique-moi C4 » ne doit pas lancer la conception). `mock-trigger.mjs` est un routeur naïf qui sert à vérifier le banc.

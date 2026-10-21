@@ -27,7 +27,7 @@ const handoff = {
   source: { initiative: s.initiative?.name ?? '', sad_version: version, status: s.governance?.status ?? '', context_mode: s.context_mode, prd_version: s.source_prd?.version ?? '', generated: today() },
   work_items: toBuild.map(e => ({ id: e.id, name: e.name, kind: e.kind, lifecycle: e.lifecycle || 'nouveau', technology: e.technology ?? '', owner: e.owner ?? '', parent: e.parent ?? '', frs: arr(e.frs), releases: releasesOf(e), contexts: arr(e.contexts) })),
   retired: els.filter(e => ['existant_retiré', 'existant_remplacé'].includes(e.lifecycle)).map(e => ({ id: e.id, name: e.name, lifecycle: e.lifecycle, replaced_by: e.replaced_by ?? '' })),
-  decisions: arr(s.decisions).filter(a => a.status === 'accepté').map(a => ({ id: a.id, title: a.title, outcome: a.outcome, confirmation: a.confirmation ?? '', elements: arr(a.elements) })),
+  decisions: arr(s.decisions).filter(a => a.status === 'accepté').map(a => ({ id: a.id, title: a.title, outcome: a.outcome, prevents: a.prevents ?? '', rule: a.rule ?? '', confirmation: a.confirmation ?? '', elements: arr(a.elements) })),
   interfaces: arr(s.interfaces).filter(ok).map(a => ({ id: a.id, name: a.name, kind: a.kind, provider: a.provider, consumers: arr(a.consumers), lifecycle: a.lifecycle ?? 'nouveau', operations: arr(a.operations).map(o => ({ id: o.id, name: o.name, frs: arr(o.frs) })) })),
   verifications: arr(s.nfr_responses).filter(ok).map(r => ({ id: r.id, nfr: r.nfr, method: r.verification?.method ?? '', description: r.verification?.description ?? '', stage: r.verification?.stage ?? '' })),
   security_measures: arr(s.threats).filter(t => ok(t) && t.treatment === 'attenuer').map(t => ({ threat: t.id, stride: t.stride, target: t.target, mitigations: arr(t.mitigations) })),
@@ -60,7 +60,7 @@ for (const st of stages) {
 }
 md.push('## Mesures de sécurité à réaliser', '', table(['Menace', 'STRIDE', 'Cible', 'Mesures'], handoff.security_measures.map(m => [m.threat, m.stride, m.target, m.mitigations.join(' ; ')])));
 if (handoff.accepted_risks.length) md.push('### Menaces acceptées', '', table(['Menace', 'Description', 'Accepté par'], handoff.accepted_risks.map(r => [r.threat, r.description, r.accepted_by])));
-md.push('## Décisions à respecter', '', table(['ADR', 'Décision', 'Option retenue', 'Confirmation'], handoff.decisions.map(a => [a.id, a.title, a.outcome, a.confirmation])));
+md.push('## Décisions à respecter', '', table(['ADR', 'Décision', 'Règle', 'Empêche', 'Confirmation'], handoff.decisions.map(a => [a.id, a.title, a.rule, a.prevents, a.confirmation])));
 if (handoff.tech_debt.length) md.push('## Dette technique concernée', '', table(['ID', 'Dette', 'Impact'], handoff.tech_debt.map(d => [d.id, d.text, d.impact])));
 md.push('## Points de vigilance', '', '### Risques', '', table(['ID', 'Risque', 'Impact'], handoff.risks.map(r => [r.id, r.text, r.impact])));
 md.push('### Zones d\'ombre assumées', '', list(handoff.assumed_shadow_zones.map(z => `${z.id} — ${z.question} (${txt(z.reason)})`)));

@@ -29,7 +29,7 @@ Chaque défaut ou amélioration repéré devient une story, souvent en voie rapi
 - le **reste** : le poids des tâches commencées ou planifiées et non finies ;
 - la part réalisée par des agents, et la **charge de relecture** que leurs tâches ont demandée aux humains (`review_size`).
 
-**La façon de travailler.** Garder ou abandonner les changements essayés au cycle précédent ; en choisir un ou deux à essayer, pas plus.
+**La façon de travailler.** Avant d'en parler, lance `node <chemin-du-skill>/scripts/retro-evidence.mjs plan/<slug>/state.yaml --iteration IT-n` : il rassemble ce que le cycle a réellement laissé (questions apparues pendant l'implémentation, tâches bloquées, cycles rouge–vert, mutation, verdicts de revue, commits, porte de release), chaque fait avec sa source, dans `review/IT-n/preuves.md`. La rétrospective part de ces faits : une cause qu'on ne peut rattacher à aucun d'eux n'est pas un constat (idée reprise de BMAD-METHOD). Garder ou abandonner les changements essayés au cycle précédent ; en choisir un ou deux à essayer, pas plus.
 
 Enregistre la revue dans `iterations[].review.team` : notes, constats, décisions sur le processus. Une note n'est enregistrée que si l'équipe l'a donnée.
 

@@ -45,3 +45,13 @@ proposé ──► accepté ──► déprécié
 - Un ADR à une seule option est une justification après coup, pas une décision.
 - Un ADR qui choisit une technologie sans moteur ne dit pas pourquoi : on ne pourra pas savoir quand le remettre en cause.
 - « Ne rien changer » est une option ; sa conséquence négative est souvent le moteur qu'elle ne sert pas.
+
+## La décision comme règle
+
+Une décision d'architecture sert à empêcher que des parties construites séparément divergent : deux équipes, deux agents, deux sprints qui feraient chacun un choix raisonnable mais différent. Chaque ADR accepté porte donc :
+
+- **ce qu'il empêche** (`prevents`) : la divergence concrète qui se produirait sans lui (« chaque écran validerait les dossiers à sa façon ») ;
+- **sa règle** (`rule`) : une phrase qu'un développeur ou un agent peut appliquer sans relire l'ADR (« toute validation de complétude passe par le composant CP-01 ; aucun autre composant ne lit les pièces d'un dossier ») ;
+- **sa confirmation** (`confirmation`) : comment on vérifie que la règle est respectée, de préférence automatiquement (test d'architecture, vérification de forme), sinon en revue.
+
+Une décision sans divergence à empêcher est peut-être une préférence, pas une décision d'architecture. Une règle impossible à vérifier ne protège rien. Idée reprise du « spine » d'architecture de BMAD-METHOD. La vérification de forme le signale (S71) ; la règle est transmise à l'implémentation, dans la fiche de contexte de chaque tâche concernée et à la revue de code.

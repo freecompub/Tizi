@@ -16,6 +16,7 @@ import { relative, isAbsolute, join } from 'node:path';
 import yaml from './lib/vendor/js-yaml.mjs';
 import { matchesAny, toPosix } from './lib/testing.mjs';
 import { normalizeHookInput, isWriteTool, writtenPaths, deny } from './lib/agent-io.mjs';
+import { understandingDigest } from './lib/impl.mjs';
 
 let raw = {};
 try { raw = JSON.parse(readFileSync(0, 'utf8') || '{}'); } catch { process.exit(0); }
@@ -46,6 +47,7 @@ function verdict(path) {
   if (!isTest && !isContract && !isProd) return '';
   if (!cur) return no('aucune tâche en cours. Lance scripts/start-task.mjs pour prendre une tâche du plan.');
   if (!task?.understanding?.approved_by) return no(`la compréhension de ${cur.task} n'est pas validée. Reformule la tâche, pose tes questions, et fais valider avant d'écrire du code ou des tests.`);
+  if (task.understanding.approved_digest && task.understanding.approved_digest !== understandingDigest(task.understanding)) return no(`la compréhension de ${cur.task} a été modifiée après sa validation. Fais valider la nouvelle version (approve-understanding.mjs) avant d'écrire.`);
   if (['bloquee', 'en_revue', 'fusionnee'].includes(task.status)) return no(`${cur.task} est ${task.status} : aucune écriture.`);
   if (isTest) return '';
   if (isContract) return cur.contracts_allowed ? '' : no(`${cur.task} ne cite aucune opération de contrat. Modifier un contrat exige une décision de conception : arrête-toi et pose la question.`);

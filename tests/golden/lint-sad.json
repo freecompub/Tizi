@@ -13,5 +13,7 @@
   "S53 empreinte du handoff non relevée à l'ingestion (lancer verify-handoff.mjs et reporter sha256 dans l'état)",
   "S54 Moteurs servis par un ADR accepté ou une réponse : 50 % pour un seuil de 100 % (manquent : AD-02) ; corriger ou déclarer une dérogation dans coverage_waivers",
   "S54 NFR avec une réponse de conception : 50 % pour un seuil de 100 % (manquent : NFR-002) ; corriger ou déclarer une dérogation dans coverage_waivers",
-  "S55 mesure sans contrôle de référence (OWASP ASVS (version du projet))"
+  "S55 mesure sans contrôle de référence (OWASP ASVS (version du projet))",
+  "S71 ADR accepté sans divergence empêchée : que feraient différemment deux parties construites sans lui ?",
+  "S71 ADR accepté sans règle vérifiable : la décision ne guidera ni un développeur ni un agent"
 ]

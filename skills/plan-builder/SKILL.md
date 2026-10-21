@@ -39,6 +39,8 @@ Langue : réponds en français. Garde les termes usuels en anglais (backlog, sto
 
 Lis le fichier de la phase en cours avant d'agir. Ne passe jamais à la phase suivante sans l'accord explicite de l'utilisateur. Refine, Schedule et Review se répètent à chaque itération ou à chaque réapprovisionnement du flux.
 
+Script de rétrospective : `scripts/retro-evidence.mjs` (preuves d'une itération ou d'une release, chacune sourcée).
+
 Références transverses : `references/development-strategy.md`, `references/fast-lane.md`, `references/example-mapping.md`, `references/sizing-and-assignment.md`, `references/cadence.md`, `references/export.md`, `references/shadow-zones.md`, `references/council.md`, `references/lenses.md`.
 
 ## Démarrage d'une session

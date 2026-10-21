@@ -12,7 +12,14 @@ Avant la revue humaine, une revue par agents examine le changement sous plusieur
 ## Déroulé
 
 1. `node <chemin-du-skill>/scripts/review-context.mjs impl/<slug>/state.yaml --task TK-xxx` : rattache la revue au commit et au diff exacts, repère les zones à risque, liste les mutants survivants, choisit les perspectives et écrit `impl/<slug>/review/TK-xxx/packet.md`.
-2. Lance chaque perspective comme **sous-agent** (Claude Code ou GitHub Copilot), avec le dossier pour seule entrée : `review-functional`, `review-architecture`, `review-tests`, et `review-security` quand des zones à risque ou des menaces sont en jeu. Écris la réponse de chacun telle quelle dans `findings/<perspective>.yaml`. Sans sous-agents, traite les perspectives une par une en repartant du dossier seul, et préviens que l'indépendance est moindre.
+2. Lance chaque perspective comme **sous-agent** (Claude Code ou GitHub Copilot), avec le dossier pour seule entrée :
+   - `review-functional` : le code fait-il ce que demandent les FR, critères, exemples et règles, et seulement cela ;
+   - `review-architecture` : règles des ADR, contrats, périmètre ;
+   - `review-tests` : **manques de vérification**, un test manquant n'étant signalé que si la régression qu'il attraperait est nommée ;
+   - `review-claims` : ce que la tâche affirme d'elle-même (compréhension, plan de tests, résumé de PR, commits) est lu **après** le code, comme un témoignage à vérifier ;
+   - `review-security`, quand des zones à risque ou des menaces sont en jeu.
+
+   Seule `review-claims` lit le fichier `claims.md`. Les lentilles « manques de vérification » et « affirmations » sont reprises de BMAD-METHOD. Écris la réponse de chacun telle quelle dans `findings/<perspective>.yaml`. Sans sous-agents, traite les perspectives une par une en repartant du dossier seul, et préviens que l'indépendance est moindre.
 3. Relève les constats bloquants et majeurs et transmets-les à `finding-verifier` (sous-agent, contexte neuf, sans le raisonnement des perspectives). Écris sa réponse dans `verifications.yaml`.
 4. `node <chemin-du-skill>/scripts/review-merge.mjs impl/<slug>/state.yaml --task TK-xxx` : contrôle la forme des constats, retire les mentions de confiance, applique les vérifications, fusionne les doublons et rend le verdict :
    - **vérification incomplète** : un constat grave n'a pas été vérifié ;

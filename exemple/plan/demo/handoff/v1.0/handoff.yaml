@@ -3,7 +3,7 @@ source:
   initiative: Dossiers complets
   plan_version: '1.0'
   cadence: sprint
-  generated: '2026-10-20'
+  generated: '2026-10-21'
 definition_of_done:
   - Code revu et fusionné
   - Exemples automatisés
@@ -26,6 +26,8 @@ tasks:
     depends_on: []
     waits_for_outside: []
     context: versions/v1.0/tasks/TK-002.md
+    context_sha256: 1448f6f396729fad6603998fadcd28185e4cecbd28331202320e96a3e65340b1
+    context_tokens: 475
   - rank: 2
     id: TK-003
     kind: securite
@@ -39,6 +41,8 @@ tasks:
       - TK-002
     waits_for_outside: []
     context: versions/v1.0/tasks/TK-003.md
+    context_sha256: 1fb82ab7426229a22e8d94cea027a0d5b2ea45d3b9d607ac91e17dbe5b2604f6
+    context_tokens: 426
 coverage:
   - id: release_fr_story
     label: FR de la release couvertes par une story

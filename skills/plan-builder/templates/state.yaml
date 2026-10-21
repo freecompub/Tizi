@@ -18,6 +18,7 @@ settings:
   sizes: { S: 1, M: 2, L: 3, XL: 5 }   # poids pour la capacité ; XL signale une tâche à découper
   max_rules_per_story: 4   # au-delà, la story est probablement à scinder
   agent_max_size: M        # taille maximale d'une tâche confiée à un agent
+  context_budget: { target: 1600, max: 3000 }   # taille d'une fiche de contexte, en tokens environ ; au-delà du maximum, S70
   sprint: { length_days: 10, capacity: 0 }      # capacité en poids de taille, par itération
   flow: { wip_limit: 0, replenish_batch: 0 }    # limite d'encours et taille d'un réapprovisionnement
   github: { repo: "" }                           # owner/repo ; découverte avec GITHUB_READ_TOKEN (lecture seule)

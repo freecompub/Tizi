@@ -9,5 +9,6 @@
   "S50 exemple incomplet : when manquant(s)",
   "S52 règle « Ne pas notifier le week-end » sans référence amont : demande de changement au BRD ou au PRD",
   "S60 voie rapide non conforme : taille L ; modifie un contrat d'interface ; suivre le chemin normal",
-  "S61 story de milieu de partie planifiée avant des stories d'ouverture encore ouvertes (US-005)"
+  "S61 story de milieu de partie planifiée avant des stories d'ouverture encore ouvertes (US-005)",
+  "S72 collision possible : TK-006 et TK-004 touchent CT-03, OP-003 sans dépendance entre elles ; les ordonner (depends_on) ou les fusionner"
 ]

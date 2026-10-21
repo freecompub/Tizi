@@ -19,11 +19,6 @@ Tizi est un cycle de développement outillé par des agents IA, de l'évaluation
 
 Point de départ : `/tizi` dans Claude Code, ou l'agent `tizi` dans Copilot.
 
-```
-git clone https://github.com/freecompub/Tizi.git
-node Tizi/install.mjs --project <votre-dépôt> --target claude|copilot|both
-```
-
 ## documentation/
 
 Le document de référence « Tizi — un SDLC agentique, du recueil du besoin au déploiement », exporté depuis le document vivant (révision 62) :
@@ -83,7 +78,20 @@ Fichiers communs, identiques d'un skill à l'autre, dont `scripts/lib/agent-io.m
 
 ## evals/
 
-Le banc d'évaluation par ablation : chaque cas joué avec et sans skill, par Claude Code ou Copilot, sur plusieurs passes. Voir `evals/README.md`.
+Deux bancs d'évaluation, à lancer avec un vrai agent (Claude Code ou Copilot) :
+
+- **ablation** (`run-ablation.mjs`) : chaque cas joué avec et sans skill, sur plusieurs passes, pour mesurer ce que le skill apporte ;
+- **déclenchement** (`run-triggers.mjs`) : des requêtes proches, jouées plusieurs fois, pour vérifier que le bon skill s'active (ou aucun), avec une séparation entraînement/test fixe. `description-overlap.mjs` contrôle en plus, sans agent, que les descriptions des skills ne se chevauchent pas.
+
+Voir `evals/README.md`.
+
+## lectures/
+
+Les notes de lecture intégrales qui ont servi aux comparaisons :
+- Yves Constantinidis, *Expression des besoins pour le SI* (Eyrolles, 2010), et IIBA, *BABOK Guide* v3 (2015) ;
+- Jeff Patton, *User Story Mapping* (O'Reilly, 2014).
+
+Les décisions issues de ces comparaisons, et de celle avec hve-core, sont consignées dans la section « Sources » du document.
 
 ## exemple/
 

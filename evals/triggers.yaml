@@ -1,0 +1,33 @@
+# Requêtes pour mesurer le déclenchement des skills : « expected » est le skill qui doit s'activer, ou « aucun ».
+# Les requêtes « proches » (même vocabulaire, autre intention) portent l'essentiel du signal.
+# La séparation entraînement/test est fixée une fois par run-triggers.mjs (graine stable) et ne se rebrasse jamais.
+queries:
+  # brd-builder
+  - { query: "On a une demande de la direction pour une appli de vérification des dossiers, il faut cadrer le besoin métier avant tout", expected: brd-builder }
+  - { query: "Aide-moi à identifier les parties prenantes et leurs règles métier pour la refonte de l'accueil", expected: brd-builder }
+  - { query: "Évaluons si cette idée d'export comptable vaut la peine d'être explorée", expected: brd-builder }
+  - { query: "Résume-moi ce qu'est un BRD en trois phrases", expected: aucun }
+  # prd-builder
+  - { query: "Le BRD est figé, on passe aux exigences produit et à la story map", expected: prd-builder }
+  - { query: "Écris les exigences fonctionnelles en EARS et leurs critères d'acceptation pour le blocage des dossiers incomplets", expected: prd-builder }
+  - { query: "Corrige les fautes d'orthographe dans prd.md", expected: aucun }
+  # sad-builder
+  - { query: "Il faut concevoir l'architecture : conteneurs C4, ADR et menaces STRIDE pour ce PRD", expected: sad-builder }
+  - { query: "Analyse l'existant de ce dépôt pour préparer la conception de la nouvelle fonctionnalité", expected: sad-builder }
+  - { query: "Explique-moi la différence entre un conteneur et un composant dans C4", expected: aucun }
+  # plan-builder
+  - { query: "Découpe la release en stories et prépare le sprint avec l'example mapping", expected: plan-builder }
+  - { query: "Le sprint 3 est fini, fais la revue d'équipe et calcule la vélocité", expected: plan-builder }
+  - { query: "Prépare l'export des tickets vers Jira sans rien écrire pour l'instant", expected: plan-builder }
+  - { query: "Combien de jours dure un sprint en Scrum en général ?", expected: aucun }
+  # backlog-executor
+  - { query: "Le plan d'opérations GitHub est approuvé, applique-le", expected: backlog-executor }
+  - { query: "Crée directement les issues dans GitHub sans passer par un plan", expected: backlog-executor }
+  # impl-builder
+  - { query: "Implémente la tâche TK-002 du plan en TDD", expected: impl-builder }
+  - { query: "Fais la revue de code de ma branche avant la PR", expected: impl-builder }
+  - { query: "Pourquoi mon test unitaire échoue avec une erreur d'import ?", expected: aucun }
+  # test-builder
+  - { query: "Vérifie la release 1.2 : matrice de couverture des exigences et porte de release", expected: test-builder }
+  - { query: "Prépare les sessions de tests exploratoires avec leurs chartes pour la version candidate", expected: test-builder }
+  - { query: "Écris un test unitaire pour la fonction manquants()", expected: impl-builder }

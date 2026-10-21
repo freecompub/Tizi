@@ -75,7 +75,8 @@ test('revue de code : vérification adversariale, confiance retirée, revue pér
   g('init', '-q'); g('config', 'user.email', 't@t'); g('config', 'user.name', 't'); writeFileSync(join(repo, '.gitignore'), '.impl/\nreports/\n'); g('add', '-A'); g('commit', '-qm', 'base'); g('branch', '-M', 'main');
   writeFileSync(join(repo, 'src/completude/index.js'), readFileSync(join(repo, 'src/completude/index.js'), 'utf8') + 'export const jeton = r => r.headers.authorization?.split(" ")[1];\n');
   const ctx = node(script('impl-builder', 'review-context.mjs'), ['impl/demo/state.yaml', '--task', 'TK-002', '--base', 'main'], { cwd: repo });
-  assert.equal(ctx.code, 0, ctx.err); assert.match(ctx.out, /authentification/);
+  assert.equal(ctx.code, 0, ctx.err); assert.match(ctx.out, /authentification/); assert.match(ctx.out, /review-claims/);
+  assert.ok(existsSync(join(repo, 'impl/demo/review/TK-002/claims.md')), 'fichier d\'affirmations préparé');
   const D = join(repo, 'impl/demo/review/TK-002');
   mkdirSync(join(D, 'findings'), { recursive: true });
   cpSync(join(FIX, 'review-functional.yaml'), join(D, 'findings/functional.yaml')); cpSync(join(FIX, 'review-security.yaml'), join(D, 'findings/security.yaml'));

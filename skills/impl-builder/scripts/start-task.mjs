@@ -36,6 +36,12 @@ if (cur && cur.task !== taskId) {
 }
 
 const ctx = taskContext(h, taskId);
+// La fiche de contexte est gelée par son empreinte dans le handoff du plan.
+if (entry.context_sha256) {
+  const { fileSha256 } = await import('./lib/common.mjs');
+  if (!existsSync(ctx.contextFile) || fileSha256(ctx.contextFile) !== entry.context_sha256) fail(`La fiche de contexte de ${taskId} a été modifiée depuis le gel du plan (${ctx.contextFile}). Une fiche ne se corrige pas à la main : faire évoluer le plan et le refiger avec plan-builder.`);
+}
+if (entry.context_tokens) console.log(`Fiche de contexte : environ ${entry.context_tokens} tokens.`);
 const unmapped = ctx.elements.filter(e => !arr(cfg.elements?.[e]).length);
 if (ctx.task.kind !== 'spike' && (!ctx.elements.length || unmapped.length)) fail(`Périmètre indéterminé : ${unmapped.length ? `éléments sans dossier dans impl/config.yaml : ${unmapped.join(', ')}` : 'la tâche ne cite aucun élément'}. Le hook ne peut pas borner les écritures.`);
 

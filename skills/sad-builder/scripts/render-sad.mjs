@@ -222,7 +222,7 @@ p(table(['ID', 'Type', 'Nom', 'Technologie', 'Parent', ...(brown ? ['Cycle de vi
 
 // 5. Décisions
 h(2, '5. Décisions d\'architecture');
-p(table(['ID', 'Décision', 'Statut', 'Option retenue', 'Moteurs', 'Décidé par'], adrsAll.map(a => [`[${a.id}](${adrFile(a)})${mark(a)}`, a.title, a.status, a.outcome, arr(a.drivers).join(', '), a.decided_by])));
+p(table(['ID', 'Décision', 'Statut', 'Option retenue', 'Règle', 'Moteurs', 'Décidé par'], adrsAll.map(a => [`[${a.id}](${adrFile(a)})${mark(a)}`, a.title, a.status, a.outcome, a.rule, arr(a.drivers).join(', '), a.decided_by])));
 
 // 6. Allocation
 h(2, '6. Allocation des exigences fonctionnelles');
@@ -328,6 +328,7 @@ for (const a of adrsAll) {
     ...(a.outcome ? [`Justification : ${txt(a.justification)}`, ''] : []),
     '### Conséquences', '',
     list([...arr(a.consequences?.good).map(c => `Positive : ${c}`), ...arr(a.consequences?.bad).map(c => `Négative : ${c}`)]),
+    '### Règle', '', `**Empêche** : ${txt(a.prevents)}`, '', `**Règle** : ${txt(a.rule)}`, '',
     '### Confirmation', '', txt(a.confirmation), '',
     '## Avantages et inconvénients des options', '',
     ...arr(a.options).flatMap(o => [`### ${txt(o.name)}`, '', ...(o.description ? [o.description, ''] : []),
