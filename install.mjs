@@ -247,7 +247,7 @@ jobs:
 
 // 4. .gitignore
 const gi = join(project, '.gitignore');
-const lines = ['# SDLC : état local de la tâche en cours et transcriptions brutes (voir references/sessions.md)', '.impl/', '.tizi/sessions/*.jsonl', '.tizi/sessions/*.tmp'];
+const lines = ['# Tizi : état local de la tâche en cours, transcriptions brutes, copies téléchargées depuis la CI (l\'archive des preuves, elle, se commite)', '.impl/', '.tizi/sessions/*.jsonl', '.tizi/sessions/*.tmp', 'qa/*/ci/*/'];
 act(`.gitignore → ${gi}`, () => {
   const cur = existsSync(gi) ? readFileSync(gi, 'utf8') : '';
   const missing = lines.filter(l => !cur.split('\n').includes(l));

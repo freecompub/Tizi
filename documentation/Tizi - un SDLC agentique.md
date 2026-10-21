@@ -688,10 +688,13 @@ La **matrice de couverture des exigences** est calculée, jamais déclarée : ch
 | Script | Rôle |
 | --- | --- |
 | `ci-run-suites.mjs` | En CI : lance les suites, regroupe les rapports, écrit le manifeste de provenance |
-| `ci-fetch.mjs` | Retrouve en lecture seule le passage de CI sur le commit candidat, le vérifie, télécharge les rapports |
+| `ci-fetch.mjs` | Retrouve en lecture seule le passage de CI sur le commit candidat, le vérifie, télécharge les rapports et conserve le manifeste |
+| `record-nfr.mjs` | Enregistre une mesure de NFR prise hors CI, avec le commit mesuré, l’auteur et l’empreinte de son rapport |
 | `release-matrix.mjs` | Matrice réalisé et prouvé, écarts, porte de release (R1 à R9) |
-| `freeze-evidence.mjs` | Archive une fois les preuves de la version candidate, en lecture seule, avec leurs empreintes |
+| `freeze-evidence.mjs` | Archive une fois les preuves de la version candidate — rapports, mesures, provenance, manifeste de la CI, commit — en lecture seule, avec leurs empreintes ; `--check` vérifie qu’elle est intacte et commitée |
 | `ci-audit.mjs` | Vérifie la configuration de la CI du dépôt |
+
+**Où sont les preuves.** Pendant un passage de CI, dans `tizi-preuves/` avec leur manifeste ; ensuite, dans l’artefact du passage, qui **expire au bout de 90 jours** par défaut ; pendant la vérification, dans une copie téléchargée, non versionnée ; après l’approbation, dans l’archive de la version candidate, `qa/<initiative>/evidence/<version>/`. C’est la seule copie durable, à condition d’être commitée : un logiciel réglementé doit pouvoir montrer ses preuves de vérification des années plus tard. Les mesures que la CI ne peut pas produire — une charge sur un environnement dédié — portent le commit mesuré et l’empreinte de leur rapport, et la porte vérifie qu’elles concernent bien la version candidate.
 
 ## 7. Intégration continue
 

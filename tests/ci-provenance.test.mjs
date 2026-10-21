@@ -21,6 +21,8 @@ function ciRepo() {
   const sp = join(repo, 'qa/demo/state.yaml'); const s = yaml.load(readFileSync(sp, 'utf8'));
   s.candidate_commit = head; s.settings.ci = { required: true };
   writeFileSync(sp, yaml.dump(s));
+  // La mesure de performance, prise hors CI, est enregistrée avec le commit candidat et l'empreinte de son rapport.
+  assert.equal(node(script('test-builder', 'record-nfr.mjs'), ['qa/demo/state.yaml', '--nr', 'NR-01', '--mesure', 'p95 = 1,4 s', '--cible', 'p95 < 2 s', '--conforme', 'oui', '--rapport', 'reports/perf.html', '--commit', head, '--par', 'Samir'], { cwd: repo }).code, 0);
   const runs = event => JSON.stringify([{ databaseId: 42, headSha: head, status: 'completed', conclusion: 'success', event, workflowName: 'Tizi — preuves', url: 'https://github.com/x/y/actions/runs/42', createdAt: '2026-10-21T10:00:00Z' }]);
   writeFileSync(join(repo, 'runs.json'), runs('push'));
   writeFileSync(join(repo, 'runs-pr.json'), runs('pull_request'));
@@ -86,4 +88,33 @@ test('audit de la CI : workflows générés sans point bloquant ; dépôt sans C
   assert.match(node(join(proj, '.claude/skills/test-builder/scripts/ci-audit.mjs'), ['.', '--protection-json', 'prot.json'], { cwd: proj }).out, /la porte de PR n'est pas une vérification exigée/);
   const empty = mkdtempSync(join(tmpdir(), 'tizi-noci-'));
   assert.equal(node(join(proj, '.claude/skills/test-builder/scripts/ci-audit.mjs'), [empty, '--protection-json', join(proj, 'prot.json')]).code, 1);
+});
+
+test('mesure de NFR hors CI : probante seulement sur le commit candidat, avec un rapport inchangé', () => {
+  const { repo, head } = ciRepo();
+  fetch(repo, 'runs.json', '--appliquer');
+  const nfr = (...a) => node(script('test-builder', 'record-nfr.mjs'), ['qa/demo/state.yaml', '--nr', 'NR-01', '--mesure', 'p95 = 1,4 s', '--cible', 'p95 < 2 s', '--conforme', 'oui', '--rapport', 'reports/perf.html', '--par', 'Samir', ...a], { cwd: repo });
+  writeFileSync(join(repo, 'reports/perf.html'), '<html>charge</html>');
+  assert.equal(nfr('--commit', 'aaaaaaa').code, 0);
+  assert.match(gate(repo), /✗ R9 .*mesure NR-01 prise sur aaaaaaa, pas sur la version candidate/);
+  assert.equal(nfr('--commit', head).code, 0);
+  assert.match(gate(repo), /✓ R9/);
+  appendFileSync(join(repo, 'reports/perf.html'), '<!-- retouché -->');
+  assert.match(gate(repo), /✗ R9 .*mesure NR-01 : rapport modifié depuis son enregistrement/);
+});
+
+test('archive des preuves : provenance et manifeste inclus, conservation vérifiée', () => {
+  const { repo, head } = ciRepo();
+  fetch(repo, 'runs.json', '--appliquer');
+  // L'exemple contient déjà l'archive de 1.0.0-rc1 : on archive une nouvelle version candidate, sur le même commit.
+  const sp = join(repo, 'qa/demo/state.yaml'); const st = yaml.load(readFileSync(sp, 'utf8')); st.candidate = '1.0.0-rc2'; writeFileSync(sp, yaml.dump(st));
+  gate(repo);
+  const fz = (...a) => node(script('test-builder', 'freeze-evidence.mjs'), ['qa/demo/state.yaml', ...a], { cwd: repo });
+  assert.equal(fz().code, 0);
+  const dir = join(repo, 'qa/demo/evidence/1.0.0-rc2');
+  const man = readFileSync(join(dir, 'MANIFEST.sha256'), 'utf8');
+  assert.match(man, /ci-provenance\.yaml/); assert.match(man, /ci-manifest\.json/); assert.match(man, new RegExp(`${head}  COMMIT`));
+  const c1 = fz('--check'); assert.equal(c1.code, 1); assert.match(c1.out, /non commitée/);
+  run('git', ['add', 'qa/demo/evidence'], { cwd: repo }); run('git', ['commit', '-qm', 'preuves'], { cwd: repo });
+  assert.equal(fz('--check').code, 0);
 });

@@ -40,9 +40,22 @@ Réalisé ne veut pas dire prouvé : une tâche fusionnée montre qu'un code exi
 
 Présente la porte et la matrice. Une exigence non prouvée se corrige (test manquant, test en échec) ou devient une **dérogation** (`waivers`) avec raison et approbateur déclarés par l'utilisateur ; elle devient un risque suivi de la release. L'approbation de la release n'est enregistrée (`approvals`) que si l'utilisateur la déclare.
 
+## Où sont les rapports
+
+| Moment | Emplacement | Durée |
+|---|---|---|
+| Pendant le passage de CI | là où `impl/config.yaml` l'indique, puis regroupés dans `tizi-preuves/` avec le manifeste | le temps du passage |
+| Après le passage | artefact `tizi-preuves` du passage, sur GitHub | **90 jours par défaut** (réglable de 1 à 400) |
+| Pendant la vérification | `qa/<slug>/ci/<commit>/`, copie téléchargée par `ci-fetch.mjs` (ignorée par Git), et `qa/<slug>/ci/provenance.yaml`, `manifest.json` | tant qu'on ne l'efface pas |
+| Après l'approbation | `qa/<slug>/evidence/<version>/`, archive figée | **durable seulement une fois commitée** |
+
+L'artefact de CI expire : la seule copie durable est l'archive commitée. Pour un logiciel réglementé, les preuves de vérification doivent rester disponibles des années.
+
 ## Archiver les preuves
 
-`node <chemin-du-skill>/scripts/freeze-evidence.mjs qa/<slug>/state.yaml` copie la matrice et tous les rapports collectés dans `qa/<slug>/evidence/<candidate>/`, avec un manifeste des empreintes SHA-256 de chaque fichier. L'archive ne se modifie plus : une nouvelle version candidate a sa propre archive.
+`node <chemin-du-skill>/scripts/freeze-evidence.mjs qa/<slug>/state.yaml` copie dans `qa/<slug>/evidence/<candidate>/` la matrice, l'état, tous les rapports collectés, les rapports des mesures de NFR, le **relevé de provenance** et le **manifeste de la CI**, et l'audit de la CI s'il existe, avec un manifeste des empreintes SHA-256 et le commit de la version : la chaîne commit → passage de CI → rapports → matrice reste vérifiable plus tard. L'archive ne se modifie plus : une nouvelle version candidate a sa propre archive.
+
+Commite ensuite l'archive, puis vérifie avec `freeze-evidence.mjs … --check`, qui échoue si elle n'est pas commitée ou si un fichier a changé. Le dépôt Git est l'endroit durable ; il est aussi possible de joindre l'archive à la release GitHub (`gh release upload`), sur décision de l'utilisateur.
 
 ## La CI elle-même
 

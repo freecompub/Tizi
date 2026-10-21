@@ -21,9 +21,9 @@ Point de départ : `/tizi` dans Claude Code, ou l'agent `tizi` dans Copilot.
 
 ## documentation/
 
-Le document de référence « Tizi — un SDLC agentique, du recueil du besoin au déploiement », exporté depuis le document vivant (révision 85) :
+Le document de référence « Tizi — un SDLC agentique, du recueil du besoin au déploiement », exporté depuis le document vivant (révision 86) :
 - en Markdown, modifiable ;
-- en PDF (A4, 43 pages), pour la lecture.
+- en PDF (A4, 44 pages), pour la lecture.
 
 Il contient le sommaire, le nom et sa philosophie, les dix étapes, la construction des étapes 1 à 6, l'index des abréviations et identifiants, et les sources.
 
@@ -62,6 +62,17 @@ L'installateur pose aussi les **points d'entrée**, générés depuis une source
 Ce sont des coquilles : chacune charge son skill, qui reste la seule source des règles. Les agents Copilot n'ont que les outils de leur étape (l'entrée `tizi` et `tizi-backlog` ne peuvent pas éditer de fichiers) et proposent des boutons de passage vers l'étape suivante. Les sous-agents internes (critiques du council, perspectives de revue, vérificateur) sont marqués non invocables : ils n'apparaissent pas dans la liste de l'utilisateur.
 
 Options : `--ci` ajoute trois workflows GitHub Actions : `tizi-pr-gate.yml` rejoue la porte de PR sur chaque pull request ; `tizi-preuves.yml` produit les preuves de release sur le commit lui-même, avec leur manifeste de provenance ; `tizi-sprint-review.yml` prépare chaque jour ouvré les sprint reviews dues et ouvre une issue (droits : lecture du dépôt, et écriture des issues pour ce dernier). `ci-audit.mjs` vérifie ensuite la configuration de la CI ; `--skills brd-builder,prd-builder` pour n'en installer qu'une partie, `--user` pour les skills et agents personnels, `--dry-run` pour voir sans écrire. La commande est idempotente. Il faut Node.js 18 ou plus ; aucune dépendance n'est à installer.
+
+## Où sont les preuves de tests
+
+| Moment | Emplacement | Durée |
+|---|---|---|
+| Passage de CI | `tizi-preuves/` (rapports et manifeste de provenance) | le temps du passage |
+| Après le passage | artefact GitHub `tizi-preuves` | **90 jours par défaut**, puis supprimé |
+| Vérification | `qa/<initiative>/ci/` : copie téléchargée (ignorée par Git), relevé de provenance et manifeste | tant qu'on ne l'efface pas |
+| Après l'approbation | `qa/<initiative>/evidence/<version>/` : archive figée avec empreintes et commit | **durable une fois commitée** |
+
+L'artefact de CI expire : la copie qui fait foi est l'archive, commitée dans le dépôt. `freeze-evidence.mjs --check` vérifie qu'elle l'est et qu'elle est intacte.
 
 ## skills/
 

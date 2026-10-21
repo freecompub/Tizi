@@ -65,6 +65,8 @@ else {
 const provenance = { candidate: s.candidate, commit: sha, checked: today(), verified: !problems.length,
   run: run ? { id: run.databaseId, url: run.url, workflow: run.workflowName, event: run.event, conclusion: run.conclusion } : null,
   jobs: jobs.map(j => ({ name: j.name, conclusion: j.conclusion })), reports, problems };
+// Le manifeste vérifié est conservé à côté du relevé, quel que soit l'endroit d'où il vient : l'archive le reprend.
+if (manifestFile) writeOut(join(root, 'ci', 'manifest.json'), readFileSync(manifestFile, 'utf8'));
 writeOut(join(root, 'ci', 'provenance.yaml'), `# Provenance des preuves — ci-fetch.mjs\n${yaml.dump(provenance, { lineWidth: 120 })}`);
 if (args.includes('--appliquer') && reports.length) {
   s.settings = s.settings ?? {}; s.settings.reports = { ...(s.settings.reports ?? {}) };
