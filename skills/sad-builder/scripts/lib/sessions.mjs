@@ -127,3 +127,27 @@ export function saveIndex(index, root = '.') {
   renameSync(tmp, p);
 }
 export const sessionsFor = (initiative, root = '.') => loadIndex(root).sessions.filter(s => (s.initiatives ?? []).includes(initiative));
+
+// Consommation de tokens d'une transcription. Claude Code : message.usage (input_tokens, output_tokens, cache_*).
+// Copilot : un objet de consommation sous data.usage ou usage, s'il existe ; sinon la consommation est « inconnue »,
+// jamais estimée.
+export function usageOf(path) {
+  const u = { input: 0, output: 0, cache_read: 0, cache_write: 0, found: false };
+  for (const line of readFileSync(path, 'utf8').split('\n')) {
+    if (!line.trim()) continue;
+    let e; try { e = JSON.parse(line); } catch { continue; }
+    // Les sous-agents comptent aussi : leur consommation fait partie du coût de la tâche.
+    const x = e.message?.usage ?? e.data?.usage ?? e.usage;
+    if (!x || typeof x !== 'object') continue;
+    u.found = true;
+    for (const [k, v] of Object.entries(x)) {
+      if (typeof v !== 'number') continue;
+      const key = k.toLowerCase();
+      if (/cache.*read|read.*cache|cached/.test(key)) u.cache_read += v;
+      else if (/cache.*(creat|write)/.test(key)) u.cache_write += v;
+      else if (/input|prompt/.test(key)) u.input += v;
+      else if (/output|completion/.test(key)) u.output += v;
+    }
+  }
+  return u.found ? { input: u.input, output: u.output, cache_read: u.cache_read, cache_write: u.cache_write, total: u.input + u.output + u.cache_read + u.cache_write } : null;
+}

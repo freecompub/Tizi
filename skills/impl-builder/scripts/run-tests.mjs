@@ -6,7 +6,7 @@ import { spawnSync } from 'node:child_process';
 import { mkdirSync, rmSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { fail } from './lib/common.mjs';
-import { loadConfig, readCurrent, writeCurrent, appendRun } from './lib/impl.mjs';
+import { loadConfig, readCurrent, writeCurrent, appendRun, logEvent } from './lib/impl.mjs';
 import { readReport } from './lib/testing.mjs';
 
 const args = process.argv.slice(2);
@@ -34,6 +34,7 @@ else {
 }
 if (characterization) run.characterization = true;
 appendRun(run);
+if (suite !== 'mutation') logEvent(cur.state, cur.task, 'tests', { suite, failed: run.failed, ...(run.characterization ? { characterization: true } : {}) });
 delete cur.refactor;
 writeCurrent(cur);
 

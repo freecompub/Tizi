@@ -12,7 +12,7 @@
 // déclenchements simultanés (hook déclaré pour deux outils) ne laissent jamais un fichier à moitié écrit.
 import { readFileSync, writeFileSync, existsSync, mkdirSync, renameSync } from 'node:fs';
 import { join } from 'node:path';
-import { readTranscript, initiativesIn, buildExtract, maskSecrets, loadIndex, saveIndex, SESSIONS_DIR } from './lib/sessions.mjs';
+import { readTranscript, initiativesIn, buildExtract, maskSecrets, loadIndex, saveIndex, SESSIONS_DIR, usageOf } from './lib/sessions.mjs';
 import { normalizeHookInput, copilotTranscript } from './lib/agent-io.mjs';
 
 const atomicWrite = (path, content) => { const tmp = `${path}.${process.pid}.tmp`; writeFileSync(tmp, content); renameSync(tmp, path); };
@@ -43,6 +43,9 @@ try {
     condensed: existsSync(`${base}.condense.md`) ? `${SESSIONS_DIR}/${date}-${sid}.condense.md` : '',
     last_event: h.event || '',
     tool: src.endsWith('events.jsonl') ? 'copilot' : 'claude',
+    // Tâche en cours au moment de la capture (impl-builder) : relie le coût de calcul aux tâches.
+    tasks: [...new Set([...(entry.tasks ?? []), ...(() => { try { return [JSON.parse(readFileSync(join(cwd, '.impl', 'current.json'), 'utf8')).task]; } catch { return []; } })()].filter(Boolean))],
+    tokens: usageOf(src) ?? 'inconnu',
   });
   saveIndex(index, cwd);
 } catch (e) {

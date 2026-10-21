@@ -19,6 +19,9 @@ settings:
   max_rules_per_story: 4   # au-delà, la story est probablement à scinder
   agent_max_size: M        # taille maximale d'une tâche confiée à un agent
   context_budget: { target: 1600, max: 3000 }   # taille d'une fiche de contexte, en tokens environ ; au-delà du maximum, S70
+  attention_capacity: 0     # minutes d'attention humaine disponibles par itération (validation, questions, revue) ; 0 = non suivi
+  attention: { validation: 15, question: 10, revue: 30 }   # minutes par interaction humaine, pour la charge prévue
+  attention_by_size: {}     # charge mesurée par taille, à reprendre du rapport de mesures : { S: 20, M: 55, L: 110 }
   sprint: { length_days: 10, capacity: 0 }      # capacité en poids de taille, par itération
   flow: { wip_limit: 0, replenish_batch: 0 }    # limite d'encours et taille d'un réapprovisionnement
   github: { repo: "" }                           # owner/repo ; découverte avec GITHUB_READ_TOKEN (lecture seule)

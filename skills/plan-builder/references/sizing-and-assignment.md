@@ -11,6 +11,17 @@
 
 Les poids se règlent dans `settings.sizes`. Une taille est une estimation de l'équipe : tu proposes une taille de départ et tu dis pourquoi, l'équipe tranche.
 
+## Quand les agents réalisent les tâches
+
+Le temps de codage devient court et bon marché. Ce qui reste rare, et que la taille doit refléter, c'est :
+- **l'attention humaine** : préparer la story, valider la compréhension, répondre aux questions, relire la PR ;
+- **le risque d'allers-retours** : une tâche qui touche du code existant, plusieurs éléments ou des règles subtiles boucle davantage, et chaque boucle reprend de l'attention ;
+- **l'attente** et les **blocages** (environnement, accès, données, réponses).
+
+La taille se lit donc comme un **risque**. `render-plan.mjs` en calcule une à partir des données de la tâche (éléments, opérations de contrat, règles, code existant modifié, mesures de sécurité, comportements à préserver, spike) et la montre à côté de celle de l'équipe ; un écart de deux tailles ou plus est signalé (S74), à justifier dans un sens ou dans l'autre. Chaque tâche porte aussi une **attention humaine prévue**, en minutes, tirée de `settings.attention` puis, dès qu'il y a des mesures, de `settings.attention_by_size`. Avec `settings.attention_capacity`, la vérification signale une itération dont l'attention prévue dépasse ce que l'équipe peut donner (S75) : c'est la relecture qui limite le débit, pas les agents.
+
+Ces chiffres se confrontent au réel par `measure.mjs` (phase Review), qui propose la calibration par taille.
+
 **Découper une tâche ou une story XL** : par règle métier, par cas (nominal puis erreurs), par opération de contrat, par élément traversé, ou en isolant d'abord l'incertitude dans un spike.
 
 ## Agent ou humain

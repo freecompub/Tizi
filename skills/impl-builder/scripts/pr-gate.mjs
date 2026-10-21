@@ -6,7 +6,7 @@ import { spawnSync } from 'node:child_process';
 import { mkdirSync, rmSync, existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { arr, txt, table, list, loadState, writeOut, fail, today, humanReviewFooter } from './lib/common.mjs';
-import { loadConfig, readRuns, saveState, taskContext, understandingDigest } from './lib/impl.mjs';
+import { loadConfig, readRuns, saveState, taskContext, understandingDigest, logEvent } from './lib/impl.mjs';
 import { readReport } from './lib/testing.mjs';
 import { traceCheck } from './trace-check.mjs';
 
@@ -96,6 +96,7 @@ if (!rerun) {
   t.gate = { date: today(), result: ok ? 'ouverte' : 'fermée', report: out };
   if (ok && ['rouge', 'vert', 'verification', 'comprendre'].includes(t.status)) t.status = 'verification';
   saveState(statePath, s);
+  logEvent(statePath, taskId, 'porte', { ok, failed: checks.filter(c => !c.ok).map(c => c.id) });
 }
 for (const c of checks) console.log(`${c.ok ? '✓' : '✗'} ${c.label}${c.detail ? ` — ${c.detail}` : ''}`);
 console.log(ok ? `Porte ouverte : description de PR prête (${out}). La revue humaine reste obligatoire.` : 'Porte fermée : corriger les points ✗ avant d\'ouvrir la PR.');

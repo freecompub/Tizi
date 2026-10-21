@@ -8,7 +8,7 @@
 import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { arr, txt, table, list, loadState, writeOut, fail, prLabel, today, humanReviewFooter, approxTokens } from './lib/common.mjs';
-import { checkPlan, storyReadiness, taskCycles, coverage, iterationStats, capacitySuggestion } from './lib/rules.mjs';
+import { checkPlan, storyReadiness, taskCycles, coverage, iterationStats, capacitySuggestion, riskSize, plannedAttention } from './lib/rules.mjs';
 
 const args = process.argv.slice(2);
 const statePath = args.find(a => !a.startsWith('--'));
@@ -91,9 +91,10 @@ p(table(['Story', 'Titre', 'Voie', 'FR ou origine', 'Temps', 'Taille', 'Règles'
 
 // 3. Tâches
 h(2, '3. Tâches');
-p(table(['Tâche', 'Type', 'Titre', 'Story', 'Éléments', 'Taille', 'Affectation', 'Dépend de', flux ? 'Rang' : 'Itération', 'Statut'],
-  tasks.map(t => [`[${t.id}](tasks/${t.id}.md)${mark(t)}`, t.kind, t.title, t.story || (t.spike_of ? `spike ${t.spike_of}` : '—'), arr(t.elements).map(elName).join(', '),
-    t.size, `${txt(t.assignee_type)}${t.assignee ? ` (${t.assignee})` : ''}`, arr(t.depends_on).join(', '), flux ? (t.order || '—') : txt(t.iteration), t.status])));
+p('_Quand les agents réalisent les tâches, la taille mesure le risque (allers-retours, attention humaine), pas l\'effort de codage. Le risque est calculé depuis les données de la tâche ; l\'attention prévue est en minutes de validation, de réponses et de revue humaines._\n');
+p(table(['Tâche', 'Type', 'Titre', 'Story', 'Éléments', 'Taille', 'Risque calculé', 'Attention prévue', 'Affectation', 'Dépend de', flux ? 'Rang' : 'Itération', 'Statut'],
+  tasks.map(t => { const r = riskSize(t, s, refs); return [`[${t.id}](tasks/${t.id}.md)${mark(t)}`, t.kind, t.title, t.story || (t.spike_of ? `spike ${t.spike_of}` : '—'), arr(t.elements).map(elName).join(', '),
+    t.size, r.size === t.size ? r.size : `**${r.size}**`, `${plannedAttention(t, settings, r)} min`, `${txt(t.assignee_type)}${t.assignee ? ` (${t.assignee})` : ''}`, arr(t.depends_on).join(', '), flux ? (t.order || '—') : txt(t.iteration), t.status]; })));
 
 // 4. Dépendances
 h(2, '4. Dépendances');

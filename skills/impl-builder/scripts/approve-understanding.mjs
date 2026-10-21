@@ -4,7 +4,7 @@
 // la modifier invalide la validation (garde-fou et porte de PR), et il faut la refaire valider.
 // Usage : node approve-understanding.mjs <impl/<slug>/state.yaml> --task TK-xxx --by "<nom>"
 import { arr, loadState, fail, today } from './lib/common.mjs';
-import { saveState, understandingDigest } from './lib/impl.mjs';
+import { saveState, understandingDigest, logEvent } from './lib/impl.mjs';
 
 const args = process.argv.slice(2);
 const opt = k => (args.includes(k) ? args[args.indexOf(k) + 1] : '');
@@ -18,8 +18,10 @@ const u = t.understanding ?? {};
 if (!u.restatement) fail('Aucune reformulation : rien à valider.');
 const open = arr(u.questions).filter(q => !q.answer);
 if (open.length) fail(`${open.length} question(s) sans réponse : la compréhension ne peut pas être validée.`);
+const again = !!u.approved_digest;
 Object.assign(u, { approved_by: by, date: today(), approved_digest: understandingDigest(u) });
 t.understanding = u;
 if (t.status === 'comprendre') t.status = 'rouge';
 saveState(statePath, s);
+logEvent(statePath, taskId, again ? 'compréhension_revalidée' : 'compréhension_validée', { by, questions: arr(u.questions).length });
 console.log(`Compréhension de ${taskId} validée par ${by} et gelée (empreinte ${u.approved_digest.slice(0, 12)}). Toute modification ultérieure demandera une nouvelle validation.`);

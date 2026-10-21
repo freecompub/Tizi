@@ -43,6 +43,17 @@ Chaque story montrée l'est comme prévu dans son champ `demo`. Les suggestions 
 
 Enregistre les retours dans `iterations[].review.stakeholders`.
 
+## 2 bis. Mesurer le réel, et prévoir
+
+Quand les agents réalisent les tâches, lance à chaque revue `node <chemin-du-skill>/scripts/measure.mjs plan/<slug>/state.yaml`. Il calcule, depuis le journal horodaté des tâches, le registre des blocages et les sessions :
+- par tâche : durée, part de compréhension, de réalisation, d'**attente de relecture**, allers-retours (tests rouges, portes refusées, corrections, revalidations), attention humaine consommée, temps bloqué, tokens ;
+- par taille de risque et par type de code (neuf ou existant) : médianes, et la **calibration** de l'attention par taille à reprendre dans `settings.attention_by_size` ;
+- les **blocages par cause** et par story.
+
+Pour répondre à « quand aura-t-on fini ? », `forecast.mjs` simule les semaines à venir à partir du débit réel (tâches fusionnées par semaine) et donne une date à 50, 85 et 95 % de chances. Annonce la date à 85 %. Sous trois semaines d'historique, il refuse de prévoir.
+
+Les blocages s'enregistrent au moment où ils surviennent, pas en fin d'itération de mémoire : `node <chemin-du-skill>/scripts/block.mjs <initiative> --sur US-xxx|TK-xxx --cause <cause> --note "…" --par "<nom>"`, puis `--lever BL-xxx`. Causes : environnement, acces, donnees, dependance, question, decision, relecture, outil, externe, autre.
+
 ## 3. Calibrer la capacité
 
 `render-plan.mjs` propose une capacité pour l'itération suivante : la moyenne des vélocités des trois dernières itérations revues. Quand une partie des tâches va à des agents, la capacité **humaine** compte à la fois les tâches réalisées par des humains et la relecture des tâches d'agents : c'est souvent la relecture, pas la génération du code, qui limite le débit. La proposition reste une proposition : l'équipe fixe sa capacité.

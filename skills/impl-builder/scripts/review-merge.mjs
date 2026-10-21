@@ -10,7 +10,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import yaml from './lib/vendor/js-yaml.mjs';
 import { arr, table, loadState, writeOut, fail, today, humanReviewFooter } from './lib/common.mjs';
-import { saveState } from './lib/impl.mjs';
+import { saveState, logEvent } from './lib/impl.mjs';
 import { currentDiff, reviewDir } from './lib/review.mjs';
 
 const args = process.argv.slice(2);
@@ -70,6 +70,6 @@ writeOut(join(dir, 'review.md'), md.join('\n') + humanReviewFooter('rapport de r
 writeOut(join(dir, 'review-result.json'), `${JSON.stringify({ task: taskId, head: rs.head, diff_sha256: rs.diff_sha256, verdict, counts: { kept: merged.length, blocking: blocking.length, refuted: refuted.length, unverified: unverified.length, rejected: rejected.length, stripped: stripped.length } }, null, 2)}\n`);
 const s = loadState(statePath);
 const t = arr(s.tasks).find(x => x.id === taskId);
-if (t) { t.review = { date: today(), head: rs.head, diff_sha256: rs.diff_sha256, verdict, report: join(dir, 'review.md') }; saveState(statePath, s); }
+if (t) { t.review = { date: today(), head: rs.head, diff_sha256: rs.diff_sha256, verdict, report: join(dir, 'review.md') }; saveState(statePath, s); logEvent(statePath, taskId, 'revue_agents', { verdict, blocking: blocking.length }); }
 console.log(`Revue ${taskId} : ${verdict} — ${merged.length} constat(s) retenu(s) dont ${blocking.length} bloquant(s), ${refuted.length} réfuté(s), ${unverified.length} non vérifié(s), ${rejected.length} rejeté(s) pour forme, ${stripped.length} mention(s) de confiance retirée(s).`);
 if (verdict !== 'prête pour la relecture humaine') process.exitCode = 1;

@@ -52,3 +52,14 @@ export function understandingDigest(u = {}) {
   return createHash('sha256').update(JSON.stringify(pick)).digest('hex');
 }
 export const understandingValid = u => !!u?.approved_by && !!u?.approved_digest && u.approved_digest === understandingDigest(u);
+
+// Journal horodaté d'une tâche, versionné dans l'état d'implémentation (le dossier .impl/ est local et ignoré par Git).
+// Il sert aux mesures du réel : durées, attente humaine, allers-retours (plan-builder/scripts/measure.mjs).
+export function logEvent(statePath, taskId, event, data = {}) {
+  if (!statePath || !existsSync(statePath)) return;
+  const s = loadState(statePath);
+  const t = arr(s.tasks).find(x => x.id === taskId);
+  if (!t) return;
+  t.timeline = [...arr(t.timeline), { at: new Date().toISOString(), event, ...data }];
+  saveState(statePath, s);
+}

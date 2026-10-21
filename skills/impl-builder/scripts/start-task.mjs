@@ -3,7 +3,7 @@
 // Usage : node start-task.mjs <impl/<slug>/state.yaml> --task TK-xxx
 import { existsSync } from 'node:fs';
 import { arr, loadState, fail, verifyHandoff } from './lib/common.mjs';
-import { loadConfig, readCurrent, writeCurrent, saveState, taskContext } from './lib/impl.mjs';
+import { loadConfig, readCurrent, writeCurrent, saveState, taskContext, logEvent } from './lib/impl.mjs';
 
 const args = process.argv.slice(2);
 const statePath = args.find(a => !a.startsWith('--') && args[args.indexOf(a) - 1] !== '--task');
@@ -49,6 +49,7 @@ s.tasks = arr(s.tasks);
 let t = s.tasks.find(x => x.id === taskId);
 if (!t) { t = { id: taskId, status: 'comprendre', context: ctx.contextFile, understanding: { restatement: '', questions: [], assumptions: [], test_plan: [], approved_by: '', date: '' } }; s.tasks.push(t); }
 saveState(statePath, s);
+if (!arr(t.timeline).some(e => e.event === 'prise')) logEvent(statePath, taskId, 'prise', { size: ctx.task.size ?? '' });
 writeCurrent({
   task: taskId, state: statePath, story: ctx.story?.id ?? '', kind: ctx.task.kind, phase: t.understanding?.approved_by ? 'vert' : 'comprendre',
   allowed_paths: ctx.elements.flatMap(e => arr(cfg.elements?.[e])), contracts_allowed: ctx.operations.length > 0,

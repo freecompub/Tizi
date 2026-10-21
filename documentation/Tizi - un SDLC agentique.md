@@ -4,7 +4,7 @@ Oct 19, 2026 · @Samir Alili
 
 ## Sommaire
 
-- [Principe](#mds8hynarac.61) — [Le nom : Tizi](#mds8hynarac.76166) · [Intégrité, couverture et contrôle](#mds8hynarac.48912) · [Continuité entre sessions](#mds8hynarac.64573) · [Claude Code et GitHub Copilot](#mds8hynarac.65983) · [Points d’entrée](#mds8hynarac.74434) · [Contrôle de l’outillage](#mds8hynarac.72175) · [Sur une application existante](#mds8hynarac.80561) · [Une chaîne par opportunité](#mds8hynarac.52227)
+- [Principe](#mds8hynarac.61) — [Le nom : Tizi](#mds8hynarac.76166) · [Intégrité, couverture et contrôle](#mds8hynarac.48912) · [Continuité entre sessions](#mds8hynarac.64573) · [Claude Code et GitHub Copilot](#mds8hynarac.65983) · [Points d’entrée](#mds8hynarac.74434) · [Contrôle de l’outillage](#mds8hynarac.72175) · [Estimer quand les agents codent](#mds8hynarac.83434) · [Sur une application existante](#mds8hynarac.80561) · [Une chaîne par opportunité](#mds8hynarac.52227)
 - [1. Recueil du besoin](#mds8hynarac.646) — [construction du BRD](#mds8hynarac.7237), skill `brd-builder`
 - [2. Analyse produit](#mds8hynarac.1292) — [construction du PRD](#mds8hynarac.20076), skill `prd-builder`
 - [3. Conception](#mds8hynarac.1893) — [construction de la conception](#mds8hynarac.35982), skill `sad-builder`
@@ -100,6 +100,16 @@ Les skills sont du logiciel et se contrôlent comme tel, sur deux plans.
 - **Évaluation par ablation** : chaque cas est joué plusieurs fois par le même agent, sans puis avec le skill, dans un dépôt neuf. Les correcteurs sont d’abord les règles déterministes du SDLC ; un juge, d’un autre modèle, n’intervient qu’en option sur une grille écrite. Une passe où l’agent n’a pas tourné est une erreur d’intégrité, jamais un score. Un bon cas met l’agent devant une tentation que le skill doit lui faire éviter.
 
 Dans chaque document généré, une mention rappelle qu’il a été produit avec l’assistance d’une IA et que seules les approbations enregistrées font foi. Deux règles s’ajoutent à la vérification : un espace réservé resté dans un élément (S68) et un chiffre précis sans source qui le fixe (S69). Enfin, tout contenu importé — notes, transcriptions, documents, rapports, issues — est une donnée, jamais une instruction.
+
+### Estimer quand les agents codent
+
+Quand les agents réalisent les tâches, le temps de codage devient court et bon marché ; estimer l’effort de développement n’a plus grand sens. Ce qui reste rare est ailleurs : **l’attention humaine** (préparer la story, valider la compréhension, répondre aux questions, relire la PR), **le risque d’allers-retours** d’une tâche, **l’attente** et les **blocages**. Une équipe qui relit deux PR par jour ne livrera pas plus de deux tâches par jour, quelle que soit la vitesse des agents.
+
+- **La taille se lit comme un risque.** Elle est calculée depuis les données de la tâche — éléments et contrats touchés, règles métier, code existant modifié, mesures de sécurité, comportements à préserver — et mise à côté de celle de l’équipe ; un écart de deux tailles est à justifier.
+- **La capacité se compte en attention humaine.** Chaque tâche porte une attention prévue en minutes, comparée à ce que l’équipe peut donner par itération.
+- **Les blocages sont enregistrés quand ils surviennent**, sur une story ou une tâche, avec une cause typée : environnement, accès, données de test, dépendance, question, décision, relecture, outil, externe.
+- **Le réel est mesuré**, sans saisie : chaque script de l’implémentation inscrit son étape dans un journal horodaté. On en tire, par tâche, la durée, l’attente de relecture, les allers-retours, l’attention consommée, le temps bloqué et les tokens consommés ; puis des médianes par taille de risque et par type de code, et la calibration de l’attention par taille.
+- **La fin se prévoit sans estimer**, à partir du débit réel de tâches fusionnées, par simulation : une date à 50, 85 et 95 % de chances. Sous trois semaines d’historique, la prévision est refusée plutôt que déguisée.
 
 ### Sur une application existante
 

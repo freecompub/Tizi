@@ -390,7 +390,7 @@ export function checkSad(s) {
 // ── Planification ───────────────────────────────────────────────────────────
 // `refs` = contenu de refs.yaml (handoffs du PRD et de la conception), généré par ingest-handoffs.mjs.
 
-const SIZE_ORDER = ['S', 'M', 'L', 'XL'];
+export const SIZE_ORDER = ['S', 'M', 'L', 'XL'];
 
 // Préparation d'une story (Definition of Ready calculée). Utilisée par lint.mjs et render-plan.mjs.
 export function storyReadiness(s, story, refs = {}) {
@@ -435,6 +435,35 @@ export function taskCycles(tasks) {
   };
   for (const t of tasks) visit(t.id, []);
   return cycles;
+}
+
+// ── Taille de risque, calculée (quand l'IA réalise les tâches, la taille mesure le risque, pas l'effort de codage) ──
+// Facteurs tirés des données de la tâche : chacun augmente la probabilité d'allers-retours, donc l'attention humaine.
+export function riskSize(task, plan = {}, refs = {}) {
+  const story = arr(plan.stories).find(x => x.id === task.story);
+  const existing = arr(refs.sad?.work_items).filter(w => arr(task.elements).includes(w.id) && w.lifecycle === 'existant_modifié').length;
+  const factors = [
+    ['éléments touchés', Math.max(0, arr(task.elements).length - 1)],
+    ['opérations de contrat', 2 * arr(task.operations).length],
+    ['règles métier de la story', Math.floor(arr(story?.example_map?.rules).length / 2)],
+    ['nombreux exemples', arr(plan.examples).filter(e => e.story === story?.id).length > 6 ? 1 : 0],
+    ['code existant modifié', existing ? 2 : 0],
+    ['mesures de sécurité', arr(task.threats).length ? 1 : 0],
+    ['comportements à préserver', Math.min(2, arr(task.preserves).length)],
+    ['incertitude (spike)', task.kind === 'spike' ? 2 : 0],
+  ].filter(([, v]) => v > 0);
+  const score = factors.reduce((n, [, v]) => n + v, 0);
+  return { size: score <= 1 ? 'S' : score <= 3 ? 'M' : score <= 5 ? 'L' : 'XL', score, factors };
+}
+// Attention humaine prévue pour une tâche réalisée par un agent, en minutes : validation de la compréhension,
+// réponses aux questions, revue de la PR et ses retours. Calibrée par settings.attention_by_size (mesures réelles).
+export const ATTENTION_DEFAULTS = { validation: 15, question: 10, revue: 30, by_size: { S: { questions: 0, corrections: 0 }, M: { questions: 1, corrections: 0.5 }, L: { questions: 2, corrections: 1 }, XL: { questions: 3, corrections: 2 } } };
+export function plannedAttention(task, settings = {}, risk) {
+  const size = task.size || risk?.size || 'M';
+  if (settings.attention_by_size?.[size]) return settings.attention_by_size[size];
+  const a = { ...ATTENTION_DEFAULTS, ...(settings.attention ?? {}) };
+  const k = ATTENTION_DEFAULTS.by_size[size] ?? ATTENTION_DEFAULTS.by_size.M;
+  return Math.round(a.validation + k.questions * a.question + a.revue * (1 + k.corrections));
 }
 
 // Chiffres d'une itération : vélocité, reste, part des agents, charge de relecture humaine.
@@ -568,6 +597,15 @@ export function checkPlan(s, refs = {}) {
     if (!sameWindow(a, b) || reachable(a.id).has(b.id) || reachable(b.id).has(a.id)) continue;
     const shared = [...arr(a.elements).filter(e => arr(b.elements).includes(e)), ...arr(a.operations).filter(o => arr(b.operations).includes(o))];
     if (shared.length) out.push({ rule: 'S72', id: `${a.id},${b.id}`, message: `collision possible : ${a.id} et ${b.id} touchent ${shared.join(', ')} sans dépendance entre elles ; les ordonner (depends_on) ou les fusionner` });
+  }
+  // Taille de l'équipe et taille de risque calculée (S74) ; attention humaine prévue et capacité (S75).
+  for (const t of tasks.filter(x => !['terminé', 'abandonné'].includes(x.status) && x.size)) {
+    const r = riskSize(t, s, refs);
+    if (Math.abs(SIZE_ORDER.indexOf(t.size) - SIZE_ORDER.indexOf(r.size)) >= 2) out.push({ rule: 'S74', id: t.id, message: `taille ${t.size} retenue, taille de risque calculée ${r.size} (${r.factors.map(([n, v]) => `${n} ${v}`).join(', ') || 'aucun facteur'}) : écart à justifier` });
+  }
+  if (settings.attention_capacity) for (const it of arr(s.iterations).filter(i => !['terminé'].includes(i.status))) {
+    const load = tasks.filter(t => t.iteration === it.id && t.status !== 'abandonné').reduce((n, t) => n + plannedAttention(t, settings, riskSize(t, s, refs)), 0);
+    if (load > settings.attention_capacity) out.push({ rule: 'S75', id: it.id, message: `attention humaine prévue ${load} min pour ${settings.attention_capacity} min disponibles : la relecture limitera le débit, pas les agents` });
   }
   // Stratégie ouverture / milieu / fin (S61)
   const storyById = new Map(stories.map(x => [x.id, x]));
@@ -744,5 +782,5 @@ export const STRUCT_RULES = {
   S56: 'opportunité non décidée', S57: 'hypothèse risquée non testée', S58: 'itération sans revue', S59: 'release sans mesure des outcomes',
   S60: 'voie rapide non conforme', S61: 'ordre ouverture, milieu, fin', S62: 'story sans titre court',
   S63: 'exigence à source unique', S64: 'exigence sans source', S65: 'porte de synthèse', S66: 'exigence de transition incomplète', S67: 'exploration de concepts',
-  S68: 'espace réservé resté', S69: 'chiffre sans source', S70: 'fiche de contexte trop longue', S71: 'ADR sans règle', S72: 'collision entre tâches', S73: 'comportement existant à préserver',
+  S68: 'espace réservé resté', S69: 'chiffre sans source', S70: 'fiche de contexte trop longue', S71: 'ADR sans règle', S72: 'collision entre tâches', S73: 'comportement existant à préserver', S74: 'taille et risque calculé', S75: 'attention humaine dépassée',
 };

@@ -24,4 +24,6 @@ La porte génère `impl/<slug>/pr/TK-xxx.md` : la tâche, la story et son pourqu
 
 ## La revue
 
-La revue d'une PR d'agent est **toujours humaine**. Le relecteur suit la checklist et décide. Quand l'utilisateur déclare l'approbation, renseigne `pr.approved_by` et la date, et passe la tâche en `en_revue`, puis en `fusionnee` une fois fusionnée. Les retours de revue qui demandent du code repassent par le cycle rouge–vert, sur la même tâche.
+La revue d'une PR d'agent est **toujours humaine**. Le relecteur suit la checklist et décide. Enregistre sa décision quand l'utilisateur la déclare, avec `node <chemin-du-skill>/scripts/record-pr.mjs impl/<slug>/state.yaml --task TK-xxx` et `--approuvee --par "<nom>"`, `--corrections --par "<nom>"` ou, une fois fusionnée, `--fusionnee`. L'heure de chaque décision sert à mesurer l'attente de relecture et les allers-retours. Les retours qui demandent du code repassent par le cycle rouge–vert, sur la même tâche.
+
+Si la tâche ne peut pas avancer pour une raison extérieure (environnement, accès, données, réponse attendue), enregistre un blocage avec `block.mjs` au moment où il survient, et lève-le quand il cesse.
