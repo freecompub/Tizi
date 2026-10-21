@@ -1,0 +1,13 @@
+# Index des sessions — mis à jour par session-capture.mjs.
+sessions:
+  - session: 5be1c0de
+    started: '2026-10-28T08:00:05.000Z'
+    ended: '2026-10-28T08:00:09.000Z'
+    initiatives:
+      - plan/demo
+    user_messages: 1
+    transcript: .tizi/sessions/2026-10-28-5be1c0de.jsonl
+    extract: .tizi/sessions/2026-10-28-5be1c0de.extrait.md
+    condensed: ''
+    last_event: SessionEnd
+    tool: copilot

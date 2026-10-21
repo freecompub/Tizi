@@ -1,0 +1,14 @@
+# Correspondance identifiants du plan ↔ outils de suivi — mise à jour par backlog-executor uniquement.
+github:
+  US-001: 10
+  US-002: 11
+  TK-001: 1
+  TK-002: 12
+  TK-003: 13
+  TK-004: 14
+jira:
+  ACT-01: DOS-1
+  US-001: DOS-2
+  US-002: DOS-3
+  TK-001: DOS-4
+  TK-002: DOS-5

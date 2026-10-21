@@ -1,0 +1,139 @@
+# Handoff PRD → conception et planification — généré, ne pas modifier.
+source:
+  initiative: Dossiers complets
+  prd_version: '1.0'
+  status: baseline
+  mode: chaîné
+  brd_version: '1.0'
+  generated: '2026-10-20'
+problem: ''
+vision: ''
+goals:
+  - id: GOAL-01
+    statement: Réduire les rejets
+    kpi: taux
+    target: 2 %
+personas:
+  - id: PER-01
+    name: Chloé
+    role: Agente
+journeys:
+  - id: PJ-01
+    persona: PER-01
+    goal: Transmettre un dossier
+    steps:
+      - Saisir
+      - Vérifier
+      - Transmettre
+story_map:
+  - id: ACT-01
+    name: Transmettre
+    tasks:
+      - id: T-01
+        name: Vérifier le dossier
+        journey: PJ-01
+        release: REL-1
+      - id: T-02
+        name: Prévenir le partenaire
+        journey: PJ-01
+        release: REL-1
+releases:
+  - id: REL-1
+    name: MVP
+    functional_requirements:
+      - id: FR-001
+        priority: must
+        statement: >-
+          Si un agent transmet un dossier sans justificatif, le système doit refuser la transmission et stocker
+          l'événement en base de données.
+        actor: PER-01
+        brd_requirements:
+          - BR-001
+        journeys: []
+        business_rules:
+          - RG-001
+        acceptance:
+          - id: AC-001
+            scenario: Refus
+            kind: nominal
+            given: un dossier sans justificatif
+            when: l'agent transmet
+            then: la transmission est refusée
+      - id: FR-002
+        priority: should
+        statement: Quand un dossier est transmis, le système doit notifier le partenaire.
+        actor: PER-01
+        brd_requirements: []
+        journeys: []
+        business_rules: []
+        acceptance: []
+non_functional:
+  - id: NFR-001
+    category: performance
+    statement: Le contrôle doit être rapide.
+    applies_to: []
+    priority: must
+constraints: []
+design_decisions:
+  - id: DD-01
+    decision: Agent
+    rationale: proximité
+    decided_by: Alice
+business_rules:
+  - id: RG-001
+    statement: Un dossier ne doit pas être transmis sans justificatif de domicile.
+    kind: comportement
+    enforcement: stricte
+    automation: automatisée
+    owner: ''
+  - id: RG-003
+    statement: Le délai de relance est de 5 jours ouvrés.
+    kind: definition
+    enforcement: ''
+    automation: automatisée
+    owner: ''
+metrics: []
+open_hypotheses: []
+risks: []
+assumed_shadow_zones: []
+approval_reserves: []
+decision_rights:
+  - domain: priorites
+    decider: Alice
+glossary: []
+coverage:
+  - id: fr_ac
+    label: FR avec au moins un critère d'acceptation
+    covered: 1
+    total: 2
+    pct: 50
+    threshold: 100
+    met: false
+    waiver: null
+  - id: fr_goal
+    label: FR rattachées à un objectif produit
+    covered: 2
+    total: 2
+    pct: 100
+    threshold: 100
+    met: true
+    waiver: null
+  - id: must_error
+    label: FR Must avec un scénario d'erreur
+    covered: 0
+    total: 1
+    pct: 0
+    threshold: 100
+    met: false
+    waiver: null
+  - id: br_covered
+    label: Exigences du BRD couvertes par une FR ou une NFR
+    covered: 1
+    total: 1
+    pct: 100
+    threshold: 100
+    met: true
+    waiver: null
+integrity:
+  algorithm: sha256
+  source_state: 10da862781bfcb9645a180d80311e7c6904dcf222a9df85649c8e0b7dddec1bb

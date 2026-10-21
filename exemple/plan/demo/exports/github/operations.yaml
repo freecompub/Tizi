@@ -1,0 +1,1229 @@
+# Plan d'opérations github — généré par plan-operations.mjs. Ne pas modifier : toute modification invalide l'empreinte et l'approbation.
+kind: backlog-operations
+target: github
+destination: freecompub/demo
+plan:
+  slug: demo
+  version: '1.0'
+  status: baseline
+  state_sha256: 370a9a0c80b176b3f0c680e9b9b4e12266c5f36cb8ae688ee3ae4a7cf1240249
+snapshot:
+  offline: true
+sync_map_sha256: 8994272a75211befd3e8d5a252f603487828f2a62cd74f29d5fd5ee9214afb93
+generated: '2026-10-20'
+guards: []
+counts:
+  create: 6
+  update: 9
+  link: 0
+  create_label: 0
+  create_milestone: 1
+needs_review:
+  - EXE-001
+  - EXE-002
+  - EXE-003
+  - EXE-004
+  - EXE-005
+  - EXE-006
+  - EXE-007
+  - EXE-008
+  - EXE-009
+  - EXE-010
+  - EXE-011
+  - EXE-012
+  - EXE-013
+  - EXE-014
+  - EXE-015
+  - EXE-016
+operations:
+  - id: EXE-001
+    needs_review: non validé contre le tracker (--offline)
+    action: create_milestone
+    key: REL-1 MVP
+    fields:
+      title: REL-1 MVP
+  - id: EXE-002
+    needs_review: non validé contre le tracker (--offline)
+    action: update
+    key: US-001
+    kind: story
+    remote: 10
+    changes:
+      - inconnu
+    fields:
+      title: >-
+        [US-001] En tant qu'agente, je veux être bloquée si le justificatif manque, afin de ne pas transmettre un
+        dossier incomplet
+      body: >
+        # US-001 — En tant qu'agente, je veux être bloquée si le justificatif manque, afin de ne pas transmettre un
+        dossier incomplet
+
+
+        > Fiche générée à partir de `state.yaml` le 2026-10-20.
+
+
+        **Qui** : Chloé · **Quoi** : — · **Pourquoi** : —
+
+
+        **Voie** : standard · **Tâche de la story map** : T-01 · **Release** : REL-1 · **Taille** : M · **Temps** :
+        ouverture · **Walking skeleton**
+
+
+        **Démonstration en revue** : Transmettre un dossier sans justificatif devant l'équipe métier
+
+
+        **Préparation** : prête
+
+
+        ## Exigences
+
+
+        - FR-001 — Si un agent transmet un dossier sans justificatif, le système doit refuser la transmission et stocker
+        l'événement en base de données.
+
+
+        ## Example mapping
+
+
+        Séance : 2026-10-21, avec Chloé, Dev, QA
+
+
+        ### Règle : RG-001 — Un dossier ne doit pas être transmis sans justificatif de domicile.
+
+
+        ```gherkin
+
+        Scénario: EX-001 — Sans justificatif
+          Étant donné un dossier sans justificatif de domicile
+          Quand l'agente transmet
+          Alors la transmission est refusée avec le motif
+
+        Scénario: EX-002 — Avec justificatif
+          Étant donné un dossier complet
+          Quand l'agente transmet
+          Alors le dossier est transmis
+        ```
+
+
+        ## Questions
+
+
+        _Aucun élément._
+
+
+        ## Tâches
+
+
+        - TK-002 (M, agent) — Contrôle de complétude du dossier
+
+        - TK-003 (M, humain) — Sessions courtes et MFA
+
+
+        ## Tâches
+
+
+        - [ ] TK-002 Contrôle de complétude du dossier (#12)
+
+        - [ ] TK-003 Sessions courtes et MFA (#13)
+      labels:
+        - story
+        - taille:M
+        - activite:ACT-01
+        - walking-skeleton
+      milestone: '{{milestone:REL-1 MVP}}'
+  - id: EXE-003
+    needs_review: non validé contre le tracker (--offline)
+    action: update
+    key: US-002
+    kind: story
+    remote: 11
+    changes:
+      - inconnu
+    fields:
+      title: '[US-002] En tant qu''agente, je veux que le partenaire soit prévenu, afin d''éviter les relances'
+      body: >
+        # US-002 — En tant qu'agente, je veux que le partenaire soit prévenu, afin d'éviter les relances
+
+
+        > Fiche générée à partir de `state.yaml` le 2026-10-20.
+
+
+        **Qui** : Chloé · **Quoi** : — · **Pourquoi** : —
+
+
+        **Voie** : standard · **Tâche de la story map** : T-02 · **Release** : REL-1 · **Taille** : M · **Temps** :
+        milieu
+
+
+        **Démonstration en revue** : —
+
+
+        **Préparation** : non prête — 1 règle(s) sans exemple ; 1 question(s) ouverte(s)
+
+
+        ## Exigences
+
+
+        - FR-002 — Quand un dossier est transmis, le système doit notifier le partenaire.
+
+
+        ## Example mapping
+
+
+        Séance : 2026-10-21, avec Chloé, Dev
+
+
+        ### Règle : FR-002 — Quand un dossier est transmis, le système doit notifier le partenaire.
+
+
+        ```gherkin
+
+        Scénario: EX-003 — Notification
+          Étant donné un dossier transmis
+          Quand —
+          Alors le partenaire reçoit un message
+        ```
+
+
+        ### Règle : Ne pas notifier le week-end *(sans référence amont)*
+
+
+        _Aucun exemple : la règle ne pourra pas être testée._
+
+
+        ## Questions
+
+
+        - ZO-001 (ouverte) — Que faire si le partenaire ne répond pas ? — à Chloé
+
+
+        ## Tâches
+
+
+        - TK-004 (XL, agent) — Notificateur
+
+
+        ## Tâches
+
+
+        - [ ] TK-004 Notificateur (#14)
+      labels:
+        - story
+        - taille:M
+        - activite:ACT-01
+      milestone: '{{milestone:REL-1 MVP}}'
+  - id: EXE-004
+    needs_review: non validé contre le tracker (--offline)
+    action: create
+    key: US-003
+    kind: story
+    fields:
+      title: '[US-003] Libellé d''erreur peu clair'
+      body: >
+        # US-003 — Libellé d'erreur peu clair
+
+
+        > Fiche générée à partir de `state.yaml` le 2026-10-20.
+
+
+        **Qui** : — · **Quoi** : — · **Pourquoi** : —
+
+
+        **Voie** : rapide — origine : retour_utilisateur (SRC-020) · **Tâche de la story map** : — · **Release** : REL-1
+        · **Taille** : S · **Temps** : —
+
+
+        **Démonstration en revue** : —
+
+
+        **Préparation** : prête
+
+
+        ## Exigences
+
+
+        _Aucun élément._
+
+
+        ## Example mapping
+
+
+        Séance : _pas encore faite_
+
+
+        ### Reproduction et résultat attendu
+
+
+        ```gherkin
+
+        Scénario: EX-004 — Message clair
+          Étant donné un dossier sans justificatif
+          Quand l'agente transmet
+          Alors le message nomme la pièce manquante
+        ```
+
+
+        ## Questions
+
+
+        _Aucun élément._
+
+
+        ## Tâches
+
+
+        - TK-005 (S, agent) — Reformuler le message
+
+
+        ## Tâches
+
+
+        - [x] TK-005 Reformuler le message (TK-005)
+      labels: &ref_0
+        - story
+        - taille:S
+      milestone: '{{milestone:REL-1 MVP}}'
+  - id: EXE-005
+    needs_review: non validé contre le tracker (--offline)
+    action: create
+    key: US-004
+    kind: story
+    fields:
+      title: '[US-004] Changer le format de l''événement'
+      body: >
+        # US-004 — Changer le format de l'événement
+
+
+        > Fiche générée à partir de `state.yaml` le 2026-10-20.
+
+
+        **Qui** : — · **Quoi** : — · **Pourquoi** : —
+
+
+        **Voie** : rapide — origine : observation (SRC-021) · **Tâche de la story map** : — · **Release** : REL-1 ·
+        **Taille** : L · **Temps** : —
+
+
+        **Démonstration en revue** : —
+
+
+        **Préparation** : non prête — aucun exemple (pour un défaut : la reproduction)
+
+
+        ## Exigences
+
+
+        _Aucun élément._
+
+
+        ## Example mapping
+
+
+        Séance : _pas encore faite_
+
+
+        ## Questions
+
+
+        _Aucun élément._
+
+
+        ## Tâches
+
+
+        - TK-006 (M, humain) — Changer le schéma de DossierTransmis
+
+
+        ## Tâches
+
+
+        - [ ] TK-006 Changer le schéma de DossierTransmis (TK-006)
+      labels: &ref_1
+        - story
+        - taille:L
+      milestone: '{{milestone:REL-1 MVP}}'
+  - id: EXE-006
+    needs_review: non validé contre le tracker (--offline)
+    action: create
+    key: US-005
+    kind: story
+    fields:
+      title: '[US-005] Journal des refus'
+      body: >
+        # US-005 — Journal des refus
+
+
+        > Fiche générée à partir de `state.yaml` le 2026-10-20.
+
+
+        **Qui** : Superviseur · **Quoi** : consulter les refus · **Pourquoi** : repérer les erreurs fréquentes
+
+
+        **Voie** : standard · **Tâche de la story map** : T-01 · **Release** : REL-1 · **Taille** : S · **Temps** :
+        ouverture
+
+
+        **Démonstration en revue** : —
+
+
+        **Préparation** : non prête — example mapping non fait ; aucune règle
+
+
+        ## Exigences
+
+
+        - FR-001 — Si un agent transmet un dossier sans justificatif, le système doit refuser la transmission et stocker
+        l'événement en base de données.
+
+
+        ## Example mapping
+
+
+        Séance : _pas encore faite_
+
+
+        ## Questions
+
+
+        _Aucun élément._
+
+
+        ## Tâches
+
+
+        - TK-007 (S, humain) — Journal des refus
+
+
+        ## Tâches
+
+
+        - [ ] TK-007 Journal des refus (TK-007)
+      labels: &ref_2
+        - story
+        - taille:S
+        - activite:ACT-01
+      milestone: '{{milestone:REL-1 MVP}}'
+  - id: EXE-007
+    needs_review: non validé contre le tracker (--offline)
+    action: create
+    key: TK-005
+    kind: task
+    fields:
+      title: '[TK-005] Reformuler le message'
+      body: >
+        Fait partie de US-003 ({{ref:US-003}}).
+
+
+        # TK-005 — Reformuler le message
+
+
+        > Fiche de contexte générée le 2026-10-20 à partir du plan v1.0, du PRD v1.0 et de la conception v1.0. Ce qui
+        n'est pas écrit ici n'est pas décidé : en cas de doute, s'arrêter et demander.
+
+
+        **Type** : dev · **Taille** : S · **Affectation** : agent · **Une PR** qui cite `TK-005`
+
+
+        ## Story
+
+
+        US-003 — Libellé d'erreur peu clair (prête)
+
+
+        Qui : — · Quoi : — · Pourquoi : —
+
+
+        **Voie rapide** — origine : retour_utilisateur (SRC-020). Corriger l'écart sans changer aucune règle métier,
+        aucun critère d'acceptation convenu ni aucun contrat : si c'est nécessaire, s'arrêter et demander.
+
+
+        ```gherkin
+
+        Scénario: EX-004 — Message clair
+          Étant donné un dossier sans justificatif
+          Quand l'agente transmet
+          Alors le message nomme la pièce manquante
+        ```
+
+
+        ## Exigences et critères d'acceptation
+
+
+        ## Éléments touchés
+
+
+        | ID | Élément | Type | Technologie | Cycle de vie | Équipe |
+
+        |---|---|---|---|---|---|
+
+        | CP-01 | Contrôle de complétude | component | — | nouveau | — |
+
+
+        ## Dépendances
+
+
+        _Aucun élément._
+
+
+        ## Definition of Done
+
+
+        - Code revu et fusionné
+
+        - Exemples automatisés
+      labels:
+        - tache
+        - taille:S
+        - agent
+        - iteration:IT-1
+      milestone: '{{milestone:REL-1 MVP}}'
+  - id: EXE-008
+    needs_review: non validé contre le tracker (--offline)
+    action: create
+    key: TK-006
+    kind: task
+    fields:
+      title: '[TK-006] Changer le schéma de DossierTransmis'
+      body: >
+        Fait partie de US-004 ({{ref:US-004}}).
+
+
+        # TK-006 — Changer le schéma de DossierTransmis
+
+
+        > Fiche de contexte générée le 2026-10-20 à partir du plan v1.0, du PRD v1.0 et de la conception v1.0. Ce qui
+        n'est pas écrit ici n'est pas décidé : en cas de doute, s'arrêter et demander.
+
+
+        **Type** : dev · **Taille** : M · **Affectation** : humain · **Une PR** qui cite `TK-006`
+
+
+        ## Story
+
+
+        US-004 — Changer le format de l'événement (non prête)
+
+
+        Qui : — · Quoi : — · Pourquoi : —
+
+
+        **Voie rapide** — origine : observation (SRC-021). Corriger l'écart sans changer aucune règle métier, aucun
+        critère d'acceptation convenu ni aucun contrat : si c'est nécessaire, s'arrêter et demander.
+
+
+        ## Exigences et critères d'acceptation
+
+
+        ## Éléments touchés
+
+
+        | ID | Élément | Type | Technologie | Cycle de vie | Équipe |
+
+        |---|---|---|---|---|---|
+
+        | CT-03 | Notificateur | container | Node.js | nouveau | Équipe web |
+
+
+        ## Contrats
+
+
+        | Opération | Interface | Type | Squelette |
+
+        |---|---|---|---|
+
+        | OP-003 DossierTransmis | Événements dossiers | asyncapi | contracts/API-02.asyncapi.yaml (conception) |
+
+
+        ## Décisions à respecter
+
+
+        | ADR | Décision | Option retenue | Comment c'est vérifié |
+
+        |---|---|---|---|
+
+        | ADR-001 | Notifier le partenaire par un worker asynchrone | Worker asynchrone | test de charge sur la
+        transmission |
+
+
+        ## Dépendances
+
+
+        _Aucun élément._
+
+
+        ## Definition of Done
+
+
+        - Code revu et fusionné
+
+        - Exemples automatisés
+      labels:
+        - tache
+        - taille:M
+        - humain
+      milestone: '{{milestone:REL-1 MVP}}'
+  - id: EXE-009
+    needs_review: non validé contre le tracker (--offline)
+    action: create
+    key: TK-007
+    kind: task
+    fields:
+      title: '[TK-007] Journal des refus'
+      body: >
+        Fait partie de US-005 ({{ref:US-005}}).
+
+
+        # TK-007 — Journal des refus
+
+
+        > Fiche de contexte générée le 2026-10-20 à partir du plan v1.0, du PRD v1.0 et de la conception v1.0. Ce qui
+        n'est pas écrit ici n'est pas décidé : en cas de doute, s'arrêter et demander.
+
+
+        **Type** : dev · **Taille** : S · **Affectation** : humain · **Une PR** qui cite `TK-007`
+
+
+        ## Story
+
+
+        US-005 — Journal des refus (non prête)
+
+
+        Qui : Superviseur · Quoi : consulter les refus · Pourquoi : repérer les erreurs fréquentes
+
+
+        ## Exigences et critères d'acceptation
+
+
+        ### FR-001 — Must
+
+
+        Si un agent transmet un dossier sans justificatif, le système doit refuser la transmission et stocker
+        l'événement en base de données.
+
+
+        ```gherkin
+
+        Scénario: AC-001 — Refus
+          Étant donné un dossier sans justificatif
+          Quand l'agent transmet
+          Alors la transmission est refusée
+        ```
+
+
+        ## Éléments touchés
+
+
+        | ID | Élément | Type | Technologie | Cycle de vie | Équipe |
+
+        |---|---|---|---|---|---|
+
+        | CP-01 | Contrôle de complétude | component | — | nouveau | — |
+
+
+        ## Dépendances
+
+
+        _Aucun élément._
+
+
+        ## Definition of Done
+
+
+        - Code revu et fusionné
+
+        - Exemples automatisés
+      labels:
+        - tache
+        - taille:S
+        - humain
+        - iteration:IT-2
+      milestone: '{{milestone:REL-1 MVP}}'
+  - id: EXE-010
+    needs_review: non validé contre le tracker (--offline)
+    action: update
+    key: TK-001
+    kind: spike
+    remote: 1
+    changes:
+      - inconnu
+    fields:
+      title: '[TK-001] Vérifier que le partenaire accepte un webhook'
+      body: >
+        # TK-001 — Vérifier que le partenaire accepte un webhook
+
+
+        > Fiche de contexte générée le 2026-10-20 à partir du plan v1.0, du PRD v1.0 et de la conception v1.0. Ce qui
+        n'est pas écrit ici n'est pas décidé : en cas de doute, s'arrêter et demander.
+
+
+        **Type** : spike · **Taille** : S · **Affectation** : humain · **Une PR** qui cite `TK-001`
+
+
+        ## Hypothèse à vérifier
+
+
+        H-001 — Le partenaire accepte un webhook
+
+
+        Démarche prévue : appel de test
+
+
+        Un spike produit une **réponse** (confirmée, infirmée, avec mesures), pas du code de production. La durée est
+        bornée par la taille.
+
+
+        ## Dépendances
+
+
+        _Aucun élément._
+
+
+        ## Definition of Done
+
+
+        - Code revu et fusionné
+
+        - Exemples automatisés
+      labels:
+        - spike
+        - taille:S
+        - humain
+        - iteration:IT-1
+      milestone: '{{milestone:REL-1 MVP}}'
+  - id: EXE-011
+    needs_review: non validé contre le tracker (--offline)
+    action: update
+    key: TK-002
+    kind: task
+    remote: 12
+    changes:
+      - inconnu
+    fields:
+      title: '[TK-002] Contrôle de complétude du dossier'
+      body: >
+        Fait partie de US-001 (#10).
+
+
+        # TK-002 — Contrôle de complétude du dossier
+
+
+        > Fiche de contexte générée le 2026-10-20 à partir du plan v1.0, du PRD v1.0 et de la conception v1.0. Ce qui
+        n'est pas écrit ici n'est pas décidé : en cas de doute, s'arrêter et demander.
+
+
+        **Type** : dev · **Taille** : M · **Affectation** : agent · **Une PR** qui cite `TK-002`
+
+
+        ## Story
+
+
+        US-001 — En tant qu'agente, je veux être bloquée si le justificatif manque, afin de ne pas transmettre un
+        dossier incomplet (prête)
+
+
+        Qui : — · Quoi : — · Pourquoi : —
+
+
+        ## Exigences et critères d'acceptation
+
+
+        ### FR-001 — Must
+
+
+        Si un agent transmet un dossier sans justificatif, le système doit refuser la transmission et stocker
+        l'événement en base de données.
+
+
+        ```gherkin
+
+        Scénario: AC-001 — Refus
+          Étant donné un dossier sans justificatif
+          Quand l'agent transmet
+          Alors la transmission est refusée
+        ```
+
+
+        ## Règles et exemples de la story
+
+
+        **RG-001 — Un dossier ne doit pas être transmis sans justificatif de domicile.**
+
+
+        ```gherkin
+
+        Scénario: EX-001 — Sans justificatif
+          Étant donné un dossier sans justificatif de domicile
+          Quand l'agente transmet
+          Alors la transmission est refusée avec le motif
+
+        Scénario: EX-002 — Avec justificatif
+          Étant donné un dossier complet
+          Quand l'agente transmet
+          Alors le dossier est transmis
+        ```
+
+
+        ## Éléments touchés
+
+
+        | ID | Élément | Type | Technologie | Cycle de vie | Équipe |
+
+        |---|---|---|---|---|---|
+
+        | CP-01 | Contrôle de complétude | component | — | nouveau | — |
+
+
+        ## Contrats
+
+
+        | Opération | Interface | Type | Squelette |
+
+        |---|---|---|---|
+
+        | OP-001 POST /dossiers/{id}/transmission | API dossiers | openapi | contracts/API-01.openapi.yaml (conception)
+        |
+
+
+        ## Vérifications à mettre en place
+
+
+        | Réponse | NFR | Méthode | Ce qui est vérifié |
+
+        |---|---|---|---|
+
+        | NR-01 | NFR-001 | test_charge | p95 transmission |
+
+
+        ## Dépendances
+
+
+        _Aucun élément._
+
+
+        ## Definition of Done
+
+
+        - Code revu et fusionné
+
+        - Exemples automatisés
+      labels:
+        - tache
+        - taille:M
+        - agent
+        - iteration:IT-1
+      milestone: '{{milestone:REL-1 MVP}}'
+  - id: EXE-012
+    needs_review: non validé contre le tracker (--offline)
+    action: update
+    key: TK-003
+    kind: task
+    remote: 13
+    changes:
+      - inconnu
+    fields:
+      title: '[TK-003] Sessions courtes et MFA'
+      body: >
+        Fait partie de US-001 (#10).
+
+
+        # TK-003 — Sessions courtes et MFA
+
+
+        > Fiche de contexte générée le 2026-10-20 à partir du plan v1.0, du PRD v1.0 et de la conception v1.0. Ce qui
+        n'est pas écrit ici n'est pas décidé : en cas de doute, s'arrêter et demander.
+
+
+        **Type** : securite · **Taille** : M · **Affectation** : humain · **Une PR** qui cite `TK-003`
+
+
+        ## Story
+
+
+        US-001 — En tant qu'agente, je veux être bloquée si le justificatif manque, afin de ne pas transmettre un
+        dossier incomplet (prête)
+
+
+        Qui : — · Quoi : — · Pourquoi : —
+
+
+        ## Exigences et critères d'acceptation
+
+
+        ### FR-001 — Must
+
+
+        Si un agent transmet un dossier sans justificatif, le système doit refuser la transmission et stocker
+        l'événement en base de données.
+
+
+        ```gherkin
+
+        Scénario: AC-001 — Refus
+          Étant donné un dossier sans justificatif
+          Quand l'agent transmet
+          Alors la transmission est refusée
+        ```
+
+
+        ## Règles et exemples de la story
+
+
+        **RG-001 — Un dossier ne doit pas être transmis sans justificatif de domicile.**
+
+
+        ```gherkin
+
+        Scénario: EX-001 — Sans justificatif
+          Étant donné un dossier sans justificatif de domicile
+          Quand l'agente transmet
+          Alors la transmission est refusée avec le motif
+
+        Scénario: EX-002 — Avec justificatif
+          Étant donné un dossier complet
+          Quand l'agente transmet
+          Alors le dossier est transmis
+        ```
+
+
+        ## Éléments touchés
+
+
+        | ID | Élément | Type | Technologie | Cycle de vie | Équipe |
+
+        |---|---|---|---|---|---|
+
+        | CP-02 | API dossiers | component | — | existant_modifié | — |
+
+
+        ## Mesures de sécurité à réaliser
+
+
+        | Menace | STRIDE | Mesures |
+
+        |---|---|---|
+
+        | TH-001 | S | sessions courtes ; MFA |
+
+
+        ## Dépendances
+
+
+        - TK-002 — Contrôle de complétude du dossier (validé)
+
+
+        ## Definition of Done
+
+
+        - Code revu et fusionné
+
+        - Exemples automatisés
+      labels:
+        - tache
+        - taille:M
+        - humain
+        - iteration:IT-1
+        - type:securite
+      milestone: '{{milestone:REL-1 MVP}}'
+  - id: EXE-013
+    needs_review: non validé contre le tracker (--offline)
+    action: update
+    key: TK-004
+    kind: task
+    remote: 14
+    changes:
+      - inconnu
+    fields:
+      title: '[TK-004] Notificateur'
+      body: >
+        Fait partie de US-002 (#11).
+
+
+        # TK-004 — Notificateur
+
+
+        > Fiche de contexte générée le 2026-10-20 à partir du plan v1.0, du PRD v1.0 et de la conception v1.0. Ce qui
+        n'est pas écrit ici n'est pas décidé : en cas de doute, s'arrêter et demander.
+
+
+        **Type** : dev · **Taille** : XL · **Affectation** : agent · **Une PR** qui cite `TK-004`
+
+
+        ## Story
+
+
+        US-002 — En tant qu'agente, je veux que le partenaire soit prévenu, afin d'éviter les relances (non prête)
+
+
+        Qui : — · Quoi : — · Pourquoi : —
+
+
+        ## Exigences et critères d'acceptation
+
+
+        ### FR-002 — Should
+
+
+        Quand un dossier est transmis, le système doit notifier le partenaire.
+
+
+        ## Règles et exemples de la story
+
+
+        **FR-002 — Quand un dossier est transmis, le système doit notifier le partenaire.**
+
+
+        ```gherkin
+
+        Scénario: EX-003 — Notification
+          Étant donné un dossier transmis
+          Quand —
+          Alors le partenaire reçoit un message
+        ```
+
+
+        **Ne pas notifier le week-end *(sans référence amont)***
+
+
+        ## Éléments touchés
+
+
+        | ID | Élément | Type | Technologie | Cycle de vie | Équipe |
+
+        |---|---|---|---|---|---|
+
+        | CT-03 | Notificateur | container | Node.js | nouveau | Équipe web |
+
+
+        ## Contrats
+
+
+        | Opération | Interface | Type | Squelette |
+
+        |---|---|---|---|
+
+        | OP-003 DossierTransmis | Événements dossiers | asyncapi | contracts/API-02.asyncapi.yaml (conception) |
+
+
+        ## Décisions à respecter
+
+
+        | ADR | Décision | Option retenue | Comment c'est vérifié |
+
+        |---|---|---|---|
+
+        | ADR-001 | Notifier le partenaire par un worker asynchrone | Worker asynchrone | test de charge sur la
+        transmission |
+
+
+        ## Dépendances
+
+
+        - TK-001 — Vérifier que le partenaire accepte un webhook (terminé)
+
+
+        ## Definition of Done
+
+
+        - Code revu et fusionné
+
+        - Exemples automatisés
+      labels:
+        - tache
+        - taille:XL
+        - agent
+        - iteration:IT-1
+      milestone: '{{milestone:REL-1 MVP}}'
+  - id: EXE-014
+    needs_review: non validé contre le tracker (--offline)
+    action: update
+    key: US-003
+    kind: story
+    remote: '{{ref:US-003}}'
+    changes:
+      - corps (numéros des tâches)
+    fields:
+      body: >
+        # US-003 — Libellé d'erreur peu clair
+
+
+        > Fiche générée à partir de `state.yaml` le 2026-10-20.
+
+
+        **Qui** : — · **Quoi** : — · **Pourquoi** : —
+
+
+        **Voie** : rapide — origine : retour_utilisateur (SRC-020) · **Tâche de la story map** : — · **Release** : REL-1
+        · **Taille** : S · **Temps** : —
+
+
+        **Démonstration en revue** : —
+
+
+        **Préparation** : prête
+
+
+        ## Exigences
+
+
+        _Aucun élément._
+
+
+        ## Example mapping
+
+
+        Séance : _pas encore faite_
+
+
+        ### Reproduction et résultat attendu
+
+
+        ```gherkin
+
+        Scénario: EX-004 — Message clair
+          Étant donné un dossier sans justificatif
+          Quand l'agente transmet
+          Alors le message nomme la pièce manquante
+        ```
+
+
+        ## Questions
+
+
+        _Aucun élément._
+
+
+        ## Tâches
+
+
+        - TK-005 (S, agent) — Reformuler le message
+
+
+        ## Tâches
+
+
+        - [x] TK-005 Reformuler le message ({{ref:TK-005}})
+      labels: *ref_0
+      milestone: '{{milestone:REL-1 MVP}}'
+  - id: EXE-015
+    needs_review: non validé contre le tracker (--offline)
+    action: update
+    key: US-004
+    kind: story
+    remote: '{{ref:US-004}}'
+    changes:
+      - corps (numéros des tâches)
+    fields:
+      body: >
+        # US-004 — Changer le format de l'événement
+
+
+        > Fiche générée à partir de `state.yaml` le 2026-10-20.
+
+
+        **Qui** : — · **Quoi** : — · **Pourquoi** : —
+
+
+        **Voie** : rapide — origine : observation (SRC-021) · **Tâche de la story map** : — · **Release** : REL-1 ·
+        **Taille** : L · **Temps** : —
+
+
+        **Démonstration en revue** : —
+
+
+        **Préparation** : non prête — aucun exemple (pour un défaut : la reproduction)
+
+
+        ## Exigences
+
+
+        _Aucun élément._
+
+
+        ## Example mapping
+
+
+        Séance : _pas encore faite_
+
+
+        ## Questions
+
+
+        _Aucun élément._
+
+
+        ## Tâches
+
+
+        - TK-006 (M, humain) — Changer le schéma de DossierTransmis
+
+
+        ## Tâches
+
+
+        - [ ] TK-006 Changer le schéma de DossierTransmis ({{ref:TK-006}})
+      labels: *ref_1
+      milestone: '{{milestone:REL-1 MVP}}'
+  - id: EXE-016
+    needs_review: non validé contre le tracker (--offline)
+    action: update
+    key: US-005
+    kind: story
+    remote: '{{ref:US-005}}'
+    changes:
+      - corps (numéros des tâches)
+    fields:
+      body: >
+        # US-005 — Journal des refus
+
+
+        > Fiche générée à partir de `state.yaml` le 2026-10-20.
+
+
+        **Qui** : Superviseur · **Quoi** : consulter les refus · **Pourquoi** : repérer les erreurs fréquentes
+
+
+        **Voie** : standard · **Tâche de la story map** : T-01 · **Release** : REL-1 · **Taille** : S · **Temps** :
+        ouverture
+
+
+        **Démonstration en revue** : —
+
+
+        **Préparation** : non prête — example mapping non fait ; aucune règle
+
+
+        ## Exigences
+
+
+        - FR-001 — Si un agent transmet un dossier sans justificatif, le système doit refuser la transmission et stocker
+        l'événement en base de données.
+
+
+        ## Example mapping
+
+
+        Séance : _pas encore faite_
+
+
+        ## Questions
+
+
+        _Aucun élément._
+
+
+        ## Tâches
+
+
+        - TK-007 (S, humain) — Journal des refus
+
+
+        ## Tâches
+
+
+        - [ ] TK-007 Journal des refus ({{ref:TK-007}})
+      labels: *ref_2
+      milestone: '{{milestone:REL-1 MVP}}'
+integrity:
+  algorithm: sha256
+  source_state: ''

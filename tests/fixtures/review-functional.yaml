@@ -1,0 +1,18 @@
+perspective: functional
+findings:
+  - id: F-01
+    severity: bloquant
+    location: "src/completude/index.js:2"
+    expected: "EX-001 : le motif de refus nomme la pièce manquante"
+    observed: "le motif renvoie un code technique"
+    evidence: ["src/completude/index.js:2", "EX-001"]
+    refs: [EX-001, AC-001]
+    smallest_fix: "renvoyer le libellé de la pièce"
+    confidence: 0.9
+  - id: F-02
+    severity: majeur
+    location: "src/completude/index.js:1"
+    expected: "RG-001 stricte"
+    observed: "dérogation possible"
+    evidence: ["src/completude/index.js:1"]
+    smallest_fix: "supprimer la dérogation"

@@ -1,0 +1,47 @@
+# État de la vérification d'une release — source de vérité de l'étape 6.
+document: test
+initiative: { name: "", slug: "" }
+source_plan:
+  path: ""                 # plan/<slug>/handoff/v<x.y>/handoff.yaml ; la version figée voisine donne stories, exemples et refs
+  version: ""
+  sha256: ""
+release: REL-1
+candidate: ""              # version candidate testée, par exemple 1.2.0-rc1 ou un commit
+
+settings:
+  thresholds: { mutation: 60, requirements: 100 }   # score de mutation global (%) ; part d'exigences prouvées (%)
+  critical_journeys: []    # parcours du PRD à couvrir de bout en bout : [PJ-01]
+  reports:                 # rapports collectés (artefacts de CI de la version candidate)
+    unit: reports/unit.xml
+    acceptance: reports/acceptance.json
+    contract: ""
+    integration: ""
+    e2e: ""
+    mutation: ""
+    security: ""           # SAST, DAST, audit des dépendances : rapport JUnit ou équivalent
+    accessibility: ""
+    browsers: ""           # par exemple les rapports de qa-domain-runner
+
+environments: []           # - { name: "", url: "", data: "" }
+
+nfr_results: []            # mesures des vérifications de NFR prévues à l'étape tests
+#  - { id: NR-01, nfr: NFR-001, measured: "p95 = 1,4 s", target: "p95 < 2 s", pass: true, evidence: reports/perf.html, date: "" }
+
+exploratory: []            # sessions de tests exploratoires (references/exploratory-testing.md)
+#  - id: XS-01
+#    charter: { explore: "", with: "", discover: "" }   # « explorer X avec Y pour découvrir Z »
+#    targets: []           # risques visés : TH-xxx, ZO-xxx, H-xxx, éléments nouveaux
+#    timebox_min: 60
+#    tester: ""
+#    status: prevue        # prevue | faite | abandonnee
+#    date: ""
+#    notes: ""
+#    findings: []          # - { severity: bloquant | majeur | mineur, text: "", story: "" }
+
+waivers: []                # exigences non prouvées acceptées pour cette release
+#  - { id: AC-004, reason: "", approved_by: "" }
+
+approvals: []              # - { who: "", decision: approuvé | refusé, date: "", reserves: [] } — déclaré par l'utilisateur
+
+session:                   # continuité entre sessions (references/sessions.md)
+  next_action: ""          # prochaine action notée avant une pause

@@ -1,0 +1,32 @@
+# État de l'implémentation — mis à jour par l'agent et par les scripts d'impl-builder.
+document: impl
+initiative:
+  name: Dossiers complets
+  slug: demo
+source_plan:
+  path: plan/demo/handoff/v1.0/handoff.yaml
+  version: '1.0'
+  sha256: 9f7d75b950a5916296fb27f655f38431d30579b0216abd62687ab39800eb2d95
+config: impl/config.yaml
+tasks:
+  - id: TK-002
+    status: verification
+    context: /home/claude/test/repo/plan/demo/versions/v1.0/tasks/TK-002.md
+    understanding:
+      restatement: ''
+      questions: []
+      assumptions: []
+      test_plan: []
+      approved_by: Samir
+      date: '2026-10-26'
+    gate:
+      date: '2026-10-21'
+      result: fermée
+      report: impl/demo/pr/TK-002.md
+    review:
+      date: '2026-10-21'
+      head: 3304482c4cee0cb545a4313b61191fa3fc688482
+      diff_sha256: 80b012ff311edf1b216d63e1e42fa8854f6818a8fa4837ecd7830c282f0ee2cc
+      verdict: prête pour la relecture humaine
+      report: impl/demo/review/TK-002/review.md
+shadow_zones: []

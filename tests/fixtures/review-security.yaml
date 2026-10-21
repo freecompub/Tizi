@@ -1,0 +1,15 @@
+perspective: security
+findings:
+  - id: F-01
+    severity: majeur
+    location: "src/completude/index.js:3"
+    expected: "TH-001 : jeton validé avant usage"
+    observed: "le jeton est extrait sans validation (confiance élevée)"
+    evidence: ["src/completude/index.js:3", "TH-001"]
+    smallest_fix: "valider la signature et l'expiration"
+  - id: F-02
+    severity: mineur
+    location: "src/completude/index.js:3"
+    expected: "nommage"
+    observed: "nom court"
+    smallest_fix: "renommer"

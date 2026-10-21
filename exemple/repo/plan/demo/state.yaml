@@ -1,0 +1,75 @@
+document: plan
+initiative: { name: Dossiers complets, slug: demo }
+phase: schedule
+settings:
+  cadence: sprint
+  release: REL-1
+  sizes: { S: 1, M: 2, L: 3, XL: 5 }
+  max_rules_per_story: 4
+  agent_max_size: M
+  sprint: { length_days: 10, capacity: 6 }
+  github: { repo: freecompub/demo }
+  jira: { project_key: DOS, epic_from: activity, issue_types: { epic: Epic, story: Story, subtask: Sub-task, task: Task } }
+definition_of_done: ["Code revu et fusionné", "Exemples automatisés"]
+stories:
+  - id: US-001
+    title: "En tant qu'agente, je veux être bloquée si le justificatif manque, afin de ne pas transmettre un dossier incomplet"
+    persona: PER-01
+    map_task: T-01
+    frs: [FR-001]
+    release: REL-1
+    skeleton: true
+    game: ouverture
+    demo: "Transmettre un dossier sans justificatif devant l'équipe métier"
+    size: M
+    example_map:
+      session: { date: "2026-10-21", participants: [Chloé, Dev, QA] }
+      rules:
+        - { ref: RG-001, examples: [EX-001, EX-002] }
+    status: validé
+  - id: US-002
+    title: "En tant qu'agente, je veux que le partenaire soit prévenu, afin d'éviter les relances"
+    persona: PER-01
+    map_task: T-02
+    frs: [FR-002]
+    release: REL-1
+    depends_on: [TK-001]
+    size: M
+    game: milieu
+    example_map:
+      session: { date: "2026-10-21", participants: [Chloé, Dev] }
+      rules:
+        - { ref: FR-002, examples: [EX-003] }
+        - { text: "Ne pas notifier le week-end", examples: [] }
+      questions: [ZO-001]
+    status: validé
+  - { id: US-003, title: "Libellé d'erreur peu clair", lane: rapide, origin: { type: retour_utilisateur, ref: "SRC-020" }, size: S, release: REL-1, status: validé }
+  - { id: US-004, title: "Changer le format de l'événement", lane: rapide, origin: { type: observation, ref: "SRC-021" }, size: L, release: REL-1, status: validé }
+  - { id: US-005, title: "Journal des refus", who: Superviseur, what: "consulter les refus", why: "repérer les erreurs fréquentes", map_task: T-01, frs: [FR-001], game: ouverture, size: S, release: REL-1, status: validé }
+examples:
+  - { id: EX-004, story: US-003, rule: "", title: "Message clair", given: "un dossier sans justificatif", when: "l'agente transmet", then: "le message nomme la pièce manquante", status: validé }
+  - { id: EX-001, story: US-001, rule: RG-001, title: Sans justificatif, given: "un dossier sans justificatif de domicile", when: "l'agente transmet", then: "la transmission est refusée avec le motif", ac: AC-001, status: validé }
+  - { id: EX-002, story: US-001, rule: RG-001, title: Avec justificatif, given: "un dossier complet", when: "l'agente transmet", then: "le dossier est transmis", status: validé }
+  - { id: EX-003, story: US-002, rule: FR-002, title: Notification, given: "un dossier transmis", then: "le partenaire reçoit un message", status: validé }
+tasks:
+  - { id: TK-005, kind: dev, title: "Reformuler le message", story: US-003, elements: [CP-01], size: S, assignee_type: agent, review_size: S, iteration: IT-1, status: terminé }
+  - { id: TK-006, kind: dev, title: "Changer le schéma de DossierTransmis", story: US-004, elements: [CT-03], operations: [OP-003], size: M, assignee_type: humain, status: validé }
+  - { id: TK-007, kind: dev, title: "Journal des refus", story: US-005, elements: [CP-01], size: S, assignee_type: humain, iteration: IT-2, status: validé }
+  - { id: TK-001, kind: spike, title: "Vérifier que le partenaire accepte un webhook", spike_of: H-001, size: S, assignee_type: humain, iteration: IT-1, status: terminé }
+  - { id: TK-002, kind: dev, title: "Contrôle de complétude du dossier", story: US-001, elements: [CP-01], operations: [OP-001], verifications: [NR-01], size: M, assignee_type: agent, iteration: IT-1, status: validé }
+  - { id: TK-003, kind: securite, title: "Sessions courtes et MFA", story: US-001, elements: [CP-02], threats: [TH-001], depends_on: [TK-002], size: M, assignee_type: humain, iteration: IT-1, status: validé }
+  - { id: TK-004, kind: dev, title: "Notificateur", story: US-002, elements: [CT-03], operations: [OP-003], depends_on: [TK-001], size: XL, assignee_type: agent, iteration: IT-1, status: validé }
+iterations:
+  - { id: IT-1, goal: "Bloquer les dossiers incomplets", start: "2026-10-26", end: "2026-11-06", capacity: 6, commitment: { declared_by: Alice, date: "2026-10-23" }, status: en_cours, review: { team: { date: "2026-11-06", grades: { experience: 3, fonctionnelle: 4, code: 4 }, process: { keep: ["ateliers de 20 min"], try: ["relire les PR d'agents le matin"] } } } }
+  - { id: IT-2, goal: "Journal", start: "2026-11-09", end: "2026-11-20", capacity: 6, status: proposé }
+release_tracking:
+  - { release: REL-1, status: livrée, readiness: [{ activity: ACT-01, grade: B, note: "message à affiner" }], measurement: [{ metric: MET-01, how: "taux de rejet dans l'outil partenaire", window: "4 semaines", owner: Alice }], observations: [{ date: "2026-11-20", what: "3 agentes observées, aucune transmission incomplète" }], outcome: partiel }
+shadow_zones:
+  - { id: ZO-001, type: question_story, question: "Que faire si le partenaire ne répond pas ?", story: US-002, ask_to: Chloé, blocking: true, status: ouverte }
+governance:
+  version: "1.0"
+  status: baseline
+  approvals: []
+  backlog_approvals:
+    - { target: jira, sha256: "d8da24ef585a75d2ddd20fb8d637b4effb75c6fb3ab5409d5d191fb251f9a1c2", autonomy: manuel, ops: [EXE-001, EXE-002, EXE-003, EXE-004, EXE-005], reviewed: [], declared_by: Alice, date: "2026-10-23" }
+    - { target: github, sha256: "8baa391ba638ff250c30be2604df39bcc9e1f45bceae376db1461d0f8e9c30ec", autonomy: partiel, reviewed: [EXE-013], declared_by: Alice, date: "2026-10-23" }

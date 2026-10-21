@@ -1,0 +1,4 @@
+verifications:
+  - { finding: F-01, perspective: functional, verdict: CONFIRMÉ, severity: bloquant, confirming: ["src/completude/index.js:2"], contradicting: [], rationale: "le motif est un code" }
+  - { finding: F-02, perspective: functional, verdict: RÉFUTÉ, severity: majeur, confirming: [], contradicting: ["test/acceptance/transmission.test.js:3"], rationale: "aucune dérogation : le test EX-001 couvre le refus" }
+  - { finding: F-01, perspective: security, verdict: RÉTROGRADÉ, severity: mineur, confirming: ["src/completude/index.js:3"], contradicting: ["middleware amont"], rationale: "validé en amont, reste un risque si appelé ailleurs" }

@@ -1,0 +1,167 @@
+# État de session d'une planification — source de vérité. plan.md, stories/, tasks/ et exports/ sont générés à partir de lui.
+# Les copies des handoffs amont sont dans refs.yaml (généré par ingest-handoffs.mjs, lecture seule).
+document: plan
+initiative:
+  name: ""
+  slug: ""
+phase: slice               # slice | refine | schedule | govern | review — refine, schedule et review se répètent à chaque cycle
+created: ""
+updated: ""
+
+sources_handoff:
+  prd: ""                  # prd/<slug>/handoff/v<x.y>/handoff.yaml
+  sad: ""                  # sad/<slug>/handoff/v<x.y>/handoff.yaml
+
+settings:
+  cadence: sprint          # sprint | flux — choisi par projet (references/cadence.md)
+  release: REL-1           # release visée par ce plan
+  sizes: { S: 1, M: 2, L: 3, XL: 5 }   # poids pour la capacité ; XL signale une tâche à découper
+  max_rules_per_story: 4   # au-delà, la story est probablement à scinder
+  agent_max_size: M        # taille maximale d'une tâche confiée à un agent
+  sprint: { length_days: 10, capacity: 0 }      # capacité en poids de taille, par itération
+  flow: { wip_limit: 0, replenish_batch: 0 }    # limite d'encours et taille d'un réapprovisionnement
+  github: { repo: "" }                           # owner/repo ; découverte avec GITHUB_READ_TOKEN (lecture seule)
+  jira:
+    project_key: ""
+    epic_from: activity    # activity (une epic par activité de la story map) | release
+    use_fix_versions: false   # true seulement si les versions existent déjà dans le projet Jira
+    issue_types: { epic: Epic, story: Story, subtask: Sub-task, task: Task }   # noms des types dans votre projet
+
+definition_of_ready:       # complète les critères calculés de references/example-mapping.md
+  - "La story est rattachée à une tâche de la story map et à au moins une FR."
+  - "L'example mapping a eu lieu avec le métier, le développement et le test."
+  - "Chaque règle a au moins un exemple ; aucune question n'est ouverte."
+  - "Les spikes dont elle dépend sont terminés."
+definition_of_done:
+  - "Le code est revu et fusionné par une PR qui cite la tâche."
+  - "Les exemples de la story passent en test automatisé."
+  - "Les vérifications de NFR prévues à l'étape « tests » pour les éléments touchés passent."
+  - "Les ADR concernés sont respectés (moyen de confirmation appliqué)."
+  - "La documentation touchée est à jour ; le changement est déployable."
+
+stories: []
+#  - id: US-001
+#    title: ""             # titre court, qu'on peut dire dans une conversation (le modèle « En tant que… » est facultatif)
+#    who: ""               # qui : persona, rôle, ou autre partie prenante
+#    what: ""              # quoi : ce qu'il veut faire
+#    why: ""               # pourquoi : le bénéfice, en couches si besoin
+#    persona: PER-01
+#    lane: standard        # standard | rapide (references/fast-lane.md)
+#    origin: { type: "", ref: "" }   # voie rapide : defaut | retour_utilisateur | observation | metrique ; ref = source
+#    map_task: T-03        # tâche de la story map du PRD (vide en voie rapide)
+#    frs: [FR-001]         # vide en voie rapide
+#    game: ouverture       # ouverture | milieu | fin (references/development-strategy.md)
+#    level: ""             # bon | mieux | meilleur, si la story vient d'un amincissement
+#    demo: ""              # comment on la démontrera en revue
+#    release: REL-1
+#    skeleton: false       # fait partie du walking skeleton
+#    depends_on: []        # US-xxx ou TK-xxx (spikes)
+#    size: M               # S | M | L | XL
+#    example_map:
+#      session: { date: "", participants: [] }   # au moins le métier, le développement et le test
+#      rules:
+#        - { ref: RG-001, text: "", examples: [EX-001, EX-002] }   # ref : RG, FR ou AC amont ; jamais une règle inventée ici
+#      questions: [ZO-001] # cartes rouges
+#    split_from: ""        # US-xxx d'origine si la story vient d'un découpage
+#    status: proposé       # proposé | validé | abandonné | terminé
+#    reason: ""
+#    lint_waivers: []
+
+examples: []
+#  - id: EX-001
+#    story: US-001
+#    rule: RG-001
+#    title: ""
+#    given: ""
+#    when: ""
+#    then: ""
+#    ac: AC-001            # critère du PRD qu'il illustre ; vide si l'exemple ne fait que préciser
+#    status: proposé
+
+tasks: []
+#  - id: TK-001
+#    kind: dev             # dev | spike | securite | verification | migration | transition | doc
+#    transition: []        # TR-xx réalisées par la tâche (formation, conduite du changement, reprise de données…)
+#    title: ""
+#    story: US-001         # vide pour un spike
+#    spike_of: ""          # H-xxx de la conception
+#    elements: [CP-01]     # éléments C4 touchés
+#    operations: [OP-001]  # opérations de contrat touchées
+#    threats: []           # TH-xxx dont la tâche réalise une mesure
+#    verifications: []     # NR-xx à mettre en place ou à faire passer
+#    depends_on: []        # TK-xxx
+#    size: S               # S | M | L | XL
+#    assignee_type: agent  # agent | humain
+#    assignee: ""
+#    review_size: S        # tâche d'agent : charge de relecture humaine (S | M | L), comptée dans la capacité humaine
+#    iteration: IT-1       # sprint : itération ; flux : vide
+#    order: 0              # flux : rang dans la file « prêt »
+#    status: proposé       # proposé | validé | en_cours | terminé | abandonné
+#    reason: ""
+#    lint_waivers: []
+
+iterations: []             # cadence sprint
+#  - id: IT-1
+#    goal: ""
+#    start: ""
+#    end: ""
+#    capacity: 0
+#    commitment: { declared_by: "", date: "" }
+#    status: proposé       # proposé | validé | en_cours | terminé
+#    review:               # phase Review (references/phase-review.md), sur déclaration de l'équipe
+#      team:
+#        date: ""
+#        grades: { experience: 0, fonctionnelle: 0, code: 0 }   # 1 à 5, données par l'équipe
+#        findings: []      # constats ; chacun donne une story
+#        discovery: ""     # travail de découverte du cycle et ce qu'on en a appris
+#        process: { keep: [], drop: [], try: [] }
+#      stakeholders:
+#        date: ""
+#        feedback: []
+#        new_items: []     # stories ou opportunités issues de la revue
+replenishments: []         # cadence flux
+#  - { id: RP-1, date: "", tasks: [TK-001], commitment: { declared_by: "", date: "" }, status: proposé }
+
+release_tracking: []       # maturité et outcomes par release
+#  - release: REL-1
+#    status: en_cours      # en_cours | livrée
+#    target_date: ""
+#    readiness:            # bulletin par activité de la story map
+#      - { activity: ACT-01, grade: B, note: "", date: "" }   # A | B | C | D | F
+#    measurement:          # décidé AVANT la livraison
+#      - { metric: MET-01, how: "", window: "", owner: "" }
+#    observations:         # après la livraison : utilisateurs observés, analytiques
+#      - { date: "", what: "", source: "" }
+#    outcome: a_mesurer    # a_mesurer | atteint | partiel | non_atteint
+#    learnings: []         # chacun devient une story ou une opportunité
+
+hypotheses: []
+risks: []                  # - { id: R-01, text: "", likelihood: "", impact: "", response: "", status: proposé }
+shadow_zones: []
+#  - { id: ZO-001, type: question_story, question: "", story: US-001, ask_to: "", blocking: true, status: ouverte, resolution: "" }
+questions: []
+council_runs: []
+
+plan_sections:
+  stories: à rédiger
+  readiness: à rédiger
+  tasks: à rédiger
+  schedule: à rédiger
+
+coverage_thresholds: {}     # seuils de couverture en %, par métrique ; vide = valeurs par défaut (lib/rules.mjs, COVERAGE_DEFAULTS)
+coverage_waivers: []        # - { metric: fr_ac, reason: "", approved_by: "" }   # seuil non atteint, assumé et approuvé
+
+governance:
+  version: "0.1"
+  status: brouillon        # brouillon | en_revue | approuvé | baseline
+  reviewers: []            # - { who: "", role: approbateur }
+  review_rounds: []
+  comments: []
+  approvals: []
+  baselines: []
+  change_requests: []      # CR-xxx ; target: plan | prd | sad | brd
+  backlog_approvals: []    # approbations de plans d'opérations, lues par backlog-executor
+#    - { target: github, sha256: "", autonomy: partiel, reviewed: [], ops: [], declared_by: "", date: "" }   # autonomy : complet | partiel | manuel
+
+session:                   # continuité entre sessions (references/sessions.md)
+  next_action: ""          # prochaine action notée avant une pause

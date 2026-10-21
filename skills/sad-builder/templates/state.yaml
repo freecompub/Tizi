@@ -1,0 +1,234 @@
+# État de session d'une conception — source de vérité. sad.md, les ADR et les squelettes de contrats sont générés à partir de lui.
+document: sad
+initiative:
+  name: ""
+  slug: ""
+context_mode: greenfield   # greenfield | brownfield — choisi au démarrage, ne change plus
+phase: explore             # explore | design | govern
+created: ""
+updated: ""
+
+# ─────────────── Amont (copie en lecture seule du handoff du PRD) ───────────────
+source_prd:
+  path: ""                 # prd/<slug>/handoff/v<x.y>/handoff.yaml
+  version: ""
+  sha256: ""             # empreinte relevée par verify-handoff.mjs à l'ingestion
+prd_ref:
+  problem: ""
+  vision: ""
+  functional_requirements: []   # - { id: FR-001, statement: "", priority: must, release: REL-1, business_rules: [] }
+  nfrs: []                      # - { id: NFR-001, category: "", statement: "", metric: "", target: "", measurement: "", applies_to: [] }
+  constraints: []               # - { id: CON-01, statement: "", imposed_by: "" }
+  business_rules: []            # - { id: RG-001, statement: "", kind: "", enforcement: "", automation: automatisée }
+  personas: []                  # - { id: PER-01, name: "", role: "" }
+decision_rights: []        # repris du PRD ; ajoute au moins le domaine `architecture` et `acceptation_risque_securite`
+#  - { domain: architecture, decider: "", escalation: "", confirmed_by: "" }
+
+sources: []                # preuves techniques : code, configuration, manifeste, document, mesure, spike, entretien
+#  - { id: SRC-001, type: code, ref: "repo@commit:chemin", date: "", note: "" }
+
+# ─────────────── Explore ───────────────
+existing:                  # brownfield uniquement
+  repositories: []         # - { name: "", url: "", commit: "" }
+  scope: ""                # partie de l'existant concernée par le changement
+
+drivers: []                # moteurs architecturaux
+#  - id: AD-01
+#    kind: performance     # performance | disponibilite | securite | conformite | cout | scalabilite | maintenabilite | evolutivite | interoperabilite | utilisabilite | observabilite
+#    origin: [NFR-003]     # NFR, CON, FR ou RG qui le fondent ; jamais vide
+#    scenario:             # scénario de qualité (references/quality-scenarios.md)
+#      source: ""
+#      stimulus: ""
+#      environment: ""
+#      artifact: ""
+#      response: ""
+#      measure: ""         # mesure chiffrée ; sinon zone d'ombre driver_non_mesurable
+#    importance: haute     # haute | moyenne | basse — pour le métier
+#    difficulty: haute     # haute | moyenne | basse — pour l'architecture
+#    status: proposé       # proposé | validé | abandonné
+#    lint_waivers: []
+
+contexts: []               # contextes délimités (references/domain-modelling.md)
+#  - id: CTX-01
+#    name: ""
+#    responsibility: ""
+#    terms: []             # langage omniprésent propre au contexte
+#    aggregates:
+#      - name: ""
+#        invariants: [RG-001]     # règles métier garanties par l'agrégat
+#        commands: []
+#        events: []
+#    status: proposé
+
+context_map: []
+#  - { upstream: CTX-01, downstream: CTX-02, pattern: customer_supplier, note: "" }
+#    pattern : partnership | shared_kernel | customer_supplier | conformist | anticorruption_layer | open_host_service | published_language | separate_ways
+
+elements: []               # modèle C4 unique ; les vues sont générées (references/c4-modelling.md)
+#  - id: CT-01
+#    kind: container       # person | system | container | component
+#    subtype: ""           # container : app | api | worker | datastore | queue | web | mobile ; vide sinon
+#    name: ""
+#    description: ""
+#    technology: ""
+#    parent: SYS-01        # container → système interne ; component → conteneur ; vide pour person et system
+#    external: false       # system : true s'il n'est ni possédé ni déployé par l'équipe
+#    lifecycle: nouveau    # nouveau | existant_conservé | existant_modifié | existant_remplacé | existant_retiré
+#    replaced_by: ""       # si existant_remplacé
+#    evidence: []          # SRC-xxx ; obligatoire pour tout élément existant_*
+#    contexts: []          # CTX-xx réalisés
+#    frs: []               # FR-xxx allouées (composants ou conteneurs)
+#    persona: ""           # person : PER-xx du PRD
+#    owner: ""             # équipe responsable
+#    status: proposé
+#    lint_waivers: []
+
+relations: []
+#  - id: LNK-001
+#    from: CT-01           # l'initiateur
+#    to: CT-02             # la dépendance
+#    description: ""
+#    technology: ""        # protocole, uniquement s'il est connu
+#    style: sync           # sync | async
+#    data: []              # DAT-xx échangées
+#    lifecycle: nouveau
+#    evidence: []
+#    status: proposé
+
+# ─────────────── Design ───────────────
+decisions: []              # ADR au format MADR v4 (references/adr.md)
+#  - id: ADR-001
+#    title: ""
+#    status: proposé       # proposé | accepté | rejeté | déprécié | remplacé
+#    supersedes: ""        # ADR-xxx remplacé par celui-ci
+#    context: ""           # problème à résoudre, en 2 à 4 phrases
+#    drivers: [AD-01]      # moteurs, contraintes ou règles qui pèsent sur le choix
+#    options:              # au moins deux
+#      - { name: "", description: "", pros: [], cons: [] }
+#    outcome: ""           # nom de l'option retenue
+#    justification: ""
+#    consequences: { good: [], bad: [] }
+#    confirmation: ""      # comment on vérifiera que la décision est respectée (revue, test, fitness function)
+#    elements: []          # éléments C4 concernés
+#    decided_by: ""        # déclaré par l'utilisateur, issu de decision_rights
+#    date: ""
+#    lint_waivers: []
+
+nfr_responses: []
+#  - id: NR-01
+#    nfr: NFR-001
+#    drivers: [AD-01]
+#    tactics: []           # tactiques retenues (cache, réplication, file d'attente, chiffrement…)
+#    elements: []
+#    decisions: []         # ADR-xxx
+#    verification:
+#      method: test_charge # test_charge | test_endurance | fitness_function | test_securite | analyse_statique | revue | monitoring | test_restauration
+#      description: ""
+#      stage: tests        # tests (étape 6) | integration (étape 7) | recette (étape 8) | exploitation (étape 10)
+#    status: proposé
+
+data_entities: []
+#  - id: DAT-01
+#    name: ""
+#    context: CTX-01
+#    store: CT-03          # conteneur qui la détient (source de vérité)
+#    classification: personnelle   # publique | interne | confidentielle | personnelle | sante
+#    retention: ""         # durée de conservation et déclencheur
+#    lifecycle: nouveau
+#    status: proposé
+
+interfaces: []
+#  - id: API-01
+#    kind: openapi         # openapi | asyncapi | autre
+#    name: ""
+#    provider: CT-02
+#    consumers: [CT-01]
+#    lifecycle: nouveau    # un contrat existant consommé par d'autres est une contrainte héritée
+#    operations:
+#      - id: OP-001
+#        name: "POST /dossiers"   # openapi : « MÉTHODE /chemin » ; asyncapi : nom de l'événement ou du canal
+#        purpose: ""
+#        frs: [FR-001]
+#        data: [DAT-01]
+#        auth: ""
+#    status: proposé
+
+trust_boundaries: []
+#  - { id: TB-01, name: "Internet / zone applicative", elements: [CT-02, CT-03] }
+
+threats: []                # references/stride.md
+#  - id: TH-001
+#    stride: I             # S | T | R | I | D | E
+#    target: LNK-003       # relation (flux) ou élément
+#    description: ""
+#    likelihood: moyenne   # faible | moyenne | forte
+#    impact: fort          # faible | moyen | fort
+#    treatment: attenuer   # attenuer | eviter | transferer | accepter
+#    mitigations: []       # mesures ; une mesure qui change le comportement observable devient une demande de changement au PRD
+#    controls: []          # identifiants de contrôles des référentiels retenus (references/security-controls.md)
+#    accepted_by: ""       # obligatoire si treatment: accepter ; décideur issu de decision_rights
+#    status: proposé
+
+security_catalogs: []      # référentiels de contrôles retenus, avec leur version (references/security-controls.md) ; vide = aucun rattachement exigé
+
+architecture_review: []    # revue par pilier (references/architecture-review.md), enregistrée sur déclaration de l'utilisateur
+#  - { pillar: fiabilite, assessment: satisfaisant, findings: [], reviewer: "", date: "" }   # fiabilite | securite | couts | exploitation | performance ; assessment : satisfaisant | a_ameliorer | risque
+
+tech_debt: []              # brownfield
+#  - { id: DT-01, text: "", elements: [], impact: "", evidence: [SRC-003] }
+
+constraints: []            # contraintes de conception propres à l'étape 3 ; celles du PRD restent dans prd_ref
+#  - { id: CON-S01, statement: "", origin: existant, evidence: [], status: proposé }   # origin : existant | organisation | technique | reglementaire
+
+hypotheses: []
+#  - { id: H-001, text: "", basis: "", status: à vérifier, validation: spike, spike: "" }   # validation : spike | mesure | document | expert
+
+risks: []                  # - { id: R-01, text: "", likelihood: "", impact: "", response: "", origin: "", status: proposé }
+dependencies: []           # - { text: "", owner: "" }
+glossary: []               # aligné sur le PRD et le BRD
+
+shadow_zones: []
+#  - id: ZO-001
+#    type: fr_non_allouee  # voir references/shadow-zones.md
+#    question: ""
+#    origin: ""
+#    ask_to: ""
+#    action: ""            # spike | mesure | lecture_code | question | decision | atelier
+#    blocking: false
+#    parties: []           # conflit d'intérêts
+#    arbiter: ""           # conflit d'intérêts : décideur issu de decision_rights, jamais partie au conflit
+#    status: ouverte       # ouverte | levée | assumée
+#    resolution: ""
+#    related: []
+
+questions: []              # checklist persistante (voir SKILL.md)
+council_runs: []           # - { date: "", mode: exploration, lenses: [], proposed: 0, discarded: 0, retained: 0 }
+
+sad_sections:              # à rédiger | proposé | validé
+  context: à rédiger
+  drivers: à rédiger
+  domain: à rédiger
+  views: à rédiger
+  decisions: à rédiger
+  quality: à rédiger
+  data_interfaces: à rédiger
+  security: à rédiger
+  existing: à rédiger      # brownfield ; « validé » d'office en greenfield
+  risks: à rédiger
+
+coverage_thresholds: {}     # seuils de couverture en %, par métrique ; vide = valeurs par défaut (lib/rules.mjs, COVERAGE_DEFAULTS)
+coverage_waivers: []        # - { metric: fr_ac, reason: "", approved_by: "" }   # seuil non atteint, assumé et approuvé
+
+# ─────────────── Govern ───────────────
+governance:
+  version: "0.1"
+  status: brouillon        # brouillon | en_revue | approuvé | baseline
+  reviewers: []            # - { who: "", role: approbateur }   # approbateur | relecteur | informé
+  review_rounds: []
+  comments: []             # CM-xxx, même structure que le BRD
+  approvals: []            # - { who: "", version: "", date: "", decision: approuvé, reserves: [], evidence: "", declared_by: utilisateur }
+  baselines: []
+  change_requests: []      # CR-xxx ; target: sad | prd | brd
+
+session:                   # continuité entre sessions (references/sessions.md)
+  next_action: ""          # prochaine action notée avant une pause

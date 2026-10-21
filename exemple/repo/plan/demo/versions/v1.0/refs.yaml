@@ -1,0 +1,313 @@
+# Copie des handoffs amont — généré par ingest-handoffs.mjs, ne pas modifier.
+ingested: '2026-10-20'
+paths:
+  prd: ../../prd/demo/handoff/v1.0/handoff.yaml
+  sad: ../../sad/demo/handoff/v1.0/handoff.yaml
+sha256:
+  prd: 25bd155232b261f8f657e47c7beb6ef2faf76efb282b57faef32a320cdbdffba
+  sad: 6e57ea30ea3c8739499195cec7150584df2757d6cfbeeaa14b2a43ba6423eea6
+prd:
+  source:
+    initiative: Dossiers complets
+    prd_version: '1.0'
+    status: baseline
+    mode: chaîné
+    brd_version: '1.0'
+    generated: '2026-10-20'
+  problem: ''
+  vision: ''
+  goals:
+    - id: GOAL-01
+      statement: Réduire les rejets
+      kpi: taux
+      target: 2 %
+  personas:
+    - id: PER-01
+      name: Chloé
+      role: Agente
+  journeys:
+    - id: PJ-01
+      persona: PER-01
+      goal: Transmettre un dossier
+      steps:
+        - Saisir
+        - Vérifier
+        - Transmettre
+  story_map:
+    - id: ACT-01
+      name: Transmettre
+      tasks:
+        - id: T-01
+          name: Vérifier le dossier
+          journey: PJ-01
+          release: REL-1
+        - id: T-02
+          name: Prévenir le partenaire
+          journey: PJ-01
+          release: REL-1
+  releases:
+    - id: REL-1
+      name: MVP
+      functional_requirements:
+        - id: FR-001
+          priority: must
+          statement: >-
+            Si un agent transmet un dossier sans justificatif, le système doit refuser la transmission et stocker
+            l'événement en base de données.
+          actor: PER-01
+          brd_requirements:
+            - BR-001
+          journeys: []
+          business_rules:
+            - RG-001
+          acceptance:
+            - id: AC-001
+              scenario: Refus
+              kind: nominal
+              given: un dossier sans justificatif
+              when: l'agent transmet
+              then: la transmission est refusée
+        - id: FR-002
+          priority: should
+          statement: Quand un dossier est transmis, le système doit notifier le partenaire.
+          actor: PER-01
+          brd_requirements: []
+          journeys: []
+          business_rules: []
+          acceptance: []
+  non_functional:
+    - id: NFR-001
+      category: performance
+      statement: Le contrôle doit être rapide.
+      applies_to: []
+      priority: must
+  constraints: []
+  design_decisions:
+    - id: DD-01
+      decision: Agent
+      rationale: proximité
+      decided_by: Alice
+  business_rules:
+    - id: RG-001
+      statement: Un dossier ne doit pas être transmis sans justificatif de domicile.
+      kind: comportement
+      enforcement: stricte
+      automation: automatisée
+      owner: ''
+    - id: RG-003
+      statement: Le délai de relance est de 5 jours ouvrés.
+      kind: definition
+      enforcement: ''
+      automation: automatisée
+      owner: ''
+  metrics: []
+  open_hypotheses: []
+  risks: []
+  assumed_shadow_zones: []
+  approval_reserves: []
+  decision_rights:
+    - domain: priorites
+      decider: Alice
+  glossary: []
+  coverage:
+    - id: fr_ac
+      label: FR avec au moins un critère d'acceptation
+      covered: 1
+      total: 2
+      pct: 50
+      threshold: 100
+      met: false
+      waiver: null
+    - id: fr_goal
+      label: FR rattachées à un objectif produit
+      covered: 2
+      total: 2
+      pct: 100
+      threshold: 100
+      met: true
+      waiver: null
+    - id: must_error
+      label: FR Must avec un scénario d'erreur
+      covered: 0
+      total: 1
+      pct: 0
+      threshold: 100
+      met: false
+      waiver: null
+    - id: br_covered
+      label: Exigences du BRD couvertes par une FR ou une NFR
+      covered: 1
+      total: 1
+      pct: 100
+      threshold: 100
+      met: true
+      waiver: null
+  integrity:
+    algorithm: sha256
+    source_state: 10da862781bfcb9645a180d80311e7c6904dcf222a9df85649c8e0b7dddec1bb
+sad:
+  source:
+    initiative: Dossiers complets
+    sad_version: '1.0'
+    status: baseline
+    context_mode: brownfield
+    prd_version: '1.0'
+    generated: '2026-10-20'
+  work_items:
+    - id: CT-01
+      name: Application web
+      kind: container
+      lifecycle: existant_modifié
+      technology: Next.js
+      owner: Équipe web
+      parent: SYS-01
+      frs:
+        - FR-001
+      releases:
+        - REL-1
+      contexts:
+        - CTX-01
+    - id: CT-03
+      name: Notificateur
+      kind: container
+      lifecycle: nouveau
+      technology: Node.js
+      owner: Équipe web
+      parent: SYS-01
+      frs:
+        - FR-002
+      releases:
+        - REL-1
+      contexts:
+        - CTX-02
+    - id: CP-01
+      name: Contrôle de complétude
+      kind: component
+      lifecycle: nouveau
+      technology: ''
+      owner: ''
+      parent: CT-01
+      frs:
+        - FR-001
+      releases:
+        - REL-1
+      contexts: []
+    - id: CP-02
+      name: API dossiers
+      kind: component
+      lifecycle: existant_modifié
+      technology: ''
+      owner: ''
+      parent: CT-01
+      frs: []
+      releases: []
+      contexts: []
+  retired:
+    - id: CT-04
+      name: Ancien script cron
+      lifecycle: existant_remplacé
+      replaced_by: ''
+  decisions:
+    - id: ADR-001
+      title: Notifier le partenaire par un worker asynchrone
+      outcome: Worker asynchrone
+      confirmation: test de charge sur la transmission
+      elements:
+        - CT-03
+  interfaces:
+    - id: API-01
+      name: API dossiers
+      kind: openapi
+      provider: CT-01
+      consumers:
+        - PS-01
+      lifecycle: existant_modifié
+      operations:
+        - id: OP-001
+          name: POST /dossiers/{id}/transmission
+          frs:
+            - FR-001
+        - id: OP-002
+          name: GET /health
+          frs: []
+    - id: API-02
+      name: Événements dossiers
+      kind: asyncapi
+      provider: CT-01
+      consumers:
+        - CT-03
+      lifecycle: nouveau
+      operations:
+        - id: OP-003
+          name: DossierTransmis
+          frs:
+            - FR-002
+  verifications:
+    - id: NR-01
+      nfr: NFR-001
+      method: test_charge
+      description: p95 transmission
+      stage: tests
+  security_measures:
+    - threat: TH-001
+      stride: S
+      target: LNK-001
+      mitigations:
+        - sessions courtes
+        - MFA
+  accepted_risks:
+    - threat: TH-002
+      description: file saturée
+  spikes:
+    - id: H-001
+      text: Le partenaire accepte un webhook
+      spike: appel de test
+  tech_debt:
+    - id: DT-01
+      text: Pas de tests sur l'API dossiers
+      elements:
+        - CP-02
+      impact: régressions
+      evidence:
+        - SRC-001
+  data:
+    - id: DAT-01
+      name: Dossier
+      store: CT-02
+      classification: sante
+      retention: 10 ans après clôture
+    - id: DAT-02
+      name: Notification
+      store: CT-03
+      classification: interne
+  risks: []
+  assumed_shadow_zones: []
+  approval_reserves: []
+  coverage:
+    - id: fr_allocated
+      label: FR allouées à un conteneur ou composant
+      covered: 2
+      total: 2
+      pct: 100
+      threshold: 100
+      met: true
+      waiver: null
+    - id: nfr_response
+      label: NFR avec une réponse de conception
+      covered: 1
+      total: 2
+      pct: 50
+      threshold: 100
+      met: false
+      waiver: null
+    - id: driver_served
+      label: Moteurs servis par un ADR accepté ou une réponse
+      covered: 1
+      total: 2
+      pct: 50
+      threshold: 100
+      met: false
+      waiver: null
+  integrity:
+    algorithm: sha256
+    source_state: f46dc814b487336fa340a0e22e5431c9fbd9d6f06162bc46eb5bd976181201ff

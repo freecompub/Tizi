@@ -1,0 +1,7 @@
+# Dépendances et résultats locaux
+/node_modules/
+**/scripts/node_modules/
+**/package-lock.json
+/evals/results/
+.DS_Store
+# Les dossiers .impl/ et .tizi/ de exemple/ sont des données de test : ils restent versionnés.

@@ -1,0 +1,44 @@
+# Journal d'exécution — backlog-executor.
+operations: plan/demo/exports/jira/operations.yaml
+operations_sha256: d8da24ef585a75d2ddd20fb8d637b4effb75c6fb3ab5409d5d191fb251f9a1c2
+approval:
+  declared_by: Alice
+  date: '2026-10-23'
+  autonomy: manuel
+executed: '2026-10-20T12:25:56.159Z'
+results:
+  - id: EXE-001
+    action: create
+    key: ACT-01
+    status: fait
+    remote: DOS-1
+  - id: EXE-002
+    action: create
+    key: US-001
+    status: fait
+    remote: DOS-2
+  - id: EXE-003
+    action: create
+    key: US-002
+    status: fait
+    remote: DOS-3
+  - id: EXE-004
+    action: create
+    key: TK-001
+    status: fait
+    remote: DOS-4
+  - id: EXE-005
+    action: create
+    key: TK-002
+    status: fait
+    remote: DOS-5
+  - id: EXE-006
+    action: create
+    key: TK-003
+    status: ignoré
+    reason: 'niveau manuel : opération non listée dans l''approbation'
+  - id: EXE-007
+    action: create
+    key: TK-004
+    status: ignoré
+    reason: 'niveau manuel : opération non listée dans l''approbation'

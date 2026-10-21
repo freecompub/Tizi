@@ -1,0 +1,34 @@
+# Journal d'exécution — backlog-executor.
+operations: plan/demo/exports/github/operations.yaml
+operations_sha256: 8baa391ba638ff250c30be2604df39bcc9e1f45bceae376db1461d0f8e9c30ec
+approval:
+  declared_by: Alice
+  date: '2026-10-23'
+  autonomy: partiel
+executed: '2026-10-20T12:25:46.009Z'
+results:
+  - id: EXE-001
+    action: update
+    key: US-001
+    status: fait
+    remote: 10
+  - id: EXE-002
+    action: update
+    key: TK-001
+    status: fait
+    remote: 1
+  - id: EXE-003
+    action: update
+    key: TK-002
+    status: fait
+    remote: 12
+  - id: EXE-004
+    action: update
+    key: TK-003
+    status: fait
+    remote: 13
+  - id: EXE-005
+    action: update
+    key: TK-004
+    status: fait
+    remote: 14

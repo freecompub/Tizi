@@ -1,0 +1,109 @@
+# Journal d'exécution — backlog-executor.
+operations: plan/demo/exports/github/operations.yaml
+operations_sha256: f43dc25bdeddc666aa22ac325699b171c7a190492ef77cd869e47c22a2ec5c99
+approval:
+  declared_by: Alice
+  date: '2026-10-23'
+  autonomy: partiel
+executed: '2026-10-20T12:24:35.928Z'
+results:
+  - id: EXE-001
+    action: create_label
+    key: taille:M
+    status: fait
+    remote: ''
+  - id: EXE-002
+    action: create_label
+    key: activite:ACT-01
+    status: fait
+    remote: ''
+  - id: EXE-003
+    action: create_label
+    key: walking-skeleton
+    status: fait
+    remote: ''
+  - id: EXE-004
+    action: create_label
+    key: spike
+    status: fait
+    remote: ''
+  - id: EXE-005
+    action: create_label
+    key: taille:S
+    status: fait
+    remote: ''
+  - id: EXE-006
+    action: create_label
+    key: humain
+    status: fait
+    remote: ''
+  - id: EXE-007
+    action: create_label
+    key: iteration:IT-1
+    status: fait
+    remote: ''
+  - id: EXE-008
+    action: create_label
+    key: tache
+    status: fait
+    remote: ''
+  - id: EXE-009
+    action: create_label
+    key: agent
+    status: fait
+    remote: ''
+  - id: EXE-010
+    action: create_label
+    key: type:securite
+    status: fait
+    remote: ''
+  - id: EXE-011
+    action: create_label
+    key: taille:XL
+    status: fait
+    remote: ''
+  - id: EXE-012
+    action: create_milestone
+    key: REL-1 MVP
+    status: fait
+    remote: 1
+  - id: EXE-013
+    action: create
+    key: US-001
+    status: fait
+    remote: 10
+  - id: EXE-014
+    action: create
+    key: US-002
+    status: fait
+    remote: 11
+  - id: EXE-015
+    action: link
+    key: TK-001
+    status: fait
+    remote: 1
+  - id: EXE-016
+    action: create
+    key: TK-002
+    status: fait
+    remote: 12
+  - id: EXE-017
+    action: create
+    key: TK-003
+    status: fait
+    remote: 13
+  - id: EXE-018
+    action: create
+    key: TK-004
+    status: fait
+    remote: 14
+  - id: EXE-019
+    action: update
+    key: US-001
+    status: fait
+    remote: 10
+  - id: EXE-020
+    action: update
+    key: US-002
+    status: fait
+    remote: 11

@@ -1,0 +1,120 @@
+# Matrice calculée — release-matrix.mjs
+release: REL-1
+candidate: 1.0.0-rc1
+computed: '2026-10-21'
+plan_version: '1.0'
+gate:
+  - code: R1
+    label: Toutes les suites collectées passent
+    ok: true
+    detail: >-
+      unit : 1 test(s), 0 en échec ; acceptance : 3 test(s), 0 en échec ; e2e : 1 test(s), 0 en échec ; mutation :
+      mutation 75 % ; security : 1 test(s), 0 en échec
+  - code: R2
+    label: Exigences prouvées (seuil 100 %)
+    ok: true
+    detail: 7/7 prouvées, 1 dérogation(s)
+  - code: R3
+    label: Mesures des NFR conformes
+    ok: true
+    detail: 1/1
+  - code: R4
+    label: Parcours critiques couverts de bout en bout
+    ok: true
+    detail: 1/1
+  - code: R5
+    label: Sessions exploratoires faites, sans constat bloquant ouvert
+    ok: true
+    detail: 1/1 faite(s), 0 bloquant(s) ouvert(s)
+  - code: R6
+    label: Score de mutation ≥ 60 %
+    ok: true
+    detail: 75 %
+  - code: R7
+    label: Analyses de sécurité sans constat
+    ok: true
+    detail: 0 constat(s)
+open: true
+requirements:
+  - id: EX-001
+    kind: exemple
+    label: Sans justificatif
+    source: US-001
+    status: prouvé
+    tests:
+      - 'acceptance : test [EX-001][AC-001] sans justificatif, la transmission est refusée avec le motif (ok)'
+    measure: ''
+  - id: EX-002
+    kind: exemple
+    label: Avec justificatif
+    source: US-001
+    status: prouvé
+    tests:
+      - 'acceptance : test [EX-002] dossier complet, le dossier est transmis (ok)'
+    measure: ''
+  - id: AC-001
+    kind: critère
+    label: Refus
+    source: FR-001
+    status: prouvé
+    tests:
+      - 'acceptance : test [EX-001][AC-001] sans justificatif, la transmission est refusée avec le motif (ok)'
+    measure: ''
+  - id: EX-003
+    kind: exemple
+    label: Notification
+    source: US-002
+    status: dérogation
+    tests: []
+    measure: ''
+  - id: EX-004
+    kind: exemple
+    label: Message clair
+    source: US-003
+    status: prouvé
+    tests:
+      - 'acceptance : test [EX-004] le message nomme la pièce manquante (ok)'
+    measure: ''
+  - id: NR-01
+    kind: NFR
+    label: 'NFR-001 — test_charge : p95 transmission'
+    source: NFR-001
+    status: prouvé
+    tests: []
+    measure: p95 = 1,4 s / cible p95 < 2 s
+  - id: TH-001
+    kind: sécurité
+    label: sessions courtes ; MFA
+    source: LNK-001
+    status: prouvé
+    tests:
+      - 'security : zap [TH-001] sessions expirées après inactivité (ok)'
+    measure: ''
+  - id: PJ-01
+    kind: parcours
+    label: Transmettre un dossier
+    source: PRD
+    status: prouvé
+    tests:
+      - 'e2e : e2e [PJ-01] transmettre un dossier de bout en bout (ok)'
+    measure: ''
+suites:
+  unit:
+    total: 1
+    failed: 0
+    path: reports/unit.xml
+  acceptance:
+    total: 3
+    failed: 0
+    path: reports/acceptance.xml
+  e2e:
+    total: 1
+    failed: 0
+    path: reports/e2e.xml
+  mutation:
+    mutation: 75
+    path: reports/mutation/mutation.json
+  security:
+    total: 1
+    failed: 0
+    path: reports/security.xml

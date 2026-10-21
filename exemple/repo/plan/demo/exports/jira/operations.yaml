@@ -1,0 +1,716 @@
+# Plan d'opérations jira — généré par plan-operations.mjs. Ne pas modifier : toute modification invalide l'empreinte et l'approbation.
+kind: backlog-operations
+target: jira
+destination: DOS
+plan:
+  slug: demo
+  version: '1.0'
+  status: baseline
+  state_sha256: 55187f5dfb99db4d9454b045ae122a80ba583c6f3f6b03636f63b9e9dfbc3f1b
+snapshot:
+  discovered: '2026-10-20'
+  sha256: ba7dd161332fa3a84e023aec068846fc4b77ae3b62391ce25eaeba94df255939
+sync_map_sha256: 8994272a75211befd3e8d5a252f603487828f2a62cd74f29d5fd5ee9214afb93
+generated: '2026-10-20'
+guards: []
+counts:
+  create: 2
+  update: 5
+  link: 0
+  create_label: 0
+  create_milestone: 0
+needs_review:
+  - EXE-001
+  - EXE-002
+  - EXE-003
+  - EXE-004
+  - EXE-005
+  - EXE-006
+  - EXE-007
+operations:
+  - id: EXE-001
+    needs_review: issue DOS-1 introuvable dans la découverte
+    action: update
+    key: ACT-01
+    kind: epic
+    remote: DOS-1
+    fields:
+      summary: '[ACT-01] Transmettre'
+      description:
+        type: doc
+        version: 1
+        content:
+          - type: paragraph
+            content:
+              - type: text
+                text: Epic générée depuis le plan (ACT-01).
+      labels:
+        - plan-epic
+  - id: EXE-002
+    needs_review: issue DOS-2 introuvable dans la découverte
+    action: update
+    key: US-001
+    kind: story
+    remote: DOS-2
+    fields:
+      summary: >-
+        [US-001] En tant qu'agente, je veux être bloquée si le justificatif manque, afin de ne pas transmettre un
+        dossier incomplet
+      description:
+        type: doc
+        version: 1
+        content:
+          - type: paragraph
+            content:
+              - type: text
+                text: >-
+                  # US-001 — En tant qu'agente, je veux être bloquée si le justificatif manque, afin de ne pas
+                  transmettre un dossier incomplet
+          - type: paragraph
+            content:
+              - type: text
+                text: '> Fiche générée à partir de `state.yaml` le 2026-10-20.'
+          - type: paragraph
+            content:
+              - type: text
+                text: >-
+                  **Persona** : Chloé · **Tâche de la story map** : T-01 · **Release** : REL-1 · **Taille** : M ·
+                  **Walking skeleton**
+          - type: paragraph
+            content:
+              - type: text
+                text: '**Préparation** : prête'
+          - type: paragraph
+            content:
+              - type: text
+                text: '## Exigences'
+          - type: paragraph
+            content:
+              - type: text
+                text: >-
+                  - FR-001 — Si un agent transmet un dossier sans justificatif, le système doit refuser la transmission
+                  et stocker l'événement en base de données.
+          - type: paragraph
+            content:
+              - type: text
+                text: '## Example mapping'
+          - type: paragraph
+            content:
+              - type: text
+                text: 'Séance : 2026-10-21, avec Chloé, Dev, QA'
+          - type: paragraph
+            content:
+              - type: text
+                text: '### Règle : RG-001 — Un dossier ne doit pas être transmis sans justificatif de domicile.'
+          - type: codeBlock
+            attrs:
+              language: gherkin
+            content:
+              - type: text
+                text: |-
+                  Scénario: EX-001 — Sans justificatif
+                    Étant donné un dossier sans justificatif de domicile
+                    Quand l'agente transmet
+                    Alors la transmission est refusée avec le motif
+
+                  Scénario: EX-002 — Avec justificatif
+                    Étant donné un dossier complet
+                    Quand l'agente transmet
+                    Alors le dossier est transmis
+          - type: paragraph
+            content:
+              - type: text
+                text: '## Questions'
+          - type: paragraph
+            content:
+              - type: text
+                text: _Aucun élément._
+          - type: paragraph
+            content:
+              - type: text
+                text: '## Tâches'
+          - type: paragraph
+            content:
+              - type: text
+                text: |-
+                  - TK-002 (M, agent) — Contrôle de complétude du dossier
+                  - TK-003 (M, humain) — Sessions courtes et MFA
+      labels:
+        - story
+        - taille-M
+        - walking-skeleton
+      parent:
+        key: DOS-1
+  - id: EXE-003
+    needs_review: issue DOS-3 introuvable dans la découverte
+    action: update
+    key: US-002
+    kind: story
+    remote: DOS-3
+    fields:
+      summary: '[US-002] En tant qu''agente, je veux que le partenaire soit prévenu, afin d''éviter les relances'
+      description:
+        type: doc
+        version: 1
+        content:
+          - type: paragraph
+            content:
+              - type: text
+                text: '# US-002 — En tant qu''agente, je veux que le partenaire soit prévenu, afin d''éviter les relances'
+          - type: paragraph
+            content:
+              - type: text
+                text: '> Fiche générée à partir de `state.yaml` le 2026-10-20.'
+          - type: paragraph
+            content:
+              - type: text
+                text: '**Persona** : Chloé · **Tâche de la story map** : T-02 · **Release** : REL-1 · **Taille** : M'
+          - type: paragraph
+            content:
+              - type: text
+                text: >-
+                  **Préparation** : non prête — 1 règle(s) sans exemple ; 1 question(s) ouverte(s) ; spike non terminé
+                  (TK-001)
+          - type: paragraph
+            content:
+              - type: text
+                text: '## Exigences'
+          - type: paragraph
+            content:
+              - type: text
+                text: '- FR-002 — Quand un dossier est transmis, le système doit notifier le partenaire.'
+          - type: paragraph
+            content:
+              - type: text
+                text: '## Example mapping'
+          - type: paragraph
+            content:
+              - type: text
+                text: 'Séance : 2026-10-21, avec Chloé, Dev'
+          - type: paragraph
+            content:
+              - type: text
+                text: '### Règle : FR-002 — Quand un dossier est transmis, le système doit notifier le partenaire.'
+          - type: codeBlock
+            attrs:
+              language: gherkin
+            content:
+              - type: text
+                text: |-
+                  Scénario: EX-003 — Notification
+                    Étant donné un dossier transmis
+                    Quand —
+                    Alors le partenaire reçoit un message
+          - type: paragraph
+            content:
+              - type: text
+                text: '### Règle : Ne pas notifier le week-end *(sans référence amont)*'
+          - type: paragraph
+            content:
+              - type: text
+                text: '_Aucun exemple : la règle ne pourra pas être testée._'
+          - type: paragraph
+            content:
+              - type: text
+                text: '## Questions'
+          - type: paragraph
+            content:
+              - type: text
+                text: '- ZO-001 (ouverte) — Que faire si le partenaire ne répond pas ? — à Chloé'
+          - type: paragraph
+            content:
+              - type: text
+                text: '## Tâches'
+          - type: paragraph
+            content:
+              - type: text
+                text: '- TK-004 (XL, agent) — Notificateur'
+      labels:
+        - story
+        - taille-M
+      parent:
+        key: DOS-1
+  - id: EXE-004
+    needs_review: issue DOS-4 introuvable dans la découverte
+    action: update
+    key: TK-001
+    kind: spike
+    remote: DOS-4
+    fields:
+      summary: '[TK-001] Vérifier que le partenaire accepte un webhook'
+      description:
+        type: doc
+        version: 1
+        content:
+          - type: paragraph
+            content:
+              - type: text
+                text: '# TK-001 — Vérifier que le partenaire accepte un webhook'
+          - type: paragraph
+            content:
+              - type: text
+                text: >-
+                  > Fiche de contexte générée le 2026-10-20 à partir du plan v1.0, du PRD v1.0 et de la conception v1.0.
+                  Ce qui n'est pas écrit ici n'est pas décidé : en cas de doute, s'arrêter et demander.
+          - type: paragraph
+            content:
+              - type: text
+                text: '**Type** : spike · **Taille** : S · **Affectation** : humain · **Une PR** qui cite `TK-001`'
+          - type: paragraph
+            content:
+              - type: text
+                text: '## Hypothèse à vérifier'
+          - type: paragraph
+            content:
+              - type: text
+                text: H-001 — Le partenaire accepte un webhook
+          - type: paragraph
+            content:
+              - type: text
+                text: 'Démarche prévue : appel de test'
+          - type: paragraph
+            content:
+              - type: text
+                text: >-
+                  Un spike produit une **réponse** (confirmée, infirmée, avec mesures), pas du code de production. La
+                  durée est bornée par la taille.
+          - type: paragraph
+            content:
+              - type: text
+                text: '## Dépendances'
+          - type: paragraph
+            content:
+              - type: text
+                text: _Aucun élément._
+          - type: paragraph
+            content:
+              - type: text
+                text: '## Definition of Done'
+          - type: paragraph
+            content:
+              - type: text
+                text: |-
+                  - Code revu et fusionné
+                  - Exemples automatisés
+      labels:
+        - spike
+        - taille-S
+        - humain
+        - iteration-IT-1
+  - id: EXE-005
+    needs_review: issue DOS-5 introuvable dans la découverte ; type « Subtask » absent du projet (régler settings.jira.issue_types)
+    action: update
+    key: TK-002
+    kind: task
+    remote: DOS-5
+    fields:
+      summary: '[TK-002] Contrôle de complétude du dossier'
+      description:
+        type: doc
+        version: 1
+        content:
+          - type: paragraph
+            content:
+              - type: text
+                text: '# TK-002 — Contrôle de complétude du dossier'
+          - type: paragraph
+            content:
+              - type: text
+                text: >-
+                  > Fiche de contexte générée le 2026-10-20 à partir du plan v1.0, du PRD v1.0 et de la conception v1.0.
+                  Ce qui n'est pas écrit ici n'est pas décidé : en cas de doute, s'arrêter et demander.
+          - type: paragraph
+            content:
+              - type: text
+                text: '**Type** : dev · **Taille** : M · **Affectation** : agent · **Une PR** qui cite `TK-002`'
+          - type: paragraph
+            content:
+              - type: text
+                text: '## Story'
+          - type: paragraph
+            content:
+              - type: text
+                text: >-
+                  US-001 — En tant qu'agente, je veux être bloquée si le justificatif manque, afin de ne pas transmettre
+                  un dossier incomplet (prête)
+          - type: paragraph
+            content:
+              - type: text
+                text: '## Exigences et critères d''acceptation'
+          - type: paragraph
+            content:
+              - type: text
+                text: '### FR-001 — Must'
+          - type: paragraph
+            content:
+              - type: text
+                text: >-
+                  Si un agent transmet un dossier sans justificatif, le système doit refuser la transmission et stocker
+                  l'événement en base de données.
+          - type: codeBlock
+            attrs:
+              language: gherkin
+            content:
+              - type: text
+                text: |-
+                  Scénario: AC-001 — Refus
+                    Étant donné un dossier sans justificatif
+                    Quand l'agent transmet
+                    Alors la transmission est refusée
+          - type: paragraph
+            content:
+              - type: text
+                text: '## Règles et exemples de la story'
+          - type: paragraph
+            content:
+              - type: text
+                text: '**RG-001 — Un dossier ne doit pas être transmis sans justificatif de domicile.**'
+          - type: codeBlock
+            attrs:
+              language: gherkin
+            content:
+              - type: text
+                text: |-
+                  Scénario: EX-001 — Sans justificatif
+                    Étant donné un dossier sans justificatif de domicile
+                    Quand l'agente transmet
+                    Alors la transmission est refusée avec le motif
+
+                  Scénario: EX-002 — Avec justificatif
+                    Étant donné un dossier complet
+                    Quand l'agente transmet
+                    Alors le dossier est transmis
+          - type: paragraph
+            content:
+              - type: text
+                text: '## Éléments touchés'
+          - type: paragraph
+            content:
+              - type: text
+                text: |-
+                  | ID | Élément | Type | Technologie | Cycle de vie | Équipe |
+                  |---|---|---|---|---|---|
+                  | CP-01 | Contrôle de complétude | component | — | nouveau | — |
+          - type: paragraph
+            content:
+              - type: text
+                text: '## Contrats'
+          - type: paragraph
+            content:
+              - type: text
+                text: >-
+                  | Opération | Interface | Type | Squelette |
+
+                  |---|---|---|---|
+
+                  | OP-001 POST /dossiers/{id}/transmission | API dossiers | openapi | contracts/API-01.openapi.yaml
+                  (conception) |
+          - type: paragraph
+            content:
+              - type: text
+                text: '## Vérifications à mettre en place'
+          - type: paragraph
+            content:
+              - type: text
+                text: |-
+                  | Réponse | NFR | Méthode | Ce qui est vérifié |
+                  |---|---|---|---|
+                  | NR-01 | NFR-001 | test_charge | p95 transmission |
+          - type: paragraph
+            content:
+              - type: text
+                text: '## Dépendances'
+          - type: paragraph
+            content:
+              - type: text
+                text: _Aucun élément._
+          - type: paragraph
+            content:
+              - type: text
+                text: '## Definition of Done'
+          - type: paragraph
+            content:
+              - type: text
+                text: |-
+                  - Code revu et fusionné
+                  - Exemples automatisés
+      labels:
+        - tache
+        - taille-M
+        - agent
+        - iteration-IT-1
+      parent:
+        key: DOS-2
+  - id: EXE-006
+    needs_review: type « Subtask » absent du projet (régler settings.jira.issue_types)
+    action: create
+    key: TK-003
+    kind: task
+    fields:
+      project:
+        key: DOS
+      issuetype:
+        name: Subtask
+      summary: '[TK-003] Sessions courtes et MFA'
+      description:
+        type: doc
+        version: 1
+        content:
+          - type: paragraph
+            content:
+              - type: text
+                text: '# TK-003 — Sessions courtes et MFA'
+          - type: paragraph
+            content:
+              - type: text
+                text: >-
+                  > Fiche de contexte générée le 2026-10-20 à partir du plan v1.0, du PRD v1.0 et de la conception v1.0.
+                  Ce qui n'est pas écrit ici n'est pas décidé : en cas de doute, s'arrêter et demander.
+          - type: paragraph
+            content:
+              - type: text
+                text: '**Type** : securite · **Taille** : M · **Affectation** : humain · **Une PR** qui cite `TK-003`'
+          - type: paragraph
+            content:
+              - type: text
+                text: '## Story'
+          - type: paragraph
+            content:
+              - type: text
+                text: >-
+                  US-001 — En tant qu'agente, je veux être bloquée si le justificatif manque, afin de ne pas transmettre
+                  un dossier incomplet (prête)
+          - type: paragraph
+            content:
+              - type: text
+                text: '## Exigences et critères d''acceptation'
+          - type: paragraph
+            content:
+              - type: text
+                text: '### FR-001 — Must'
+          - type: paragraph
+            content:
+              - type: text
+                text: >-
+                  Si un agent transmet un dossier sans justificatif, le système doit refuser la transmission et stocker
+                  l'événement en base de données.
+          - type: codeBlock
+            attrs:
+              language: gherkin
+            content:
+              - type: text
+                text: |-
+                  Scénario: AC-001 — Refus
+                    Étant donné un dossier sans justificatif
+                    Quand l'agent transmet
+                    Alors la transmission est refusée
+          - type: paragraph
+            content:
+              - type: text
+                text: '## Règles et exemples de la story'
+          - type: paragraph
+            content:
+              - type: text
+                text: '**RG-001 — Un dossier ne doit pas être transmis sans justificatif de domicile.**'
+          - type: codeBlock
+            attrs:
+              language: gherkin
+            content:
+              - type: text
+                text: |-
+                  Scénario: EX-001 — Sans justificatif
+                    Étant donné un dossier sans justificatif de domicile
+                    Quand l'agente transmet
+                    Alors la transmission est refusée avec le motif
+
+                  Scénario: EX-002 — Avec justificatif
+                    Étant donné un dossier complet
+                    Quand l'agente transmet
+                    Alors le dossier est transmis
+          - type: paragraph
+            content:
+              - type: text
+                text: '## Éléments touchés'
+          - type: paragraph
+            content:
+              - type: text
+                text: |-
+                  | ID | Élément | Type | Technologie | Cycle de vie | Équipe |
+                  |---|---|---|---|---|---|
+                  | CP-02 | API dossiers | component | — | existant_modifié | — |
+          - type: paragraph
+            content:
+              - type: text
+                text: '## Mesures de sécurité à réaliser'
+          - type: paragraph
+            content:
+              - type: text
+                text: |-
+                  | Menace | STRIDE | Mesures |
+                  |---|---|---|
+                  | TH-001 | S | sessions courtes ; MFA |
+          - type: paragraph
+            content:
+              - type: text
+                text: '## Dépendances'
+          - type: paragraph
+            content:
+              - type: text
+                text: '- TK-002 — Contrôle de complétude du dossier (validé)'
+          - type: paragraph
+            content:
+              - type: text
+                text: '## Definition of Done'
+          - type: paragraph
+            content:
+              - type: text
+                text: |-
+                  - Code revu et fusionné
+                  - Exemples automatisés
+      labels:
+        - tache
+        - taille-M
+        - humain
+        - iteration-IT-1
+      parent:
+        key: DOS-2
+  - id: EXE-007
+    needs_review: type « Subtask » absent du projet (régler settings.jira.issue_types)
+    action: create
+    key: TK-004
+    kind: task
+    fields:
+      project:
+        key: DOS
+      issuetype:
+        name: Subtask
+      summary: '[TK-004] Notificateur'
+      description:
+        type: doc
+        version: 1
+        content:
+          - type: paragraph
+            content:
+              - type: text
+                text: '# TK-004 — Notificateur'
+          - type: paragraph
+            content:
+              - type: text
+                text: >-
+                  > Fiche de contexte générée le 2026-10-20 à partir du plan v1.0, du PRD v1.0 et de la conception v1.0.
+                  Ce qui n'est pas écrit ici n'est pas décidé : en cas de doute, s'arrêter et demander.
+          - type: paragraph
+            content:
+              - type: text
+                text: '**Type** : dev · **Taille** : XL · **Affectation** : agent · **Une PR** qui cite `TK-004`'
+          - type: paragraph
+            content:
+              - type: text
+                text: '## Story'
+          - type: paragraph
+            content:
+              - type: text
+                text: >-
+                  US-002 — En tant qu'agente, je veux que le partenaire soit prévenu, afin d'éviter les relances (non
+                  prête)
+          - type: paragraph
+            content:
+              - type: text
+                text: '## Exigences et critères d''acceptation'
+          - type: paragraph
+            content:
+              - type: text
+                text: '### FR-002 — Should'
+          - type: paragraph
+            content:
+              - type: text
+                text: Quand un dossier est transmis, le système doit notifier le partenaire.
+          - type: paragraph
+            content:
+              - type: text
+                text: '## Règles et exemples de la story'
+          - type: paragraph
+            content:
+              - type: text
+                text: '**FR-002 — Quand un dossier est transmis, le système doit notifier le partenaire.**'
+          - type: codeBlock
+            attrs:
+              language: gherkin
+            content:
+              - type: text
+                text: |-
+                  Scénario: EX-003 — Notification
+                    Étant donné un dossier transmis
+                    Quand —
+                    Alors le partenaire reçoit un message
+          - type: paragraph
+            content:
+              - type: text
+                text: '**Ne pas notifier le week-end *(sans référence amont)***'
+          - type: paragraph
+            content:
+              - type: text
+                text: '## Éléments touchés'
+          - type: paragraph
+            content:
+              - type: text
+                text: |-
+                  | ID | Élément | Type | Technologie | Cycle de vie | Équipe |
+                  |---|---|---|---|---|---|
+                  | CT-03 | Notificateur | container | Node.js | nouveau | Équipe web |
+          - type: paragraph
+            content:
+              - type: text
+                text: '## Contrats'
+          - type: paragraph
+            content:
+              - type: text
+                text: >-
+                  | Opération | Interface | Type | Squelette |
+
+                  |---|---|---|---|
+
+                  | OP-003 DossierTransmis | Événements dossiers | asyncapi | contracts/API-02.asyncapi.yaml
+                  (conception) |
+          - type: paragraph
+            content:
+              - type: text
+                text: '## Décisions à respecter'
+          - type: paragraph
+            content:
+              - type: text
+                text: >-
+                  | ADR | Décision | Option retenue | Comment c'est vérifié |
+
+                  |---|---|---|---|
+
+                  | ADR-001 | Notifier le partenaire par un worker asynchrone | Worker asynchrone | test de charge sur
+                  la transmission |
+          - type: paragraph
+            content:
+              - type: text
+                text: '## Dépendances'
+          - type: paragraph
+            content:
+              - type: text
+                text: '- TK-001 — Vérifier que le partenaire accepte un webhook (validé)'
+          - type: paragraph
+            content:
+              - type: text
+                text: '## Definition of Done'
+          - type: paragraph
+            content:
+              - type: text
+                text: |-
+                  - Code revu et fusionné
+                  - Exemples automatisés
+      labels:
+        - tache
+        - taille-XL
+        - agent
+        - iteration-IT-1
+      parent:
+        key: DOS-3
+integrity:
+  algorithm: sha256
+  source_state: ''

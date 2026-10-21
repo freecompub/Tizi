@@ -1,0 +1,29 @@
+# Squelette généré à partir de state.yaml le 2026-10-21 (API-01). À compléter à l'implémentation ;
+# les extensions x-requirements et x-data préservent la traçabilité vers le PRD et le SAD.
+openapi: 3.1.0
+info:
+  title: API dossiers
+  version: '1.0'
+  description: 'Fournisseur : Application web'
+paths:
+  /dossiers/{id}/transmission:
+    post:
+      operationId: OP-001
+      summary: Transmettre un dossier
+      x-requirements:
+        - FR-001
+      x-data:
+        - DAT-01
+      description: 'Authentification : session agent'
+      responses:
+        default:
+          description: À définir à l'implémentation
+  /health:
+    get:
+      operationId: OP-002
+      summary: Sonde
+      x-requirements: []
+      x-data: []
+      responses:
+        default:
+          description: À définir à l'implémentation

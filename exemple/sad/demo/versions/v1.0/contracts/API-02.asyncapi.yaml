@@ -1,0 +1,24 @@
+# Squelette généré à partir de state.yaml le 2026-10-20 (API-02). À compléter à l'implémentation ;
+# les extensions x-requirements et x-data préservent la traçabilité vers le PRD et le SAD.
+asyncapi: 3.0.0
+info:
+  title: Événements dossiers
+  version: '1.0'
+  description: 'Fournisseur : Application web'
+channels:
+  DossierTransmis:
+    address: DossierTransmis
+    messages:
+      DossierTransmis:
+        name: DossierTransmis
+        summary: Annonce une transmission
+operations:
+  OP-003:
+    action: send
+    channel:
+      $ref: '#/channels/DossierTransmis'
+    summary: Annonce une transmission
+    x-requirements:
+      - FR-002
+    x-data:
+      - DAT-01

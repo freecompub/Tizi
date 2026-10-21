@@ -1,0 +1,13 @@
+# Commandes non interactives de chaque agent. {prompt} est remplacé par le message (déjà échappé pour le shell).
+# Les options exactes dépendent de la version installée : vérifier avec `claude --help` et `copilot --help`.
+claude:
+  install_target: claude
+  first: "claude -p {prompt} --permission-mode acceptEdits --allowedTools \"Read Write Edit Glob Grep Bash(node:*)\""
+  next:  "claude -p --continue {prompt} --permission-mode acceptEdits --allowedTools \"Read Write Edit Glob Grep Bash(node:*)\""
+copilot:
+  install_target: copilot
+  first: "copilot -p {prompt} --allow-all-tools"
+  next:  "copilot -p {prompt} --continue --allow-all-tools"
+# Juge facultatif, utilisé seulement avec --judge : un modèle différent de celui évalué, qui renvoie {"pass": true|false, "reason": "…"}.
+judge:
+  command: "claude -p {prompt} --model claude-haiku-5-5 --output-format text"

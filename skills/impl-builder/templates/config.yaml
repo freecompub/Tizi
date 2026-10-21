@@ -1,0 +1,34 @@
+# Configuration de l'implémentation pour ce dépôt. À compléter avec l'équipe ; seul l'utilisateur la modifie.
+# Les commandes sont lancées depuis la racine du dépôt par run-tests.mjs.
+suites:
+  unit:
+    command: "npm test -- --reporter=junit --outputFile=reports/unit.xml"   # iOS : xcodebuild test … -resultBundlePath, puis conversion JUnit
+    report: reports/unit.xml          # JUnit XML
+  acceptance:
+    command: "npx cucumber-js --format json:reports/acceptance.json"
+    report: reports/acceptance.json   # Cucumber JSON ; les scénarios portent les étiquettes @EX-xxx et @AC-xxx
+  contract:
+    command: ""                        # par exemple Pact (consommateur et fournisseur) ou validation contre le schéma OpenAPI
+    report: reports/contract.xml
+  mutation:
+    command: "npx stryker run --incremental"   # Swift : muter
+    report: reports/mutation/mutation.json      # format du schéma mutation-testing-report
+    threshold: 70                               # score minimal (%) sur le code modifié
+  security:
+    command: ""                        # SAST et audit des dépendances, par exemple semgrep et npm audit
+    report: ""
+
+review:
+  required: false              # true : la porte de PR exige une revue par agents sur le diff actuel (C8)
+  base: ""                     # branche de comparaison ; vide = origin/main, main ou master
+
+paths:
+  production: ["src/**", "app/**", "lib/**"]   # code de production : écriture soumise au TDD et au périmètre
+  tests: ["test/**", "tests/**", "features/**", "**/*.test.*", "**/*.spec.*", "**/*Tests/**"]
+  contracts: ["contracts/**", "**/openapi*.yaml", "**/asyncapi*.yaml"]
+  always_allowed: ["impl/**", ".impl/**", "docs/**", "reports/**"]
+
+# Correspondance entre éléments C4 de la conception et dossiers du code : définit le périmètre d'une tâche.
+elements: {}
+#  CP-01: ["src/dossiers/completude/**"]
+#  CT-01: ["app/**"]

@@ -1,0 +1,30 @@
+# État de l'implémentation — source de vérité de l'étape 5. Une entrée par tâche prise en charge.
+document: impl
+initiative: { name: "", slug: "" }
+source_plan:
+  path: ""                 # plan/<slug>/handoff/v<x.y>/handoff.yaml
+  version: ""
+  sha256: ""               # relevé par verify-handoff.mjs
+config: impl/config.yaml
+
+tasks: []
+#  - id: TK-002
+#    status: comprendre    # comprendre | rouge | vert | verification | en_revue | fusionnee | bloquee
+#    context: plan/<slug>/versions/v1.0/tasks/TK-002.md
+#    understanding:
+#      restatement: ""     # la tâche reformulée avec ses propres mots
+#      questions: []       # - { q: "", answer: "", by: "" } ; une question sans réponse bloque la tâche
+#      assumptions: []     # ce que l'agent suppose ; chacun validé ou transformé en question
+#      test_plan: []       # tests prévus : scénarios (EX, AC), contrats (OP), unitaires, vérifications (NR, TH)
+#      approved_by: ""     # déclaré par l'utilisateur
+#      date: ""
+#    branch: ""
+#    gate: { date: "", result: "", report: "" }   # dernier passage de pr-gate.mjs
+#    pr: { url: "", approved_by: "", date: "" }    # approbation humaine, déclarée par l'utilisateur
+#    blocked_reason: ""
+
+shadow_zones: []           # questions qui renvoient au plan, au PRD ou à la conception
+#  - { id: ZO-001, task: TK-002, question: "", ask_to: "", target: plan, status: ouverte }
+
+session:                   # continuité entre sessions (references/sessions.md)
+  next_action: ""          # prochaine action notée avant une pause

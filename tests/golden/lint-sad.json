@@ -1,0 +1,17 @@
+[
+  "L01 terme non mesurable « rapidement » : remplacer par un comportement observable ou une valeur cible",
+  "S22 scénario de qualité sans mesure chiffrée",
+  "S23 ADR avec moins de deux options : ce n'est pas une décision",
+  "S24 ADR sans moteur : on ne saura pas quand le remettre en cause",
+  "S27 NFR sans réponse de conception",
+  "S28 relation existante sans preuve",
+  "S29 opération qui ne sert aucune FR",
+  "S30 donnée sans conservation",
+  "S31 donnée sante sans menace de divulgation (I) examinée sur CT-02",
+  "S32 menace acceptée sans décideur déclaré",
+  "S36 élément remplacé sans remplaçant désigné",
+  "S53 empreinte du handoff non relevée à l'ingestion (lancer verify-handoff.mjs et reporter sha256 dans l'état)",
+  "S54 Moteurs servis par un ADR accepté ou une réponse : 50 % pour un seuil de 100 % (manquent : AD-02) ; corriger ou déclarer une dérogation dans coverage_waivers",
+  "S54 NFR avec une réponse de conception : 50 % pour un seuil de 100 % (manquent : NFR-002) ; corriger ou déclarer une dérogation dans coverage_waivers",
+  "S55 mesure sans contrôle de référence (OWASP ASVS (version du projet))"
+]

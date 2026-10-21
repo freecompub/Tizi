@@ -1,0 +1,54 @@
+document: brd
+initiative: { name: Dossiers complets, slug: demo, trigger: "Hausse des rejets" }
+phase: define
+opportunity:
+  request: { verbatim: "Il faut une appli de vérification des dossiers pour les agents", classification: figee, presumed_solution: "application de vérification" }
+  canvas: { problems: ["Trop de dossiers incomplets"], users: [Agents], budget: "quelques semaines" }
+  decision: aller_plus_loin
+problem: { statement: "Trop de dossiers transmis incomplets.", confirmed: true }
+scope: { in: ["Transmission des dossiers"], out: [] }
+stakeholders:
+  - { id: SH-01, name: Alice, role: Directrice, impact: faible, power: fort, influence: positive, quadrant: satisfaire, status: interrogée }
+  - { id: SH-02, name: Bruno, role: Chef agents, impact: fort, power: fort, influence: négative, quadrant: impliquer, represents: agents d'accueil, status: interrogée }
+  - { id: SH-03, name: Chloé, role: Agente, impact: fort, power: faible, influence: positive, quadrant: consulter, end_user: true, status: interrogée }
+decision_rights:
+  - { domain: perimetre, decider: SH-01, confirmed_by: SH-01 }
+  - { domain: priorites, decider: SH-01, escalation: SH-09 }
+sources:
+  - { id: SRC-001, type: entretien, stakeholders: [SH-03], feedback: confirmé }
+  - { id: SRC-002, type: observation, stakeholders: [SH-03] }
+candidate_needs:
+  - { id: BC-001, text: "Tous les dossiers doivent être vérifiés", sources: [{ ref: SRC-001, location: l.3 }, { ref: SRC-002, location: "obs. 10:20" }], status: intégré }
+objectives:
+  - { id: OBJ-01, statement: "Réduire les rejets", indicator: "taux de rejet", baseline: "12 %", target: "2 %", owner: SH-01, status: validé }
+business_requirements:
+  - id: BR-001
+    statement: "Le service doit pouvoir identifier rapidement les dossiers incomplets et les signaler sur un écran."
+    objectives: [OBJ-01]
+    from_needs: [BC-001]
+    business_rules: [RG-001, RG-099]
+    acceptance: ["Moins de 2 % de dossiers rejetés…"]
+    priority: must
+    status: validé
+  - id: BR-002
+    statement: "Il permet de suivre les relances."
+    objectives: [OBJ-01]
+    from_needs: [BC-001]
+    status: validé
+    lint_waivers: [{ rule: L04, reason: test }]
+business_rules:
+  - { id: RG-001, statement: "Un dossier ne doit pas être transmis sans justificatif de domicile.", kind: comportement, enforcement: stricte, owner: SH-01, sources: [{ ref: SRC-001, location: l.9 }], status: validé }
+  - { id: RG-002, statement: "Le délai de relance est de 5 jours ouvrés.", kind: comportement, sources: [], status: validé }
+shadow_zones:
+  - { id: ZO-001, type: contradiction, question: "Vérif avant ou après ?", status: ouverte }
+  - { id: ZO-002, type: contradiction, subtype: interets, parties: [SH-01, SH-02], arbiter: SH-01, question: "Qui vérifie ?", status: ouverte }
+decisions:
+  - { id: DD-01, question: "Vérification centrale ?", options: [{ text: "Oui", impacts: "" }], decision: "Oui", status: validé }
+risks: []
+constraints:
+  - { type: environnement, text: "Comptoir d'accueil bruyant, agentes souvent interrompues", source: SRC-002, implication: "vérification en moins de 30 s, sans saisie longue" }
+synthesis_check: { date: "2026-10-29", fidelite: { status: ok }, couverture: { status: faible, assumed: true, note: "partenaires non entendus, assumé pour le MVP" }, robustesse: { status: faible, note: "BR-002 à source unique" }, actionnabilite: { status: ok }, alignement: { status: ok } }
+transition_requirements:
+  - { id: TR-01, kind: formation, text: "Former les agents d'accueil au refus de transmission", stakeholders: [SH-03], done_when: "90 % des agents formés avant la bascule", status: validé }
+  - { id: TR-02, kind: reprise_de_donnees, text: "Reprendre les dossiers en cours", status: validé }
+governance: { version: "1.0", status: baseline, reviewers: [{ stakeholder: SH-01, role: approbateur }, { stakeholder: SH-02, role: relecteur }], approvals: [{ stakeholder: SH-01, version: "1.0", decision: approuvé, declared_by: utilisateur }] }

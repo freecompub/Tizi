@@ -1,0 +1,13 @@
+suites:
+  unit: { command: "node --test --test-reporter=junit --test-reporter-destination=reports/unit.xml test/unit/*.test.js", report: reports/unit.xml }
+  acceptance: { command: "node --test --test-reporter=junit --test-reporter-destination=reports/acceptance.xml test/acceptance/*.test.js", report: reports/acceptance.xml }
+  mutation: { command: "node fake-mutation.mjs", report: reports/mutation/mutation.json, threshold: 70 }
+paths:
+  production: ["src/**"]
+  tests: ["test/**"]
+  contracts: ["contracts/**"]
+  always_allowed: ["impl/**", ".impl/**", "reports/**"]
+elements:
+  CP-01: ["src/completude/**"]
+  CP-02: ["src/api/**"]
+

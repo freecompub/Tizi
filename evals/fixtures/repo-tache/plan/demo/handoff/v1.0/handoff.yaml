@@ -1,0 +1,77 @@
+# Handoff plan → implémentation — généré, ne pas modifier.
+source:
+  initiative: Dossiers complets
+  plan_version: '1.0'
+  cadence: sprint
+  generated: '2026-10-20'
+definition_of_done:
+  - Code revu et fusionné
+  - Exemples automatisés
+held_back:
+  - id: TK-004
+    story: US-002
+    reasons:
+      - 1 règle(s) sans exemple
+      - 1 question(s) ouverte(s)
+tasks:
+  - rank: 1
+    id: TK-002
+    kind: dev
+    title: Contrôle de complétude du dossier
+    story: US-001
+    size: M
+    assignee_type: agent
+    assignee: ''
+    iteration: IT-1
+    depends_on: []
+    waits_for_outside: []
+    context: versions/v1.0/tasks/TK-002.md
+  - rank: 2
+    id: TK-003
+    kind: securite
+    title: Sessions courtes et MFA
+    story: US-001
+    size: M
+    assignee_type: humain
+    assignee: ''
+    iteration: IT-1
+    depends_on:
+      - TK-002
+    waits_for_outside: []
+    context: versions/v1.0/tasks/TK-003.md
+coverage:
+  - id: release_fr_story
+    label: FR de la release couvertes par une story
+    covered: 2
+    total: 2
+    pct: 100
+    threshold: 100
+    met: true
+    waiver: null
+  - id: security_planned
+    label: Mesures de sécurité planifiées
+    covered: 1
+    total: 1
+    pct: 100
+    threshold: 100
+    met: true
+    waiver: null
+  - id: verification_planned
+    label: Vérifications de NFR (étape tests) planifiées
+    covered: 1
+    total: 1
+    pct: 100
+    threshold: 100
+    met: true
+    waiver: null
+  - id: stories_ready
+    label: Stories prêtes
+    covered: 2
+    total: 5
+    pct: 40
+    threshold: 0
+    met: true
+    waiver: null
+integrity:
+  algorithm: sha256
+  source_state: d134005b5570393c02b29f8bd5f119d87f0fe74ceece74556d5560b390041d4b

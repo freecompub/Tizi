@@ -1,0 +1,36 @@
+# Découverte en lecture seule du tracker — générée par discover-tracker.mjs.
+target: jira
+discovered: '2026-10-20'
+destination: http://localhost:8788 / DOS
+types:
+  - id: '1'
+    name: Epic
+    subtask: false
+    required:
+      - summary
+      - issuetype
+      - project
+  - id: '2'
+    name: Story
+    subtask: false
+    required:
+      - summary
+      - issuetype
+      - project
+  - id: '3'
+    name: Sub-task
+    subtask: true
+    required:
+      - summary
+      - issuetype
+      - project
+      - parent
+  - id: '4'
+    name: Task
+    subtask: false
+    required:
+      - summary
+      - issuetype
+      - project
+versions: []
+issues: []

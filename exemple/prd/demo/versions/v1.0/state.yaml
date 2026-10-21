@@ -1,0 +1,28 @@
+document: prd
+initiative: { name: Dossiers complets, slug: demo }
+mode: chaîné
+phase: govern
+source_brd: { path: brd/demo/handoff/v1.0/handoff.yaml, version: "1.0" }
+brd_ref:
+  objectives: [{ id: OBJ-01, statement: Réduire les rejets }]
+  requirements: [{ id: BR-001, statement: "…", priority: must, business_rules: [RG-001] }]
+business_rules:
+  - { id: RG-001, statement: "Un dossier ne doit pas être transmis sans justificatif de domicile.", kind: comportement, enforcement: stricte, automation: automatisée, status: validé }
+  - { id: RG-003, statement: "Le délai de relance est de 5 jours ouvrés.", kind: definition, automation: automatisée, status: validé }
+decision_rights: [{ domain: priorites, decider: Alice }]
+goals: [{ id: GOAL-01, statement: "Réduire les rejets", kpi: taux, target: "2 %", status: validé }]
+personas: [{ id: PER-01, name: Chloé, role: Agente, status: validé }]
+journeys: [{ id: PJ-01, persona: PER-01, goal: Transmettre un dossier, steps: [Saisir, Vérifier, Transmettre], status: validé }]
+story_map:
+  - { id: ACT-01, name: Transmettre, tasks: [{ id: T-01, name: Vérifier le dossier, journey: PJ-01, release: REL-1 }, { id: T-02, name: Prévenir le partenaire, journey: PJ-01, release: REL-1 }] }
+releases: [{ id: REL-1, name: MVP, status: validé }]
+functional_requirements:
+  - { id: FR-002, pattern: event, statement: "Quand un dossier est transmis, le système doit notifier le partenaire.", actor: PER-01, goals: [GOAL-01], release: REL-1, priority: should, origin: DD-01, status: validé }
+  - { id: FR-001, pattern: unwanted, statement: "Si un agent transmet un dossier sans justificatif, le système doit refuser la transmission et stocker l'événement en base de données.", actor: PER-01, brd_requirements: [BR-001], business_rules: [RG-001], goals: [GOAL-01], release: REL-1, priority: must, status: validé }
+acceptance_criteria:
+  - { id: AC-001, fr: FR-001, scenario: Refus, kind: nominal, given: "un dossier sans justificatif", when: "l'agent transmet", then: "la transmission est refusée", status: validé }
+nfrs:
+  - { id: NFR-001, category: performance, statement: "Le contrôle doit être rapide.", priority: must, status: validé }
+design_decisions:
+  - { id: DD-01, question: Qui vérifie, options: [{ text: Agent }, { text: Superviseur }], decision: Agent, rationale: proximité, decided_by: Alice, status: validé }
+governance: { version: "1.0", status: baseline, reviewers: [{ who: Alice, role: approbateur }], approvals: [{ who: Alice, version: "1.0", decision: approuvé }] }

@@ -1,0 +1,10 @@
+document: sad
+initiative: { name: Green, slug: green }
+context_mode: greenfield
+prd_ref: { functional_requirements: [{ id: FR-001, statement: x, priority: must }], nfrs: [] }
+elements:
+  - { id: PS-01, kind: person, name: Utilisateur, status: validé }
+  - { id: SYS-01, kind: system, name: Appli, status: validé }
+  - { id: CT-01, kind: container, name: API, parent: SYS-01, frs: [FR-001], status: validé }
+relations: [{ id: LNK-001, from: PS-01, to: CT-01, description: utilise, status: validé }]
+governance: { version: "0.1" }

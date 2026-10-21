@@ -1,0 +1,102 @@
+# Handoff BRD → PRD — généré, ne pas modifier.
+source:
+  initiative: Dossiers complets
+  brd_version: '1.0'
+  status: baseline
+  generated: '2026-10-20'
+problem: Trop de dossiers transmis incomplets.
+objectives:
+  - id: OBJ-01
+    statement: Réduire les rejets
+    indicator: taux de rejet
+    baseline: 12 %
+    target: 2 %
+    owner: SH-01
+requirements:
+  - id: BR-001
+    statement: Le service doit pouvoir identifier rapidement les dossiers incomplets et les signaler sur un écran.
+    priority: must
+    objectives:
+      - OBJ-01
+    acceptance:
+      - Moins de 2 % de dossiers rejetés…
+    business_rules:
+      - RG-001
+      - RG-099
+business_rules:
+  - id: RG-001
+    statement: Un dossier ne doit pas être transmis sans justificatif de domicile.
+    kind: comportement
+    enforcement: stricte
+    owner: SH-01
+    sources:
+      - ref: SRC-001
+        location: l.9
+    exceptions: []
+  - id: RG-002
+    statement: Le délai de relance est de 5 jours ouvrés.
+    kind: comportement
+    enforcement: ''
+    sources: []
+    exceptions: []
+decision_rights:
+  - domain: perimetre
+    decider: SH-01
+    confirmed_by: SH-01
+  - domain: priorites
+    decider: SH-01
+    escalation: SH-09
+decisions:
+  - id: DD-01
+    question: Vérification centrale ?
+    decision: Oui
+target_process: {}
+constraints: []
+scope:
+  in:
+    - Transmission des dossiers
+  out: []
+  deadline: ''
+open_hypotheses: []
+risks: []
+assumed_shadow_zones: []
+approval_reserves: []
+stakeholders:
+  - id: SH-01
+    name: Alice
+    role: Directrice
+  - id: SH-02
+    name: Bruno
+    role: Chef agents
+  - id: SH-03
+    name: Chloé
+    role: Agente
+glossary: []
+coverage:
+  - id: br_objective
+    label: Exigences métier rattachées à un objectif
+    covered: 2
+    total: 2
+    pct: 100
+    threshold: 100
+    met: true
+    waiver: null
+  - id: br_acceptance
+    label: Exigences métier avec critère d'acceptation
+    covered: 1
+    total: 2
+    pct: 50
+    threshold: 100
+    met: false
+    waiver: null
+  - id: objective_br
+    label: Objectifs servis par au moins une exigence
+    covered: 1
+    total: 1
+    pct: 100
+    threshold: 100
+    met: true
+    waiver: null
+integrity:
+  algorithm: sha256
+  source_state: abd58f68f470833e9cdc1b6b974088473846343243149224a3d8845bd8962b3a

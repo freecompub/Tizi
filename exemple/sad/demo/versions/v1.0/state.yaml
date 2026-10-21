@@ -1,0 +1,111 @@
+document: sad
+initiative: { name: Dossiers complets, slug: demo }
+context_mode: brownfield
+phase: design
+source_prd: { path: prd/demo/handoff/v1.0/handoff.yaml, version: "1.0" }
+prd_ref:
+  problem: "Trop de dossiers transmis incomplets."
+  vision: "Les agents transmettent des dossiers complets du premier coup."
+  functional_requirements:
+    - { id: FR-001, statement: "Refuser la transmission sans justificatif", priority: must, release: REL-1, business_rules: [RG-001] }
+    - { id: FR-002, statement: "Notifier le partenaire", priority: should, release: REL-1 }
+    - { id: FR-003, statement: "Export", priority: wont, release: REL-2 }
+  nfrs:
+    - { id: NFR-001, category: performance, statement: "Contrôle en moins de 2 s", target: "p95 < 2 s" }
+    - { id: NFR-002, category: disponibilite, statement: "Disponibilité", target: "99,5 %" }
+  constraints: [{ id: CON-01, statement: "Hébergement HDS", imposed_by: Juridique }]
+  business_rules: [{ id: RG-001, statement: "Pas de transmission sans justificatif", automation: automatisée }]
+decision_rights: [{ domain: architecture, decider: Alice }, { domain: acceptation_risque_securite, decider: RSSI }]
+sources:
+  - { id: SRC-001, type: code, ref: "backoffice@a1b2:src/app/api/dossiers/route.ts" }
+  - { id: SRC-002, type: configuration, ref: "backoffice@a1b2:docker-compose.yml" }
+existing: { scope: "API dossiers et base", repositories: [{ name: backoffice }] }
+drivers:
+  - id: AD-01
+    kind: performance
+    origin: [NFR-001]
+    scenario: { source: Agent, stimulus: "transmet un dossier", environment: "charge nominale", artifact: "API dossiers", response: "le contrôle répond rapidement", measure: "p95 < 2 s" }
+    importance: haute
+    difficulty: moyenne
+    status: validé
+  - id: AD-02
+    kind: conformite
+    origin: [CON-01]
+    scenario: { source: Auditeur, stimulus: contrôle, response: "données hébergées HDS" }
+    importance: haute
+    difficulty: haute
+    status: validé
+contexts:
+  - id: CTX-01
+    name: Dossiers
+    responsibility: "Constituer et transmettre les dossiers"
+    aggregates: [{ name: Dossier, invariants: [RG-001], commands: [Transmettre], events: [DossierTransmis] }]
+    status: validé
+  - { id: CTX-02, name: Notification, responsibility: "Prévenir les partenaires", status: validé }
+context_map: [{ upstream: CTX-01, downstream: CTX-02, pattern: customer_supplier }]
+elements:
+  - { id: PS-01, kind: person, name: Agent d'accueil, persona: PER-01, status: validé }
+  - { id: SYS-01, kind: system, name: BackOffice, description: "Gestion des dossiers", lifecycle: existant_modifié, evidence: [SRC-001], status: validé }
+  - { id: SYS-02, kind: system, name: Partenaire, external: true, lifecycle: existant_conservé, evidence: [SRC-002], status: validé }
+  - { id: CT-01, kind: container, subtype: web, name: Application web, technology: Next.js, parent: SYS-01, lifecycle: existant_modifié, evidence: [SRC-001], frs: [FR-001], owner: Équipe web, contexts: [CTX-01], status: validé }
+  - { id: CT-02, kind: container, subtype: datastore, name: Base dossiers, technology: PostgreSQL, parent: SYS-01, lifecycle: existant_conservé, evidence: [SRC-002], status: validé }
+  - { id: CT-03, kind: container, subtype: worker, name: Notificateur, technology: Node.js, parent: SYS-01, lifecycle: nouveau, frs: [FR-002], owner: Équipe web, contexts: [CTX-02], status: validé }
+  - { id: CT-04, kind: container, name: Ancien script cron, parent: SYS-01, lifecycle: existant_remplacé, evidence: [SRC-002], status: validé }
+  - { id: CP-01, kind: component, name: Contrôle de complétude, parent: CT-01, lifecycle: nouveau, frs: [FR-001], status: validé }
+  - { id: CP-02, kind: component, name: API dossiers, parent: CT-01, lifecycle: existant_modifié, evidence: [SRC-001], status: validé }
+relations:
+  - { id: LNK-001, from: PS-01, to: CP-02, description: "transmet un dossier", technology: HTTPS, status: validé }
+  - { id: LNK-002, from: CP-02, to: CP-01, description: "vérifie", status: validé }
+  - { id: LNK-003, from: CT-01, to: CT-02, description: "lit et écrit", technology: SQL, lifecycle: existant_conservé, evidence: [SRC-002], status: validé }
+  - { id: LNK-004, from: CT-01, to: CT-03, description: "publie DossierTransmis", style: async, status: validé }
+  - { id: LNK-005, from: CT-03, to: SYS-02, description: "notifie", technology: HTTPS, status: validé }
+  - { id: LNK-006, from: CT-04, to: SYS-02, description: "envoie un fichier", lifecycle: existant_remplacé, status: validé }
+decisions:
+  - id: ADR-001
+    title: "Notifier le partenaire par un worker asynchrone"
+    status: accepté
+    context: "La notification ne doit pas ralentir la transmission."
+    drivers: [AD-01]
+    options:
+      - { name: Worker asynchrone, pros: ["découple la latence"], cons: ["un conteneur de plus à exploiter"] }
+      - { name: Appel synchrone, pros: ["simple"], cons: ["latence ajoutée au p95"] }
+    outcome: Worker asynchrone
+    justification: "il protège le p95 de la transmission"
+    consequences: { good: ["latence stable"], bad: ["exploitation d'un worker"] }
+    confirmation: "test de charge sur la transmission"
+    elements: [CT-03]
+    decided_by: Alice
+    date: "2026-10-20"
+  - { id: ADR-002, title: "Hébergement", status: proposé, context: "HDS", drivers: [], options: [{ name: OVH HDS }] }
+nfr_responses:
+  - { id: NR-01, nfr: NFR-001, drivers: [AD-01], tactics: ["traitement asynchrone de la notification"], elements: [CT-03], decisions: [ADR-001], verification: { method: test_charge, description: "p95 transmission", stage: tests }, status: validé }
+data_entities:
+  - { id: DAT-01, name: Dossier, context: CTX-01, store: CT-02, classification: sante, retention: "10 ans après clôture", status: validé }
+  - { id: DAT-02, name: Notification, context: CTX-02, store: CT-03, classification: interne, status: validé }
+interfaces:
+  - id: API-01
+    kind: openapi
+    name: API dossiers
+    provider: CT-01
+    consumers: [PS-01]
+    lifecycle: existant_modifié
+    operations:
+      - { id: OP-001, name: "POST /dossiers/{id}/transmission", purpose: "Transmettre un dossier", frs: [FR-001], data: [DAT-01], auth: "session agent" }
+      - { id: OP-002, name: "GET /health", purpose: "Sonde" }
+    status: validé
+  - id: API-02
+    kind: asyncapi
+    name: Événements dossiers
+    provider: CT-01
+    consumers: [CT-03]
+    operations: [{ id: OP-003, name: DossierTransmis, purpose: "Annonce une transmission", frs: [FR-002], data: [DAT-01] }]
+    status: validé
+trust_boundaries: [{ id: TB-01, name: "Internet / zone HDS", elements: [CT-01, CT-02, CT-03] }]
+threats:
+  - { id: TH-001, stride: S, target: LNK-001, description: "vol de session agent", likelihood: moyenne, impact: fort, treatment: attenuer, mitigations: ["sessions courtes", "MFA"], status: validé }
+  - { id: TH-002, stride: D, target: CT-03, description: "file saturée", likelihood: faible, impact: moyen, treatment: accepter, status: validé }
+tech_debt: [{ id: DT-01, text: "Pas de tests sur l'API dossiers", elements: [CP-02], impact: "régressions", evidence: [SRC-001] }]
+hypotheses: [{ id: H-001, text: "Le partenaire accepte un webhook", status: à vérifier, validation: spike, spike: "appel de test" }]
+risks: []
+shadow_zones: []
+governance: { version: "1.0", status: baseline, reviewers: [{ who: Alice, role: approbateur }, { who: Équipe web, role: relecteur }], approvals: [{ who: Alice, version: "1.0", decision: approuvé }] }

@@ -1,0 +1,15 @@
+document: test
+initiative: { name: Dossiers complets, slug: demo }
+source_plan: { path: plan/demo/handoff/v1.0/handoff.yaml, version: "1.0", sha256: "9f7d75b950a5916296fb27f655f38431d30579b0216abd62687ab39800eb2d95" }
+release: REL-1
+candidate: 1.0.0-rc1
+settings:
+  thresholds: { mutation: 60, requirements: 100 }
+  critical_journeys: [PJ-01]
+  reports: { unit: reports/unit.xml, acceptance: reports/acceptance.xml, e2e: reports/e2e.xml, mutation: reports/mutation/mutation.json, security: reports/security.xml }
+nfr_results:
+  - { id: NR-01, nfr: NFR-001, measured: "p95 = 1,4 s", target: "p95 < 2 s", pass: true, evidence: reports/perf.html, date: "2026-11-05" }
+exploratory:
+  - { id: XS-01, charter: { explore: "la transmission", with: "des coupures réseau", discover: "pertes ou doublons" }, targets: [TH-002], status: faite, tester: Chloé, date: "2026-11-05", findings: [{ severity: mineur, text: "pas de message pendant la reprise", story: US-006 }] }
+waivers:
+  - { id: EX-003, reason: "US-002 retenue (question ouverte), reportée à la release suivante", approved_by: Alice }

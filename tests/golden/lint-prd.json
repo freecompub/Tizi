@@ -1,0 +1,14 @@
+[
+  "L01 terme non mesurable « rapide » : remplacer par un comportement observable ou une valeur cible",
+  "L03 « et » : l'énoncé contient peut-être plusieurs exigences, vérifier s'il faut le scinder",
+  "L07 « base de données » décrit l'implémentation : reformuler en comportement observable (le choix relève de la conception)",
+  "S04 exigence validée sans critère d'acceptation",
+  "S07 exigence Must sans scénario d'erreur",
+  "S08 NFR incomplète : metric, target, measurement manquant(s)",
+  "S20 règle à automatiser couverte par aucune exigence fonctionnelle",
+  "S54 FR Must avec un scénario d'erreur : 0 % pour un seuil de 100 % (manquent : FR-001) ; corriger ou déclarer une dérogation dans coverage_waivers",
+  "S54 FR avec au moins un critère d'acceptation : 50 % pour un seuil de 100 % (manquent : FR-002) ; corriger ou déclarer une dérogation dans coverage_waivers",
+  "S57 hypothèse d'usage à risque fort ni testée ni assumée avant la spécification",
+  "S57 hypothèse de valeur à risque fort ni testée ni assumée avant la spécification",
+  "S57 test sans critère de réussite écrit à l'avance"
+]

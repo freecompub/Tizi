@@ -1,0 +1,273 @@
+# État de session d'une initiative BRD — mis à jour par l'agent après chaque échange validé.
+document: brd
+initiative:
+  name: ""
+  slug: ""
+  trigger: ""            # pourquoi maintenant
+phase: assess            # assess | discover | define | govern | close (opportunité jetée)
+created: ""              # AAAA-MM-JJ
+updated: ""
+
+opportunity:              # phase Assess (references/phase-assess.md)
+  request:
+    verbatim: ""           # la demande initiale, mot pour mot
+    classification: ""     # figee (une solution précise, qui masque souvent le problème) | fluide (une aspiration vague)
+    presumed_solution: ""  # pour une demande figée : la solution présumée, à remonter au problème
+  canvas:
+    problems: []           # problèmes, ou idées de solution à ramener à un problème
+    users: []              # utilisateurs et clients visés
+    solutions_today: []
+    user_value: ""
+    user_metrics: []
+    adoption: ""
+    business_problem: ""
+    business_metrics: []
+    budget: ""             # ordre de grandeur : jours, semaines, mois
+  decision: en_attente     # en_attente | aller_plus_loin | jeter | a_apprendre | reportee
+  reason: ""
+  to_learn: []             # si a_apprendre : - { question: "", who: "" }
+  decided_by: ""           # déclaré par l'utilisateur
+  date: ""
+
+problem:
+  statement: ""          # 2-3 phrases, confirmées par l'utilisateur
+  confirmed: false
+  symptoms: []
+  impact: []             # temps, coût, risque, qualité
+
+success_signals: []      # - { text: "", measurable: false }
+
+scope:
+  in: []
+  out: []
+  deadline: ""
+
+current_process: []      # reconstitué en Discover (atelier, entretiens)
+#  - { event: "Dossier reçu", actor: "", source: SRC-xxx }
+
+constraints: []          # - { type: legale|contractuelle|organisationnelle|budgetaire|environnement|autre, text: "", source: SRC-xxx, implication: "" }
+                          #   environnement : conditions réelles d'usage (bruit, lumière, mains occupées ou gantées, déplacement, connexion, interruptions, temps disponible)
+
+stakeholders: []
+#  - id: SH-01
+#    name: ""
+#    role: ""
+#    impact: fort          # fort | faible — à quel point le changement touche son travail ou son pouvoir
+#    power: fort           # fort | faible — capacité à peser sur la décision ou sur l'adoption
+#    influence: positive   # positive | négative | neutre | inconnue — sens dans lequel elle pèsera
+#    quadrant: impliquer   # déduit de power × impact : impliquer | satisfaire | consulter | informer
+#    attitude: ""          # ce qu'elle pense du changement, du sponsor, de la démarche (verbatim si possible)
+#    decision_domains: []  # domaines de decision_rights sur lesquels elle a autorité
+#    end_user: false       # utilisatrice directe du futur processus ou système
+#    represents: ""        # si elle parle au nom d'un groupe : lequel (les représentants ne remplacent pas les vrais utilisateurs)
+#    status: à interroger  # à interroger | interrogée | non disponible
+
+decision_rights: []      # qui tranche quoi, établi au cadrage et validé par le sponsor
+#  - domain: perimetre     # perimetre | objectifs | priorites | processus:<nom> | regles:<domaine> | donnees_securite | autre:<libellé>
+#    decider: SH-01
+#    escalation: SH-00     # recours si le décideur ne tranche pas ; le sponsor en dernier ressort
+#    confirmed_by: SH-00   # qui a confirmé cette attribution
+#    source: SRC-xxx
+
+sources: []
+#  - id: SRC-001
+#    type: entretien       # entretien | observation | mesure | test | document | atelier | ticket | revue | dt-handoff | autre
+#                          # observation, mesure et test donnent une preuve « observée » ; les autres une preuve « rapportée »
+#    date: ""
+#    stakeholders: [SH-01]
+#    path: ""              # fichier dans brd/<slug>/sources/ si fourni
+#    feedback: à envoyer   # retour à la source : à envoyer | envoyé | confirmé | corrigé | sans objet
+
+candidate_needs: []
+#  - id: BC-001
+#    text: "Pouvoir …"
+#    sources: [{ ref: SRC-001, location: "l.42" }]
+#    status: proposé       # proposé | confirmé | intégré | abandonné | hors_périmètre
+#    reason: ""            # obligatoire si abandonné ou hors_périmètre
+#    notes: ""             # solutions évoquées, nuances
+
+hypotheses: []
+#  - id: H-001
+#    text: ""
+#    basis: ""             # sur quoi repose l'hypothèse
+#    status: à vérifier    # à vérifier | confirmée | infirmée
+
+shadow_zones: []
+#  - id: ZO-001
+#    type: probleme_flou   # probleme_flou | partie_prenante_non_entendue | profil_manquant | succes_non_mesurable
+#                          # | contradiction | hypothese_non_verifiee | solution_deguisee | perimetre_flou
+#                          # | attendu_implicite | arbitre_inconnu
+#    subtype: ""           # contradiction uniquement : factuelle | vocabulaire | reglementaire | interets
+#    parties: []           # contradiction : parties prenantes en désaccord
+#    arbiter: SH-00        # contradiction « interets » : décideur issu de decision_rights, jamais partie au conflit
+#    question: "…?"
+#    origin: cadrage       # cadrage | SRC-xxx | atelier | point-etape | council:<lentille>
+#    ask_to: SH-01         # SH-xx ou rôle à identifier
+#    action: entretien     # entretien | document | atelier | decision | question-utilisateur
+#    blocking: false
+#    status: ouverte       # ouverte | levée | assumée
+#    resolution: ""        # levée : réponse + source (SRC-xxx, emplacement) ou décision (DD-xx) ; assumée : raison
+#    related: []           # H-xxx, BC-xxx, SRC-xxx liés
+
+council_runs: []
+#  - date: ""
+#    mode: preparation     # preparation | couverture | completude
+#    lenses: [utilisateur-final, operations-support, securite-conformite, sponsor-finance, sceptique]
+#    proposed: 0           # questions renvoyées par les lentilles
+#    discarded: 0          # écartées à l'arbitrage
+#    retained: 0           # retenues par l'utilisateur
+
+# ─────────────── Phase Define ───────────────
+
+objectives: []
+#  - id: OBJ-01
+#    statement: ""         # résultat métier attendu
+#    indicator: ""
+#    baseline: ""          # valeur actuelle ; si inconnue → zone d'ombre succes_non_mesurable
+#    target: ""
+#    deadline: ""
+#    owner: SH-01
+#    status: proposé       # proposé | validé | abandonné
+#    lint_waivers: []
+
+impact_map: []            # Pourquoi (objectif) → Qui (acteur) → Comment (changement de comportement) → Quoi (exigences)
+#  - objective: OBJ-01
+#    actor: SH-02          # ou rôle
+#    impact: ""            # changement de comportement attendu
+#    requirements: [BR-001]
+
+business_requirements: []
+#  - id: BR-001
+#    statement: "Le service doit pouvoir …"
+#    objectives: [OBJ-01]
+#    from_needs: [BC-001, BC-004]
+#    business_rules: []    # RG-xxx que l'exigence fait respecter ou dont elle dépend
+#    acceptance:           # résultats observables côté métier
+#      - ""
+#    priority: ""          # must | should | could | wont
+#    rationale: ""         # pourquoi cette priorité
+#    status: proposé       # proposé | validé | abandonné
+#    lint_waivers: []      # avertissements acceptés : - { rule: L03, reason: "" }
+
+business_rules: []         # règles métier : ce ne sont pas des exigences, mais des directives que le métier contrôle
+#  - id: RG-001
+#    statement: "Un dossier ne doit pas être transmis sans justificatif de domicile."
+#    kind: comportement    # definition (fait, calcul, inférence : ne peut pas être violée) | comportement (obligation ou interdiction : peut l'être)
+#    enforcement: stricte  # comportement uniquement : stricte | derogation_autorisee | derogation_justifiee | indicative
+#    sources: [{ ref: SRC-001, location: "l.12" }]   # texte de loi, procédure, ou savoir tacite d'une personne
+#    owner: SH-01          # responsable métier qui peut la faire évoluer
+#    rationale: ""         # pourquoi elle existe ; à challenger si personne ne le sait
+#    exceptions: []        # chaque exception est elle-même une règle : RG-xxx
+#    status: proposé       # proposé | validé | abandonné
+#    lint_waivers: []
+
+decisions: []              # arbitrages rendus pendant la construction du BRD
+#  - id: DD-01
+#    question: ""
+#    zone: ZO-012          # zone d'ombre à l'origine
+#    options:
+#      - { text: "", impacts: "" }   # qui serait insatisfait, autre moyen possible, risque pris en écartant
+#    decision: ""
+#    rationale: ""
+#    decided_by: SH-01     # déclaré par l'utilisateur, jamais déduit
+#    date: ""
+#    status: proposé       # proposé | validé
+
+target_process:
+  events: []
+#    - { event: "", actor: "", change: nouveau }   # nouveau | modifié | inchangé | supprimé
+  org_impacts: []          # rôles, organisation, formation
+
+risks: []
+#  - id: R-01
+#    text: ""
+#    origin: ZO-003        # zone d'ombre assumée, hypothèse, source, partie prenante
+#    related: []           # parties prenantes ou éléments concernés
+#    likelihood: ""        # faible | moyenne | forte
+#    impact: ""            # faible | moyen | fort
+#    response: ""          # piste de traitement côté métier
+#    status: proposé       # proposé | validé
+
+dependencies: []           # - { text: "", owner: "" }
+
+glossary: []               # - { term: "", definition: "", source: SRC-xxx }
+
+define_returns: []         # retours ponctuels en Discover
+#  - { date: "", zone: ZO-012, reason: "" }
+
+brd_sections:              # à rédiger | proposé | validé
+  context: à rédiger
+  objectives: à rédiger
+  stakeholders: à rédiger
+  processes: à rédiger
+  requirements: à rédiger
+  business_rules: à rédiger
+  constraints: à rédiger
+  assumptions_risks: à rédiger
+  decisions: à rédiger
+  scope: à rédiger
+  glossary: à rédiger
+
+synthesis_check:           # porte de synthèse avant Define (fin de Discover), déclarée avec l'utilisateur
+  date: ""
+  fidelite: { status: "", note: "" }        # la synthèse reflète les sources, pas des suppositions — ok | faible
+  couverture: { status: "", note: "" }      # toutes les parties prenantes concernées sont représentées
+  robustesse: { status: "", note: "" }      # chaque besoin retenu repose sur plusieurs sources
+  actionnabilite: { status: "", note: "" }  # le problème est assez clair pour guider la suite
+  alignement: { status: "", note: "" }      # l'équipe et les parties prenantes s'y reconnaissent
+  # une dimension « faible » se corrige, ou s'assume : { status: faible, assumed: true, note: "raison" }
+
+transition_requirements: []  # exigences de transition : ce qu'il faut pour passer de l'existant à la cible (BABOK)
+#  - id: TR-01
+#    kind: formation       # formation | conduite_du_changement | reprise_de_donnees | coexistence | communication | support | autre
+#    text: ""
+#    stakeholders: [SH-02] # qui est concerné
+#    done_when: ""         # critère d'achèvement observable
+#    related: [BR-001]
+#    sources: []
+#    status: proposé
+
+coverage_thresholds: {}     # seuils de couverture en %, par métrique ; vide = valeurs par défaut (lib/rules.mjs, COVERAGE_DEFAULTS)
+coverage_waivers: []        # - { metric: fr_ac, reason: "", approved_by: "" }   # seuil non atteint, assumé et approuvé
+
+# ─────────────── Phase Govern ───────────────
+
+governance:
+  version: "0.1"           # version courante : 0.x brouillons et candidates, 1.0 première baseline
+  status: brouillon        # brouillon | en_revue | approuvé | baseline
+  reviewers: []
+#    - { stakeholder: SH-01, role: approbateur }   # approbateur | relecteur | informé
+  review_rounds: []
+#    - { id: RV-1, version: "0.3", sent: "", channel: export, deadline: "" }   # channel : export | pr
+  comments: []
+#    - id: CM-001
+#      round: RV-1
+#      author: SH-02
+#      source: SRC-010     # le retour est enregistré comme source
+#      target: BR-004      # identifiant ou nom de section
+#      text: ""
+#      category: correction   # correction | modification | nouvelle_exigence | contestation | question
+#      decision: en_attente   # en_attente | accepté | rejeté | reporté
+#      reason: ""             # obligatoire si rejeté ou reporté
+#      changes: []            # identifiants modifiés suite au commentaire
+  approvals: []
+#    - stakeholder: SH-01
+#      version: "1.0"
+#      date: ""
+#      decision: approuvé     # approuvé | approuvé_avec_réserves | refusé
+#      reserves: []           # R-xx ou ZO-xxx créés pour suivre les réserves
+#      evidence: ""           # référence facultative : mail, signature, compte rendu
+#      declared_by: utilisateur
+  baselines: []
+#    - { version: "1.0", date: "" }
+  change_requests: []
+#    - id: CR-001
+#      date: ""
+#      requested_by: SH-01
+#      description: ""
+#      impact: []             # identifiants touchés
+#      decision: en_attente   # en_attente | acceptée | refusée
+#      target_version: ""
+
+session:                   # continuité entre sessions (references/sessions.md)
+  next_action: ""          # prochaine action notée avant une pause

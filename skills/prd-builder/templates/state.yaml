@@ -1,0 +1,238 @@
+# État de session d'un PRD — source de vérité. prd.md et les autres documents sont générés à partir de lui.
+document: prd
+initiative:
+  name: ""
+  slug: ""
+mode: chaîné              # chaîné (depuis un BRD) | autonome (depuis un brief)
+phase: frame              # frame | specify | govern
+created: ""
+updated: ""
+
+# ─────────────── Amont ───────────────
+source_brd:               # mode chaîné uniquement
+  path: ""                # brd/<slug>/handoff/v<x.y>/handoff.yaml
+  version: ""
+  sha256: ""            # empreinte relevée par verify-handoff.mjs à l'ingestion
+brd_ref:                  # copie en lecture seule des éléments du BRD utiles à la traçabilité
+  objectives: []          # - { id: OBJ-01, statement: "" }
+  requirements: []        # - { id: BR-001, statement: "", priority: must, business_rules: [], evidence: rapporté }
+  transition_requirements: []   # - { id: TR-01, kind: formation, text: "", done_when: "", release: REL-1 }   # release fixée dans le PRD
+
+business_rules: []        # chaîné : copiées du handoff (lecture seule, sauf `automation`) ; autonome : établies en Frame
+#  - id: RG-001
+#    statement: ""
+#    kind: comportement    # definition | comportement
+#    enforcement: stricte  # stricte | derogation_autorisee | derogation_justifiee | indicative
+#    owner: ""
+#    sources: []
+#    automation: à_décider # à_décider | automatisée | manuelle — décidé dans le PRD
+#    automation_rationale: ""
+#    status: validé        # chaîné : validé (vient d'une baseline) ; autonome : proposé | validé | abandonné
+
+decision_rights: []       # chaîné : repris du BRD ; autonome : établi en Frame
+#  - { domain: priorites, decider: "", escalation: "", confirmed_by: "" }
+
+problem:                  # repris du BRD (chaîné) ou établi en Frame (autonome)
+  statement: ""
+  confirmed: false
+
+sources: []               # preuves produit (entretiens, tests utilisateurs, analytics, études, décisions)
+#  - { id: SRC-001, type: entretien, date: "", who: "", path: "", feedback: à envoyer }   # type : entretien | observation | test | analytics | étude | décision
+
+# ─────────────── Frame ───────────────
+vision: ""                # 2 à 4 phrases
+
+goals: []
+#  - id: GOAL-01
+#    statement: ""
+#    kpi: ""
+#    baseline: ""
+#    target: ""
+#    horizon: ""          # échéance ou release
+#    brd_objectives: []   # OBJ-xx (chaîné) ; vide en autonome
+#    status: proposé      # proposé | validé | abandonné
+
+personas: []
+#  - id: PER-01
+#    name: ""
+#    role: ""
+#    jobs: []             # jobs-to-be-done
+#    pains: []
+#    success: ""
+#    evidence: []         # SRC-xxx, parties prenantes ou BR du BRD : un persona n'est jamais inventé
+#    status: proposé
+
+journeys: []
+#  - id: PJ-01
+#    persona: PER-01
+#    goal: ""
+#    steps: []            # étapes observables, dans l'ordre
+#    status: proposé
+
+story_map: []             # activités → tâches, chaque tâche affectée à une release
+#  - id: ACT-01
+#    name: ""
+#    tasks:
+#      - { id: T-01, name: "", journey: PJ-01, release: REL-1 }
+
+releases: []
+#  - id: REL-1
+#    name: MVP
+#    learning_goal: ""    # hypothèse principale testée
+#    value: ""            # le parcours de bout en bout rendu possible
+#    signal: ""           # observation qui dira si l'hypothèse tient
+#    containment: ""      # pilote, feature flag, cohorte…
+#    status: proposé
+
+scope:
+  in: []
+  out: []                 # - { text: "", reason: "" }
+
+# ─────────────── Specify ───────────────
+functional_requirements: []
+#  - id: FR-001
+#    pattern: event        # ubiquitous | event | state | unwanted | optional (EARS)
+#    statement: "Quand …, le système doit …"
+#    actor: PER-01
+#    brd_requirements: []  # BR-xxx (chaîné)
+#    goals: [GOAL-01]
+#    journeys: [PJ-01]
+#    release: REL-1
+#    priority: must        # must | should | could | wont
+#    origin: ""            # obligatoire si aucune BR : SRC-xxx ou DD-xx
+#    business_rules: []    # RG-xxx que l'exigence automatise ou fait respecter
+#    status: proposé       # proposé | validé | abandonné
+#    lint_waivers: []      # avertissements acceptés : - { rule: L03, reason: "" }
+
+acceptance_criteria: []
+#  - id: AC-001
+#    fr: FR-001
+#    scenario: ""
+#    kind: nominal         # nominal | erreur
+#    given: ""
+#    when: ""
+#    then: ""
+#    status: proposé
+
+nfrs: []
+#  - id: NFR-001
+#    category: performance # voir references/nfr-taxonomy.md
+#    statement: ""
+#    metric: ""
+#    target: ""
+#    measurement: ""       # comment et où on le mesure
+#    applies_to: []        # FR-xxx, ou vide si global
+#    brd_requirements: []
+#    priority: must
+#    status: proposé
+
+constraints: []
+#  - { id: CON-01, statement: "", imposed_by: "", category: légale, status: proposé }
+
+design_decisions: []      # décisions produit (pas techniques)
+#  - id: DD-01
+#    question: ""
+#    options: []           # - { text: "", impacts: "" } — au moins deux
+#    decision: ""
+#    rationale: ""
+#    decided_by: ""        # déclaré par l'utilisateur, jamais déduit ; décideur issu de decision_rights
+#    zone: ""              # zone d'ombre à l'origine, le cas échéant
+#    date: ""
+#    status: proposé
+
+metrics: []
+#  - id: MET-01
+#    goal: GOAL-01
+#    name: ""
+#    definition: ""
+#    baseline: ""
+#    target: ""
+#    window: ""
+#    data_source: ""
+#    instrumentation: ""   # événements à collecter
+
+dependencies: []          # - { text: "", owner: "" }
+concepts: []              # exploration de solutions (references/concept-exploration.md)
+#  - id: CPT-01
+#    title: ""             # deux à quatre mots
+#    description: ""       # une ou deux phrases : ce que l'utilisateur fait autrement
+#    ideas: []             # idées brutes regroupées dans ce concept
+#    lenses:
+#      desirability: ""    # d'après les sources
+#      feasibility: ""     # hypothèse seulement ; un doute technique deviendra un spike en conception
+#      viability: ""
+#    tested_by: []         # H-xxx dont le test porte sur ce concept
+#    decision: à_tester    # à_tester | retenu | écarté
+#    reason: ""            # raison du choix, rendue par le décideur
+#    status: proposé
+
+hypotheses: []
+#  - id: H-001
+#    text: ""
+#    basis: ""
+#    kind: valeur          # valeur | usage | viabilite | faisabilite (references/validated-learning.md)
+#    risk: fort            # fort | moyen | faible
+#    status: à vérifier    # à vérifier | confirmée | infirmée | assumée
+#    reason: ""            # obligatoire si assumée sans test
+#    test:
+#      method: bd_conception   # entretien | bd_conception | prototype_papier | prototype_cliquable | test_usage | concierge | faux_bouton | analytique
+#      audience: ""            # qui, combien
+#      success_criterion: ""   # écrit AVANT le test
+#      date: ""
+#      result: ""              # confirmee | infirmee | ambigue
+#      observations: []
+#      source: SRC-xxx
+risks: []                 # - { id: R-01, text: "", likelihood: "", impact: "", response: "", origin: "", status: proposé }
+glossary: []              # - { term: "", definition: "" }
+
+shadow_zones: []
+#  - id: ZO-001
+#    type: cas_limite      # voir references/shadow-zones.md
+#    parties: []           # conflit d'intérêts : parties en désaccord
+#    arbiter: ""           # conflit d'intérêts : décideur issu de decision_rights, jamais partie au conflit
+#    question: ""
+#    origin: ""
+#    ask_to: ""
+#    action: ""
+#    blocking: false
+#    status: ouverte       # ouverte | levée | assumée
+#    resolution: ""
+#    related: []
+
+questions: []             # checklist de questions persistante (voir SKILL.md)
+#  - group: 1
+#    title: ""
+#    items:
+#      - { id: 1.a, text: "", state: ouverte, answer: "" }   # ouverte | répondue | écartée
+
+council_runs: []
+#  - { date: "", mode: cadrage, lenses: [], proposed: 0, discarded: 0, retained: 0 }
+
+prd_sections:             # à rédiger | proposé | validé
+  context: à rédiger
+  goals: à rédiger
+  personas_journeys: à rédiger
+  releases: à rédiger
+  functional: à rédiger
+  non_functional: à rédiger
+  constraints_decisions: à rédiger
+  metrics: à rédiger
+  risks: à rédiger
+  glossary: à rédiger
+
+coverage_thresholds: {}     # seuils de couverture en %, par métrique ; vide = valeurs par défaut (lib/rules.mjs, COVERAGE_DEFAULTS)
+coverage_waivers: []        # - { metric: fr_ac, reason: "", approved_by: "" }   # seuil non atteint, assumé et approuvé
+
+# ─────────────── Govern ───────────────
+governance:
+  version: "0.1"
+  status: brouillon       # brouillon | en_revue | approuvé | baseline
+  reviewers: []           # - { who: "", role: approbateur }   # approbateur | relecteur | informé
+  review_rounds: []
+  comments: []            # CM-xxx, même structure que le BRD
+  approvals: []           # - { who: "", version: "", date: "", decision: approuvé, reserves: [], evidence: "", declared_by: utilisateur }
+  baselines: []
+  change_requests: []     # CR-xxx ; target: prd | brd (demande à remonter au BRD)
+
+session:                   # continuité entre sessions (references/sessions.md)
+  next_action: ""          # prochaine action notée avant une pause

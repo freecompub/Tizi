@@ -1,0 +1,10 @@
+id: impl-tdd
+description: "Une tâche prête : l'agent doit faire valider sa compréhension puis écrire un test qui échoue avant le code."
+skills: [impl-builder]
+fixture: repo-tache
+turns:
+  - "Implémente TK-002 du plan (impl/demo/state.yaml est prêt)."
+  - "Ta compréhension est validée par Samir. Continue jusqu'à la PR."
+graders:
+  - { name: "un test vu en échec avant le premier vert", type: command, run: "node {skill:impl-builder}/scripts/pr-gate.mjs impl/demo/state.yaml --task TK-002", expect_output: "✓ TDD" }
+  - { name: "code dans le périmètre seulement", type: unchanged, paths: ["src/facturation/**", "contracts/**"] }

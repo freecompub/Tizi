@@ -1,0 +1,6 @@
+document: impl
+initiative: { name: Dossiers complets, slug: demo }
+source_plan: { path: plan/demo/handoff/v1.0/handoff.yaml, version: "1.0", sha256: "" }
+config: impl/config.yaml
+tasks: []
+shadow_zones: []

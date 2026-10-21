@@ -1,0 +1,13 @@
+[
+  "S40 planifiée alors que sa story US-002 n'est pas prête",
+  "S40 planifiée alors que sa story US-005 n'est pas prête",
+  "S41 règle Ne pas notifier le week-end sans exemple : on ne saura pas la tester",
+  "S43 tâche XL : trop grosse pour une PR, à découper",
+  "S44 tâche sans story",
+  "S45 affectée à un agent alors que : taille XL au-delà de M ; story non prête",
+  "S48 charge 11 au-delà de la capacité 6",
+  "S50 exemple incomplet : when manquant(s)",
+  "S52 règle « Ne pas notifier le week-end » sans référence amont : demande de changement au BRD ou au PRD",
+  "S60 voie rapide non conforme : taille L ; modifie un contrat d'interface ; suivre le chemin normal",
+  "S61 story de milieu de partie planifiée avant des stories d'ouverture encore ouvertes (US-005)"
+]

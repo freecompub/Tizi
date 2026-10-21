@@ -1,0 +1,7 @@
+{
+  "name": "test-builder-scripts",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=18" },
+  "description": "Aucune dépendance à installer : js-yaml 4.1.0 (MIT) est embarqué dans lib/vendor."
+}

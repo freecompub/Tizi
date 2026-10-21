@@ -1,0 +1,91 @@
+# Découverte en lecture seule du tracker — générée par discover-tracker.mjs.
+target: github
+discovered: '2026-10-20'
+destination: freecompub/demo
+labels:
+  - story
+  - bug
+  - taille:M
+  - activite:ACT-01
+  - walking-skeleton
+  - spike
+  - taille:S
+  - humain
+  - iteration:IT-1
+  - tache
+  - agent
+  - type:securite
+  - taille:XL
+milestones:
+  - number: 1
+    title: REL-1 MVP
+    state: open
+issues:
+  - number: 1
+    title: '[TK-001] Vérifier que le partenaire accepte un webhook'
+    state: open
+    labels:
+      - spike
+      - taille:S
+      - humain
+      - iteration:IT-1
+    milestone: REL-1 MVP
+    body_sha256: fb9525ebbebfed1def5bb1fb4ccc55ccee7f347f99cb90b33ccaa47285d62832
+  - number: 2
+    title: Bloquer la transmission si le justificatif de domicile manque
+    state: open
+    labels: []
+    milestone: ''
+    body_sha256: a89c30ef9d45d430f49921cba698e1bc3938de19886477cb09d3e4488ff2243a
+  - number: 10
+    title: >-
+      [US-001] En tant qu'agente, je veux être bloquée si le justificatif manque, afin de ne pas transmettre un dossier
+      incomplet
+    state: open
+    labels:
+      - story
+      - taille:M
+      - activite:ACT-01
+      - walking-skeleton
+    milestone: REL-1 MVP
+    body_sha256: 5f10fdf686d95ddaeb45b02c1e2986b8e75bc3716908c3d6896f57790d5bdeee
+  - number: 11
+    title: '[US-002] En tant qu''agente, je veux que le partenaire soit prévenu, afin d''éviter les relances'
+    state: open
+    labels:
+      - story
+      - taille:M
+      - activite:ACT-01
+    milestone: REL-1 MVP
+    body_sha256: ffb4477a179d573a6ad2fb5eff332d7c2cdcac2f6a63be34f58d71d5fa552cc7
+  - number: 12
+    title: '[TK-002] Contrôle de complétude'
+    state: open
+    labels:
+      - tache
+      - taille:M
+      - agent
+      - iteration:IT-1
+    milestone: REL-1 MVP
+    body_sha256: c5ed5c47418b422b6b5f8402da50ef1b8c46cc481e020b8d6032ccb8f7f7a1e0
+  - number: 13
+    title: '[TK-003] Sessions courtes et MFA'
+    state: open
+    labels:
+      - tache
+      - taille:M
+      - humain
+      - iteration:IT-1
+      - type:securite
+    milestone: REL-1 MVP
+    body_sha256: bad1a31b5da5cd26668b3a1fad7c8e876e4f650d1cda3a0f5e75e3fd39296687
+  - number: 14
+    title: '[TK-004] Notificateur'
+    state: open
+    labels:
+      - tache
+      - taille:XL
+      - agent
+      - iteration:IT-1
+    milestone: REL-1 MVP
+    body_sha256: 4dd5601a1ffa413e8d46f46e9254b59ac2da1645342ff4ef7ff3f9e2291d6691

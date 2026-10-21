@@ -1,0 +1,100 @@
+# Source unique des points d'entrée du SDLC. install.mjs en génère :
+#   - pour Claude Code : une commande par entrée (.claude/commands/<nom>.md), appelée par /<nom> ;
+#   - pour GitHub Copilot : un agent par entrée (.github/agents/<nom>.agent.md), choisi dans la liste des agents.
+# Ces points d'entrée sont des coquilles : tout le savoir reste dans les skills. N'y ajoute aucune règle de méthode.
+#
+# tools : outils accordés à l'agent Copilot (noms de VS Code). Un agent n'a que ce dont son étape a besoin.
+# handoffs : boutons de passage proposés par l'agent Copilot ; la commande Claude les cite en fin de réponse.
+
+entrypoints:
+  - name: tizi
+    title: "Tizi — point d'entrée"
+    description: "Point d'entrée de Tizi : dit où en est chaque initiative (BRD, PRD, conception, plan, implémentation, tests) et propose l'étape suivante. À utiliser pour reprendre un travail ou quand on ne sait pas par où commencer."
+    skill: null
+    argument_hint: "[initiative]"
+    inputs:
+      optional: ["l'identifiant d'une initiative, pour ne voir qu'elle"]
+    tools: [read, search, execute/runInTerminal, execute/getTerminalOutput]
+    handoffs: [tizi-brd, tizi-prd, tizi-sad, tizi-plan, tizi-backlog, tizi-impl, tizi-test]
+    body: |
+      Lance `node {scripts}/next-step.mjs .` (ajoute `--initiative <slug>` si l'utilisateur en a nommé une) et présente le résultat tel quel : l'avancement de chaque initiative, l'étape suivante et pourquoi, les points à noter (zones d'ombre bloquantes, session sans condensé).
+      Propose ensuite **une** étape suivante, avec le point d'entrée à utiliser. Ne commence pas cette étape toi-même : elle a son propre point d'entrée.
+      S'il n'existe aucune initiative, propose d'en démarrer une avec `tizi-brd` (évaluation de l'opportunité), ou un PRD autonome avec `tizi-prd`.
+      Tu ne modifies aucun fichier.
+
+  - name: tizi-brd
+    title: "Tizi — 1. Besoin métier (BRD)"
+    description: "Étape 1 du SDLC : évaluer une opportunité puis construire le BRD (découverte, exigences métier, gouvernance), ou reprendre un BRD en cours."
+    skill: brd-builder
+    argument_hint: "<initiative> [demande initiale] [sources]"
+    inputs:
+      required: ["le nom d'une nouvelle initiative, ou l'identifiant d'une initiative à reprendre"]
+      optional: ["la demande initiale, mot pour mot (pour la classer figée ou fluide)", "les sources déjà disponibles : notes, transcriptions, documents", "le résumé de passage d'une démarche de design thinking (hve-core)", "le sponsor ou décideur", "le contexte réglementaire"]
+    tools: [vscode/askQuestions, read, search, edit, execute/runInTerminal, execute/getTerminalOutput, agent]
+    handoffs: [tizi-prd]
+
+  - name: tizi-prd
+    title: "Tizi — 2. Produit (PRD)"
+    description: "Étape 2 du SDLC : construire le PRD à partir du handoff du BRD (ou en mode autonome), avec story map, tests de valeur et d'usage, exigences et critères."
+    skill: prd-builder
+    argument_hint: "<initiative> [handoff du BRD]"
+    inputs:
+      required: ["l'initiative, ou le chemin du handoff du BRD"]
+      optional: ["pour un PRD autonome : le problème et les utilisateurs visés", "les résultats de tests déjà menés"]
+    tools: [vscode/askQuestions, read, search, edit, execute/runInTerminal, execute/getTerminalOutput, agent]
+    handoffs: [tizi-sad]
+
+  - name: tizi-sad
+    title: "Tizi — 3. Conception"
+    description: "Étape 3 du SDLC : concevoir l'architecture à partir du handoff du PRD (moteurs, domaine, C4, ADR, NFR, contrats, menaces), y compris sur un existant."
+    skill: sad-builder
+    argument_hint: "<initiative> [handoff du PRD]"
+    inputs:
+      required: ["l'initiative, ou le chemin du handoff du PRD"]
+      optional: ["le dépôt de code existant à analyser (brownfield)", "les décisions d'architecture déjà prises"]
+    tools: [vscode/askQuestions, read, search, edit, execute/runInTerminal, execute/getTerminalOutput, agent]
+    handoffs: [tizi-plan]
+
+  - name: tizi-plan
+    title: "Tizi — 4. Planification"
+    description: "Étape 4 du SDLC : découper en stories et tâches, example mapping, sprint ou flux, revue de fin d'itération, préparation (sans écriture) de l'export vers GitHub ou Jira."
+    skill: plan-builder
+    argument_hint: "<initiative> [itération]"
+    inputs:
+      required: ["l'initiative"]
+      optional: ["la cadence (sprint ou flux) et la capacité", "l'itération à revoir"]
+    tools: [vscode/askQuestions, read, search, edit, execute/runInTerminal, execute/getTerminalOutput, agent]
+    handoffs: [tizi-backlog, tizi-impl]
+
+  - name: tizi-backlog
+    title: "Tizi — 4 bis. Application du backlog"
+    description: "Applique dans GitHub ou Jira un plan d'opérations déjà approuvé par son empreinte. Seul point d'entrée qui écrit dans le gestionnaire de tickets."
+    skill: backlog-executor
+    argument_hint: "<initiative> <github|jira>"
+    inputs:
+      required: ["l'initiative et la cible (github ou jira)"]
+      optional: ["le niveau d'autonomie (complet, partiel, manuel)"]
+    tools: [read, execute/runInTerminal, execute/getTerminalOutput]
+    handoffs: [tizi-impl]
+
+  - name: tizi-impl
+    title: "Tizi — 5. Implémentation"
+    description: "Étape 5 du SDLC : implémenter une tâche prête du plan — compréhension validée, BDD puis TDD sous garde-fou, revue de code par agents, PR."
+    skill: impl-builder
+    argument_hint: "<initiative> [TK-xxx]"
+    inputs:
+      required: ["l'initiative"]
+      optional: ["la tâche à prendre (sinon la première prête)"]
+    tools: [vscode/askQuestions, read, search, edit, execute/runInTerminal, execute/getTerminalOutput, agent]
+    handoffs: [tizi-test]
+
+  - name: tizi-test
+    title: "Tizi — 6. Vérification de release"
+    description: "Étape 6 du SDLC : vérifier une release — parcours critiques, tests exploratoires, NFR, matrice de couverture des exigences, porte de release, preuves."
+    skill: test-builder
+    argument_hint: "<initiative> <version candidate>"
+    inputs:
+      required: ["l'initiative et la version candidate"]
+      optional: ["l'emplacement des rapports de CI"]
+    tools: [vscode/askQuestions, read, search, edit, execute/runInTerminal, execute/getTerminalOutput]
+    handoffs: [tizi-plan]

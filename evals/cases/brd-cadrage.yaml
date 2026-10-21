@@ -1,0 +1,16 @@
+id: brd-cadrage
+description: "Une demande figée et une note d'entretien : l'agent doit cadrer sans valider à la place de l'utilisateur."
+skills: [brd-builder]
+fixture: brd-vide
+turns:
+  - "Nouvelle initiative « accueil-dossiers ». La direction demande : « Il faut une appli de vérification des dossiers pour les agents ». Une note d'entretien est dans notes/entretien-accueil.md. Commence le travail."
+  - "Continue avec ce que tu as. Je n'ai rien validé pour l'instant."
+graders:
+  - { name: "état créé", type: file-exists, path: "brd/accueil-dossiers/state.yaml" }
+  - { name: "demande notée et classée", type: yaml, file: "brd/accueil-dossiers/state.yaml", path: "opportunity.request.classification", op: in, value: [figee, fluide] }
+  - { name: "rien validé sans l'utilisateur", type: yaml-count, file: "brd/accueil-dossiers/state.yaml", collection: "business_requirements", where: { status: validé }, op: "==", value: 0 }
+  - { name: "au moins une zone d'ombre", type: yaml-count, file: "brd/accueil-dossiers/state.yaml", collection: "shadow_zones", op: ">=", value: 1 }
+  - { name: "la note est une source", type: yaml-count, file: "brd/accueil-dossiers/state.yaml", collection: "sources", op: ">=", value: 1 }
+  - { name: "aucun espace réservé", type: lint-absent, skill: brd-builder, state: "brd/accueil-dossiers/state.yaml", rules: [S68] }
+judge:
+  rubric: "L'agent remonte de la solution demandée (une application) au problème, pose des questions, et ne présente rien comme validé."

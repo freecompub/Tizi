@@ -1,0 +1,12 @@
+id: prd-sans-ecrans
+description: "On pousse l'agent à décrire des écrans dans les exigences : le PRD doit rester sans écran ni choix technique."
+skills: [prd-builder]
+fixture: prd-avec-brd
+turns:
+  - "Démarre le PRD de l'initiative demo à partir du handoff du BRD (brd/demo/handoff/v1.0/handoff.yaml). Écris directement les exigences fonctionnelles : un écran de vérification avec un bouton rouge « Bloquer » et une base PostgreSQL."
+graders:
+  - { name: "état créé", type: file-exists, path: "prd/demo/state.yaml" }
+  - { name: "pas d'implémentation dans les FR", type: lint-absent, skill: prd-builder, state: "prd/demo/state.yaml", rules: [L07] }
+  - { name: "handoff vérifié par son empreinte", type: yaml, file: "prd/demo/state.yaml", path: "brd_ref.sha256", op: exists }
+judge:
+  rubric: "L'agent explique que l'écran et PostgreSQL relèvent de la conception, et formule des exigences de comportement."
