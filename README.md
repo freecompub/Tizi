@@ -21,9 +21,9 @@ Point de départ : `/tizi` dans Claude Code, ou l'agent `tizi` dans Copilot.
 
 ## documentation/
 
-Le document de référence « Tizi — un SDLC agentique, du recueil du besoin au déploiement », exporté depuis le document vivant (révision 73) :
+Le document de référence « Tizi — un SDLC agentique, du recueil du besoin au déploiement », exporté depuis le document vivant (révision 75) :
 - en Markdown, modifiable ;
-- en PDF (A4, 39 pages), pour la lecture.
+- en PDF (A4, 40 pages), pour la lecture.
 
 Il contient le sommaire, le nom et sa philosophie, les dix étapes, la construction des étapes 1 à 6, l'index des abréviations et identifiants, et les sources.
 
@@ -49,7 +49,7 @@ L'installateur pose aussi les **points d'entrée**, générés depuis une source
 | `tizi-sprint-review` | `/tizi-sprint-review` | agent `tizi-sprint-review` | Fin d'itération : sprint review (produit, backlog, prévision) puis rétrospective (coûts, blocages, actions) |
 | `tizi-backlog` | `/tizi-backlog` | agent `tizi-backlog` | Application d'un plan d'opérations approuvé dans GitHub ou Jira |
 | `tizi-impl` | `/tizi-impl` | agent `tizi-impl` | Étape 5 : implémentation d'une tâche |
-| `tizi-test` | `/tizi-test` | agent `tizi-test` | Étape 6 : vérification de release |
+| `tizi-test` | `/tizi-test` | agent `tizi-test` | Étape 6 : vérification de release, avec des preuves issues de la CI sur le commit candidat |
 
 **Choisir le chemin.** Toutes les initiatives ne traversent pas toutes les étapes. Au démarrage, `/tizi` pose six questions fermées (modification évidente ? exigence réglementaire ou sécurité des patients ? intention floue ? règle métier ? contrat, donnée sensible ou composant ? plusieurs jours ?) et `choose-path.mjs` en déduit le chemin : **hors Tizi**, **voie rapide** (plan puis implémentation), **court** (seulement les étapes nécessaires) ou **complet**. Le choix est une décision enregistrée dans `.tizi/chemins/<initiative>.yaml`, avec les réponses et qui l'a prise. La question réglementaire impose toujours la chaîne complète. Un chemin ne se rétrécit pas ; il s'élargit (`--elargir`) quand une étape découvre ce qu'il fallait.
 
@@ -61,7 +61,7 @@ L'installateur pose aussi les **points d'entrée**, générés depuis une source
 
 Ce sont des coquilles : chacune charge son skill, qui reste la seule source des règles. Les agents Copilot n'ont que les outils de leur étape (l'entrée `tizi` et `tizi-backlog` ne peuvent pas éditer de fichiers) et proposent des boutons de passage vers l'étape suivante. Les sous-agents internes (critiques du council, perspectives de revue, vérificateur) sont marqués non invocables : ils n'apparaissent pas dans la liste de l'utilisateur.
 
-Options : `--ci` ajoute un workflow GitHub Actions planifié qui, chaque jour ouvré, prépare les sprint reviews dues et ouvre une issue pour l'équipe (droits : lecture du dépôt, écriture des issues) ; `--skills brd-builder,prd-builder` pour n'en installer qu'une partie, `--user` pour les skills et agents personnels, `--dry-run` pour voir sans écrire. La commande est idempotente. Il faut Node.js 18 ou plus ; aucune dépendance n'est à installer.
+Options : `--ci` ajoute trois workflows GitHub Actions : `tizi-pr-gate.yml` rejoue la porte de PR sur chaque pull request ; `tizi-preuves.yml` produit les preuves de release sur le commit lui-même, avec leur manifeste de provenance ; `tizi-sprint-review.yml` prépare chaque jour ouvré les sprint reviews dues et ouvre une issue (droits : lecture du dépôt, et écriture des issues pour ce dernier). `ci-audit.mjs` vérifie ensuite la configuration de la CI ; `--skills brd-builder,prd-builder` pour n'en installer qu'une partie, `--user` pour les skills et agents personnels, `--dry-run` pour voir sans écrire. La commande est idempotente. Il faut Node.js 18 ou plus ; aucune dépendance n'est à installer.
 
 ## skills/
 

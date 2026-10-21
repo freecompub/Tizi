@@ -11,7 +11,7 @@
 //            PreToolUse → garde-fou TDD (si impl-builder est installé) ; Stop, PreCompact, SessionEnd → capture des sessions
 //   points d'entrée (entrypoints/entrypoints.yaml) : claude → .claude/commands/<nom>.md (/sdlc, /tizi-brd…)
 //                                                  copilot → .github/agents/<nom>.agent.md (liste des agents)
-//   --ci : workflow GitHub Actions planifié qui prépare les sprint reviews dues et ouvre une issue
+//   --ci : workflows GitHub Actions — porte de PR rejouée, preuves de release avec provenance, sprint reviews dues
 //   .gitignore : .impl/ et .tizi/sessions/*.jsonl
 // --user installe skills et agents dans le dossier personnel (~/.claude, ~/.copilot) au lieu du dépôt ; les hooks restent dans le dépôt.
 import { cpSync, existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync, rmSync } from 'node:fs';
@@ -175,6 +175,74 @@ jobs:
         run: node ${relSkills}/plan-builder/scripts/ci-sprint-review.mjs .
 `);
   });
+}
+
+// 3 ter. Workflows de vérification (--ci) : porte de PR rejouée sur chaque pull request, preuves de release produites
+// sur le commit lui-même. Droits en lecture seule. Les actions sont référencées par étiquette : les épingler sur un SHA
+// (ci-audit.mjs le signale).
+if (ci && !user && skills.includes('impl-builder')) {
+  const wf = join(project, '.github', 'workflows', 'tizi-pr-gate.yml');
+  act(`workflow porte de PR → ${wf}`, () => { mkdirSync(dirname(wf), { recursive: true }); writeFileSync(wf, `# Tizi : rejoue la porte de PR de la tâche citée (TK-xxx dans le titre ou la branche) sur chaque pull request.
+# Exiger le job « Tizi — porte de PR » dans la protection de la branche principale.
+name: Tizi — porte de PR
+on: pull_request
+permissions:
+  contents: read
+jobs:
+  porte-de-pr:
+    name: Tizi — porte de PR
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      # Installer ici les dépendances du projet nécessaires aux suites de tests.
+      - name: Porte de PR de la tâche citée
+        env:
+          TITLE: \${{ github.event.pull_request.title }}
+          BRANCH: \${{ github.head_ref }}
+        run: |
+          TASK=$(printf '%s %s' "$TITLE" "$BRANCH" | grep -oE 'TK-[0-9]+' | head -1)
+          if [ -z "$TASK" ]; then echo "Aucune tâche Tizi citée (TK-xxx) : porte non applicable."; exit 0; fi
+          STATE=$(grep -lw "id: $TASK" impl/*/state.yaml 2>/dev/null | head -1)
+          if [ -z "$STATE" ]; then echo "::error::$TASK n'a pas été prise en charge par impl-builder"; exit 1; fi
+          node ${relSkills}/impl-builder/scripts/pr-gate.mjs "$STATE" --task "$TASK" --run
+`); });
+}
+if (ci && !user && skills.includes('test-builder')) {
+  const wf = join(project, '.github', 'workflows', 'tizi-preuves.yml');
+  act(`workflow preuves de release → ${wf}`, () => { mkdirSync(dirname(wf), { recursive: true }); writeFileSync(wf, `# Tizi : produit les preuves de release sur le commit lui-même (jamais un commit de fusion de pull request),
+# avec leur manifeste de provenance, publiés dans l'artefact « tizi-preuves » que /tizi-test vérifie (R9).
+name: Tizi — preuves
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  preuves:
+    name: Tizi — preuves
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      # Installer ici les dépendances du projet nécessaires aux suites de tests.
+      - name: Suites de tests et manifeste de provenance
+        run: node ${relSkills}/test-builder/scripts/ci-run-suites.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tizi-preuves
+          path: tizi-preuves/
+          if-no-files-found: error
+`); });
 }
 
 // 4. .gitignore

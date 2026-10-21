@@ -6,7 +6,8 @@ source_plan:
   version: ""
   sha256: ""
 release: REL-1
-candidate: ""              # version candidate testée, par exemple 1.2.0-rc1 ou un commit
+candidate: ""              # version candidate testée, par exemple 1.2.0-rc1 (un tag) ou un commit
+candidate_commit: ""       # commit exact de la version candidate ; vide = résolu depuis le tag « candidate »
 
 settings:
   thresholds: { mutation: 60, requirements: 100 }   # score de mutation global (%) ; part d'exigences prouvées (%)
@@ -22,6 +23,14 @@ settings:
     security: ""           # SAST, DAST, audit des dépendances : rapport JUnit ou équivalent
     accessibility: ""
     browsers: ""           # par exemple les rapports de qa-domain-runner
+
+  ci:                      # provenance des preuves (R9) : rapports issus d'un passage de CI réussi sur le commit candidat
+    required: true
+    workflow: "Tizi — preuves"   # nom du workflow qui produit les preuves (install.mjs --ci)
+    artifact: tizi-preuves       # artefact qui contient les rapports et le manifeste
+    events: [push, workflow_dispatch, release, schedule]   # un passage de pull request teste un commit de fusion : exclu
+    allow_skipped: []            # jobs dont l'absence est acceptée
+    reason: ""                   # obligatoire si required: false
 
 environments: []           # - { name: "", url: "", data: "" }
 

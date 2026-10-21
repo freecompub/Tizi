@@ -15,6 +15,7 @@
 | R5 | Les sessions exploratoires prévues sont faites, sans constat bloquant ouvert |
 | R6 | Le score de mutation global atteint `thresholds.mutation` (si mesuré) |
 | R7 | Les analyses de sécurité passent (si collectées) |
+| R9 | Les preuves viennent d'un passage de CI réussi sur le commit candidat, et chaque rapport utilisé est celui de ce passage (même empreinte). Une preuve locale ou d'une autre version n'est pas probante. Désactivable seulement avec une raison écrite (`settings.ci.required: false`, `settings.ci.reason`) |
 | R8 | Rien de réalisé sans être prouvé : aucune FR, mesure de sécurité, vérification de NFR ou comportement à préserver dont les tâches sont faites alors que la preuve manque |
 
 Il écrit `qa/<slug>/matrix.md` (lisible) et `matrix.yaml` (pour l'archive).
@@ -42,3 +43,7 @@ Présente la porte et la matrice. Une exigence non prouvée se corrige (test man
 ## Archiver les preuves
 
 `node <chemin-du-skill>/scripts/freeze-evidence.mjs qa/<slug>/state.yaml` copie la matrice et tous les rapports collectés dans `qa/<slug>/evidence/<candidate>/`, avec un manifeste des empreintes SHA-256 de chaque fichier. L'archive ne se modifie plus : une nouvelle version candidate a sa propre archive.
+
+## La CI elle-même
+
+`node <chemin-du-skill>/scripts/ci-audit.mjs .` vérifie que la CI du dépôt fait ce qu'elle doit : porte de PR rejouée sur chaque pull request et exigée avant fusion, preuves de release produites sur le commit lui-même, permissions déclarées et minimales, pas de `pull_request_target`, actions épinglées. Il lit la protection de la branche principale en lecture seule ; sans droit, il la déclare non vérifiable au lieu de conclure. Rapport dans `.tizi/ci-audit.md`. À lancer à l'adoption de Tizi, puis à chaque changement des workflows.

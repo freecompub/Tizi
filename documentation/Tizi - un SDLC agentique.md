@@ -652,6 +652,8 @@ La **matrice de couverture des exigences** est calculée, jamais déclarée : ch
 
 **Réalisé et prouvé.** La matrice croise deux faits, chacun calculé depuis sa seule source : la **réalisation** (de chaque FR à ses stories, à leurs tâches, et à l’état de chacune — fusionnée ou terminée) et la **preuve** (les tests qui portent l’identifiant et passent). Elle les présente par activité de la story map, la vue que comprennent les parties prenantes, et liste trois écarts. **Réalisé mais non prouvé** ferme la porte : une tâche fusionnée montre qu’un code existe, pas que le comportement convenu fonctionne ; il faut écrire le test, retirer de la release, ou déroger par décision nommée. **Non réalisé** ne ferme pas la porte mais appelle une décision explicite — reporter, ou retenir la livraison — plutôt qu’une découverte le jour de la livraison. **Prouvé sans être prévu** signale un test qui renvoie à une exigence qu’aucune story de la release ne porte. La porte est un verdict, pas encore un verrou : elle ne bloquera la livraison que lorsque la chaîne de déploiement vérifiera qu’elle est ouverte.
 
+**Des preuves probantes, issues de la CI.** Un rapport de tests vert ne prouve rien s’il vient d’un poste de travail ou d’une autre version. La CI produit donc les preuves sur le commit de la version candidate lui-même — jamais sur le commit de fusion temporaire d’une pull request — avec un manifeste de provenance : commit, passage, déclenchement, empreinte de chaque rapport. La vérification retrouve ce passage en lecture seule, contrôle qu’il a réussi en entier, que le manifeste porte sur le bon commit et que chaque rapport utilisé est bien celui-là. Sinon, la porte reste fermée (R9) ; une équipe sans CI peut lever cette condition, mais seulement par une raison écrite, visible dans la matrice. Un audit vérifie enfin la CI elle-même : porte de PR rejouée et exigée avant fusion, preuves produites sur le commit, permissions minimales, pas de déclencheur dangereux, actions épinglées ; la protection de branche qu’il ne peut pas lire est déclarée non vérifiable plutôt que supposée.
+
 ## 7. Intégration continue
 
 **Objectif** : vérifier automatiquement chaque changement avant qu’il rejoigne la branche principale.
@@ -808,7 +810,7 @@ Pour un logiciel comme Diabeo, ces exigences s’appliquent à toutes les étape
 | `S01`–`S72` | Règles de structure de la vérification de forme, communes à tous les skills |
 | `G1`–`G6` | Garde-fous de contenu de l’export (secrets, chemins locaux, adresses, références non résolues, éléments non validés, longueurs) |
 | `C1`–`C8` | Conditions de la porte de PR (étape 5) |
-| `R1`–`R8` | Conditions de la porte de release (étape 6) |
+| `R1`–`R9` | Conditions de la porte de release (étape 6) |
 
 ## Sources
 

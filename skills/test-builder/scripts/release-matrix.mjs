@@ -8,6 +8,7 @@ import { dirname, join, resolve, basename } from 'node:path';
 import yaml from './lib/vendor/js-yaml.mjs';
 import { arr, txt, table, loadState, writeOut, fail, today, verifyHandoff, humanReviewFooter } from './lib/common.mjs';
 import { readReport } from './lib/testing.mjs';
+import { provenanceCheck } from './lib/ci.mjs';
 
 const statePath = process.argv[2];
 if (!statePath) fail('Usage : node release-matrix.mjs <state.yaml>', 2);
@@ -119,6 +120,7 @@ const gate = [
     `${xs.filter(x => x.status === 'faite').length}/${xs.filter(x => x.status !== 'abandonnee').length} faite(s), ${xs.flatMap(x => arr(x.findings)).filter(f => f.severity === 'bloquant' && !f.resolved).length} bloquant(s) ouvert(s)`],
   ['R8', 'Rien de réalisé sans être prouvé', !realizedUnproved.length && !reqUnproved.length,
     realizedUnproved.length || reqUnproved.length ? `réalisé mais non prouvé : ${[...realizedUnproved.map(f => f.id), ...reqUnproved.map(r => r.id)].join(', ')}` : `${frRows.filter(f => f.realization === 'réalisé').length} FR réalisée(s), toutes prouvées`],
+  (() => { const pc = provenanceCheck(s, root); return ['R9', 'Preuves issues de la CI sur le commit candidat', pc.ok, pc.detail]; })(),
   ...(mutation ? [['R6', `Score de mutation ≥ ${set.thresholds?.mutation ?? 60} %`, mutation.score >= (set.thresholds?.mutation ?? 60), `${mutation.score} %`]] : []),
   ...(suites.security ? [['R7', 'Analyses de sécurité sans constat', !suites.security.failed && !suites.security.missing, suites.security.missing ? 'rapport absent' : `${suites.security.failed ?? 0} constat(s)`]] : []),
 ];

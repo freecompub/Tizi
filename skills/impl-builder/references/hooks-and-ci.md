@@ -43,6 +43,9 @@ Ajoute `.impl/` au `.gitignore` : c'est l'état local de la tâche en cours.
 
 ## Porte en CI
 
+`install.mjs --ci` génère `tizi-pr-gate.yml` : sur chaque pull request, il trouve la tâche citée (`TK-xxx`) dans le titre ou la branche et rejoue sa porte. Exige le job « Tizi — porte de PR » dans la protection de la branche principale ; `ci-audit.mjs` vérifie que c'est le cas.
+
+
 Le hook ne protège que les écritures faites par l'agent, et seulement les outils d'édition (une écriture par une commande shell lui échappe). La même porte est rejouée en CI, qui relance elle-même toutes les suites :
 
 ```yaml
