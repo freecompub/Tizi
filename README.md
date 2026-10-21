@@ -21,9 +21,9 @@ Point de départ : `/tizi` dans Claude Code, ou l'agent `tizi` dans Copilot.
 
 ## documentation/
 
-Le document de référence « Tizi — un SDLC agentique, du recueil du besoin au déploiement », exporté depuis le document vivant (révision 71) :
+Le document de référence « Tizi — un SDLC agentique, du recueil du besoin au déploiement », exporté depuis le document vivant (révision 73) :
 - en Markdown, modifiable ;
-- en PDF (A4, 38 pages), pour la lecture.
+- en PDF (A4, 39 pages), pour la lecture.
 
 Il contient le sommaire, le nom et sa philosophie, les dix étapes, la construction des étapes 1 à 6, l'index des abréviations et identifiants, et les sources.
 
@@ -45,7 +45,8 @@ L'installateur pose aussi les **points d'entrée**, générés depuis une source
 | `tizi-brd` | `/tizi-brd` | agent `tizi-brd` | Étape 1 : opportunité et BRD |
 | `tizi-prd` | `/tizi-prd` | agent `tizi-prd` | Étape 2 : PRD |
 | `tizi-sad` | `/tizi-sad` | agent `tizi-sad` | Étape 3 : conception |
-| `tizi-plan` | `/tizi-plan` | agent `tizi-plan` | Étape 4 : planification, revues de fin d'itération |
+| `tizi-plan` | `/tizi-plan` | agent `tizi-plan` | Étape 4 : planification |
+| `tizi-sprint-review` | `/tizi-sprint-review` | agent `tizi-sprint-review` | Fin d'itération : sprint review (produit, backlog, prévision) puis rétrospective (coûts, blocages, actions) |
 | `tizi-backlog` | `/tizi-backlog` | agent `tizi-backlog` | Application d'un plan d'opérations approuvé dans GitHub ou Jira |
 | `tizi-impl` | `/tizi-impl` | agent `tizi-impl` | Étape 5 : implémentation d'une tâche |
 | `tizi-test` | `/tizi-test` | agent `tizi-test` | Étape 6 : vérification de release |
@@ -60,7 +61,7 @@ L'installateur pose aussi les **points d'entrée**, générés depuis une source
 
 Ce sont des coquilles : chacune charge son skill, qui reste la seule source des règles. Les agents Copilot n'ont que les outils de leur étape (l'entrée `tizi` et `tizi-backlog` ne peuvent pas éditer de fichiers) et proposent des boutons de passage vers l'étape suivante. Les sous-agents internes (critiques du council, perspectives de revue, vérificateur) sont marqués non invocables : ils n'apparaissent pas dans la liste de l'utilisateur.
 
-Options : `--skills brd-builder,prd-builder` pour n'en installer qu'une partie, `--user` pour les skills et agents personnels, `--dry-run` pour voir sans écrire. La commande est idempotente. Il faut Node.js 18 ou plus ; aucune dépendance n'est à installer.
+Options : `--ci` ajoute un workflow GitHub Actions planifié qui, chaque jour ouvré, prépare les sprint reviews dues et ouvre une issue pour l'équipe (droits : lecture du dépôt, écriture des issues) ; `--skills brd-builder,prd-builder` pour n'en installer qu'une partie, `--user` pour les skills et agents personnels, `--dry-run` pour voir sans écrire. La commande est idempotente. Il faut Node.js 18 ou plus ; aucune dépendance n'est à installer.
 
 ## skills/
 

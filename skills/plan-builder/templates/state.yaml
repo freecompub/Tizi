@@ -124,6 +124,9 @@ iterations: []             # cadence sprint
 #        date: ""
 #        feedback: []
 #        new_items: []     # stories ou opportunités issues de la revue
+#      carryover: []       # décision pour chaque tâche non finie : - { task: TK-xxx, decision: continuer | decouper | reporter, by: "" }
+#      blockage_actions: [] # cause de blocage récurrente traitée : - { cause: environnement, action: "", owner: "" }
+#      actions_followup: [] # suivi des actions essayées au sprint précédent : - { action: "", done: oui | non, effect: "" }
 replenishments: []         # cadence flux
 #  - { id: RP-1, date: "", tasks: [TK-001], commitment: { declared_by: "", date: "" }, status: proposé }
 

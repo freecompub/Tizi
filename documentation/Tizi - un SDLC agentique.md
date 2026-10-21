@@ -4,7 +4,7 @@ Oct 19, 2026 · @Samir Alili
 
 ## Sommaire
 
-- [Principe](#mds8hynarac.61) — [Le nom : Tizi](#mds8hynarac.76166) · [Intégrité, couverture et contrôle](#mds8hynarac.48912) · [Continuité entre sessions](#mds8hynarac.64573) · [Claude Code et GitHub Copilot](#mds8hynarac.65983) · [Points d’entrée](#mds8hynarac.74434) · [Contrôle de l’outillage](#mds8hynarac.72175) · [Estimer quand les agents codent](#mds8hynarac.83434) · [Sur une application existante](#mds8hynarac.80561) · [Une chaîne par opportunité](#mds8hynarac.52227)
+- [Principe](#mds8hynarac.61) — [Le nom : Tizi](#mds8hynarac.76166) · [Intégrité, couverture et contrôle](#mds8hynarac.48912) · [Continuité entre sessions](#mds8hynarac.64573) · [Claude Code et GitHub Copilot](#mds8hynarac.65983) · [Points d’entrée](#mds8hynarac.74434) · [Contrôle de l’outillage](#mds8hynarac.72175) · [Estimer quand les agents codent](#mds8hynarac.83434) · [Sprint review et rétrospective](#mds8hynarac.85408) · [Sur une application existante](#mds8hynarac.80561) · [Une chaîne par opportunité](#mds8hynarac.52227)
 - [1. Recueil du besoin](#mds8hynarac.646) — [construction du BRD](#mds8hynarac.7237), skill `brd-builder`
 - [2. Analyse produit](#mds8hynarac.1292) — [construction du PRD](#mds8hynarac.20076), skill `prd-builder`
 - [3. Conception](#mds8hynarac.1893) — [construction de la conception](#mds8hynarac.35982), skill `sad-builder`
@@ -110,6 +110,17 @@ Quand les agents réalisent les tâches, le temps de codage devient court et bon
 - **Les blocages sont enregistrés quand ils surviennent**, sur une story ou une tâche, avec une cause typée : environnement, accès, données de test, dépendance, question, décision, relecture, outil, externe.
 - **Le réel est mesuré**, sans saisie : chaque script de l’implémentation inscrit son étape dans un journal horodaté. On en tire, par tâche, la durée, l’attente de relecture, les allers-retours, l’attention consommée, le temps bloqué et les tokens consommés ; puis des médianes par taille de risque et par type de code, et la calibration de l’attention par taille.
 - **La fin se prévoit sans estimer**, à partir du débit réel de tâches fusionnées, par simulation : une date à 50, 85 et 95 % de chances. Sous trois semaines d’historique, la prévision est refusée plutôt que déguisée.
+
+### Sprint review et rétrospective
+
+Chaque itération se clôt par une commande dédiée, `/tizi-sprint-review` (l’agent `tizi-sprint-review` dans Copilot), qui prépare tout en une fois à partir des mesures réelles et produit un document en deux parties, comme Scrum les distingue :
+
+- **la sprint review**, avec les parties prenantes, regarde le produit : ce qui a été réalisé et prouvé, puis l’adaptation du backlog — pour chaque tâche non finie, continuer, découper ou reporter ; les tailles à revoir ; la prévision par le débit ;
+- **la rétrospective**, entre membres de l’équipe, regarde la façon de travailler : ce que le sprint a coûté comparé au précédent (attente de relecture, allers-retours, attention prévue et consommée, temps bloqué), les causes de blocage récurrentes, chacune avec une action et un responsable, et le suivi des actions décidées au sprint précédent, avec leur effet dans les chiffres.
+
+La capacité suggérée change d’unité : quand les agents codent, elle se compte en tâches fusionnées et en attention humaine, plus en points de taille. Les décisions ne sont enregistrées que lorsque l’équipe les déclare, et la vérification signale celles qui manquent.
+
+Pour qu’elle ne soit pas oubliée, la sprint review est **déclenchée par la date de fin** de l’itération, sans attendre qu’on change un statut : le point d’étape la signale, le **hook de début de session** la rappelle à quiconque ouvre l’agent dans le dépôt, et une **tâche planifiée en CI**, facultative, prépare chaque jour ouvré les sprint reviews dues et ouvre une issue pour toute l’équipe — elle ne décide rien et ne modifie aucun fichier.
 
 ### Sur une application existante
 

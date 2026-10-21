@@ -15,10 +15,12 @@ entrypoints:
     inputs:
       optional: ["l'identifiant d'une initiative, pour ne voir qu'elle"]
     tools: [vscode/askQuestions, read, search, execute/runInTerminal, execute/getTerminalOutput]
-    handoffs: [tizi-brd, tizi-prd, tizi-sad, tizi-plan, tizi-backlog, tizi-impl, tizi-test]
+    handoffs: [tizi-brd, tizi-prd, tizi-sad, tizi-plan, tizi-sprint-review, tizi-backlog, tizi-impl, tizi-test]
     body: |
       Lance `node {scripts}/next-step.mjs .` (ajoute `--initiative <slug>` si l'utilisateur en a nommé une), puis `node {scripts}/sync-agent-instructions.mjs . --check`, et présente le résultat tel quel. Si les instructions du dépôt sont absentes ou périmées, propose de les synchroniser (même script, sans `--check`) : c'est ce que lisent les agents qui ne passent pas par Tizi. Pour le point d'étape, montre l'avancement de chaque initiative, l'étape suivante et pourquoi, les points à noter (zones d'ombre bloquantes, session sans condensé).
       Propose ensuite **une** étape suivante, avec le point d'entrée à utiliser. Ne commence pas cette étape toi-même : elle a son propre point d'entrée.
+      Si `next-step.mjs` signale une sprint review due, propose `tizi-sprint-review` en premier.
+
       **Application existante, Tizi pas encore adopté** (du code dans le dépôt, mais ni `impl/config.yaml` ni `.tizi/adoption.md`) : propose d'abord `node {scripts}/adopt.mjs .`. Il observe le dépôt sans rien exécuter et propose la configuration des tests et une carte grossière de l'existant, chaque élément avec sa preuve ; fais relire ce qu'il signale comme incertain.
 
       **Nouvelle initiative, ou initiative sans chemin décidé** : avant toute étape, choisis le chemin avec l'utilisateur. Pose en un seul message les six questions fermées (oui ou non) :
@@ -74,6 +76,23 @@ entrypoints:
       optional: ["la cadence (sprint ou flux) et la capacité", "l'itération à revoir"]
     tools: [vscode/askQuestions, read, search, edit, execute/runInTerminal, execute/getTerminalOutput, agent]
     handoffs: [tizi-backlog, tizi-impl]
+
+  - name: tizi-sprint-review
+    title: "Tizi — Sprint review et rétrospective"
+    description: "Fin d'itération : sprint review (ce qui a été réalisé et prouvé, adaptation du backlog, prévision) puis rétrospective (coûts, blocages, actions et leur suivi), à partir des mesures réelles."
+    skill: plan-builder
+    argument_hint: "<initiative> [IT-n]"
+    inputs:
+      required: ["l'initiative, si le dépôt en compte plusieurs"]
+      optional: ["l'itération (sinon celle dont la sprint review est due)"]
+    tools: [vscode/askQuestions, read, search, edit, execute/runInTerminal, execute/getTerminalOutput]
+    handoffs: [tizi-plan]
+    body: |
+      Suis la phase Review du skill (`references/phase-review.md`).
+      1. Lance `node {scripts}/due-reviews.mjs .` pour trouver l'itération concernée, puis `node {scripts}/close-sprint.mjs plan/<initiative>/state.yaml --iteration <IT-n>` : il prépare les mesures, les fiches, les preuves et le document `review/<IT-n>/sprint-review.md`.
+      2. **Sprint review**, avec les parties prenantes : ce qui a été réalisé et prouvé, puis l'adaptation du backlog. Fais décider, pour chaque tâche non finie, continuer, découper ou reporter (`review.carryover`), et les tailles à revoir.
+      3. **Rétrospective**, entre membres de l'équipe : coûts du sprint, causes de blocage récurrentes (une action et un responsable chacune, `review.blockage_actions`), suivi des actions du sprint précédent (`review.actions_followup`), puis une ou deux actions à essayer (`review.team.process.try`).
+      Les notes et les décisions viennent de l'équipe : enregistre-les seulement quand elles sont déclarées, puis lance `lint.mjs` pour vérifier qu'aucune décision ne manque (S76, S77).
 
   - name: tizi-backlog
     title: "Tizi — 4 bis. Application du backlog"

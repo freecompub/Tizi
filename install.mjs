@@ -11,6 +11,7 @@
 //            PreToolUse → garde-fou TDD (si impl-builder est installé) ; Stop, PreCompact, SessionEnd → capture des sessions
 //   points d'entrée (entrypoints/entrypoints.yaml) : claude → .claude/commands/<nom>.md (/sdlc, /tizi-brd…)
 //                                                  copilot → .github/agents/<nom>.agent.md (liste des agents)
+//   --ci : workflow GitHub Actions planifié qui prépare les sprint reviews dues et ouvre une issue
 //   .gitignore : .impl/ et .tizi/sessions/*.jsonl
 // --user installe skills et agents dans le dossier personnel (~/.claude, ~/.copilot) au lieu du dépôt ; les hooks restent dans le dépôt.
 import { cpSync, existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync, rmSync } from 'node:fs';
@@ -22,7 +23,7 @@ const args = process.argv.slice(2);
 const opt = k => (args.includes(k) ? args[args.indexOf(k) + 1] : '');
 const project = resolve(opt('--project') || '.');
 const target = opt('--target');
-const user = args.includes('--user'), dry = args.includes('--dry-run');
+const user = args.includes('--user'), dry = args.includes('--dry-run'), ci = args.includes('--ci');
 if (!['claude', 'copilot', 'both'].includes(target)) { console.error('Usage : node install.mjs --project <dépôt> --target claude|copilot|both [--skills a,b] [--user] [--dry-run]'); process.exit(2); }
 const here = dirname(fileURLToPath(import.meta.url));
 const source = join(here, 'skills');
@@ -108,6 +109,7 @@ for (const e of usable) {
 
 // 3. Hooks
 const captureSkill = skills.find(s => existsSync(join(source, s, 'scripts', 'session-capture.mjs')));
+const startHook = captureSkill ? scriptPath(captureSkill, 'session-start.mjs') : '';
 const hasImpl = skills.includes('impl-builder');
 const capture = captureSkill ? scriptPath(captureSkill, 'session-capture.mjs') : '';
 const guard = hasImpl ? scriptPath('impl-builder', 'tdd-guard.mjs') : '';
@@ -125,6 +127,7 @@ if (claude && (capture || guard)) {
     };
     if (guard) set('PreToolUse', guard, 'Edit|Write|MultiEdit|NotebookEdit');
     if (capture) for (const e of ['Stop', 'PreCompact', 'SessionEnd']) set(e, capture);
+    if (startHook) set('SessionStart', startHook);
     mkdirSync(dirname(p), { recursive: true });
     writeFileSync(p, `${JSON.stringify(cfg, null, 2)}\n`);
   });
@@ -137,8 +140,40 @@ if (copilot && (capture || guard)) {
     const hooks = {};
     if (guard) hooks.PreToolUse = entry(guard);
     if (capture) for (const e of ['Stop', 'PreCompact', 'SessionEnd']) hooks[e] = entry(capture);
+    if (startHook) hooks.SessionStart = entry(startHook);
     mkdirSync(dirname(p), { recursive: true });
     writeFileSync(p, `${JSON.stringify({ version: 1, hooks }, null, 2)}\n`);
+  });
+}
+
+// 3 bis. Tâche planifiée en CI (--ci) : prépare les sprint reviews dues et ouvre une issue. Demande le droit d'écrire des issues.
+if (ci && skills.includes('plan-builder') && !user) {
+  const wf = join(project, '.github', 'workflows', 'tizi-sprint-review.yml');
+  act(`workflow planifié → ${wf}`, () => {
+    mkdirSync(dirname(wf), { recursive: true });
+    writeFileSync(wf, `# Tizi : chaque jour ouvré, prépare les sprint reviews dues et ouvre une issue pour l'équipe.
+# Ne décide rien et ne modifie aucun fichier du dépôt : les décisions se prennent en sprint review.
+name: Tizi — sprint reviews dues
+on:
+  schedule:
+    - cron: '0 6 * * 1-5'
+  workflow_dispatch:
+permissions:
+  contents: read
+  issues: write
+jobs:
+  sprint-reviews:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Préparer les sprint reviews dues et ouvrir une issue
+        env:
+          GH_TOKEN: \${{ github.token }}
+        run: node ${relSkills}/plan-builder/scripts/ci-sprint-review.mjs .
+`);
   });
 }
 

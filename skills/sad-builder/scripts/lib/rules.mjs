@@ -620,9 +620,17 @@ export function checkPlan(s, refs = {}) {
   void storyById;
   const weights = settings.sizes ?? { S: 1, M: 2, L: 3, XL: 5 };
   // Revues et releases (S58, S59)
-  for (const it of arr(s.iterations).filter(i => i.status === 'terminé')) {
-    if (!it.review?.team?.date) out.push({ rule: 'S58', id: it.id, message: 'itération terminée sans revue d\'équipe' });
-  }
+  const todayStr = new Date().toISOString().slice(0, 10);
+  arr(s.iterations).forEach((it, i, all) => {
+    const ended = it.status === 'terminé' || (it.end && String(it.end).slice(0, 10) < todayStr);
+    if (ended && !it.review?.team?.date) out.push({ rule: 'S58', id: it.id, message: `itération ${it.status === 'terminé' ? 'terminée' : 'dont la date de fin est passée'} sans sprint review (/tizi-sprint-review)` });
+    if (!it.review?.team?.date) return;
+    const decided = new Set(arr(it.review.carryover).map(c => c.task));
+    const open = tasks.filter(t => t.iteration === it.id && !['terminé', 'abandonné'].includes(t.status) && !decided.has(t.id));
+    if (open.length) out.push({ rule: 'S76', id: it.id, message: `sprint review faite, mais aucune décision (continuer, découper, reporter) pour : ${open.map(t => t.id).join(', ')}` });
+    const prevTry = arr(all[i - 1]?.review?.team?.process?.try);
+    if (prevTry.length && !arr(it.review.actions_followup).length) out.push({ rule: 'S77', id: it.id, message: `actions essayées au sprint précédent sans suivi : ${prevTry.join(' ; ')}` });
+  });
   for (const r of arr(s.release_tracking)) {
     if (r.status === 'livrée' && !arr(r.measurement).length) out.push({ rule: 'S59', id: r.release, message: 'release livrée sans plan de mesure des outcomes' });
     if (r.status === 'livrée' && r.outcome === 'a_mesurer' && !arr(r.observations).length) out.push({ rule: 'S59', id: r.release, message: 'release livrée sans observation des utilisateurs ni conclusion sur l\'outcome' });
@@ -782,5 +790,5 @@ export const STRUCT_RULES = {
   S56: 'opportunité non décidée', S57: 'hypothèse risquée non testée', S58: 'itération sans revue', S59: 'release sans mesure des outcomes',
   S60: 'voie rapide non conforme', S61: 'ordre ouverture, milieu, fin', S62: 'story sans titre court',
   S63: 'exigence à source unique', S64: 'exigence sans source', S65: 'porte de synthèse', S66: 'exigence de transition incomplète', S67: 'exploration de concepts',
-  S68: 'espace réservé resté', S69: 'chiffre sans source', S70: 'fiche de contexte trop longue', S71: 'ADR sans règle', S72: 'collision entre tâches', S73: 'comportement existant à préserver', S74: 'taille et risque calculé', S75: 'attention humaine dépassée',
+  S68: 'espace réservé resté', S69: 'chiffre sans source', S70: 'fiche de contexte trop longue', S71: 'ADR sans règle', S72: 'collision entre tâches', S73: 'comportement existant à préserver', S74: 'taille et risque calculé', S75: 'attention humaine dépassée', S76: 'tâche non finie sans décision', S77: 'action de rétrospective sans suivi',
 };

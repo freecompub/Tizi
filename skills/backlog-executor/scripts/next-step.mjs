@@ -7,6 +7,7 @@ import { join } from 'node:path';
 import { arr, loadState, table } from './lib/common.mjs';
 import { sessionsFor } from './lib/sessions.mjs';
 import { loadPath } from './choose-path.mjs';
+import { dueReviews } from './due-reviews.mjs';
 
 const args = process.argv.slice(2);
 const root = args.find(a => !a.startsWith('--') && args[args.indexOf(a) - 1] !== '--initiative') ?? '.';
@@ -55,8 +56,8 @@ function assess(slug) {
       const open = tasks.filter(t => t.status !== 'fusionnee');
       const blocked = tasks.filter(t => t.status === 'bloquee');
       if (blocked.length) reasons.push(`${blocked.length} tâche(s) bloquée(s) : ${blocked.map(t => t.id).join(', ')} — question pour le plan`);
-      const it = arr(plan?.iterations).find(i => i.status === 'terminé' && !i.review?.team?.date);
-      if (it) next = go('tizi-plan', `${it.id} terminée sans revue : faire la revue de fin d'itération`);
+      const due = dueReviews(root).find(d => d.initiative === slug);
+      if (due) next = go('tizi-sprint-review', `${due.iteration} finie${due.days_since_end != null ? ` depuis ${due.days_since_end} jour(s)` : ''}, sprint review non faite`);
       else if (st.qa && arr(st.qa.approvals).some(a => a.decision === 'approuvé')) next = go('tizi-plan', 'release approuvée : mesurer les outcomes et préparer la suite');
       else if (st.qa) next = go('tizi-test', 'vérification de la release en cours');
       else if (open.length || !tasks.length) next = go('tizi-impl', open.length ? `${open.length} tâche(s) en cours ou à faire` : 'aucune tâche prise : prendre la première tâche prête');

@@ -1,5 +1,11 @@
 # Phase Review (fin d'itération et après release)
 
+**Point d'entrée** : `/tizi-sprint-review` (Claude Code) ou l'agent `tizi-sprint-review` (Copilot). `close-sprint.mjs` prépare tout en une fois : mesures, fiches, preuves, et `review/IT-n/sprint-review.md` en deux parties — la **sprint review** (le produit : réalisé et prouvé, adaptation du backlog, prévision), avec les parties prenantes, puis la **rétrospective** (la façon de travailler : coûts, blocages récurrents, suivi des actions), entre membres de l'équipe. Il reporte aussi dans le plan, comme terminées, les tâches dont la fusion est enregistrée.
+
+**Déclenchement**, pour qu'elle ne soit pas oubliée : une itération dont la **date de fin** est passée sans sprint review est signalée par le point d'étape (`/tizi`), rappelée par le **hook de début de session** de Claude Code et de Copilot, et, si le workflow planifié est installé (`install.mjs --ci`), une **issue** est ouverte chaque jour ouvré avec le document préparé.
+
+**Décisions vérifiées** : chaque tâche non finie reçoit une décision — continuer, découper ou reporter (`review.carryover`, S76) ; chaque cause de blocage récurrente reçoit une action et un responsable (`review.blockage_actions`) ; chaque action essayée au sprint précédent est suivie (`review.actions_followup`, S77).
+
 **But** : apprendre de tout ce qu'on construit — la qualité du produit, la justesse du plan, la façon de travailler — puis vérifier après chaque release que les outcomes visés sont atteints. C'est aussi là que la capacité de l'équipe se calibre, y compris quand une partie des tâches va à des agents.
 
 Source : Jeff Patton, *User Story Mapping*, ch. 9, 11 et 18 (revue d'équipe, revue avec les parties prenantes, maturité de release, mesure des outcomes), reformulé.
