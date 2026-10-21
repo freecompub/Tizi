@@ -21,7 +21,7 @@ Point de départ : `/tizi` dans Claude Code, ou l'agent `tizi` dans Copilot.
 
 ## documentation/
 
-Le document de référence « Tizi — un SDLC agentique, du recueil du besoin au déploiement », exporté depuis le document vivant (révision 62) :
+Le document de référence « Tizi — un SDLC agentique, du recueil du besoin au déploiement », exporté depuis le document vivant (révision 64) :
 - en Markdown, modifiable ;
 - en PDF (A4, 36 pages), pour la lecture.
 
