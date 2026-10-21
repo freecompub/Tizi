@@ -63,3 +63,7 @@ Toute modification passe par une demande de changement (`CR-xxx`) avec analyse d
 Avant l'approbation, le document généré montre ses métriques de couverture et leurs seuils (section « Couverture »). Un seuil non atteint se corrige, ou se justifie par une dérogation dans `coverage_waivers` (métrique, raison, approbateur déclaré par l'utilisateur) ; `lint.mjs` le signale sinon (règle S54). Les seuils se règlent par projet dans `coverage_thresholds`.
 
 Le handoff est écrit avec son empreinte SHA-256 (`handoff.yaml.sha256`) et l'empreinte de la version figée dont il vient, ainsi que les métriques de couverture et les dérogations. L'étape suivante le vérifie avec `verify-handoff.mjs` avant de l'ingérer.
+
+## Instructions du dépôt
+
+Après chaque version figée de la conception, lance `node <chemin-du-skill>/scripts/sync-agent-instructions.mjs .` : le bloc Tizi de `AGENTS.md` (importé par `CLAUDE.md`) reprend les règles des ADR acceptés, les dossiers de chaque composant, les contrats et les données sensibles. C'est ce que lisent les agents qui ne passent pas par un skill (complétion dans l'éditeur, question rapide). Le bloc reste court : il est chargé à chaque session. Idée reprise de BMAD-METHOD.

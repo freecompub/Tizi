@@ -21,9 +21,9 @@ Point de départ : `/tizi` dans Claude Code, ou l'agent `tizi` dans Copilot.
 
 ## documentation/
 
-Le document de référence « Tizi — un SDLC agentique, du recueil du besoin au déploiement », exporté depuis le document vivant (révision 64) :
+Le document de référence « Tizi — un SDLC agentique, du recueil du besoin au déploiement », exporté depuis le document vivant (révision 65) :
 - en Markdown, modifiable ;
-- en PDF (A4, 36 pages), pour la lecture.
+- en PDF (A4, 37 pages), pour la lecture.
 
 Il contient le sommaire, le nom et sa philosophie, les dix étapes, la construction des étapes 1 à 6, l'index des abréviations et identifiants, et les sources.
 
@@ -50,6 +50,10 @@ L'installateur pose aussi les **points d'entrée**, générés depuis une source
 | `tizi-impl` | `/tizi-impl` | agent `tizi-impl` | Étape 5 : implémentation d'une tâche |
 | `tizi-test` | `/tizi-test` | agent `tizi-test` | Étape 6 : vérification de release |
 
+**Choisir le chemin.** Toutes les initiatives ne traversent pas toutes les étapes. Au démarrage, `/tizi` pose six questions fermées (modification évidente ? exigence réglementaire ou sécurité des patients ? intention floue ? règle métier ? contrat, donnée sensible ou composant ? plusieurs jours ?) et `choose-path.mjs` en déduit le chemin : **hors Tizi**, **voie rapide** (plan puis implémentation), **court** (seulement les étapes nécessaires) ou **complet**. Le choix est une décision enregistrée dans `.tizi/chemins/<initiative>.yaml`, avec les réponses et qui l'a prise. La question réglementaire impose toujours la chaîne complète. Un chemin ne se rétrécit pas ; il s'élargit (`--elargir`) quand une étape découvre ce qu'il fallait.
+
+**Instructions du dépôt.** `sync-agent-instructions.mjs` écrit dans `AGENTS.md` un bloc délimité, tiré des états de Tizi : règles des ADR, dossiers de chaque composant, contrats, données sensibles, commandes de test. `CLAUDE.md` l'importe. Ce sont les consignes que lisent les agents qui ne passent pas par Tizi. Le reste du fichier n'est jamais touché, et `--check` signale un bloc périmé ou un dossier disparu.
+
 Ce sont des coquilles : chacune charge son skill, qui reste la seule source des règles. Les agents Copilot n'ont que les outils de leur étape (l'entrée `tizi` et `tizi-backlog` ne peuvent pas éditer de fichiers) et proposent des boutons de passage vers l'étape suivante. Les sous-agents internes (critiques du council, perspectives de revue, vérificateur) sont marqués non invocables : ils n'apparaissent pas dans la liste de l'utilisateur.
 
 Options : `--skills brd-builder,prd-builder` pour n'en installer qu'une partie, `--user` pour les skills et agents personnels, `--dry-run` pour voir sans écrire. La commande est idempotente. Il faut Node.js 18 ou plus ; aucune dépendance n'est à installer.
@@ -70,7 +74,7 @@ Les sept skills, au format ouvert Agent Skills (validés par `skills-ref`), util
 
 Chaque skill sait reprendre une session interrompue (`references/sessions.md`) : un hook conserve la transcription et en tire un extrait, `status.mjs` donne le point d'étape, `session-search.mjs` retrouve un détail.
 
-Fichiers communs, identiques d'un skill à l'autre, dont `scripts/lib/agent-io.mjs` qui adapte les hooks à Claude Code, à Copilot et à VS Code : `scripts/lib/common.mjs`, `scripts/lib/rules.mjs` (catalogue de vérification), `scripts/lint.mjs`, `scripts/freeze-version.mjs`, `scripts/verify-handoff.mjs`, `scripts/lib/sessions.mjs`, `scripts/session-capture.mjs`, `scripts/session-search.mjs`, `scripts/status.mjs`, `scripts/next-step.mjs`, et `scripts/lib/testing.mjs` pour les étapes 5 et 6. Toute modification de l'un d'eux se recopie dans tous les skills qui l'ont.
+Fichiers communs, identiques d'un skill à l'autre, dont `scripts/lib/agent-io.mjs` qui adapte les hooks à Claude Code, à Copilot et à VS Code : `scripts/lib/common.mjs`, `scripts/lib/rules.mjs` (catalogue de vérification), `scripts/lint.mjs`, `scripts/freeze-version.mjs`, `scripts/verify-handoff.mjs`, `scripts/lib/sessions.mjs`, `scripts/session-capture.mjs`, `scripts/session-search.mjs`, `scripts/status.mjs`, `scripts/next-step.mjs`, `scripts/choose-path.mjs`, `scripts/sync-agent-instructions.mjs`, et `scripts/lib/testing.mjs` pour les étapes 5 et 6. Toute modification de l'un d'eux se recopie dans tous les skills qui l'ont.
 
 ## tests/
 

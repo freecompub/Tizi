@@ -6,6 +6,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { arr, loadState, table } from './lib/common.mjs';
 import { sessionsFor } from './lib/sessions.mjs';
+import { loadPath } from './choose-path.mjs';
 
 const args = process.argv.slice(2);
 const root = args.find(a => !a.startsWith('--') && args[args.indexOf(a) - 1] !== '--initiative') ?? '.';
@@ -17,6 +18,8 @@ const STEPS = [
 ];
 const slugs = new Set();
 for (const s of STEPS) if (existsSync(join(root, s.doc))) for (const d of readdirSync(join(root, s.doc))) if (existsSync(join(root, s.doc, d, 'state.yaml'))) slugs.add(d);
+// Une initiative peut exister par son seul chemin décidé, avant tout document.
+if (existsSync(join(root, '.tizi', 'chemins'))) for (const f of readdirSync(join(root, '.tizi', 'chemins'))) if (f.endsWith('.yaml')) slugs.add(f.replace(/\.yaml$/, ''));
 const load = (doc, slug) => { const p = join(root, doc, slug, 'state.yaml'); return existsSync(p) ? loadState(p) : null; };
 const baseline = s => ['baseline', 'validé', 'approuvé'].includes(s?.governance?.status) || !!s?.governance?.version && s.governance.status !== 'brouillon';
 const hasHandoff = (doc, slug) => existsSync(join(root, doc, slug, 'handoff')) && readdirSync(join(root, doc, slug, 'handoff')).length > 0;
@@ -60,15 +63,29 @@ function assess(slug) {
       else next = go('tizi-test', 'tâches fusionnées : vérifier la release');
     }
   }
+  // Chemin décidé (choose-path.mjs) : l'étape suivante est prise dans le chemin, jamais hors de lui.
+  const route = loadPath(root, slug);
+  const entryOf = Object.fromEntries(STEPS.map(x => [x.doc, x.entry]));
+  const docOf = Object.fromEntries(STEPS.map(x => [x.entry, x.doc]));
+  if (route) {
+    if (route.path === 'hors-tizi') next = go(null, `chemin décidé « hors Tizi » par ${route.decided_by} : modification évidente, sans étape`);
+    else if (!Object.values(st).some(Boolean)) next = go(entryOf[route.steps[0]], `chemin « ${route.path} » décidé par ${route.decided_by} : commencer par ${STEPS.find(x => x.doc === route.steps[0]).label}${route.path === 'voie-rapide' ? ' (une story en voie rapide)' : ''}`);
+    else if (next.entry && docOf[next.entry] && !route.steps.includes(docOf[next.entry])) {
+      const last = [...STEPS].reverse().find(x => st[x.doc])?.doc;
+      const after = route.steps[route.steps.indexOf(last) + 1] ?? route.steps.find(x => !st[x]);
+      next = after ? go(entryOf[after], `${next.why.split(' : ')[0]} ; le chemin « ${route.path} » passe ensuite à ${STEPS.find(x => x.doc === after).label}`) : go(null, `chemin « ${route.path} » parcouru`);
+    }
+  }
   const zo = Object.values(st).filter(Boolean).flatMap(s => arr(s.shadow_zones)).filter(z => z.status === 'ouverte' && z.blocking);
   if (zo.length) reasons.push(`${zo.length} zone(s) d'ombre bloquante(s)`);
   const sess = STEPS.flatMap(s => sessionsFor(`${s.doc}/${slug}`, root)).sort((a, b) => String(a.ended).localeCompare(String(b.ended))).at(-1);
   if (sess && !sess.condensed) reasons.push('dernière session sans condensé : le rédiger avant de reprendre');
-  return { slug, progress: STEPS.map(s => (st[s.doc] ? (baseline(st[s.doc]) && s.doc !== 'impl' && s.doc !== 'qa' ? '✓' : '…') : (STEPS.findIndex(x => x.doc === s.doc) < STEPS.findIndex(x => x.doc === ([...STEPS].reverse().find(y => st[y.doc])?.doc)) ? '–' : '·'))).join(' '), next, notes: reasons };
+  const skipped = s => (route ? !route.steps.includes(s.doc) : STEPS.findIndex(x => x.doc === s.doc) < STEPS.findIndex(x => x.doc === ([...STEPS].reverse().find(y => st[y.doc])?.doc)));
+  return { slug, path: route?.path ?? '', progress: STEPS.map(s => (st[s.doc] ? (baseline(st[s.doc]) && s.doc !== 'impl' && s.doc !== 'qa' ? '✓' : '…') : skipped(s) ? '–' : '·')).join(' '), next, notes: reasons };
 }
 
 const list = [...slugs].filter(s => !only || s === only).sort().map(assess);
 if (args.includes('--json')) { console.log(JSON.stringify(list, null, 2)); process.exit(0); }
 if (!list.length) { console.log('Aucune initiative dans ce dépôt. Pour commencer : tizi-brd (évaluer une opportunité), ou tizi-prd pour un PRD autonome.'); process.exit(0); }
 console.log('Avancement (BRD · PRD · conception · plan · implémentation · tests) : ✓ figé, … en cours, – non utilisé, · à venir\n');
-console.log(table(['Initiative', 'Avancement', 'Étape suivante', 'Pourquoi', 'À noter'], list.map(x => [x.slug, x.progress, x.next.entry ?? '—', x.next.why, x.notes.join(' ; ') || '—'])));
+console.log(table(['Initiative', 'Chemin', 'Avancement', 'Étape suivante', 'Pourquoi', 'À noter'], list.map(x => [x.slug, x.path || 'non décidé', x.progress, x.next.entry ?? '—', x.next.why, x.notes.join(' ; ') || '—'])));

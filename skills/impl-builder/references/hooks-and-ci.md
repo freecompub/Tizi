@@ -51,3 +51,7 @@ Le hook ne protège que les écritures faites par l'agent, et seulement les outi
 ```
 
 L'identifiant de tâche se lit dans le titre ou la branche de la PR (`TK-xxx`). En mode `--run`, la vérification C4 (trace du TDD) n'est pas faite : elle dépend du journal local, qui ne remonte pas en CI. Rends cette vérification obligatoire dans la protection de la branche principale.
+
+## Instructions du dépôt
+
+Quand `impl/config.yaml` change (commandes de test, dossiers des composants), relance `node <chemin-du-skill>/scripts/sync-agent-instructions.mjs .`. En CI, `sync-agent-instructions.mjs . --check` échoue si le bloc est absent ou périmé, ou si un dossier cité n'existe plus.
