@@ -629,6 +629,8 @@ Les tests de la boucle courte (unitaires en TDD, acceptation en BDD, contrats) s
 
 La **matrice de couverture des exigences** est calculée, jamais déclarée : chaque exemple, critère, vérification de NFR, mesure de sécurité et parcours critique de la release est relié aux tests qui portent son identifiant dans les rapports collectés. La porte de release est ouverte quand toutes les suites passent, que chaque exigence est prouvée ou couverte par une dérogation nommée, que les NFR atteignent leurs cibles, que les parcours critiques passent de bout en bout, que les sessions exploratoires sont faites sans constat bloquant, et que le score de mutation et les analyses de sécurité sont au niveau. Les preuves d’une version candidate sont archivées une seule fois, en lecture seule, avec un manifeste d’empreintes SHA-256.
 
+**Réalisé et prouvé.** La matrice croise deux faits, chacun calculé depuis sa seule source : la **réalisation** (de chaque FR à ses stories, à leurs tâches, et à l’état de chacune — fusionnée ou terminée) et la **preuve** (les tests qui portent l’identifiant et passent). Elle les présente par activité de la story map, la vue que comprennent les parties prenantes, et liste trois écarts. **Réalisé mais non prouvé** ferme la porte : une tâche fusionnée montre qu’un code existe, pas que le comportement convenu fonctionne ; il faut écrire le test, retirer de la release, ou déroger par décision nommée. **Non réalisé** ne ferme pas la porte mais appelle une décision explicite — reporter, ou retenir la livraison — plutôt qu’une découverte le jour de la livraison. **Prouvé sans être prévu** signale un test qui renvoie à une exigence qu’aucune story de la release ne porte. La porte est un verdict, pas encore un verrou : elle ne bloquera la livraison que lorsque la chaîne de déploiement vérifiera qu’elle est ouverte.
+
 ## 7. Intégration continue
 
 **Objectif** : vérifier automatiquement chaque changement avant qu’il rejoigne la branche principale.
@@ -785,7 +787,7 @@ Pour un logiciel comme Diabeo, ces exigences s’appliquent à toutes les étape
 | `S01`–`S72` | Règles de structure de la vérification de forme, communes à tous les skills |
 | `G1`–`G6` | Garde-fous de contenu de l’export (secrets, chemins locaux, adresses, références non résolues, éléments non validés, longueurs) |
 | `C1`–`C8` | Conditions de la porte de PR (étape 5) |
-| `R1`–`R7` | Conditions de la porte de release (étape 6) |
+| `R1`–`R8` | Conditions de la porte de release (étape 6) |
 
 ## Sources
 

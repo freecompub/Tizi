@@ -39,6 +39,32 @@ for (const m of arr(refs.sad?.security_measures)) add(m.threat, 'sécurité', ar
 for (const b of arr(refs.prd?.preserved_behaviors)) add(b.id, 'non-régression', b.behavior, 'existant');
 for (const j of arr(set.critical_journeys)) add(j, 'parcours', arr(refs.prd?.journeys).find(p => p.id === j)?.goal ?? '', 'PRD');
 
+// Réalisation, calculée : FR → stories → tâches → état d'implémentation (fusionnée) ou du plan (terminé).
+// Rien n'est déclaré à la main : une seule source par fait, pour que réalisé et prouvé ne puissent pas diverger.
+const implPath = set.impl_state || [`impl/${s.initiative?.slug ?? ''}/state.yaml`].find(p => p && existsSync(p)) || '';
+const impl = implPath && existsSync(implPath) ? loadState(implPath) : null;
+const ptasks = arr(plan.tasks).filter(t => t.status !== 'abandonné');
+const taskState = t => {
+  const it = arr(impl?.tasks).find(x => x.id === t.id);
+  if (it?.status === 'fusionnee' || t.status === 'terminé') return 'fait';
+  if (it && ['rouge', 'vert', 'verification', 'en_revue', 'comprendre'].includes(it.status)) return 'en cours';
+  if (it?.status === 'bloquee') return 'bloqué';
+  return 'à faire';
+};
+const rollup = ts => !ts.length ? 'sans tâche' : ts.every(t => taskState(t) === 'fait') ? 'réalisé' : ts.some(t => ['fait', 'en cours'].includes(taskState(t))) ? 'partiel' : ts.some(t => taskState(t) === 'bloqué') ? 'bloqué' : 'non commencé';
+const tasksOfStory = id => ptasks.filter(t => t.story === id);
+const relFrs = arr(refs.prd?.releases).filter(r => !s.release || r.id === s.release).flatMap(r => arr(r.functional_requirements));
+const storiesOfFr = id => stories.filter(x => arr(x.frs).includes(id));
+const frReal = id => { const st = storiesOfFr(id); return st.length ? rollup(st.flatMap(x => tasksOfStory(x.id))) : 'non planifié'; };
+const realOf = r => {
+  if (r.kind === 'exemple') { const e = arr(plan.examples).find(x => x.id === r.id); return rollup(tasksOfStory(e?.story)); }
+  if (r.kind === 'critère') return frReal(r.source);
+  if (r.kind === 'NFR') return rollup(ptasks.filter(t => arr(t.verifications).includes(r.id)));
+  if (r.kind === 'sécurité') return rollup(ptasks.filter(t => arr(t.threats).includes(r.id)));
+  if (r.kind === 'non-régression') return rollup(ptasks.filter(t => arr(t.preserves).includes(r.id)));
+  return '—';
+};
+
 // Rapports collectés.
 const suites = {}, cases = [];
 let mutation = null;
@@ -59,8 +85,23 @@ const rows = req.map(r => {
   let status = failing.length ? 'échec' : passing.length ? 'prouvé' : 'non prouvé';
   if (r.kind === 'NFR' && measure) status = measure.pass ? (failing.length ? 'échec' : 'prouvé') : 'échec';
   if (status !== 'prouvé' && waivers.has(r.id)) status = 'dérogation';
-  return { ...r, status, tests: tests.map(c => `${c.suite} : ${c.name} (${c.status === 'passed' ? 'ok' : c.status})`), measure: measure ? `${txt(measure.measured)} / cible ${txt(measure.target)}` : '' };
+  return { ...r, status, realization: realOf(r), tests: tests.map(c => `${c.suite} : ${c.name} (${c.status === 'passed' ? 'ok' : c.status})`), measure: measure ? `${txt(measure.measured)} / cible ${txt(measure.target)}` : '' };
 });
+
+// Vue par FR : réalisation et preuve, regroupées par activité de la story map.
+const actOfTask = mt => arr(refs.prd?.story_map).find(a => arr(a.tasks).some(t => t.id === mt));
+const frRows = relFrs.map(f => {
+  const own = rows.filter(r => (r.kind === 'critère' && r.source === f.id) || (r.kind === 'exemple' && storiesOfFr(f.id).some(x => x.id === r.source)));
+  const proof = !own.length ? 'aucune exigence à prouver' : own.every(r => r.status === 'dérogation') ? 'dérogation' : own.every(r => ['prouvé', 'dérogation'].includes(r.status)) ? (own.some(r => r.status === 'dérogation') ? 'prouvé, avec dérogation' : 'prouvé') : own.some(r => r.status === 'prouvé') ? 'partiellement prouvé' : 'non prouvé';
+  const act = actOfTask(storiesOfFr(f.id)[0]?.map_task);
+  return { id: f.id, statement: f.statement, activity: act ? `${act.id} ${act.name}` : '—', stories: storiesOfFr(f.id).map(x => x.id), realization: frReal(f.id), proof, waived: waivers.has(f.id) };
+});
+// Écarts : ce que ni la réalisation seule ni la preuve seule ne montrent.
+const realizedUnproved = frRows.filter(f => ['réalisé', 'partiel'].includes(f.realization) && !['prouvé', 'prouvé, avec dérogation', 'dérogation'].includes(f.proof) && !f.waived);
+const reqUnproved = rows.filter(r => r.realization === 'réalisé' && !['prouvé', 'dérogation'].includes(r.status) && !['critère', 'exemple'].includes(r.kind));
+const notDone = frRows.filter(f => ['non commencé', 'non planifié', 'sans tâche', 'bloqué'].includes(f.realization));
+const known = new Set([...rows.map(r => r.id), ...relFrs.map(f => f.id)]);
+const unplannedProof = [...new Set(cases.filter(c => c.status === 'passed').flatMap(c => c.ids).filter(id => /^(AC|EX|FR)-/.test(id) && !known.has(id)))];
 
 // Porte.
 const nonWaived = rows.filter(r => r.status !== 'dérogation');
@@ -76,6 +117,8 @@ const gate = [
   ['R4', 'Parcours critiques couverts de bout en bout', rows.filter(r => r.kind === 'parcours').every(r => ['prouvé', 'dérogation'].includes(r.status)), `${rows.filter(r => r.kind === 'parcours' && r.status === 'prouvé').length}/${rows.filter(r => r.kind === 'parcours').length}`],
   ['R5', 'Sessions exploratoires faites, sans constat bloquant ouvert', xs.every(x => x.status !== 'prevue') && !xs.some(x => arr(x.findings).some(f => f.severity === 'bloquant' && !f.resolved)),
     `${xs.filter(x => x.status === 'faite').length}/${xs.filter(x => x.status !== 'abandonnee').length} faite(s), ${xs.flatMap(x => arr(x.findings)).filter(f => f.severity === 'bloquant' && !f.resolved).length} bloquant(s) ouvert(s)`],
+  ['R8', 'Rien de réalisé sans être prouvé', !realizedUnproved.length && !reqUnproved.length,
+    realizedUnproved.length || reqUnproved.length ? `réalisé mais non prouvé : ${[...realizedUnproved.map(f => f.id), ...reqUnproved.map(r => r.id)].join(', ')}` : `${frRows.filter(f => f.realization === 'réalisé').length} FR réalisée(s), toutes prouvées`],
   ...(mutation ? [['R6', `Score de mutation ≥ ${set.thresholds?.mutation ?? 60} %`, mutation.score >= (set.thresholds?.mutation ?? 60), `${mutation.score} %`]] : []),
   ...(suites.security ? [['R7', 'Analyses de sécurité sans constat', !suites.security.failed && !suites.security.missing, suites.security.missing ? 'rapport absent' : `${suites.security.failed ?? 0} constat(s)`]] : []),
 ];
@@ -84,11 +127,20 @@ const open = gate.every(g => g[2]);
 // Écriture.
 const md = [`# Matrice de couverture — ${txt(s.initiative?.name)}, ${txt(s.release)}, version candidate ${txt(s.candidate)}`, '', `Calculée le ${today()} depuis le plan v${txt(plan.governance?.version)} et les rapports collectés. Une exigence n'est prouvée que par un test qui la référence et qui passe.`, ''];
 md.push('## Porte de release', '', table(['', 'Condition', 'Détail'], gate.map(([c, l, ok, d]) => [`${ok ? '✓' : '✗'} ${c}`, l, d])), '', `**Porte ${open ? 'ouverte' : 'fermée'}.** L'approbation de la release reste une déclaration humaine.`, '');
-md.push('## Exigences', '', table(['Exigence', 'Type', 'Libellé', 'Statut', 'Preuves'], rows.map(r => [r.id, r.kind, r.label, r.status === 'prouvé' ? 'prouvé' : `**${r.status}**`, [...r.tests, r.measure].filter(Boolean).join(' ; ') || '—'])));
+md.push('## Réalisé et prouvé, par activité', '', 'Réalisé ne veut pas dire prouvé : une tâche fusionnée montre qu\'un code existe, pas que le comportement convenu fonctionne. La réalisation est calculée depuis le plan et l\'implémentation, la preuve depuis les rapports de tests.', '');
+const acts = [...new Set(frRows.map(f => f.activity))];
+for (const a of acts) {
+  md.push(`### ${a}`, '', table(['FR', 'Exigence', 'Stories', 'Réalisation', 'Preuve'], frRows.filter(f => f.activity === a).map(f => [f.id, f.statement, f.stories.join(', ') || '—', f.realization, f.waived ? 'dérogation' : ['prouvé', 'prouvé, avec dérogation', 'dérogation'].includes(f.proof) ? f.proof : `**${f.proof}**`])), '');
+}
+md.push('## Écarts', '');
+md.push('**Réalisé mais non prouvé** — ferme la porte (R8) : écrire le test qui prouve, retirer de la release, ou déroger par décision nommée.', '', ...(realizedUnproved.length || reqUnproved.length ? [...realizedUnproved.map(f => `- ${f.id} (${f.realization}, ${f.proof}) — ${txt(f.statement)}`), ...reqUnproved.map(r => `- ${r.id} (${r.kind}, réalisé, ${r.status})`)] : ['_Aucun._']), '');
+md.push('**Non réalisé** — ne ferme pas la porte, mais demande une décision explicite : reporter à une autre release, ou retenir la livraison.', '', ...(notDone.length ? notDone.map(f => `- ${f.id} (${f.realization}) — ${txt(f.statement)}`) : ['_Aucun._']), '');
+md.push('**Prouvé sans être prévu** — un test vert renvoie à une exigence qu\'aucune story de la release ne porte : étiquette erronée, ou travail fait hors plan.', '', ...(unplannedProof.length ? unplannedProof.map(id => `- ${id}`) : ['_Aucun._']), '');
+md.push('## Exigences', '', table(['Exigence', 'Type', 'Libellé', 'Réalisation', 'Preuve', 'Tests'], rows.map(r => [r.id, r.kind, r.label, r.realization, r.status === 'prouvé' ? 'prouvé' : `**${r.status}**`, [...r.tests, r.measure].filter(Boolean).join(' ; ') || '—'])));
 if (xs.length) md.push('## Sessions exploratoires', '', table(['Session', 'Charte', 'Statut', 'Constats'], xs.map(x => [x.id, `Explorer ${txt(x.charter?.explore)} avec ${txt(x.charter?.with)} pour découvrir ${txt(x.charter?.discover)}`, x.status, arr(x.findings).map(f => `${f.severity} : ${f.text}${f.story ? ` (${f.story})` : ''}`).join(' ; ') || '—'])));
 if (waivers.size) md.push('## Dérogations', '', table(['Exigence', 'Raison', 'Approuvée par'], [...waivers.values()].map(w => [w.id, w.reason, w.approved_by])));
 writeOut(join(root, 'matrix.md'), md.join('\n') + humanReviewFooter('rapport de vérification'));
-writeOut(join(root, 'matrix.yaml'), `# Matrice calculée — release-matrix.mjs\n${yaml.dump({ release: s.release, candidate: s.candidate, computed: today(), plan_version: plan.governance?.version ?? '', gate: gate.map(([code, label, ok, detail]) => ({ code, label, ok, detail })), open, requirements: rows, suites }, { lineWidth: 120 })}`);
+writeOut(join(root, 'matrix.yaml'), `# Matrice calculée — release-matrix.mjs\n${yaml.dump({ release: s.release, candidate: s.candidate, computed: today(), plan_version: plan.governance?.version ?? '', gate: gate.map(([code, label, ok, detail]) => ({ code, label, ok, detail })), open, requirements: rows, functional: frRows, gaps: { realized_unproved: [...realizedUnproved.map(f => f.id), ...reqUnproved.map(r => r.id)], not_done: notDone.map(f => f.id), unplanned_proof: unplannedProof }, suites }, { lineWidth: 120 })}`);
 for (const [c, l, ok, d] of gate) console.log(`${ok ? '✓' : '✗'} ${c} ${l} — ${d}`);
 console.log(`Porte ${open ? 'OUVERTE' : 'FERMÉE'} — ${join(root, 'matrix.md')}`);
 if (!open) process.exitCode = 1;

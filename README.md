@@ -21,7 +21,7 @@ Point de départ : `/tizi` dans Claude Code, ou l'agent `tizi` dans Copilot.
 
 ## documentation/
 
-Le document de référence « Tizi — un SDLC agentique, du recueil du besoin au déploiement », exporté depuis le document vivant (révision 67) :
+Le document de référence « Tizi — un SDLC agentique, du recueil du besoin au déploiement », exporté depuis le document vivant (révision 69) :
 - en Markdown, modifiable ;
 - en PDF (A4, 37 pages), pour la lecture.
 
@@ -80,7 +80,7 @@ Fichiers communs, identiques d'un skill à l'autre, dont `scripts/lib/agent-io.m
 
 ## tests/
 
-`npm test` (ou `node --test tests/*.test.mjs`) rejoue toute la chaîne sur une copie du cas d'exemple, sans dépendance : conformité des skills à la spécification Agent Skills, identité des fichiers communs, vérification et rendu des quatre documents, intégrité des handoffs, verrous de l'exécuteur, garde-fou TDD avec les charges utiles de Claude Code, Copilot et VS Code, capture des sessions, installation, revue de code, portes de PR et de release. Les constats de la vérification sont comparés à des références figées (`tests/golden/`) : `npm run test:update-golden` après un changement voulu. À lancer après toute modification d'un fichier commun.
+`npm test` (ou `node --test tests/*.test.mjs`) rejoue toute la chaîne sur une copie du cas d'exemple, sans dépendance : conformité des skills à la spécification Agent Skills, identité des fichiers communs, vérification et rendu des quatre documents, intégrité des handoffs, verrous de l'exécuteur, garde-fou TDD avec les charges utiles de Claude Code, Copilot et VS Code, capture des sessions, installation, revue de code, portes de PR et de release, réalisé et prouvé. Les constats de la vérification sont comparés à des références figées (`tests/golden/`) : `npm run test:update-golden` après un changement voulu. À lancer après toute modification d'un fichier commun.
 
 ## evals/
 

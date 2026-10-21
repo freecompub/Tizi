@@ -15,8 +15,25 @@
 | R5 | Les sessions exploratoires prévues sont faites, sans constat bloquant ouvert |
 | R6 | Le score de mutation global atteint `thresholds.mutation` (si mesuré) |
 | R7 | Les analyses de sécurité passent (si collectées) |
+| R8 | Rien de réalisé sans être prouvé : aucune FR, mesure de sécurité, vérification de NFR ou comportement à préserver dont les tâches sont faites alors que la preuve manque |
 
 Il écrit `qa/<slug>/matrix.md` (lisible) et `matrix.yaml` (pour l'archive).
+
+## Réalisé et prouvé
+
+La matrice croise deux faits, chacun calculé depuis sa seule source :
+- **la réalisation** : de chaque FR à ses stories, puis à leurs tâches, et à l'état de chaque tâche (fusionnée dans l'implémentation, ou terminée dans le plan) ;
+- **la preuve** : les tests qui portent l'identifiant et passent.
+
+Elle les présente par activité de la story map, la vue que comprennent les parties prenantes, puis liste trois **écarts** :
+
+| Écart | Effet |
+|---|---|
+| **Réalisé mais non prouvé** | Ferme la porte (R8) : écrire le test, retirer de la release, ou déroger par décision nommée |
+| **Non réalisé** (non commencé, sans tâche, bloqué) | Ne ferme pas la porte, mais appelle une décision explicite : reporter, ou retenir la livraison |
+| **Prouvé sans être prévu** | Un test vert renvoie à une exigence qu'aucune story de la release ne porte : étiquette erronée, ou travail hors plan |
+
+Réalisé ne veut pas dire prouvé : une tâche fusionnée montre qu'un code existe, pas que le comportement convenu fonctionne. L'état d'implémentation est lu dans `impl/<slug>/state.yaml`, ou au chemin donné par `settings.impl_state`.
 
 ## Décider
 

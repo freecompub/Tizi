@@ -11,6 +11,7 @@ candidate: ""              # version candidate testée, par exemple 1.2.0-rc1 ou
 settings:
   thresholds: { mutation: 60, requirements: 100 }   # score de mutation global (%) ; part d'exigences prouvées (%)
   critical_journeys: []    # parcours du PRD à couvrir de bout en bout : [PJ-01]
+  impl_state: ""           # état d'implémentation pour la réalisation ; vide = impl/<initiative>/state.yaml
   reports:                 # rapports collectés (artefacts de CI de la version candidate)
     unit: reports/unit.xml
     acceptance: reports/acceptance.json

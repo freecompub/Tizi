@@ -66,3 +66,22 @@ test('release : un comportement à préserver est une exigence à prouver (PB)',
   assert.match(readFileSync(join(repo, 'qa/demo/matrix.md'), 'utf8'), /PB-01 \| non-régression/);
   assert.notEqual(r.code, 0, 'non prouvé : porte fermée');
 });
+
+test('réalisé et prouvé : un réalisé non prouvé ferme la porte (R8), écarts listés', () => {
+  const repo = join(sandbox(), 'repo');
+  const matrix = () => { const r = node(script('test-builder', 'release-matrix.mjs'), ['qa/demo/state.yaml'], { cwd: repo }); return { code: r.code, out: r.out, md: readFileSync(join(repo, 'qa/demo/matrix.md'), 'utf8') }; };
+  let m = matrix();
+  assert.match(m.out, /✓ R8/);
+  assert.match(m.md, /\*\*Non réalisé\*\*[\s\S]*- FR-002 \(non commencé\)/, 'FR non commencée : décision demandée');
+  assert.match(m.md, /\| FR-002 \|.*\| dérogation \|/, 'une preuve par dérogation n\'est pas affichée comme prouvée');
+  // FR-001 entièrement réalisée (tâches fusionnées) mais son critère n'est plus prouvé : la porte se ferme.
+  const sp = join(repo, 'impl/demo/state.yaml');
+  const st = yaml.load(readFileSync(sp, 'utf8'));
+  st.tasks = [{ id: 'TK-002', status: 'fusionnee' }, { id: 'TK-003', status: 'fusionnee' }, { id: 'TK-007', status: 'fusionnee' }];
+  writeFileSync(sp, yaml.dump(st));
+  writeFileSync(join(repo, 'reports/acceptance.xml'), '<testsuites><testcase classname="a" name="[EX-002] dossier complet transmis"/><testcase classname="a" name="[EX-004] message"/><testcase classname="a" name="[AC-099] hors plan"/></testsuites>');
+  m = matrix();
+  assert.notEqual(m.code, 0);
+  assert.match(m.out, /✗ R8 Rien de réalisé sans être prouvé — réalisé mais non prouvé : FR-001/);
+  assert.match(m.md, /\*\*Prouvé sans être prévu\*\*[\s\S]*- AC-099/);
+});
