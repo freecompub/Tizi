@@ -26,6 +26,8 @@ const handoff = {
   personas: validated(s.personas).map(({ id, name, role }) => ({ id, name, role })),
   journeys: validated(s.journeys).map(({ id, persona, goal, steps }) => ({ id, persona, goal, steps: arr(steps) })),
   transition_requirements: arr(s.brd_ref?.transition_requirements),
+  existing_product: !!s.existing_product,
+  preserved_behaviors: arr(s.preserved_behaviors).filter(b => b.status !== 'abandonné').map(({ id, behavior, why, evidence, test }) => ({ id, behavior, why: why ?? '', evidence: arr(evidence), test: test ?? 'à écrire' })),
   concepts: arr(s.concepts).filter(c => c.decision).map(({ id, title, decision, reason }) => ({ id, title, decision, reason })),
   story_map: arr(s.story_map).map(a => ({ id: a.id, name: a.name, tasks: arr(a.tasks).map(({ id, name, journey, release }) => ({ id, name, journey, release })) })),
   releases: rels.map(r => ({

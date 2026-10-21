@@ -20,7 +20,7 @@ export const matchesAny = (path, globs = []) => globs.some(g => globToRegExp(g).
 export const toPosix = p => p.split(sep).join('/');
 
 // ── Identifiants de traçabilité ──────────────────────────────────────────────
-export const TRACE_RE = /\b(AC|EX|NR|TH|PJ|FR)-\d+\b/g;
+export const TRACE_RE = /\b(AC|EX|NR|TH|PJ|FR|PB)-\d+\b/g;
 export const idsIn = text => [...new Set(String(text ?? '').match(TRACE_RE) ?? [])];
 
 // ── Rapports ─────────────────────────────────────────────────────────────────

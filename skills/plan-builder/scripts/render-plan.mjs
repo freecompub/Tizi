@@ -251,6 +251,7 @@ for (const t of tasks) {
   if (adrs.length) md.push('## Décisions à respecter', '', table(['ADR', 'Règle', 'Empêche', 'Comment c\'est vérifié'], adrs.map(a => [a.id, a.rule || a.outcome, a.prevents, a.confirmation])));
   if (arr(t.threats).length) md.push('## Mesures de sécurité à réaliser', '', table(['Menace', 'STRIDE', 'Mesures'], arr(t.threats).map(id => { const m = thIndex.get(id); return [id, m?.stride, arr(m?.mitigations).join(' ; ')]; })));
   if (arr(t.verifications).length) md.push('## Vérifications à mettre en place', '', table(['Réponse', 'NFR', 'Méthode', 'Ce qui est vérifié'], arr(t.verifications).map(id => { const v = nrIndex.get(id); return [id, v?.nfr, v?.method, v?.description]; })));
+  if (arr(t.preserves).length) md.push('## Comportements existants à préserver', '', 'Avant de modifier le code concerné, figer chacun par un test de caractérisation qui passe tel quel (étiquette `@PB-xx`).', '', table(['ID', 'Comportement', 'Test existant'], arr(t.preserves).map(id => { const b = arr(prd.preserved_behaviors).find(x => x.id === id); return [id, b?.behavior, b?.test || 'à écrire']; })));
   md.push('## Dépendances', '', list(arr(t.depends_on).map(d => { const dt = tasks.find(x => x.id === d); return `${d} — ${txt(dt?.title)} (${txt(dt?.status)})`; })));
   md.push('## Definition of Done', '', list(arr(s.definition_of_done)));
   const text = md.join('\n');

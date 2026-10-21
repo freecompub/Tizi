@@ -152,6 +152,15 @@ metrics: []
 #    instrumentation: ""   # événements à collecter
 
 dependencies: []          # - { text: "", owner: "" }
+existing_product: false   # true : le changement porte sur un produit déjà en service (references/existing-behaviors.md)
+preserved_behaviors: []   # comportements existants à préserver : des exigences de non-régression
+#  - id: PB-01
+#    behavior: ""          # ce que le produit fait aujourd'hui, en comportement observable (forme EARS de préférence)
+#    why: ""               # qui en dépend : utilisateurs, intégrations, obligation
+#    evidence: []          # d'où on le sait : SRC-xxx, chemin de code, test existant, documentation
+#    test: ""              # test existant qui le vérifie, ou « à écrire » (test de caractérisation)
+#    status: proposé
+
 concepts: []              # exploration de solutions (references/concept-exploration.md)
 #  - id: CPT-01
 #    title: ""             # deux à quatre mots

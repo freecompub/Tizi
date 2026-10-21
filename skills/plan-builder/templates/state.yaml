@@ -83,6 +83,7 @@ tasks: []
 #  - id: TK-001
 #    kind: dev             # dev | spike | securite | verification | migration | transition | doc
 #    transition: []        # TR-xx réalisées par la tâche (formation, conduite du changement, reprise de données…)
+#    preserves: []         # PB-xx du PRD que la tâche risque d'affecter : un test de caractérisation chacun, avant de modifier le code
 #    title: ""
 #    story: US-001         # vide pour un spike
 #    spike_of: ""          # H-xxx de la conception

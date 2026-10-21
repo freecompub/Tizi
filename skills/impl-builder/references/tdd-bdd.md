@@ -2,6 +2,10 @@
 
 La tâche se construit en **double boucle** : la boucle externe part des scénarios d'acceptation (BDD), la boucle interne avance test unitaire par test unitaire (TDD).
 
+## Avant tout, sur du code existant : caractériser
+
+Si la tâche touche un élément existant modifié ou cite des comportements à préserver, fige d'abord l'existant par des tests de caractérisation qui passent tels quels (`references/characterization.md`).
+
 ## Boucle externe : acceptation (BDD)
 
 1. Pour chaque exemple `EX` et critère `AC` de la tâche, écris le scénario Gherkin avec ses **étiquettes** : `@EX-004 @AC-001`. Reprends les valeurs concrètes de l'example mapping : pas de « dossier invalide », mais « un dossier sans justificatif de domicile ».

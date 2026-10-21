@@ -75,6 +75,12 @@ for (const r of releases) {
   h(3, `${r.id} — ${txt(r.name)}${mark(r)}`);
   p(table(['Critère', 'Valeur'], [['Hypothèse testée', r.learning_goal], ['Valeur de bout en bout', r.value], ['Signal', r.signal], ['Confinement', r.containment]]));
 }
+const pbs = arr(s.preserved_behaviors).filter(b => b.status !== 'abandonné');
+if (s.existing_product || pbs.length) {
+  h(3, 'Comportements existants à préserver');
+  p('_Le produit est déjà en service : ces comportements actuels ne doivent pas régresser. Ce sont des exigences de non-régression, prouvées par un test à la release._\n');
+  p(table(['ID', 'Comportement', 'Qui en dépend', 'Preuve', 'Test'], pbs.map(b => [b.id, b.behavior, b.why, arr(b.evidence).join(', '), b.test || 'à écrire'])));
+}
 const cpts = arr(s.concepts).filter(c => c.status !== 'abandonné');
 if (cpts.length) {
   h(3, 'Concepts envisagés');

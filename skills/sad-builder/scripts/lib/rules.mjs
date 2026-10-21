@@ -225,6 +225,8 @@ export function checkPrd(s) {
   for (const h of arr(s.hypotheses).filter(h => h.test?.method && !h.test?.success_criterion)) {
     out.push({ rule: 'S57', id: h.id, message: 'test sans critère de réussite écrit à l\'avance' });
   }
+  if (s.existing_product && ['specify', 'govern'].includes(s.phase) && !arr(s.preserved_behaviors).filter(b => b.status !== 'abandonné').length) out.push({ rule: 'S73', id: 'preserved_behaviors', message: 'produit existant sans comportement à préserver : qu\'est-ce que ce changement ne doit pas casser ?' });
+  for (const b of arr(s.preserved_behaviors).filter(x => x.status !== 'abandonné')) if (!arr(b.evidence).length) out.push({ rule: 'S73', id: b.id, message: 'comportement à préserver sans preuve qu\'il existe : c\'est une hypothèse' });
   const concepts = arr(s.concepts).filter(c => c.status !== 'abandonné');
   if (concepts.length) {
     const kept = concepts.filter(c => c.decision === 'retenu');
@@ -605,6 +607,9 @@ export function checkPlan(s, refs = {}) {
   for (const m of arr(sad.security_measures)) if (!planned.has(m.threat)) out.push({ rule: 'S51', id: m.threat, message: 'mesure de sécurité de la conception planifiée dans aucune tâche' });
   for (const v of arr(sad.verifications).filter(v => v.stage === 'tests')) if (!planned.has(v.id)) out.push({ rule: 'S51', id: v.id, message: 'vérification de NFR prévue en tests, planifiée dans aucune tâche' });
   for (const sp of arr(sad.spikes)) if (!tasks.some(t => t.spike_of === sp.id)) out.push({ rule: 'S51', id: sp.id, message: 'spike de la conception sans tâche' });
+  for (const b of arr(prd.preserved_behaviors).filter(b => !b.test || b.test === 'à écrire')) {
+    if (!tasks.some(t => arr(t.preserves).includes(b.id))) out.push({ rule: 'S51', id: b.id, message: 'comportement existant à préserver sans test et sans tâche qui le protège (preserves)' });
+  }
   for (const tr of arr(prd.transition_requirements).filter(t => !release || !t.release || t.release === release)) {
     if (!tasks.some(t => arr(t.transition).includes(tr.id))) out.push({ rule: 'S51', id: tr.id, message: `exigence de transition (${tr.kind ?? '?'}) planifiée dans aucune tâche` });
   }
@@ -739,5 +744,5 @@ export const STRUCT_RULES = {
   S56: 'opportunité non décidée', S57: 'hypothèse risquée non testée', S58: 'itération sans revue', S59: 'release sans mesure des outcomes',
   S60: 'voie rapide non conforme', S61: 'ordre ouverture, milieu, fin', S62: 'story sans titre court',
   S63: 'exigence à source unique', S64: 'exigence sans source', S65: 'porte de synthèse', S66: 'exigence de transition incomplète', S67: 'exploration de concepts',
-  S68: 'espace réservé resté', S69: 'chiffre sans source', S70: 'fiche de contexte trop longue', S71: 'ADR sans règle', S72: 'collision entre tâches',
+  S68: 'espace réservé resté', S69: 'chiffre sans source', S70: 'fiche de contexte trop longue', S71: 'ADR sans règle', S72: 'collision entre tâches', S73: 'comportement existant à préserver',
 };

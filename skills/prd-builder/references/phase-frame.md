@@ -70,6 +70,10 @@ Pour chaque persona principal, propose 1 à 3 parcours : le but, puis les étape
 
 ---
 
+## 7 ter. Comportements existants à préserver (produit existant)
+
+Si le changement porte sur un produit déjà en service, renseigne `existing_product: true` et suis `references/existing-behaviors.md` : relève, avec leur preuve, les comportements actuels que le changement pourrait casser. Ils deviennent des exigences de non-régression, testées jusqu'à la release.
+
 ## 7 bis. Explorer des concepts (conditionnel)
 
 Avant de figer la story map sur une solution, suis `references/concept-exploration.md` quand la demande initiale était figée, que le PRD est autonome, ou que plusieurs solutions sont défendues. Diverger, regrouper en deux à quatre concepts, évaluer sur les axes désirable, faisable (hypothèse seulement) et viable, tester, puis faire retenir un concept par le décideur désigné. La story map se construit sur le concept retenu ; les concepts écartés restent dans l'état avec leur raison.

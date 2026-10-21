@@ -36,6 +36,7 @@ for (const x of stories) {
 }
 for (const n of arr(refs.sad?.verifications).filter(n => n.stage === 'tests')) add(n.id, 'NFR', `${n.nfr} — ${n.method} : ${txt(n.description)}`, n.nfr);
 for (const m of arr(refs.sad?.security_measures)) add(m.threat, 'sécurité', arr(m.mitigations).join(' ; '), m.target);
+for (const b of arr(refs.prd?.preserved_behaviors)) add(b.id, 'non-régression', b.behavior, 'existant');
 for (const j of arr(set.critical_journeys)) add(j, 'parcours', arr(refs.prd?.journeys).find(p => p.id === j)?.goal ?? '', 'PRD');
 
 // Rapports collectés.

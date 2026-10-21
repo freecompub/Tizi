@@ -9,6 +9,10 @@ Un système existe déjà. La conception doit composer avec lui. Cette version t
 3. **Pas d'inférence** : on ne déduit ni topologie de déploiement, ni nombre d'instances, ni protocole que les sources n'établissent pas. Une zone `existant_non_prouve` vaut mieux qu'un diagramme faux.
 4. **Lecture du code** : depuis l'agent (Claude Code ou GitHub Copilot), qui a accès au dépôt, lis les points d'entrée (routes, gestionnaires, consommateurs de messages), les clients sortants (appels HTTP, SDK), la configuration (URL, chaînes de connexion, variables d'environnement) et les manifestes. Note pour chaque fait le chemin du fichier.
 
+## Point de départ : la carte d'adoption
+
+Si `.tizi/adoption.yaml` existe (produit par `adopt.mjs`), reprends-en les conteneurs et composants qui bordent le changement comme éléments existants (`lifecycle: existant_conservé`, `status: proposé`), avec leurs preuves comme sources. C'est une carte grossière, tirée des fichiers de projet : vérifie chaque élément dans le code avant de le valider, établis les échanges entre eux (le script ne les déduit pas), et garde les identifiants pour que `impl/config.yaml` reste cohérent.
+
 ## Deux états
 
 | `lifecycle` | Vue actuelle | Vue cible |

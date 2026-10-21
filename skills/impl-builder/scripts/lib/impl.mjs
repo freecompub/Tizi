@@ -35,9 +35,11 @@ export function taskContext(handoffPath, taskId) {
   const frs = arr(refs.prd?.releases).flatMap(r => arr(r.functional_requirements)).filter(f => arr(story?.frs).includes(f.id));
   const acs = frs.flatMap(f => arr(f.acceptance).map(a => a.id));
   const adrs = arr(refs.sad?.decisions).filter(a => arr(a.elements).some(e => arr(task.elements).includes(e)));
+  const preserves = arr(task.preserves);
+  const existing = arr(refs.sad?.work_items).filter(w => arr(task.elements).includes(w.id) && ['existant_modifié'].includes(w.lifecycle)).map(w => w.id);
   return {
-    task, story, frozen, contextFile: join(frozen, 'tasks', `${taskId}.md`),
-    expected: [...examples, ...acs], elements: arr(task.elements), operations: arr(task.operations),
+    task, story, frozen, contextFile: join(frozen, 'tasks', `${taskId}.md`), preserves, existing,
+    expected: [...examples, ...acs, ...preserves], elements: arr(task.elements), operations: arr(task.operations),
     threats: arr(task.threats), verifications: arr(task.verifications), adrs,
   };
 }

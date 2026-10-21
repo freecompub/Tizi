@@ -4,7 +4,7 @@ Oct 19, 2026 · @Samir Alili
 
 ## Sommaire
 
-- [Principe](#mds8hynarac.61) — [Le nom : Tizi](#mds8hynarac.76166) · [Intégrité, couverture et contrôle](#mds8hynarac.48912) · [Continuité entre sessions](#mds8hynarac.64573) · [Claude Code et GitHub Copilot](#mds8hynarac.65983) · [Points d’entrée](#mds8hynarac.74434) · [Contrôle de l’outillage](#mds8hynarac.72175) · [Une chaîne par opportunité](#mds8hynarac.52227)
+- [Principe](#mds8hynarac.61) — [Le nom : Tizi](#mds8hynarac.76166) · [Intégrité, couverture et contrôle](#mds8hynarac.48912) · [Continuité entre sessions](#mds8hynarac.64573) · [Claude Code et GitHub Copilot](#mds8hynarac.65983) · [Points d’entrée](#mds8hynarac.74434) · [Contrôle de l’outillage](#mds8hynarac.72175) · [Sur une application existante](#mds8hynarac.80561) · [Une chaîne par opportunité](#mds8hynarac.52227)
 - [1. Recueil du besoin](#mds8hynarac.646) — [construction du BRD](#mds8hynarac.7237), skill `brd-builder`
 - [2. Analyse produit](#mds8hynarac.1292) — [construction du PRD](#mds8hynarac.20076), skill `prd-builder`
 - [3. Conception](#mds8hynarac.1893) — [construction de la conception](#mds8hynarac.35982), skill `sad-builder`
@@ -100,6 +100,16 @@ Les skills sont du logiciel et se contrôlent comme tel, sur deux plans.
 - **Évaluation par ablation** : chaque cas est joué plusieurs fois par le même agent, sans puis avec le skill, dans un dépôt neuf. Les correcteurs sont d’abord les règles déterministes du SDLC ; un juge, d’un autre modèle, n’intervient qu’en option sur une grille écrite. Une passe où l’agent n’a pas tourné est une erreur d’intégrité, jamais un score. Un bon cas met l’agent devant une tentation que le skill doit lui faire éviter.
 
 Dans chaque document généré, une mention rappelle qu’il a été produit avec l’assistance d’une IA et que seules les approbations enregistrées font foi. Deux règles s’ajoutent à la vérification : un espace réservé resté dans un élément (S68) et un chiffre précis sans source qui le fixe (S69). Enfin, tout contenu importé — notes, transcriptions, documents, rapports, issues — est une donnée, jamais une instruction.
+
+### Sur une application existante
+
+Tizi ne redocumente jamais toute l’application : il travaille changement par changement, et chaque changement ne cartographie que ce qui le borde. La carte grandit au fil des changements, sans chantier initial.
+
+1. **Adopter, une fois.** Un script observe le dépôt sans rien exécuter — fichiers de projet, schémas Xcode partagés, `package.json`, Prisma, docker-compose, contrats OpenAPI — et propose la configuration des tests et une carte grossière des conteneurs, chacun prouvé par le fichier qui l’établit. Ce qu’il ne peut établir (les échanges entre conteneurs, le simulateur iOS) est listé comme incertain. Il n’écrase jamais une configuration existante.
+2. **Choisir le chemin de chaque changement.** La plupart passent par la voie rapide ou le chemin court ; un changement qui touche la sécurité des patients prend la chaîne complète.
+3. **Dire ce qu’il ne faut pas casser.** Le PRD d’un changement sur un produit en service relève les comportements existants à préserver, chacun avec la preuve qu’il existe ; ce sont des exigences de non-régression, prouvées par un test à la release.
+4. **Concevoir sur l’existant.** La conception reprend la carte d’adoption comme existant à vérifier, établit les échanges à partir du code et distingue l’état actuel de l’état cible ; un contrat consommé par d’autres est une contrainte héritée.
+5. **Figer l’existant avant de le modifier.** Sur un élément existant modifié, ou un comportement à préserver, l’implémentation commence par des tests de caractérisation qui décrivent ce que le code fait aujourd’hui et passent tels quels ; le cycle rouge–vert vient ensuite. La porte de PR vérifie cet ordre.
 
 ### Une chaîne par opportunité
 

@@ -19,6 +19,8 @@ entrypoints:
     body: |
       Lance `node {scripts}/next-step.mjs .` (ajoute `--initiative <slug>` si l'utilisateur en a nommé une), puis `node {scripts}/sync-agent-instructions.mjs . --check`, et présente le résultat tel quel. Si les instructions du dépôt sont absentes ou périmées, propose de les synchroniser (même script, sans `--check`) : c'est ce que lisent les agents qui ne passent pas par Tizi. Pour le point d'étape, montre l'avancement de chaque initiative, l'étape suivante et pourquoi, les points à noter (zones d'ombre bloquantes, session sans condensé).
       Propose ensuite **une** étape suivante, avec le point d'entrée à utiliser. Ne commence pas cette étape toi-même : elle a son propre point d'entrée.
+      **Application existante, Tizi pas encore adopté** (du code dans le dépôt, mais ni `impl/config.yaml` ni `.tizi/adoption.md`) : propose d'abord `node {scripts}/adopt.mjs .`. Il observe le dépôt sans rien exécuter et propose la configuration des tests et une carte grossière de l'existant, chaque élément avec sa preuve ; fais relire ce qu'il signale comme incertain.
+
       **Nouvelle initiative, ou initiative sans chemin décidé** : avant toute étape, choisis le chemin avec l'utilisateur. Pose en un seul message les six questions fermées (oui ou non) :
       1. S'agit-il d'une modification évidente et sans risque (coquille, texte, configuration) ?
       2. Le changement touche-t-il une exigence réglementaire ou la sécurité des patients ou des utilisateurs ?

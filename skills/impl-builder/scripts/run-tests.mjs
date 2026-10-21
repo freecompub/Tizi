@@ -12,6 +12,7 @@ import { readReport } from './lib/testing.mjs';
 const args = process.argv.slice(2);
 const suite = args.includes('--suite') ? args[args.indexOf('--suite') + 1] : '';
 const expect = args.includes('--expect') ? args[args.indexOf('--expect') + 1] : '';
+const characterization = args.includes('--caracterisation');
 const cur = readCurrent();
 if (!cur) fail('Aucune tâche en cours : lance start-task.mjs.');
 const cfg = loadConfig();
@@ -31,11 +32,13 @@ else {
   const failed = report ? report.failed : 1;
   Object.assign(run, { total: report?.total ?? 0, failed: res.status !== 0 && failed === 0 ? 1 : failed, ids: [...new Set((report?.cases ?? []).flatMap(c => c.ids))], ...(error ? { error } : {}) });
 }
+if (characterization) run.characterization = true;
 appendRun(run);
 delete cur.refactor;
 writeCurrent(cur);
 
 if (suite === 'mutation') console.log(`Mutation : score ${run.score ?? '—'} %${run.survived ? `, ${run.survived} mutant(s) survivant(s)` : ''}.`);
 else console.log(`${suite} : ${run.total} test(s), ${run.failed} en échec → ${run.failed ? 'ROUGE' : 'VERT'}.${error ? ` (${error})` : ''}`);
+if (characterization && run.failed) console.warn('Test de caractérisation en échec : il doit décrire l\'existant tel qu\'il est. Corriger le test, pas le code.');
 if (expect === 'red' && !run.failed && suite !== 'mutation') console.warn('Attendu rouge : le test passe déjà. Il ne prouve rien tant qu\'on ne l\'a pas vu échouer.');
 if (expect === 'green' && run.failed) process.exitCode = 1;

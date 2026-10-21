@@ -45,9 +45,16 @@ const openZ = arr(s.shadow_zones).filter(z => z.task === taskId && z.status === 
 check('C2', 'Aucune question ouverte sur la tâche', !openZ.length, openZ.map(z => z.id).join(', '));
 for (const k of suites) check('C3', `Suite ${k} au vert`, !!results[k] && !results[k].failed, results[k] ? `${results[k].total} test(s), ${results[k].failed} en échec` : 'jamais exécutée');
 if (!rerun) {
-  const runs = readRuns(taskId).filter(r => suites.includes(r.suite));
+  const all = readRuns(taskId).filter(r => suites.includes(r.suite));
+  const runs = all.filter(r => !r.characterization); // un test de caractérisation passe d'emblée : il ne compte pas dans le cycle rouge–vert
   const firstGreen = runs.findIndex(r => !r.failed);
   check('C4', 'TDD : au moins un test vu en échec avant le premier vert', runs.some((r, i) => r.failed && (firstGreen === -1 || i < firstGreen)), `${runs.filter(r => r.failed).length} exécution(s) rouge(s) enregistrée(s)`);
+  if (ctx.existing.length || ctx.preserves.length) {
+    // C9 : sur du code existant, l'existant est figé par des tests de caractérisation AVANT le premier test rouge.
+    const firstRed = all.findIndex(r => r.failed && !r.characterization);
+    const charBefore = all.some((r, i) => r.characterization && !r.failed && (firstRed === -1 || i < firstRed));
+    check('C9', 'Existant figé par des tests de caractérisation avant toute modification', charBefore, `${ctx.existing.length ? `éléments existants modifiés : ${ctx.existing.join(', ')}` : ''}${ctx.existing.length && ctx.preserves.length ? ' ; ' : ''}${ctx.preserves.length ? `comportements à préserver : ${ctx.preserves.join(', ')}` : ''}`);
+  }
 }
 const tr = traceCheck(ctx.expected, cfg);
 check('C5', 'Chaque exemple et critère de la tâche est référencé par un test', !tr.missing.length, tr.missing.length ? `manquent : ${tr.missing.join(', ')}` : `${ctx.expected.length} identifiant(s)`);

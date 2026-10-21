@@ -37,7 +37,7 @@ En mode chaîné, **le BRD fait autorité** sur le métier : tu ne modifies jama
 
 Lis le fichier de la phase en cours avant d'agir. Ne passe jamais à la phase suivante sans l'accord explicite de l'utilisateur.
 
-Références transverses : `references/ears.md`, `references/nfr-taxonomy.md`, `references/mvp.md`, `references/shadow-zones.md`, `references/council.md`, `references/lenses.md`, `references/elicitation-patterns.md` (faire émerger le non-dit lors des entretiens, tests et observations), `references/validated-learning.md` (tester les hypothèses risquées de valeur et d'usage avant de spécifier), `references/concept-exploration.md` (envisager plusieurs concepts de solution avant la story map).
+Références transverses : `references/ears.md`, `references/nfr-taxonomy.md`, `references/mvp.md`, `references/shadow-zones.md`, `references/council.md`, `references/lenses.md`, `references/elicitation-patterns.md` (faire émerger le non-dit lors des entretiens, tests et observations), `references/validated-learning.md` (tester les hypothèses risquées de valeur et d'usage avant de spécifier), `references/concept-exploration.md` (envisager plusieurs concepts de solution avant la story map), `references/existing-behaviors.md` (comportements existants à préserver, sur un produit déjà en service).
 
 Vérification : `scripts/lint.mjs prd/<slug>/state.yaml [--id …]` applique le catalogue commun de `scripts/lib/rules.mjs` (le même que le BRD et que le futur contrôle formel). Il ne bloque jamais.
 
