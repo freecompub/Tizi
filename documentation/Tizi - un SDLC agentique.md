@@ -86,7 +86,7 @@ Limites connues : les hooks de VS Code sont en préversion et peuvent être dés
 
 L’utilisateur n’appelle pas les skills directement : il passe par des points d’entrée, des **commandes** dans Claude Code (`/tizi`, `/tizi-brd`…) et des **agents** dans GitHub Copilot (`tizi`, `tizi-brd`…), choisis dans la liste des agents. Les deux sont générés à l’installation depuis une source unique, et ne sont que des coquilles : chacun charge son skill, qui reste la seule source des règles. Un agent Claude Code n’aurait pas convenu, car un sous-agent ne peut pas mener une longue conversation d’élicitation.
 
-Le point d’entrée `tizi` dit où en est chaque initiative et propose l’étape suivante. Ce n’est pas le modèle qui le devine : un script le calcule à partir des états, en partant de l’étape la plus avancée présente (une conception seule en brownfield ne renvoie pas au BRD) et en exigeant l’empreinte exacte d’un plan d’opérations pour proposer son application. Viennent ensuite un point d’entrée par étape — `tizi-brd`, `tizi-prd`, `tizi-sad`, `tizi-plan`, `tizi-backlog`, `tizi-impl`, `tizi-test`. Chacun n’a que les entrées indispensables (le nom ou l’identifiant de l’initiative), les autres venant au fil de la conversation. Dans Copilot, chaque agent n’a que les outils de son étape et propose un bouton de passage vers la suivante ; les sous-agents internes n’apparaissent pas dans la liste de l’utilisateur.
+Le point d’entrée `tizi` dit où en est chaque initiative et propose l’étape suivante. Ce n’est pas le modèle qui le devine : un script le calcule à partir des états, en partant de l’étape la plus avancée présente (une conception seule en brownfield ne renvoie pas au BRD), en suivant le chemin décidé pour l’initiative, et en exigeant l’empreinte exacte d’un plan d’opérations pour proposer son application. Il fait aussi choisir le chemin d’une nouvelle initiative, propose l’adoption sur une application existante, signale les sprint reviews dues et les instructions du dépôt périmées. Viennent ensuite un point d’entrée par étape — `tizi-brd`, `tizi-prd`, `tizi-sad`, `tizi-plan`, `tizi-backlog`, `tizi-impl`, `tizi-test` — et `tizi-sprint-review` pour clore une itération. Chacun n’a que les entrées indispensables (le nom ou l’identifiant de l’initiative), les autres venant au fil de la conversation. Dans Copilot, chaque agent n’a que les outils de son étape et propose un bouton de passage vers la suivante ; les sous-agents internes n’apparaissent pas dans la liste de l’utilisateur.
 
 **Le chemin se choisit au premier col.** Toutes les initiatives ne traversent pas toutes les vallées. Au démarrage, `tizi` pose six questions fermées — modification évidente ? exigence réglementaire ou sécurité des patients ? intention floue ? règle métier ? contrat, donnée sensible ou composant ? plusieurs jours de travail ? — et un script en déduit le chemin : hors Tizi, voie rapide (plan puis implémentation), court (seulement les étapes nécessaires) ou complet. Une réponse incertaine vaut « oui », et la question réglementaire impose toujours la chaîne complète. Le choix est une décision enregistrée, avec les réponses et son auteur : le point d’étape distingue ainsi une étape non utilisée par décision d’une étape oubliée. Un chemin ne se rétrécit pas ; il s’élargit quand une étape découvre ce qu’il fallait, par exemple une règle métier pendant une voie rapide.
 
@@ -151,9 +151,9 @@ La chaîne BRD → PRD → conception → plan ne se déroule pas pour un produi
 
 **Gate** : le porteur du besoin valide que la liste d’exigences reflète bien son problème.
 
-### Construction du BRD : les trois phases
+### Construction du BRD : les quatre phases
 
-Le BRD (Business Requirements Document) se construit en trois phases, avec l’aide d’un agent analyste métier : **Discover** (comprendre), **Define** (structurer les exigences `BR-xxx`) et **Govern** (revue, approbation, handoff vers le PRD). L’agent accompagne et propose ; l’utilisateur valide et décide. Le contrôle formel du BRD fera l’objet d’une phase ultérieure.
+Le BRD (Business Requirements Document) se construit en quatre phases : d’abord Assess, qui évalue l’opportunité et décide s’il faut aller plus loin, puis trois phases, avec l’aide d’un agent analyste métier : **Discover** (comprendre), **Define** (structurer les exigences `BR-xxx`) et **Govern** (revue, approbation, handoff vers le PRD). L’agent accompagne et propose ; l’utilisateur valide et décide. Le contrôle formel du BRD fera l’objet d’une phase ultérieure.
 
 ### Phase Assess : évaluer l’opportunité
 
@@ -348,6 +348,9 @@ Toute modification d’un BRD en baseline passe par une demande de changement (`
 | `freeze-version.mjs` | Fige une version immuable, avec changelog |
 | `build-handoff.mjs` | Génère le paquet de handoff vers le PRD |
 | `lint.mjs` | Vérifie la forme, sans bloquer ; utilisé à chaque lot et avant la revue |
+| `list-opportunities.mjs` | Liste le portefeuille des opportunités et de leurs décisions |
+| `ingest-dt-handoff.mjs` | Propose, depuis un résumé de design thinking de hve-core, sources, contraintes, hypothèses et zones d’ombre, sans modifier l’état |
+| `choose-path.mjs` | Choisit et enregistre le chemin d’une initiative (commun à tous les skills) |
 
 L’agent n’écrit jamais lui-même les fichiers produits par ces scripts. S’ils sont indisponibles, il le signale à l’utilisateur.
 
@@ -400,6 +403,8 @@ En mode chaîné, l’ingestion reprend aussi les règles métier et la carte de
 Avant de spécifier, chaque hypothèse est classée par type (valeur, usage, viabilité, faisabilité) et par risque. Une hypothèse de valeur ou d’usage à **risque fort** doit être **testée ou assumée** : entretien, BD de conception, prototype papier ou cliquable, test d’usage, service rendu à la main, faux bouton, analytique. Le critère de réussite est écrit avant le test. Le prototype reste un instrument de test, conservé comme source : le PRD continue de décrire des comportements, sans écrans. Sans hypothèse risquée de ce type, l’étape se réduit au classement.
 
 Quand la demande était figée, que le PRD est autonome ou que plusieurs solutions sont défendues, Frame fait d’abord **explorer des concepts** (méthodes 4 et 5 du design thinking de hve-core) : diverger en idées brutes, les regrouper en deux à quatre concepts, les évaluer sur trois axes — désirable, faisable, viable — puis les tester avant que le décideur en retienne un. La story map se construit sur le concept retenu ; les concepts écartés restent avec leur raison. Un concept n’est ni une exigence ni une maquette, et l’axe « faisable » reste une hypothèse vérifiée en conception : la séparation entre le quoi et le comment est préservée. Les supports de test restent volontairement bruts, pour attirer la critique de fond plutôt que des remarques d’apparence.
+
+Sur un produit déjà en service, Frame relève aussi les **comportements existants à préserver** (`PB`) : ce que le produit fait aujourd’hui, que le changement pourrait casser et dont quelqu’un dépend, chacun avec la preuve qu’il existe. Ce sont des exigences de non-régression : une tâche du plan les protège par des tests de caractérisation, et la release les prouve comme toute exigence.
 
 ### Phase Specify : spécifier
 
@@ -465,7 +470,7 @@ Trois choix structurent l’étape :
 
 ### Phase Design
 
-1. **Décisions (`ADR`)** pour toute question coûteuse à défaire ou qui sert un moteur : au moins deux options, des moteurs, une conséquence négative, un moyen de confirmation, un décideur déclaré. Un ADR accepté n’est jamais réécrit, il est remplacé.
+1. **Décisions (`ADR`)** pour toute question coûteuse à défaire ou qui sert un moteur : au moins deux options, des moteurs, une conséquence négative, la divergence qu’il empêche et la règle vérifiable qui l’assure, un moyen de confirmation, un décideur déclaré. Un ADR accepté n’est jamais réécrit, il est remplacé.
 2. **Conteneurs et composants** (C4 niveaux 2 et 3), puis **allocation** de chaque FR à au moins un élément.
 3. **Réponses aux NFR (`NR`)** : tactiques, éléments, ADR, et une vérification rattachée à l’étape du SDLC où elle sera faite (tests, intégration, recette, exploitation).
 4. **Données (`DAT`)** : propriétaire unique, classification (dont personnelle et santé), conservation.
@@ -487,6 +492,8 @@ La revue d’architecture porte sur les décisions et leurs compromis : la synth
 | nouveau | non | oui, signalé en vert |
 
 Toute transition autre que « conservé » est justifiée par un ADR. Un rôle humain sans cycle de vie explicite est considéré comme existant.
+
+Sur une application où Tizi vient d’être adopté, l’inventaire part de la carte grossière proposée par l’adoption (`.tizi/adoption.yaml`) : chaque conteneur y cite le fichier qui l’établit, et la conception le vérifie dans le code avant de le valider. Après chaque version figée, les règles des ADR, les dossiers des composants, les contrats et les données sensibles sont reportés dans les instructions du dépôt (`AGENTS.md`) pour les agents qui ne passent pas par Tizi.
 
 ### Vérification et zones d’ombre
 
@@ -514,13 +521,14 @@ Un projet peut retenir des référentiels de contrôles (OWASP ASVS ou MASVS, NI
 
 **Activités**
 
-- Découpage des user stories sous la story map du PRD, spikes en tête, walking skeleton.
-- Example mapping de chaque story, qui sert de *Definition of Ready*.
-- Découpage en tâches d’une PR chacune, avec une fiche de contexte ; dépendances.
-- Estimation en tailles (S, M, L, XL) et affectation à un humain ou à un agent.
+- Découpage des user stories sous la story map du PRD, spikes en tête, walking skeleton ; voie rapide pour les petites corrections.
+- Example mapping de chaque story, qui sert de *Definition of Ready*, et démonstration convenue en atelier.
+- Découpage en tâches d’une PR chacune, avec une fiche de contexte mesurée et gelée ; dépendances, contrôle des collisions.
+- Taille de chaque tâche lue comme un risque, calculé depuis ses données ; attention humaine prévue ; affectation à un agent ou à un humain.
 - Planification en sprint ou en flux, *Definition of Done*, export vers GitHub Issues et Jira.
+- Blocages enregistrés au fil de l’eau ; mesures du réel, prévision par le débit ; sprint review et rétrospective.
 
-**Artefacts produits** : plan généré, fiches de stories avec leur example mapping, fiches de contexte des tâches, backlog exporté, Definition of Done, handoff vers l’implémentation.
+**Artefacts produits** : plan généré, fiches de stories avec leur example mapping, fiches de contexte des tâches, backlog exporté, Definition of Done, handoff vers l’implémentation ; registre des blocages, mesures du réel, documents de sprint review.
 
 **Gate** : l’équipe s’engage sur une itération (sprint) ou un réapprovisionnement (flux) qui ne contient que des stories prêtes.
 
@@ -534,14 +542,15 @@ Trois choix structurent l’étape :
 
 - **Un état unique exporté vers GitHub Issues et Jira**, l’outil de suivi n’étant qu’une vue.
 - **Sprint ou flux, au choix par projet**, avec le même découpage en stories et en tâches.
-- **Une estimation en tailles S, M, L, XL** ; une tâche XL est à découper.
+- **Des tailles S, M, L, XL lues comme un risque**, puisque les agents réalisent les tâches : une taille calculée depuis les données de la tâche est montrée à côté de celle de l’équipe, chaque tâche porte une attention humaine prévue, et une tâche XL est à découper (voir « Estimer quand les agents codent »).
 
-### Les quatre phases
+### Les cinq phases
 
-1. **Slice** : stories verticales sous chaque tâche de la story map, chacune rattachée à au moins une FR ; les spikes de la conception passent en tête ; le walking skeleton traverse tous les conteneurs de bout en bout.
-2. **Refine** : un example mapping obligatoire par story, avec au moins le métier, le développement et le test. Les règles viennent du BRD et du PRD, les premiers exemples des critères d’acceptation. Une règle absente de l’amont ou un exemple qui change le comportement remonte en demande de changement.
-3. **Schedule** : tâches d’une PR chacune, dépendances dérivées de la conception (fournisseur d’un contrat avant son consommateur, spike avant ce qui en dépend), tailles, affectation, puis itération ou file « prêt ».
+1. **Slice** : stories verticales sous chaque tâche de la story map, chacune rattachée à au moins une FR ; les spikes de la conception passent en tête ; le walking skeleton traverse tous les conteneurs de bout en bout ; chaque story est classée en ouverture, milieu ou fin de partie.
+2. **Refine** : un example mapping obligatoire par story, avec au moins le métier, le développement et le test, et la démonstration convenue pour la revue. Les règles viennent du BRD et du PRD, les premiers exemples des critères d’acceptation. Une règle absente de l’amont ou un exemple qui change le comportement remonte en demande de changement.
+3. **Schedule** : tâches d’une PR chacune, dépendances dérivées de la conception (fournisseur d’un contrat avant son consommateur, spike avant ce qui en dépend), contrôle des collisions entre tâches sans dépendance qui touchent le même élément ou le même contrat, tailles et attention prévue, affectation, puis itération ou file « prêt ».
 4. **Govern** : engagement de l’équipe, baseline, export, handoff vers l’implémentation.
+5. **Review** : en fin d’itération, sprint review puis rétrospective, à partir des mesures réelles ; après chaque release, maturité et mesure des outcomes.
 
 ### Story prête : une Definition of Ready calculée
 
@@ -549,7 +558,7 @@ Une story est prête si et seulement si elle a une FR et une tâche de story map
 
 ### Agent ou humain
 
-Une tâche va à un agent seulement si sa taille ne dépasse pas M, que sa story est prête, qu’elle cite ses éléments et ses contrats, et qu’elle ne demande ni spike ni décision d’architecture. Chaque tâche reçoit une fiche de contexte générée : FR et critères, règles et exemples, éléments touchés, contrats, ADR à respecter, mesures de sécurité, vérifications et Definition of Done. Ce qui n’y est pas écrit n’est pas décidé.
+Une tâche va à un agent seulement si sa taille ne dépasse pas M, que sa story est prête, qu’elle cite ses éléments et ses contrats, et qu’elle ne demande ni spike ni décision d’architecture. Chaque tâche reçoit une fiche de contexte générée — FR et critères, règles et exemples, éléments touchés, contrats, règles des ADR, mesures de sécurité, vérifications, comportements à préserver, Definition of Done — mesurée en taille et gelée par son empreinte dans le handoff. Quand toutes les tâches sont réalisées par des agents, la limite du débit n’est plus le développement mais l’attention humaine : validation de la compréhension, réponses aux questions, relecture.
 
 ### Préparer, approuver, exécuter
 
@@ -571,21 +580,26 @@ L’exécuteur refuse un plan dont l’empreinte ne correspond pas, qui n’est 
 | Script | Skill | Rôle |
 | --- | --- | --- |
 | `ingest-handoffs.mjs` | plan-builder | Vérifie l’empreinte des handoffs du PRD et de la conception, puis les copie dans `refs.yaml` |
-| `render-plan.mjs` | plan-builder | Génère le plan, les fiches de stories et les fiches de contexte des tâches |
+| `render-plan.mjs` | plan-builder | Génère le plan, les fiches de stories et les fiches de contexte des tâches, avec risque calculé, attention prévue et taille des fiches |
 | `lint.mjs` | plan-builder | Vérifie la forme et la couverture, sans bloquer |
 | `discover-tracker.mjs` | plan-builder | Découvre le tracker en lecture seule |
 | `plan-operations.mjs` | plan-builder | Prépare le plan d’opérations signé, sans aucune écriture |
 | `freeze-version.mjs` | plan-builder | Fige une version avec ses fiches et `refs.yaml` |
-| `build-handoff.mjs` | plan-builder | Ordonne les tâches engagées et prêtes pour l’implémentation |
+| `build-handoff.mjs` | plan-builder | Ordonne les tâches engagées et prêtes, avec l’empreinte et la taille de chaque fiche |
+| `block.mjs` | tous | Ouvre et lève les blocages d’une story ou d’une tâche, causes typées |
+| `measure.mjs` | plan-builder | Mesure le réel : durées, attente de relecture, allers-retours, attention, blocages, tokens ; calibration |
+| `forecast.mjs` | plan-builder | Prévoit la fin par le débit réel, par simulation |
+| `close-sprint.mjs` | plan-builder | Prépare la sprint review et la rétrospective, et reporte les fusions dans le plan |
+| `sprint-review.mjs`, `retro-evidence.mjs` | plan-builder | Fiches de revue et preuves sourcées de l’itération |
+| `due-reviews.mjs`, `ci-sprint-review.mjs` | plan-builder | Détectent les sprint reviews dues ; en CI, préparent les documents et ouvrent une issue |
 | `apply-operations.mjs` | backlog-executor | Vérifie les trois verrous, applique selon l’autonomie, journalise |
 
 ### Fin d’itération et après release
 
-Une phase **Review** referme chaque itération (en flux, toutes les deux semaines et à chaque release).
+Chaque itération se clôt par la sprint review puis la rétrospective, avec la commande `/tizi-sprint-review` (voir « Sprint review et rétrospective »). Elle prépare tout à partir des mesures réelles, fait décider du sort de chaque tâche non finie, traite les causes de blocage récurrentes et suit les actions du sprint précédent ; la capacité suggérée y est comptée en tâches fusionnées et en attention humaine.
 
-- **Revue d’équipe**, d’abord, entre ceux qui ont construit : qualité de l’expérience, fonctionnelle et du code notées de 1 à 5 par l’équipe ; décision de ce qui est réellement fini ; vélocité et reste calculés ; part réalisée par des agents et charge de relecture humaine qu’elle a demandée ; façon de travailler (garder, arrêter, essayer).
-- **Revue avec les parties prenantes** : travail de découverte et progression vers la release, activité par activité, chaque story étant démontrée comme convenu en atelier.
-- **Capacité suggérée** : moyenne des trois dernières itérations revues ; la capacité humaine compte la réalisation et la relecture des tâches d’agents, souvent le vrai facteur limitant. L’équipe fixe sa capacité.
+Après chaque release :
+
 - **Maturité de release** : avant la date promise, une note de A à F par activité de la story map, pour concentrer l’effort là où c’est le plus faible.
 - **Mesure des outcomes** : décidée avant chaque livraison (métriques du PRD, observation d’utilisateurs réels), conclue après ; chaque apprentissage devient une story ou une nouvelle opportunité.
 
@@ -601,30 +615,47 @@ Chaque release se construit en trois temps classés par l’équipe : **ouvertur
 
 **Activités**
 
-- Développement sur une branche dédiée par tâche (trunk-based ou GitFlow, à choisir une fois).
-- Respect des conventions de code, du linter et du formatage automatique.
-- Écriture des tests unitaires en même temps que le code (ou avant, en TDD).
-- Revue de code : humaine, par IA, ou les deux, avec une checklist explicite.
+- Une tâche prête à la fois, sur une branche dédiée, dans l’ordre du handoff du plan.
+- Compréhension reformulée par l’agent et validée par un humain, puis gelée.
+- Sur du code existant, tests de caractérisation d’abord ; puis scénarios d’acceptation (BDD) et tests de contrat vus en échec ; puis TDD, imposé par un garde-fou.
+- Mutation testing incrémental, traçabilité des exemples et critères, analyse de sécurité.
+- Revue de code par agents sous plusieurs perspectives, avec vérification adversariale, puis revue humaine obligatoire.
 
-**Artefacts produits** : code source, tests unitaires, pull request documentée.
+**Artefacts produits** : code source et tests, journal horodaté de la tâche, rapport de revue par agents, description de PR avec la checklist du relecteur.
 
-**Gate** : PR approuvée par au moins un relecteur et pipeline CI au vert.
+**Gate** : la porte de PR est ouverte (C1 à C9 : compréhension validée et inchangée, aucune question ouverte, suites au vert, TDD tracé, traçabilité complète, mutation au seuil, sécurité propre, revue par agents sur le diff actuel si exigée, existant caractérisé avant modification), la même porte est rejouée en CI, et un humain a approuvé la PR.
 
 ### Construction de l’implémentation
 
 L’implémentation se fait avec le skill `impl-builder`, tâche par tâche, à partir du handoff du plan vérifié par son empreinte. Une tâche n’est prise que si ses dépendances sont fusionnées.
 
-1. **Comprendre** : l’agent reformule la tâche, pose ses questions, liste ses hypothèses et son plan de tests ; un humain valide. Une question qui touche une règle, un critère, un contrat ou un ADR bloque la tâche et repart en amont.
-2. **Rouge** : les scénarios d’acceptation des exemples et critères de la tâche (étiquetés `@EX-xxx`, `@AC-xxx`) et les tests de contrat sont écrits d’abord et vus en échec, puis le premier test unitaire.
-3. **Vert, refactoriser** : le minimum de code pour passer, puis l’amélioration sur du vert, test après test.
-4. **Vérifier** : traçabilité, mutation testing incrémental, sécurité.
-5. **PR** : description et checklist de revue générées ; la revue d’une PR d’agent est toujours humaine.
+1. **Comprendre** : l’agent reformule la tâche, pose ses questions, liste ses hypothèses et son plan de tests ; un humain valide, et la compréhension est gelée par son empreinte. Une question qui touche une règle, un critère, un contrat ou un ADR bloque la tâche et repart en amont ; si le chemin choisi ne prévoit pas l’étape qui doit trancher, on l’élargit.
+2. **Caractériser** (sur du code existant) : figer le comportement actuel par des tests qui passent tels quels, avant toute modification.
+3. **Rouge** : les scénarios d’acceptation des exemples et critères de la tâche (étiquetés `@EX-xxx`, `@AC-xxx`, `@PB-xx`) et les tests de contrat sont écrits d’abord et vus en échec, puis le premier test unitaire.
+4. **Vert, refactoriser** : le minimum de code pour passer, puis l’amélioration sur du vert, test après test.
+5. **Vérifier** : traçabilité, mutation testing incrémental, sécurité, revue de code par agents.
+6. **PR** : description et checklist de revue générées ; la revue d’une PR d’agent est toujours humaine, et chaque décision (approbation, corrections, fusion) est enregistrée avec son heure.
 
-La discipline est imposée par un **hook Claude Code** qui bloque toute écriture tant que la compréhension n’est pas validée, tout code de production sans test en échec enregistré, toute écriture hors des dossiers des éléments C4 de la tâche, et toute modification de contrat que la tâche ne prévoit pas. La même porte est rejouée en CI pour ce qui échappe au hook. Un test trivial ou une refactorisation détournée peuvent tromper le hook ; le mutation testing et la revue humaine les rattrapent.
+Un blocage extérieur (environnement, accès, données, réponse attendue) est enregistré au moment où il survient, et levé quand il cesse.
+
+La discipline est imposée par un **hook, pour Claude Code comme pour GitHub Copilot**, qui bloque toute écriture tant que la compréhension n’est pas validée ou si elle a changé depuis, tout code de production sans test en échec enregistré, toute écriture hors des dossiers des éléments C4 de la tâche, et toute modification de contrat que la tâche ne prévoit pas. La même porte est rejouée en CI sur chaque pull request, pour ce qui échappe au hook (un éditeur sans hooks, une écriture par commande shell). Un test trivial ou une refactorisation détournée peuvent tromper le hook ; le mutation testing et la revue les rattrapent.
 
 Avant la revue humaine, une **revue de code par agents** examine le changement sous quatre perspectives — fonctionnelle (FR, critères, exemples, règles), architecture et contrats (ADR, opérations, périmètre), sécurité (menaces, zones à risque, données sensibles), tests (assertions, mutants survivants) — chacune en contexte neuf, sans voir les autres. Elle est rattachée au commit et à l’empreinte exacte du diff : si le code change, elle est périmée. Chaque constat porte un emplacement, l’attendu, le constaté, une preuve et la plus petite correction, **sans aucun score de confiance** ; ceux qui en contiennent sont nettoyés et signalés. Tout constat bloquant ou majeur passe par un **vérificateur adversarial** qui cherche à le réfuter : confirmé, réfuté avec la preuve contraire, ou rétrogradé. Le verdict — vérification incomplète, corrections requises, ou prête pour la relecture humaine — peut être exigé par la porte de PR. Méthode reprise de la revue de code et du vérificateur de constats de hve-core.
 
 Deux disciplines encadrent la tâche avant le code. La **fiche de contexte** est mesurée (budget de taille, au-delà duquel l’agent perd en précision) et **gelée** par son empreinte dans le handoff du plan : on ne la corrige pas à la main. La **compréhension validée** est gelée de même : si elle change après validation, le garde-fou bloque les écritures et la porte de PR reste fermée jusqu’à une nouvelle validation. La revue de code compte en outre une lentille des **manques de vérification** — un test manquant n’est signalé que si l’on nomme la régression qu’il attraperait — et une lentille des **affirmations**, qui lit ce que la tâche déclare avoir fait comme un témoignage, après avoir tracé le code. Idées reprises de BMAD-METHOD.
+
+| Script | Rôle |
+| --- | --- |
+| `start-task.mjs` | Prend une tâche prête : handoff et fiche vérifiés par leur empreinte, dépendances fusionnées, périmètre fixé pour le hook |
+| `approve-understanding.mjs` | Enregistre la validation humaine de la compréhension et la gèle |
+| `run-tests.mjs` | Lance une suite, enregistre rouge ou vert (ou caractérisation) pour le hook et le journal |
+| `tdd-guard.mjs` | Le hook : autorise ou refuse chaque écriture |
+| `tdd-phase.mjs` | Ouvre une refactorisation sur du vert |
+| `trace-check.mjs` | Vérifie que chaque exemple, critère et comportement à préserver de la tâche a un test |
+| `review-context.mjs`, `review-merge.mjs` | Préparent la revue par agents sur le diff exact, puis fusionnent et vérifient les constats |
+| `pr-gate.mjs` | La porte de PR (C1 à C9) et la description de PR ; avec `--run`, la rejoue en CI |
+| `record-pr.mjs` | Enregistre l’approbation, les corrections demandées et la fusion, avec leur heure |
+| `adopt.mjs` | Sur une application existante : propose la configuration des tests et la carte de l’existant |
 
 ## 6. Tests
 
@@ -638,9 +669,9 @@ Deux disciplines encadrent la tâche avant le code. La **fiche de contexte** est
 - Tests non fonctionnels : charge et endurance, DAST, audit d’accessibilité, multi-navigateurs et multi-langues.
 - Mutation testing global, pour juger la qualité des tests plutôt que la seule couverture de code.
 
-**Artefacts produits** : rapports de tests, couverture, preuves d’exécution (captures, logs).
+**Artefacts produits** : matrice de couverture des exigences (réalisé et prouvé, écarts), relevé de provenance des preuves, rapports de sessions exploratoires, archive des preuves de la version candidate avec son manifeste d’empreintes.
 
-**Gate** : tous les tests critiques passent et la couverture atteint le seuil fixé.
+**Gate** : la porte de release est ouverte (R1 à R9 : suites au vert, exigences prouvées ou dérogations nommées, NFR conformes, parcours critiques couverts, exploratoire fait sans bloquant, mutation et sécurité au niveau, rien de réalisé sans être prouvé, preuves issues de la CI sur le commit candidat), et un humain a approuvé la release.
 
 ### Construction de la vérification
 
@@ -654,17 +685,28 @@ La **matrice de couverture des exigences** est calculée, jamais déclarée : ch
 
 **Des preuves probantes, issues de la CI.** Un rapport de tests vert ne prouve rien s’il vient d’un poste de travail ou d’une autre version. La CI produit donc les preuves sur le commit de la version candidate lui-même — jamais sur le commit de fusion temporaire d’une pull request — avec un manifeste de provenance : commit, passage, déclenchement, empreinte de chaque rapport. La vérification retrouve ce passage en lecture seule, contrôle qu’il a réussi en entier, que le manifeste porte sur le bon commit et que chaque rapport utilisé est bien celui-là. Sinon, la porte reste fermée (R9) ; une équipe sans CI peut lever cette condition, mais seulement par une raison écrite, visible dans la matrice. Un audit vérifie enfin la CI elle-même : porte de PR rejouée et exigée avant fusion, preuves produites sur le commit, permissions minimales, pas de déclencheur dangereux, actions épinglées ; la protection de branche qu’il ne peut pas lire est déclarée non vérifiable plutôt que supposée.
 
+| Script | Rôle |
+| --- | --- |
+| `ci-run-suites.mjs` | En CI : lance les suites, regroupe les rapports, écrit le manifeste de provenance |
+| `ci-fetch.mjs` | Retrouve en lecture seule le passage de CI sur le commit candidat, le vérifie, télécharge les rapports |
+| `release-matrix.mjs` | Matrice réalisé et prouvé, écarts, porte de release (R1 à R9) |
+| `freeze-evidence.mjs` | Archive une fois les preuves de la version candidate, en lecture seule, avec leurs empreintes |
+| `ci-audit.mjs` | Vérifie la configuration de la CI du dépôt |
+
 ## 7. Intégration continue
 
 **Objectif** : vérifier automatiquement chaque changement avant qu’il rejoigne la branche principale.
 
 **Activités**
 
-- Pipeline déclenché à chaque PR : lint, build, tests, scans de sécurité.
-- Quality gates bloquants (couverture minimale, aucune vulnérabilité critique, aucun test en échec).
-- Production d’un artefact de build versionné et reproductible (image Docker, bundle).
+- Pipeline CI sur chaque pull request : build, tests, analyse de sécurité, et la **porte de PR de Tizi rejouée** pour la tâche citée dans le titre ou la branche.
+- Sur la branche principale et les tags : **production des preuves de release** sur le commit lui-même, avec leur manifeste de provenance.
+- Protection de la branche principale : vérifications exigées avant fusion, relecture humaine.
+- Workflows aux permissions minimales et aux actions épinglées ; **audit de la CI** pour le vérifier.
 
-**Artefacts produits** : pipeline CI, rapports de qualité, artefact de build signé.
+Tizi génère ces workflows (`install.mjs --ci` : porte de PR, preuves, sprint reviews dues) ; l’installation des dépendances du projet et l’épinglage des actions restent à faire par l’équipe.
+
+**Artefacts produits** : pipelines versionnés, artefact de preuves avec son manifeste, rapport d’audit de la CI.
 
 **Gate** : merge autorisé uniquement si toutes les quality gates sont au vert.
 
@@ -801,15 +843,17 @@ Pour un logiciel comme Diabeo, ces exigences s’appliquent à toutes les étape
 | `XS` | Session de tests exploratoires | 6 |
 | `TR` | Exigence de transition (formation, conduite du changement, reprise de données…) | 1, 2 et 4 |
 | `CPT` | Concept de solution envisagé avant la story map | 2 |
+| `PB` | Comportement existant à préserver (non-régression) | 2, 4, 5 et 6 |
+| `BL` | Blocage d’une story ou d’une tâche, avec sa cause | 4 et 5 |
 
 ### Codes des vérifications et des portes
 
 | Codes | Signification |
 | --- | --- |
 | `L01`–`L08` | Règles de rédaction de la vérification de forme (termes vagues, énoncé multiple, pronom sans antécédent…) |
-| `S01`–`S72` | Règles de structure de la vérification de forme, communes à tous les skills |
+| `S01`–`S77` | Règles de structure de la vérification de forme, communes à tous les skills |
 | `G1`–`G6` | Garde-fous de contenu de l’export (secrets, chemins locaux, adresses, références non résolues, éléments non validés, longueurs) |
-| `C1`–`C8` | Conditions de la porte de PR (étape 5) |
+| `C1`–`C9` | Conditions de la porte de PR (étape 5) |
 | `R1`–`R9` | Conditions de la porte de release (étape 6) |
 
 ## Sources
