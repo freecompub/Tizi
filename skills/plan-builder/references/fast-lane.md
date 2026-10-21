@@ -20,6 +20,16 @@ Si l'une de ces conditions tombe, ce n'est pas une petite chose : la story suit 
 
 Une story de voie rapide est prête quand elle a son origine, au moins un exemple (pour un défaut, la reproduction : étant donné, quand, alors attendu) et aucune question ouverte. Pas de rattachement à la story map ni à une FR. Elle passe quand même en atelier court avec un développeur et un testeur : la voie rapide raccourcit la préparation, pas la conversation.
 
+## Corriger un défaut
+
+Un défaut trié (`defect.mjs`, classement `defaut`) se corrige par une story en voie rapide :
+- origine `{ type: defaut, ref: DEF-xxx }` ;
+- rattachée à l'épopée de l'exigence que le défaut contredit (`attach_to: ACT-xx`), pour être regroupée et exportée avec elle (sinon S78) ;
+- un exemple de reproduction : étant donné, quand, **alors attendu** — l'attendu recopié de l'exigence ;
+- le lien enregistré dans le registre : `defect.mjs <initiative> --corrige-par DEF-xxx US-yyy`.
+
+L'implémentation commence par le test de régression, étiqueté `@DEF-xxx` et avec l'identifiant de l'exigence, vu en échec. Le défaut est résolu quand ce test passe sur la version candidate ; personne ne le déclare résolu.
+
 ## Regrouper
 
 Plusieurs petites choses dans la même zone du produit se regroupent en une story dont chacune est une puce. Un défaut mineur se règle souvent en même temps qu'un défaut majeur au même endroit.

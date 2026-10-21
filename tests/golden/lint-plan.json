@@ -12,5 +12,6 @@
   "S61 story de milieu de partie planifiée avant des stories d'ouverture encore ouvertes (US-005)",
   "S72 collision possible : TK-006 et TK-004 touchent CT-03, OP-003 sans dépendance entre elles ; les ordonner (depends_on) ou les fusionner",
   "S74 taille XL retenue, taille de risque calculée M (opérations de contrat 2, règles métier de la story 1) : écart à justifier",
-  "S76 sprint review faite, mais aucune décision (continuer, découper, reporter) pour : TK-002, TK-003, TK-004"
+  "S76 sprint review faite, mais aucune décision (continuer, découper, reporter) pour : TK-002, TK-003, TK-004",
+  "S78 story en voie rapide sans épopée (attach_to)"
 ]

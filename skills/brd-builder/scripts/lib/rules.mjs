@@ -511,6 +511,7 @@ export function checkPlan(s, refs = {}) {
   for (const st of stories) {
     if (!st.title) out.push({ rule: 'S62', id: st.id, message: 'story sans titre court' });
     if (st.lane === 'rapide') {
+      if (!st.attach_to) out.push({ rule: 'S78', id: st.id, message: `story en voie rapide sans épopée (attach_to)${st.origin?.type === 'defaut' ? ' : la rattacher à l\'activité de l\'exigence que le défaut contredit' : ''}` });
       const why = [];
       if (['L', 'XL'].includes(st.size)) why.push(`taille ${st.size}`);
       if (arr(st.example_map?.rules).some(r => /^RG-/.test(r.ref ?? '') || (!r.ref && r.text))) why.push('touche une règle métier');
@@ -790,5 +791,5 @@ export const STRUCT_RULES = {
   S56: 'opportunité non décidée', S57: 'hypothèse risquée non testée', S58: 'itération sans revue', S59: 'release sans mesure des outcomes',
   S60: 'voie rapide non conforme', S61: 'ordre ouverture, milieu, fin', S62: 'story sans titre court',
   S63: 'exigence à source unique', S64: 'exigence sans source', S65: 'porte de synthèse', S66: 'exigence de transition incomplète', S67: 'exploration de concepts',
-  S68: 'espace réservé resté', S69: 'chiffre sans source', S70: 'fiche de contexte trop longue', S71: 'ADR sans règle', S72: 'collision entre tâches', S73: 'comportement existant à préserver', S74: 'taille et risque calculé', S75: 'attention humaine dépassée', S76: 'tâche non finie sans décision', S77: 'action de rétrospective sans suivi',
+  S68: 'espace réservé resté', S69: 'chiffre sans source', S70: 'fiche de contexte trop longue', S71: 'ADR sans règle', S72: 'collision entre tâches', S73: 'comportement existant à préserver', S74: 'taille et risque calculé', S75: 'attention humaine dépassée', S76: 'tâche non finie sans décision', S77: 'action de rétrospective sans suivi', S78: 'voie rapide sans épopée',
 };

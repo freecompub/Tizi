@@ -21,7 +21,7 @@ Point de départ : `/tizi` dans Claude Code, ou l'agent `tizi` dans Copilot.
 
 ## documentation/
 
-Le document de référence « Tizi — un SDLC agentique, du recueil du besoin au déploiement », exporté depuis le document vivant (révision 86) :
+Le document de référence « Tizi — un SDLC agentique, du recueil du besoin au déploiement », exporté depuis le document vivant (révision 91) :
 - en Markdown, modifiable ;
 - en PDF (A4, 44 pages), pour la lecture.
 
@@ -47,9 +47,10 @@ L'installateur pose aussi les **points d'entrée**, générés depuis une source
 | `tizi-sad` | `/tizi-sad` | agent `tizi-sad` | Étape 3 : conception |
 | `tizi-plan` | `/tizi-plan` | agent `tizi-plan` | Étape 4 : planification |
 | `tizi-sprint-review` | `/tizi-sprint-review` | agent `tizi-sprint-review` | Fin d'itération : sprint review (produit, backlog, prévision) puis rétrospective (coûts, blocages, actions) |
+| `tizi-bug` | `/tizi-bug` | agent `tizi-bug` | Pour les testeurs : signaler un problème, retrouver ce qui était convenu, le trier (défaut rattaché à l'exigence contredite, changement, question, doublon, non reproductible) |
 | `tizi-backlog` | `/tizi-backlog` | agent `tizi-backlog` | Application d'un plan d'opérations approuvé dans GitHub ou Jira |
 | `tizi-impl` | `/tizi-impl` | agent `tizi-impl` | Étape 5 : implémentation d'une tâche |
-| `tizi-test` | `/tizi-test` | agent `tizi-test` | Étape 6 : vérification de release, avec des preuves issues de la CI sur le commit candidat |
+| `tizi-test` | `/tizi-test` | agent `tizi-test` | Étape 6 : vérification de release, avec des preuves issues de la CI sur le commit candidat, et la preuve par épopée et story |
 
 **Choisir le chemin.** Toutes les initiatives ne traversent pas toutes les étapes. Au démarrage, `/tizi` pose six questions fermées (modification évidente ? exigence réglementaire ou sécurité des patients ? intention floue ? règle métier ? contrat, donnée sensible ou composant ? plusieurs jours ?) et `choose-path.mjs` en déduit le chemin : **hors Tizi**, **voie rapide** (plan puis implémentation), **court** (seulement les étapes nécessaires) ou **complet**. Le choix est une décision enregistrée dans `.tizi/chemins/<initiative>.yaml`, avec les réponses et qui l'a prise. La question réglementaire impose toujours la chaîne complète. Un chemin ne se rétrécit pas ; il s'élargit (`--elargir`) quand une étape découvre ce qu'il fallait.
 

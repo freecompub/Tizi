@@ -61,7 +61,13 @@ const stories = arr(s.stories).filter(exportable), tasks = arr(s.tasks).filter(e
 const fileBody = (dir, id) => { const f = join(root, dir, `${id}.md`); return existsSync(f) ? readFileSync(f, 'utf8') : ''; };
 const relName = id => arr(refs.prd?.releases).find(r => r.id === id)?.name ?? id;
 const releaseTitle = id => (id ? `${id}${relName(id) && relName(id) !== id ? ` ${relName(id)}` : ''}` : '');
-const actOf = st => arr(refs.prd?.story_map).find(a => arr(a.tasks).some(t => t.id === st?.map_task));
+// Épopée d'une story : l'activité de sa tâche de story map ; pour une story en voie rapide, l'épopée de l'exigence
+// qu'elle corrige (attach_to).
+const actOf = st => arr(refs.prd?.story_map).find(a => arr(a.tasks).some(t => t.id === st?.map_task)) ?? arr(refs.prd?.story_map).find(a => a.id === st?.attach_to);
+// Preuve de chaque story, reprise de la dernière matrice de release (si settings.export.proof) : reportée en étiquette.
+const slugOf = dirname(statePath).split('/').pop();
+const proofMatrix = settings.export?.proof && existsSync(join('qa', slugOf, 'matrix.yaml')) ? yaml.load(readFileSync(join('qa', slugOf, 'matrix.yaml'), 'utf8')) : null;
+const proofOf = st => { const r = arr(proofMatrix?.stories).find(x => x.id === st.id); return r ? `preuve:${r.proof.replace(/\s+/g, '-')}` : null; };
 const remoteOf = key => mapped[key];
 const ref = key => (remoteOf(key) !== undefined ? (target === 'github' ? `#${remoteOf(key)}` : remoteOf(key)) : `{{ref:${key}}}`);
 const plainRefs = text => text.replace(/\{\{ref:([^}]+)\}\}/g, '$1');
@@ -116,7 +122,7 @@ const sameSet = (a, b) => JSON.stringify([...arr(a)].sort()) === JSON.stringify(
 
 if (target === 'github') {
   const labelsOf = (kind, x, st) => kind === 'story'
-    ? ['story', `taille:${x.size ?? '?'}`, ...(actOf(x) ? [`activite:${actOf(x).id}`] : []), ...(x.skeleton ? ['walking-skeleton'] : [])]
+    ? ['story', `taille:${x.size ?? '?'}`, ...(actOf(x) ? [`activite:${actOf(x).id}`] : []), ...(x.skeleton ? ['walking-skeleton'] : []), ...(x.lane === 'rapide' ? ['voie-rapide'] : []), ...(proofOf(x) ? [proofOf(x)] : [])]
     : [x.kind === 'spike' ? 'spike' : 'tache', `taille:${x.size ?? '?'}`, x.assignee_type ?? 'humain', ...(x.iteration ? [`iteration:${x.iteration}`] : []), ...(x.kind !== 'spike' && x.kind !== 'dev' ? [`type:${x.kind}`] : [])];
   const allLabels = new Set([...stories.map(x => labelsOf('story', x)), ...tasks.map(t => labelsOf('task', t))].flat());
   if (!offline) for (const l of allLabels) if (!arr(snap.labels).includes(l)) add({ action: 'create_label', key: l, fields: { name: l } });
@@ -194,7 +200,7 @@ if (target === 'github') {
   }
   for (const st of stories) {
     const parent = epicFrom === 'release' ? (st.release ?? settings.release) : actOf(st)?.id;
-    const labels = ['story', `taille:${st.size ?? '?'}`, ...(st.skeleton ? ['walking-skeleton'] : [])];
+    const labels = ['story', `taille:${st.size ?? '?'}`, ...(st.skeleton ? ['walking-skeleton'] : []), ...(st.lane === 'rapide' ? ['voie-rapide'] : []), ...(proofOf(st) ? [proofOf(st)] : [])];
     const version = relName(st.release ?? settings.release);
     if (useVersions && version && !versionOk(version)) guardFindings.push({ guard: 'V', item: st.id, field: 'fixVersions', message: `version « ${version} » absente du projet : non envoyée` });
     const op = upsert(st.id, 'story', `[${st.id}] ${st.title ?? ''}`, fileBody('stories', st.id), fieldsFor(types.story, parent, labels, version), compareJira(labels));

@@ -94,6 +94,24 @@ entrypoints:
       3. **Rétrospective**, entre membres de l'équipe : coûts du sprint, causes de blocage récurrentes (une action et un responsable chacune, `review.blockage_actions`), suivi des actions du sprint précédent (`review.actions_followup`), puis une ou deux actions à essayer (`review.team.process.try`).
       Les notes et les décisions viennent de l'équipe : enregistre-les seulement quand elles sont déclarées, puis lance `lint.mjs` pour vérifier qu'aucune décision ne manque (S76, S77).
 
+  - name: tizi-bug
+    title: "Tizi — Signaler un problème"
+    description: "Pour les testeurs : signaler un problème, retrouver ce qui était convenu dans la spécification, et le trier — défaut rattaché à l'exigence qu'il contredit, demande de changement, question, doublon ou non reproductible."
+    skill: test-builder
+    argument_hint: "<initiative> [ce que vous observez]"
+    inputs:
+      required: ["l'initiative, si le dépôt en compte plusieurs", "ce que vous observez"]
+      optional: ["la version testée, l'environnement, les données, les étapes", "l'activité, le parcours ou la story concernés", "la référence d'un bug déjà saisi dans GitHub ou Jira"]
+    tools: [vscode/askQuestions, read, search, execute/runInTerminal, execute/getTerminalOutput]
+    handoffs: [tizi-plan, tizi-test]
+    body: |
+      Suis `references/defects.md` du skill.
+      1. Recueille la fiche : version candidate, environnement, données, étapes, observé. Puis `node {scripts}/defect.mjs <initiative> --signaler …`. Un bug déjà saisi dans GitHub ou Jira se reprend par `import-defects.mjs` plutôt que d'être ressaisi.
+      2. Lance `node {scripts}/find-expectations.mjs <initiative> "<observation>"` et montre les attentes proches, avec leur texte exact et l'état de leur preuve. Si rien n'en ressort, propose de parcourir par activité, parcours ou story.
+      3. Pose les trois questions, dans l'ordre : une attente écrite couvre-t-elle la situation ? le comportement la contredit-il ? l'attente paraît-elle fausse ? Vérifie les doublons (`--ouverts`). Le testeur tranche ; une demande de changement va au décideur désigné.
+      4. Enregistre le tri avec `defect.mjs --trier`. Pour un défaut, propose la story corrective en voie rapide (`tizi-plan`), rattachée à l'épopée de l'exigence.
+      Tu ne modifies aucun fichier toi-même : seuls les scripts écrivent au registre.
+
   - name: tizi-backlog
     title: "Tizi — 4 bis. Application du backlog"
     description: "Applique dans GitHub ou Jira un plan d'opérations déjà approuvé par son empreinte. Seul point d'entrée qui écrit dans le gestionnaire de tickets."

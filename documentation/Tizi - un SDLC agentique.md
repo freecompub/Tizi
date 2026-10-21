@@ -86,7 +86,7 @@ Limites connues : les hooks de VS Code sont en préversion et peuvent être dés
 
 L’utilisateur n’appelle pas les skills directement : il passe par des points d’entrée, des **commandes** dans Claude Code (`/tizi`, `/tizi-brd`…) et des **agents** dans GitHub Copilot (`tizi`, `tizi-brd`…), choisis dans la liste des agents. Les deux sont générés à l’installation depuis une source unique, et ne sont que des coquilles : chacun charge son skill, qui reste la seule source des règles. Un agent Claude Code n’aurait pas convenu, car un sous-agent ne peut pas mener une longue conversation d’élicitation.
 
-Le point d’entrée `tizi` dit où en est chaque initiative et propose l’étape suivante. Ce n’est pas le modèle qui le devine : un script le calcule à partir des états, en partant de l’étape la plus avancée présente (une conception seule en brownfield ne renvoie pas au BRD), en suivant le chemin décidé pour l’initiative, et en exigeant l’empreinte exacte d’un plan d’opérations pour proposer son application. Il fait aussi choisir le chemin d’une nouvelle initiative, propose l’adoption sur une application existante, signale les sprint reviews dues et les instructions du dépôt périmées. Viennent ensuite un point d’entrée par étape — `tizi-brd`, `tizi-prd`, `tizi-sad`, `tizi-plan`, `tizi-backlog`, `tizi-impl`, `tizi-test` — et `tizi-sprint-review` pour clore une itération. Chacun n’a que les entrées indispensables (le nom ou l’identifiant de l’initiative), les autres venant au fil de la conversation. Dans Copilot, chaque agent n’a que les outils de son étape et propose un bouton de passage vers la suivante ; les sous-agents internes n’apparaissent pas dans la liste de l’utilisateur.
+Le point d’entrée `tizi` dit où en est chaque initiative et propose l’étape suivante. Ce n’est pas le modèle qui le devine : un script le calcule à partir des états, en partant de l’étape la plus avancée présente (une conception seule en brownfield ne renvoie pas au BRD), en suivant le chemin décidé pour l’initiative, et en exigeant l’empreinte exacte d’un plan d’opérations pour proposer son application. Il fait aussi choisir le chemin d’une nouvelle initiative, propose l’adoption sur une application existante, signale les sprint reviews dues et les instructions du dépôt périmées. Viennent ensuite un point d’entrée par étape — `tizi-brd`, `tizi-prd`, `tizi-sad`, `tizi-plan`, `tizi-backlog`, `tizi-impl`, `tizi-test` —, `tizi-sprint-review` pour clore une itération, et `tizi-bug` pour qu’un testeur signale et trie un problème sans connaître la chaîne. Chacun n’a que les entrées indispensables (le nom ou l’identifiant de l’initiative), les autres venant au fil de la conversation. Dans Copilot, chaque agent n’a que les outils de son étape et propose un bouton de passage vers la suivante ; les sous-agents internes n’apparaissent pas dans la liste de l’utilisateur.
 
 **Le chemin se choisit au premier col.** Toutes les initiatives ne traversent pas toutes les vallées. Au démarrage, `tizi` pose six questions fermées — modification évidente ? exigence réglementaire ou sécurité des patients ? intention floue ? règle métier ? contrat, donnée sensible ou composant ? plusieurs jours de travail ? — et un script en déduit le chemin : hors Tizi, voie rapide (plan puis implémentation), court (seulement les étapes nécessaires) ou complet. Une réponse incertaine vaut « oui », et la question réglementaire impose toujours la chaîne complète. Le choix est une décision enregistrée, avec les réponses et son auteur : le point d’étape distingue ainsi une étape non utilisée par décision d’une étape oubliée. Un chemin ne se rétrécit pas ; il s’élargit quand une étape découvre ce qu’il fallait, par exemple une règle métier pendant une voie rapide.
 
@@ -671,7 +671,7 @@ Deux disciplines encadrent la tâche avant le code. La **fiche de contexte** est
 
 **Artefacts produits** : matrice de couverture des exigences (réalisé et prouvé, écarts), relevé de provenance des preuves, rapports de sessions exploratoires, archive des preuves de la version candidate avec son manifeste d’empreintes.
 
-**Gate** : la porte de release est ouverte (R1 à R9 : suites au vert, exigences prouvées ou dérogations nommées, NFR conformes, parcours critiques couverts, exploratoire fait sans bloquant, mutation et sécurité au niveau, rien de réalisé sans être prouvé, preuves issues de la CI sur le commit candidat), et un humain a approuvé la release.
+**Gate** : la porte de release est ouverte (R1 à R10 : suites au vert, exigences prouvées ou dérogations nommées, NFR conformes, parcours critiques couverts, exploratoire fait sans bloquant, mutation et sécurité au niveau, rien de réalisé sans être prouvé, preuves issues de la CI sur le commit candidat, aucun défaut bloquant ou majeur ouvert ni signalement à trier), et un humain a approuvé la release.
 
 ### Construction de la vérification
 
@@ -690,11 +690,18 @@ La **matrice de couverture des exigences** est calculée, jamais déclarée : ch
 | `ci-run-suites.mjs` | En CI : lance les suites, regroupe les rapports, écrit le manifeste de provenance |
 | `ci-fetch.mjs` | Retrouve en lecture seule le passage de CI sur le commit candidat, le vérifie, télécharge les rapports et conserve le manifeste |
 | `record-nfr.mjs` | Enregistre une mesure de NFR prise hors CI, avec le commit mesuré, l’auteur et l’empreinte de son rapport |
-| `release-matrix.mjs` | Matrice réalisé et prouvé, écarts, porte de release (R1 à R9) |
+| `release-matrix.mjs` | Matrice réalisé et prouvé, vue par épopée et story, défauts, écarts, porte de release (R1 à R10) |
 | `freeze-evidence.mjs` | Archive une fois les preuves de la version candidate — rapports, mesures, provenance, manifeste de la CI, commit — en lecture seule, avec leurs empreintes ; `--check` vérifie qu’elle est intacte et commitée |
 | `ci-audit.mjs` | Vérifie la configuration de la CI du dépôt |
+| `defect.mjs` | Registre des défauts : signaler, trier, rattacher la correction |
+| `find-expectations.mjs` | Retrouve les attentes écrites proches d’une observation, avec leur texte exact, leur épopée et leur preuve |
+| `import-defects.mjs` | Reprend en lecture seule les bugs ouverts de GitHub ou Jira, comme signalements à trier |
 
 **Où sont les preuves.** Pendant un passage de CI, dans `tizi-preuves/` avec leur manifeste ; ensuite, dans l’artefact du passage, qui **expire au bout de 90 jours** par défaut ; pendant la vérification, dans une copie téléchargée, non versionnée ; après l’approbation, dans l’archive de la version candidate, `qa/<initiative>/evidence/<version>/`. C’est la seule copie durable, à condition d’être commitée : un logiciel réglementé doit pouvoir montrer ses preuves de vérification des années plus tard. Les mesures que la CI ne peut pas produire — une charge sur un environnement dédié — portent le commit mesuré et l’empreinte de leur rapport, et la porte vérifie qu’elles concernent bien la version candidate.
+
+**Signaler et trier un problème.** Ce qu’un testeur remonte n’est pas toujours un défaut. La commande `/tizi-bug` (l’agent `tizi-bug` dans Copilot) recueille l’observation — version, environnement, données, étapes — puis retrouve dans toute la spécification les attentes écrites les plus proches, avec leur texte exact, leur épopée et l’état de leur preuve. Le testeur tranche alors par trois questions : une attente écrite couvre-t-elle la situation (sinon, c’est une **question**, à trancher par le PRD) ? le comportement la contredit-il (un **défaut**, rattaché à cette attente, avec une sévérité) ? l’attente paraît-elle fausse (une **demande de changement**, adressée au décideur désigné) ? Les doublons et les cas non reproductibles se ferment comme tels. Un bug déjà saisi dans GitHub ou Jira se reprend en lecture seule plutôt que d’être ressaisi.
+
+Un défaut se corrige par une story en voie rapide, rattachée à l’épopée de l’exigence qu’il contredit, et commence par un test de régression étiqueté `@DEF-xxx` ; il est **résolu quand ce test passe** sur la version candidate, jamais déclaré résolu à la main. Tant qu’il est ouvert, l’exigence qu’il contredit n’est plus « prouvée » mais **contredite** ; si elle l’était, la matrice signale que le test était insuffisant. La porte de release reste fermée (R10) tant qu’un défaut bloquant ou majeur est ouvert, ou qu’un signalement n’est pas trié. La matrice présente enfin la preuve **par épopée et par story**, et l’export peut reporter l’état de preuve de chaque story dans le gestionnaire de tickets.
 
 ## 7. Intégration continue
 
@@ -848,16 +855,17 @@ Pour un logiciel comme Diabeo, ces exigences s’appliquent à toutes les étape
 | `CPT` | Concept de solution envisagé avant la story map | 2 |
 | `PB` | Comportement existant à préserver (non-régression) | 2, 4, 5 et 6 |
 | `BL` | Blocage d’une story ou d’une tâche, avec sa cause | 4 et 5 |
+| `DEF` | Défaut signalé, trié et rattaché à l’exigence qu’il contredit | 4 à 6 |
 
 ### Codes des vérifications et des portes
 
 | Codes | Signification |
 | --- | --- |
 | `L01`–`L08` | Règles de rédaction de la vérification de forme (termes vagues, énoncé multiple, pronom sans antécédent…) |
-| `S01`–`S77` | Règles de structure de la vérification de forme, communes à tous les skills |
+| `S01`–`S78` | Règles de structure de la vérification de forme, communes à tous les skills |
 | `G1`–`G6` | Garde-fous de contenu de l’export (secrets, chemins locaux, adresses, références non résolues, éléments non validés, longueurs) |
 | `C1`–`C9` | Conditions de la porte de PR (étape 5) |
-| `R1`–`R9` | Conditions de la porte de release (étape 6) |
+| `R1`–`R10` | Conditions de la porte de release (étape 6) |
 
 ## Sources
 

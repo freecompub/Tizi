@@ -18,6 +18,7 @@ settings:
   sizes: { S: 1, M: 2, L: 3, XL: 5 }   # poids pour la capacité ; XL signale une tâche à découper
   max_rules_per_story: 4   # au-delà, la story est probablement à scinder
   agent_max_size: M        # taille maximale d'une tâche confiée à un agent
+  export: { proof: false }  # true : reporter l'état de preuve de chaque story (dernière matrice de release) en étiquette preuve:… à l'export
   context_budget: { target: 1600, max: 3000 }   # taille d'une fiche de contexte, en tokens environ ; au-delà du maximum, S70
   attention_capacity: 0     # minutes d'attention humaine disponibles par itération (validation, questions, revue) ; 0 = non suivi
   attention: { validation: 15, question: 10, revue: 30 }   # minutes par interaction humaine, pour la charge prévue
@@ -51,7 +52,8 @@ stories: []
 #    why: ""               # pourquoi : le bénéfice, en couches si besoin
 #    persona: PER-01
 #    lane: standard        # standard | rapide (references/fast-lane.md)
-#    origin: { type: "", ref: "" }   # voie rapide : defaut | retour_utilisateur | observation | metrique ; ref = source
+#    origin: { type: "", ref: "" }   # voie rapide : defaut | retour_utilisateur | observation | metrique ; ref = source (DEF-xxx pour un défaut)
+#    attach_to: ""        # voie rapide : épopée (ACT-xx) de l'exigence corrigée, pour la regrouper et l'exporter avec elle
 #    map_task: T-03        # tâche de la story map du PRD (vide en voie rapide)
 #    frs: [FR-001]         # vide en voie rapide
 #    game: ouverture       # ouverture | milieu | fin (references/development-strategy.md)

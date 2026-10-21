@@ -24,6 +24,10 @@ Langue : réponds en français.
 
 Voir `references/test-strategy.md`.
 
+## Signaler un problème
+
+Un testeur qui remonte un problème suit `references/defects.md` (point d'entrée `tizi-bug`) : signalement, recherche de ce qui était convenu, tri — défaut, changement, question, doublon, non reproductible —, puis correction par une story en voie rapide et un test de régression `@DEF-xxx`.
+
 ## Phases
 
 | Phase | But | Instructions |

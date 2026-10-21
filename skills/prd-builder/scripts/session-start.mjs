@@ -6,6 +6,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { existsSync, readdirSync } from 'node:fs';
 import { normalizeHookInput } from './lib/agent-io.mjs';
+import yaml from './lib/vendor/js-yaml.mjs';
 import { dueReviews } from './due-reviews.mjs';
 import { loadBlocks, hoursBetween } from './block.mjs';
 
@@ -15,6 +16,11 @@ const root = normalizeHookInput(raw).cwd;
 try {
   const lines = [];
   for (const d of dueReviews(root)) lines.push(`- Sprint review due : ${d.initiative} ${d.iteration}${d.days_since_end != null ? `, finie depuis ${d.days_since_end} jour(s)` : ''}. À lancer avec /tizi-sprint-review (Claude Code) ou l'agent tizi-sprint-review (Copilot).`);
+  const ddir = join(root, '.tizi', 'defauts');
+  if (existsSync(ddir)) for (const f of readdirSync(ddir).filter(x => x.endsWith('.yaml'))) {
+    const n = (yaml.load(readFileSync(join(ddir, f), 'utf8'))?.defauts ?? []).filter(d => d.status === 'à_trier').length;
+    if (n) lines.push(`- ${n} signalement(s) à trier pour ${f.replace(/\.yaml$/, '')} : /tizi-bug (Claude Code) ou l'agent tizi-bug (Copilot). Ils bloquent la release tant qu'ils ne sont pas triés.`);
+  }
   const dir = join(root, '.tizi', 'blocages');
   if (existsSync(dir)) for (const f of readdirSync(dir).filter(x => x.endsWith('.yaml'))) for (const b of loadBlocks(root, f.replace(/\.yaml$/, ''))) {
     const h = hoursBetween(b.started, new Date().toISOString());
