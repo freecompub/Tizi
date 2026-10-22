@@ -235,3 +235,9 @@ Quand ces conditions te semblent réunies, **propose** le passage à Define, san
 - `lint.mjs` a été lancé sur l'état ; les avertissements restants sont listés à l'utilisateur, sans bloquer.
 
 Liste ce qui manque encore, s'il y a lieu. Rappelle que les zones d'ombre `assumées` deviendront des hypothèses ou des risques dans le BRD. Si l'utilisateur accepte, passe `phase: define` dans `state.yaml` et note la date.
+
+## 11. Constitution du produit
+
+Si `.tizi/constitution.yaml` existe, lis ses principes actifs au cadrage et note ceux qui s'appliquent à l'initiative (`principles_applicable`) : on ne repose pas une question que le produit a déjà tranchée.
+
+Quand une contrainte découverte dépasse l'initiative (« ça vaut pour tout le produit, pas seulement ici » : secret médical, hébergement des données de santé, validation clinique des textes), propose-la comme **principe candidat** : `node <chemin-du-skill>/scripts/constitution.mjs . --proposer --texte "… doit …" --type doit --raison "…" --controle automatique|test|revue --par "<nom>" --initiative <slug>`. Le BRD ne modifie jamais la constitution : seul son responsable accepte un principe. Une exigence qui contredit un principe actif demande une dérogation nommée ou un amendement (S79).

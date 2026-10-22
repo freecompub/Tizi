@@ -766,10 +766,46 @@ export function unsourcedNumberFindings(s) {
   return out;
 }
 
+// ── Constitution du produit (S79) : chaque initiative dit quels principes la concernent ; la conception est
+// confrontée aux principes avant la gouvernance ; un conflit se résout par dérogation ou amendement.
+export function constitutionFindings(s, c) {
+  const out = [];
+  const active = arr(c?.principles).filter(p => p.status === 'actif');
+  if (!active.length) return out;
+  const known = new Set(arr(c.principles).map(p => p.id));
+  for (const id of arr(s.principles_applicable)) if (!known.has(id)) out.push({ rule: 'S79', id, message: 'principe inconnu de la constitution' });
+  if (['brd', 'prd'].includes(s.document) && ['define', 'govern', 'specify'].includes(s.phase) && s.principles_applicable === undefined) out.push({ rule: 'S79', id: 'principles_applicable', message: `la constitution compte ${active.length} principe(s) actif(s) : dire lesquels s'appliquent à cette initiative (liste vide si aucun)` });
+  if (s.document === 'sad') {
+    const chk = s.constitution_check ?? {};
+    if (['govern'].includes(s.phase) && !chk.after?.date) out.push({ rule: 'S79', id: 'constitution_check', message: 'conception en gouvernance sans vérification de la constitution après conception' });
+    const waived = new Set(arr(c.waivers).map(w => `${w.principle}|${w.element}`));
+    for (const k of arr(chk.conflicts)) {
+      if (!known.has(k.principle)) out.push({ rule: 'S79', id: k.principle, message: 'conflit avec un principe inconnu' });
+      else if (!['amendement', 'dérogation', 'derogation', 'corrigé'].includes(k.resolution) || (/rogation/.test(k.resolution ?? '') && !waived.has(`${k.principle}|${k.element}`))) out.push({ rule: 'S79', id: k.element ?? k.principle, message: `conflit avec ${k.principle} sans résolution : corriger la conception, ou dérogation enregistrée (constitution.mjs --deroger), ou amendement` });
+    }
+  }
+  return out;
+}
+// ── Listes de contrôle de relecture (S80) : cochées par un relecteur nommé, jamais par l'agent ; complètes avant la
+// gouvernance du document.
+export function checklistFindings(s, lists = []) {
+  const out = [];
+  for (const { file, text } of lists) {
+    const items = [...text.matchAll(/^- \[( |x|X|~)\] (CL-[A-Z]+-\d+)(.*)$/gm)];
+    for (const [, mark, id, rest] of items) {
+      if (/x/i.test(mark) && !/—\s*\S/.test(rest.split('?').pop() ?? '')) out.push({ rule: 'S80', id, message: `${file} : coché sans relecteur nommé (« — <nom> » en fin de ligne) ; l'agent ne coche jamais` });
+      if (mark === '~' && !/—\s*\S+.*:\s*\S/.test(rest)) out.push({ rule: 'S80', id, message: `${file} : écarté sans relecteur ni raison (« — <nom> : raison »)` });
+    }
+    const open = items.filter(([, m]) => m === ' ').length;
+    if (open && s.phase === 'govern') out.push({ rule: 'S80', id: file, message: `${open} point(s) de relecture non traité(s) avant la gouvernance` });
+  }
+  return out;
+}
+
 export function checkState(s, ctx = {}) {
   const refs = ctx.refs ?? {};
   const base = s.document === 'plan' ? checkPlan(s, refs) : s.document === 'sad' ? checkSad(s) : s.document === 'prd' ? checkPrd(s) : checkBrd(s);
-  return [...base, ...placeholderFindings(s), ...unsourcedNumberFindings(s), ...coverageFindings(s, refs)];
+  return [...base, ...placeholderFindings(s), ...unsourcedNumberFindings(s), ...constitutionFindings(s, ctx.constitution), ...checklistFindings(s, ctx.checklists), ...coverageFindings(s, refs)];
 }
 
 // Libellés des règles de structure, pour les rapports.
@@ -791,5 +827,5 @@ export const STRUCT_RULES = {
   S56: 'opportunité non décidée', S57: 'hypothèse risquée non testée', S58: 'itération sans revue', S59: 'release sans mesure des outcomes',
   S60: 'voie rapide non conforme', S61: 'ordre ouverture, milieu, fin', S62: 'story sans titre court',
   S63: 'exigence à source unique', S64: 'exigence sans source', S65: 'porte de synthèse', S66: 'exigence de transition incomplète', S67: 'exploration de concepts',
-  S68: 'espace réservé resté', S69: 'chiffre sans source', S70: 'fiche de contexte trop longue', S71: 'ADR sans règle', S72: 'collision entre tâches', S73: 'comportement existant à préserver', S74: 'taille et risque calculé', S75: 'attention humaine dépassée', S76: 'tâche non finie sans décision', S77: 'action de rétrospective sans suivi', S78: 'voie rapide sans épopée',
+  S68: 'espace réservé resté', S69: 'chiffre sans source', S70: 'fiche de contexte trop longue', S71: 'ADR sans règle', S72: 'collision entre tâches', S73: 'comportement existant à préserver', S74: 'taille et risque calculé', S75: 'attention humaine dépassée', S76: 'tâche non finie sans décision', S77: 'action de rétrospective sans suivi', S78: 'voie rapide sans épopée', S79: 'constitution', S80: 'liste de contrôle de relecture',
 };

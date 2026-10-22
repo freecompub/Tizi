@@ -21,7 +21,7 @@ entrypoints:
       Propose ensuite **une** étape suivante, avec le point d'entrée à utiliser. Ne commence pas cette étape toi-même : elle a son propre point d'entrée.
       Si `next-step.mjs` signale une sprint review due, propose `tizi-sprint-review` en premier.
 
-      **Application existante, Tizi pas encore adopté** (du code dans le dépôt, mais ni `impl/config.yaml` ni `.tizi/adoption.md`) : propose d'abord `node {scripts}/adopt.mjs .`. Il observe le dépôt sans rien exécuter et propose la configuration des tests et une carte grossière de l'existant, chaque élément avec sa preuve ; fais relire ce qu'il signale comme incertain.
+      **Application existante, Tizi pas encore adopté** (du code dans le dépôt, mais ni `impl/config.yaml` ni `.tizi/adoption.md`) : propose d'abord `node {scripts}/adopt.mjs .`. Il observe le dépôt sans rien exécuter et propose la configuration des tests et une carte grossière de l'existant, chaque élément avec sa preuve ; fais relire ce qu'il signale comme incertain. C'est aussi le moment d'écrire une première **constitution du produit** (`constitution.mjs`) à partir de ce qui existe déjà : documentation réglementaire, règles de sécurité, habitudes d'équipe — quelques principes, chacun avec son moyen de vérification et son responsable.
 
       **Nouvelle initiative, ou initiative sans chemin décidé** : avant toute étape, choisis le chemin avec l'utilisateur. Pose en un seul message les six questions fermées (oui ou non) :
       1. S'agit-il d'une modification évidente et sans risque (coquille, texte, configuration) ?

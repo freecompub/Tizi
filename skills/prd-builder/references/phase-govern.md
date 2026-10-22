@@ -57,3 +57,10 @@ La construction du PRD est terminée quand une baseline existe et que le handoff
 Avant l'approbation, le document généré montre ses métriques de couverture et leurs seuils (section « Couverture »). Un seuil non atteint se corrige, ou se justifie par une dérogation dans `coverage_waivers` (métrique, raison, approbateur déclaré par l'utilisateur) ; `lint.mjs` le signale sinon (règle S54). Les seuils se règlent par projet dans `coverage_thresholds`.
 
 Le handoff est écrit avec son empreinte SHA-256 (`handoff.yaml.sha256`) et l'empreinte de la version figée dont il vient, ainsi que les métriques de couverture et les dérogations. L'étape suivante le vérifie avec `verify-handoff.mjs` avant de l'ingérer.
+
+## Avant la gouvernance : relecture par domaine et analyse croisée
+
+- **Listes de contrôle de relecture** : `scripts/review-checklist.mjs <état> --domaines securite,accessibilite,ergonomie,donnees-sante,performance` génère, pour les domaines retenus avec l'utilisateur, des questions sur la qualité des exigences. **Un relecteur nommé les coche ; tu ne les coches jamais.** Un point écarté porte son nom et sa raison. Les points non traités bloquent la gouvernance (S80) ; `--etat` en fait le compte.
+- **Analyse croisée du sens** : `scripts/cross-context.mjs <état>` rassemble tout ce que le document affirme ; lance le sous-agent `cross-analyzer` en contexte neuf sur ce dossier, écris sa réponse dans `analyse/findings.yaml`, puis `scripts/cross-merge.mjs <état>`. Les constats retenus deviennent des zones d'ombre **proposées** (`analyse/proposals.yaml`), à valider avec l'utilisateur : une contradiction est une question, jamais une correction que tu fais seul.
+
+Idées reprises de spec-kit (commandes checklist et analyze).

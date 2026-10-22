@@ -211,6 +211,7 @@ for (const x of stories) {
   writeOut(join(root, 'stories', `${x.id}.md`), md.join('\n'));
 }
 
+const principles = (() => { for (const r of ['.', dirname(dirname(root))]) { const p = join(r, '.tizi', 'constitution.yaml'); if (existsSync(p)) return arr(loadState(p).principles).filter(x => x.status === 'actif'); } return []; })();
 const packSizes = [];
 // ── tasks/TK-xxx.md : fiche de contexte ──────────────────────────────────────
 for (const t of tasks) {
@@ -254,6 +255,7 @@ for (const t of tasks) {
   if (arr(t.verifications).length) md.push('## Vérifications à mettre en place', '', table(['Réponse', 'NFR', 'Méthode', 'Ce qui est vérifié'], arr(t.verifications).map(id => { const v = nrIndex.get(id); return [id, v?.nfr, v?.method, v?.description]; })));
   if (arr(t.preserves).length) md.push('## Comportements existants à préserver', '', 'Avant de modifier le code concerné, figer chacun par un test de caractérisation qui passe tel quel (étiquette `@PB-xx`).', '', table(['ID', 'Comportement', 'Test existant'], arr(t.preserves).map(id => { const b = arr(prd.preserved_behaviors).find(x => x.id === id); return [id, b?.behavior, b?.test || 'à écrire']; })));
   md.push('## Dépendances', '', list(arr(t.depends_on).map(d => { const dt = tasks.find(x => x.id === d); return `${d} — ${txt(dt?.title)} (${txt(dt?.status)})`; })));
+  if (principles.length) md.push('## Principes du produit', '', 'Ils s\'appliquent à toute tâche. Un écart est une dérogation nommée, jamais un oubli.', '', table(['Principe', 'Énoncé', 'Vérification'], principles.map(p => [p.id, p.statement, p.check?.type])), '');
   md.push('## Definition of Done', '', list(arr(s.definition_of_done)));
   const text = md.join('\n');
   const tokens = approxTokens(text);

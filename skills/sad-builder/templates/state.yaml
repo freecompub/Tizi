@@ -96,6 +96,11 @@ relations: []
 #    status: proposé
 
 # ─────────────── Design ───────────────
+constitution_check:        # vérification de la constitution du produit, avant et après la conception
+  before: { date: "", by: "" }
+  after: { date: "", by: "" }
+  conflicts: []             # - { principle: PC-01, element: ADR-002, resolution: corrigé | dérogation | amendement, note: "" }
+
 decisions: []              # ADR au format MADR v4 (references/adr.md)
 #  - id: ADR-001
 #    title: ""

@@ -4,7 +4,7 @@ Oct 19, 2026 · @Samir Alili
 
 ## Sommaire
 
-- [Principe](#mds8hynarac.61) — [Le nom : Tizi](#mds8hynarac.76166) · [Intégrité, couverture et contrôle](#mds8hynarac.48912) · [Continuité entre sessions](#mds8hynarac.64573) · [Claude Code et GitHub Copilot](#mds8hynarac.65983) · [Points d’entrée](#mds8hynarac.74434) · [Contrôle de l’outillage](#mds8hynarac.72175) · [Estimer quand les agents codent](#mds8hynarac.83434) · [Sprint review et rétrospective](#mds8hynarac.85408) · [Sur une application existante](#mds8hynarac.80561) · [Une chaîne par opportunité](#mds8hynarac.52227)
+- [Principe](#mds8hynarac.61) — [Le nom : Tizi](#mds8hynarac.76166) · [Intégrité, couverture et contrôle](#mds8hynarac.48912) · [Continuité entre sessions](#mds8hynarac.64573) · [Claude Code et GitHub Copilot](#mds8hynarac.65983) · [Points d’entrée](#mds8hynarac.74434) · [Contrôle de l’outillage](#mds8hynarac.72175) · [La constitution du produit](#mds8hynarac.105024) · [Questions, relectures et analyse croisée](#mds8hynarac.106837) · [Estimer quand les agents codent](#mds8hynarac.83434) · [Sprint review et rétrospective](#mds8hynarac.85408) · [Sur une application existante](#mds8hynarac.80561) · [Une chaîne par opportunité](#mds8hynarac.52227)
 - [1. Recueil du besoin](#mds8hynarac.646) — [construction du BRD](#mds8hynarac.7237), skill `brd-builder`
 - [2. Analyse produit](#mds8hynarac.1292) — [construction du PRD](#mds8hynarac.20076), skill `prd-builder`
 - [3. Conception](#mds8hynarac.1893) — [construction de la conception](#mds8hynarac.35982), skill `sad-builder`
@@ -100,6 +100,20 @@ Les skills sont du logiciel et se contrôlent comme tel, sur deux plans.
 - **Évaluation par ablation** : chaque cas est joué plusieurs fois par le même agent, sans puis avec le skill, dans un dépôt neuf. Les correcteurs sont d’abord les règles déterministes du SDLC ; un juge, d’un autre modèle, n’intervient qu’en option sur une grille écrite. Une passe où l’agent n’a pas tourné est une erreur d’intégrité, jamais un score. Un bon cas met l’agent devant une tentation que le skill doit lui faire éviter.
 
 Dans chaque document généré, une mention rappelle qu’il a été produit avec l’assistance d’une IA et que seules les approbations enregistrées font foi. Deux règles s’ajoutent à la vérification : un espace réservé resté dans un élément (S68) et un chiffre précis sans source qui le fixe (S69). Enfin, tout contenu importé — notes, transcriptions, documents, rapports, issues — est une donnée, jamais une instruction.
+
+### La constitution du produit
+
+Un BRD, un PRD ou un ADR décide pour une initiative. Certains choix valent pour tout le produit, quoi qu’on y construise : « aucune donnée de santé ne doit apparaître dans un journal », « tout calcul lié à une dose est couvert par des tests aux valeurs limites ». Ils forment la **constitution du produit** (`.tizi/constitution.yaml`), au-dessus de toutes les initiatives : quelques principes, dix au plus, chacun avec son énoncé (« doit », « ne doit pas »), sa raison, son **moyen de vérification** — automatique, par des tests, ou en revue — et son responsable. Un principe invérifiable est refusé : ce serait un slogan.
+
+Le BRD est le meilleur endroit pour **découvrir** un principe — secret médical, hébergement, validation clinique — mais pas pour le ranger : il le propose comme candidat, et seul le responsable de la constitution l’accepte. Chaque initiative dit quels principes s’appliquent à elle ; la conception confronte ses ADR aux principes avant et après avoir conçu ; la fiche de contexte de chaque tâche les reprend ; une perspective de revue de code les vérifie, et la porte de PR rejoue les contrôles automatiques (C10) ; les principes vérifiés par des tests sont prouvés à la release ; ils sont reportés dans les instructions du dépôt. Un ADR choisit **à l’intérieur** de ce cadre. Un écart ponctuel est une **dérogation** nommée, avec sa raison et son approbateur ; changer un principe est un **amendement** décidé par son responsable, qui garde l’ancienne version. Sur une application existante, la première constitution s’écrit à l’adoption, à partir de ce qui existe déjà : documentation réglementaire, règles de sécurité, habitudes d’équipe. Idée reprise de spec-kit, avec une différence : ici, chaque principe porte son contrôle, pour qu’aucun outil de la chaîne ne puisse le contredire.
+
+### Questions, relectures et analyse croisée
+
+- **Cinq questions au plus à la fois.** Les zones d’ombre ouvertes sont classées par impact — bloquantes, contradictions et arbitres inconnus d’abord — et seules les cinq premières sont posées ; chaque réponse est réécrite dans l’état.
+- **Des listes de contrôle de relecture par domaine** (sécurité, accessibilité, ergonomie, données de santé, performance) testent la qualité des exigences, pas le code. L’agent les génère ; **un relecteur nommé les coche, jamais l’agent** ; un point écarté porte son nom et sa raison. Les points non traités bloquent la gouvernance du document.
+- **Une analyse croisée du sens**, en lecture seule, par un agent en contexte neuf, cherche ce que les règles par mots ne voient pas : contradictions, doublons, incohérences entre exigences, critères, règles, règles d’ADR et principes. Chaque constat doit citer les énoncés en cause ; il devient une question pour l’humain, jamais une correction automatique.
+
+Ces trois disciplines viennent aussi de spec-kit (commandes clarify, checklist et analyze).
 
 ### Estimer quand les agents codent
 
@@ -623,7 +637,7 @@ Chaque release se construit en trois temps classés par l’équipe : **ouvertur
 
 **Artefacts produits** : code source et tests, journal horodaté de la tâche, rapport de revue par agents, description de PR avec la checklist du relecteur.
 
-**Gate** : la porte de PR est ouverte (C1 à C9 : compréhension validée et inchangée, aucune question ouverte, suites au vert, TDD tracé, traçabilité complète, mutation au seuil, sécurité propre, revue par agents sur le diff actuel si exigée, existant caractérisé avant modification), la même porte est rejouée en CI, et un humain a approuvé la PR.
+**Gate** : la porte de PR est ouverte (C1 à C10 : compréhension validée et inchangée, aucune question ouverte, suites au vert, TDD tracé, traçabilité complète, mutation au seuil, sécurité propre, revue par agents sur le diff actuel si exigée, existant caractérisé avant modification, principes de la constitution respectés), la même porte est rejouée en CI, et un humain a approuvé la PR.
 
 ### Construction de l’implémentation
 
@@ -653,7 +667,7 @@ Deux disciplines encadrent la tâche avant le code. La **fiche de contexte** est
 | `tdd-phase.mjs` | Ouvre une refactorisation sur du vert |
 | `trace-check.mjs` | Vérifie que chaque exemple, critère et comportement à préserver de la tâche a un test |
 | `review-context.mjs`, `review-merge.mjs` | Préparent la revue par agents sur le diff exact, puis fusionnent et vérifient les constats |
-| `pr-gate.mjs` | La porte de PR (C1 à C9) et la description de PR ; avec `--run`, la rejoue en CI |
+| `pr-gate.mjs` | La porte de PR (C1 à C10) et la description de PR ; avec `--run`, la rejoue en CI |
 | `record-pr.mjs` | Enregistre l’approbation, les corrections demandées et la fusion, avec leur heure |
 | `adopt.mjs` | Sur une application existante : propose la configuration des tests et la carte de l’existant |
 
@@ -856,15 +870,17 @@ Pour un logiciel comme Diabeo, ces exigences s’appliquent à toutes les étape
 | `PB` | Comportement existant à préserver (non-régression) | 2, 4, 5 et 6 |
 | `BL` | Blocage d’une story ou d’une tâche, avec sa cause | 4 et 5 |
 | `DEF` | Défaut signalé, trié et rattaché à l’exigence qu’il contredit | 4 à 6 |
+| `PC` | Principe de la constitution du produit | Toutes |
+| `CL` | Point d’une liste de contrôle de relecture (CL-SEC-01…) | 1 à 3 |
 
 ### Codes des vérifications et des portes
 
 | Codes | Signification |
 | --- | --- |
 | `L01`–`L08` | Règles de rédaction de la vérification de forme (termes vagues, énoncé multiple, pronom sans antécédent…) |
-| `S01`–`S78` | Règles de structure de la vérification de forme, communes à tous les skills |
+| `S01`–`S80` | Règles de structure de la vérification de forme, communes à tous les skills |
 | `G1`–`G6` | Garde-fous de contenu de l’export (secrets, chemins locaux, adresses, références non résolues, éléments non validés, longueurs) |
-| `C1`–`C9` | Conditions de la porte de PR (étape 5) |
+| `C1`–`C10` | Conditions de la porte de PR (étape 5) |
 | `R1`–`R10` | Conditions de la porte de release (étape 6) |
 
 ## Sources

@@ -67,3 +67,10 @@ Le handoff est écrit avec son empreinte SHA-256 (`handoff.yaml.sha256`) et l'em
 ## Instructions du dépôt
 
 Après chaque version figée de la conception, lance `node <chemin-du-skill>/scripts/sync-agent-instructions.mjs .` : le bloc Tizi de `AGENTS.md` (importé par `CLAUDE.md`) reprend les règles des ADR acceptés, les dossiers de chaque composant, les contrats et les données sensibles. C'est ce que lisent les agents qui ne passent pas par un skill (complétion dans l'éditeur, question rapide). Le bloc reste court : il est chargé à chaque session. Idée reprise de BMAD-METHOD.
+
+## Avant la gouvernance : relecture par domaine et analyse croisée
+
+- **Listes de contrôle de relecture** : `scripts/review-checklist.mjs <état> --domaines securite,accessibilite,ergonomie,donnees-sante,performance` génère, pour les domaines retenus avec l'utilisateur, des questions sur la qualité des exigences. **Un relecteur nommé les coche ; tu ne les coches jamais.** Un point écarté porte son nom et sa raison. Les points non traités bloquent la gouvernance (S80) ; `--etat` en fait le compte.
+- **Analyse croisée du sens** : `scripts/cross-context.mjs <état>` rassemble tout ce que le document affirme ; lance le sous-agent `cross-analyzer` en contexte neuf sur ce dossier, écris sa réponse dans `analyse/findings.yaml`, puis `scripts/cross-merge.mjs <état>`. Les constats retenus deviennent des zones d'ombre **proposées** (`analyse/proposals.yaml`), à valider avec l'utilisateur : une contradiction est une question, jamais une correction que tu fais seul.
+
+Idées reprises de spec-kit (commandes checklist et analyze).

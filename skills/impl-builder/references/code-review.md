@@ -17,7 +17,8 @@ Avant la revue humaine, une revue par agents examine le changement sous plusieur
    - `review-architecture` : règles des ADR, contrats, périmètre ;
    - `review-tests` : **manques de vérification**, un test manquant n'étant signalé que si la régression qu'il attraperait est nommée ;
    - `review-claims` : ce que la tâche affirme d'elle-même (compréhension, plan de tests, résumé de PR, commits) est lu **après** le code, comme un témoignage à vérifier ;
-   - `review-security`, quand des zones à risque ou des menaces sont en jeu.
+   - `review-security`, quand des zones à risque ou des menaces sont en jeu ;
+   - `review-constitution`, quand le produit a une constitution : une violation d'un principe est bloquante, sauf dérogation enregistrée.
 
    Seule `review-claims` lit le fichier `claims.md`. Les lentilles « manques de vérification » et « affirmations » sont reprises de BMAD-METHOD. Écris la réponse de chacun telle quelle dans `findings/<perspective>.yaml`. Sans sous-agents, traite les perspectives une par une en repartant du dossier seul, et préviens que l'indépendance est moindre.
 3. Relève les constats bloquants et majeurs et transmets-les à `finding-verifier` (sous-agent, contexte neuf, sans le raisonnement des perspectives). Écris sa réponse dans `verifications.yaml`.

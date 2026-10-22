@@ -208,6 +208,8 @@ brd_sections:              # à rédiger | proposé | validé
   scope: à rédiger
   glossary: à rédiger
 
+principles_applicable: []   # principes de la constitution du produit (.tizi/constitution.yaml) qui s'appliquent à l'initiative ; [] si aucun
+
 synthesis_check:           # porte de synthèse avant Define (fin de Discover), déclarée avec l'utilisateur
   date: ""
   fidelite: { status: "", note: "" }        # la synthèse reflète les sources, pas des suppositions — ok | faible

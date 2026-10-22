@@ -15,6 +15,7 @@
 | C7 | L'analyse de sécurité est propre (si elle est configurée) |
 | C8 | La revue de code par agents est faite sur le diff actuel (si `review.required`) |
 | C9 | Sur du code existant, l'existant est figé par des tests de caractérisation avant le premier test rouge |
+| C10 | Les principes de la constitution du produit à contrôle automatique passent (si `.tizi/constitution.yaml` en compte) |
 
 Lance d'abord `run-tests.mjs --suite mutation` (incrémental, sur le code modifié) et la suite de sécurité si elle existe. Un mutant survivant montre un comportement que les tests ne vérifient pas : ajoute le test qui le tue, ou explique à l'humain pourquoi ce mutant est sans importance.
 

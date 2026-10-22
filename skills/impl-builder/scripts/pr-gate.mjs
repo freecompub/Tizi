@@ -71,6 +71,15 @@ if (cfg.review?.required) {
   const fresh = res && currentDiff(JSON.parse(readFileSync(join(reviewDir(statePath, taskId), 'review-state.json'), 'utf8')).base).digest === res.diff_sha256;
   check('C8', 'Revue de code par agents sur le diff actuel, sans bloquant confirmé', !!res && fresh && res.verdict === 'prête pour la relecture humaine', !res ? 'non faite' : !fresh ? 'périmée : le code a changé depuis' : res.verdict);
 }
+// C10 : les principes de la constitution à contrôle automatique passent.
+if (existsSync('.tizi/constitution.yaml')) {
+  const { activePrinciples, loadConstitution } = await import('./constitution.mjs');
+  const autos = activePrinciples(loadConstitution('.')).filter(p => p.check?.type === 'automatique');
+  if (autos.length) {
+    const failed = autos.filter(p => spawnSync(p.check.command, { shell: true, encoding: 'utf8' }).status !== 0).map(p => p.id);
+    check('C10', 'Principes de la constitution à contrôle automatique respectés', !failed.length, failed.length ? `en échec : ${failed.join(', ')}` : `${autos.length} contrôle(s) au vert`);
+  }
+}
 const ok = checks.every(c => c.ok);
 
 // Description de PR et checklist de revue

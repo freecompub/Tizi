@@ -5,7 +5,7 @@
 // Usage : node lint.mjs <state.yaml> [--id ID[,ID…]] [--json]
 //   --id   : ne vérifie que ces éléments (à utiliser avant de présenter un lot à l'utilisateur)
 //   --json : sortie machine
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { loadState, fail, verifyHandoff } from './lib/common.mjs';
 import { checkState } from './lib/rules.mjs';
@@ -20,7 +20,10 @@ const state = loadState(statePath);
 // Les handoffs amont copiés par ingest-handoffs.mjs (planification) servent de contexte à la vérification.
 const refsPath = join(dirname(statePath), 'refs.yaml');
 const refs = existsSync(refsPath) ? loadState(refsPath) : {};
-let findings = checkState(state, { refs });
+// Constitution du produit et listes de contrôle de relecture, si elles existent : la vérification les prend en compte.
+const constitution = (() => { for (const r of ['.', dirname(dirname(dirname(statePath)))]) if (existsSync(join(r, '.tizi', 'constitution.yaml'))) return loadState(join(r, '.tizi', 'constitution.yaml')); return null; })();
+const checklists = (() => { const d = join(dirname(statePath), 'checklists'); return existsSync(d) ? readdirSync(d).filter(f => f.endsWith('.md')).map(f => ({ file: f, text: readFileSync(join(d, f), 'utf8') })) : []; })();
+let findings = checkState(state, { refs, constitution, checklists });
 
 // S53 : le handoff ingéré doit toujours exister avec l'empreinte relevée à l'ingestion.
 const ingested = [];

@@ -55,3 +55,7 @@ Une décision d'architecture sert à empêcher que des parties construites sépa
 - **sa confirmation** (`confirmation`) : comment on vérifie que la règle est respectée, de préférence automatiquement (test d'architecture, vérification de forme), sinon en revue.
 
 Une décision sans divergence à empêcher est peut-être une préférence, pas une décision d'architecture. Une règle impossible à vérifier ne protège rien. Idée reprise du « spine » d'architecture de BMAD-METHOD. La vérification de forme le signale (S71) ; la règle est transmise à l'implémentation, dans la fiche de contexte de chaque tâche concernée et à la revue de code.
+
+## La constitution du produit
+
+Un ADR choisit entre des options **à l'intérieur** du cadre que fixe la constitution du produit (`.tizi/constitution.yaml`) ; il ne peut pas en sortir. Avant de concevoir, lis les principes actifs (`constitution_check.before`) ; avant la gouvernance, confronte chaque ADR, contrat et classification de données aux principes (`constitution_check.after`). Un conflit (`conflicts`) se résout de trois façons seulement : corriger la conception ; une dérogation nommée, approuvée et enregistrée (`constitution.mjs --deroger`) ; ou un amendement du principe par son responsable. La vérification de forme le signale (S79). Les principes techniques découverts en concevant (gestion des dépendances, journalisation) se proposent comme candidats, comme au BRD.

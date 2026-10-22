@@ -31,7 +31,7 @@ const added = d.patch.split('\n').filter(l => l.startsWith('+') && !l.startsWith
 const hotspots = HOT.filter(([, re]) => re.test(added) || d.files.some(f => re.test(f))).map(([n]) => n);
 
 // Perspectives : fonctionnelle, architecture et tests toujours ; sécurité si zone à risque ou mesure de sécurité.
-const wanted = opt('--perspectives') ? opt('--perspectives').split(',') : ['functional', 'architecture', 'tests', 'claims', ...(hotspots.length || ctx.threats.length ? ['security'] : [])];
+const wanted = opt('--perspectives') ? opt('--perspectives').split(',') : ['functional', 'architecture', 'tests', 'claims', ...(hotspots.length || ctx.threats.length ? ['security'] : []), ...(existsSync('.tizi/constitution.yaml') ? ['constitution'] : [])];
 const mutFile = cfg.suites?.mutation?.report;
 let survivors = [];
 if (mutFile && existsSync(mutFile)) {

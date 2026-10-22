@@ -28,6 +28,9 @@ const sads = states('sad');
 
 const L = [BEGIN, '', '## Tizi : règles de ce dépôt', '',
   'Les spécifications vivent dans `brd/`, `prd/`, `sad/` et `plan/` ; les états `state.yaml` font foi. Pour travailler sur une initiative, passer par le point d\'entrée : `/tizi` (Claude Code) ou l\'agent `tizi` (Copilot).', ''];
+const consti = load(join(root, '.tizi', 'constitution.yaml'));
+const principles = arr(consti?.principles).filter(p => p.status === 'actif');
+if (principles.length) { L.push('### Principes du produit', '', 'Non négociables, pour toute modification. Un écart demande une dérogation enregistrée.', ''); for (const p of principles) L.push(`- **${p.id}** — ${p.statement}`); L.push(''); }
 const rules = sads.flatMap(({ s }) => arr(s.decisions).filter(a => a.status === 'accepté' && (a.rule || a.outcome)));
 if (rules.length) {
   L.push('### Règles d\'architecture', '', 'Issues des décisions acceptées. Une modification qui les enfreint est refusée en revue.', '');
