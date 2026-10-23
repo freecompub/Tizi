@@ -3,7 +3,12 @@
 #   - pour GitHub Copilot : un agent par entrée (.github/agents/<nom>.agent.md), choisi dans la liste des agents.
 # Ces points d'entrée sont des coquilles : tout le savoir reste dans les skills. N'y ajoute aucune règle de méthode.
 #
-# tools : outils accordés à l'agent Copilot (noms de VS Code). Un agent n'a que ce dont son étape a besoin.
+# tools : outils accordés à l'agent Copilot. Un agent n'a que ce dont son étape a besoin.
+#   Deux vocabulaires cohabitent volontairement, parce que Copilot « ignore tout nom d'outil inconnu » :
+#   les alias intégrés de la CLI et de l'agent cloud (execute, read, edit, search, agent, web, todo) et
+#   les noms namespacés de VS Code (vscode/askQuestions, execute/runInTerminal…). Chaque surface prend
+#   ce qu'elle reconnaît. Sans l'alias `execute`, la CLI et l'agent cloud n'auraient AUCUN moyen de
+#   lancer un script — alors que chaque point d'entrée en lance. Ne pas retirer `execute`.
 # handoffs : boutons de passage proposés par l'agent Copilot ; la commande Claude les cite en fin de réponse.
 
 entrypoints:
@@ -14,7 +19,7 @@ entrypoints:
     argument_hint: "[initiative]"
     inputs:
       optional: ["l'identifiant d'une initiative, pour ne voir qu'elle"]
-    tools: [vscode/askQuestions, read, search, execute/runInTerminal, execute/getTerminalOutput]
+    tools: [vscode/askQuestions, read, search, execute, execute/runInTerminal, execute/getTerminalOutput]
     handoffs: [tizi-brd, tizi-prd, tizi-sad, tizi-plan, tizi-sprint-review, tizi-backlog, tizi-impl, tizi-test]
     body: |
       Lance `node {scripts}/next-step.mjs .` (ajoute `--initiative <slug>` si l'utilisateur en a nommé une), puis `node {scripts}/sync-agent-instructions.mjs . --check`, et présente le résultat tel quel. Si les instructions du dépôt sont absentes ou périmées, propose de les synchroniser (même script, sans `--check`) : c'est ce que lisent les agents qui ne passent pas par Tizi. Pour le point d'étape, montre l'avancement de chaque initiative, l'étape suivante et pourquoi, les points à noter (zones d'ombre bloquantes, session sans condensé).
@@ -41,7 +46,7 @@ entrypoints:
     inputs:
       required: ["le nom d'une nouvelle initiative, ou l'identifiant d'une initiative à reprendre"]
       optional: ["la demande initiale, mot pour mot (pour la classer figée ou fluide)", "les sources déjà disponibles : notes, transcriptions, documents", "le résumé de passage d'une démarche de design thinking (hve-core)", "le sponsor ou décideur", "le contexte réglementaire"]
-    tools: [vscode/askQuestions, read, search, edit, execute/runInTerminal, execute/getTerminalOutput, agent]
+    tools: [vscode/askQuestions, read, search, edit, execute, execute/runInTerminal, execute/getTerminalOutput, agent]
     handoffs: [tizi-prd]
 
   - name: tizi-prd
@@ -52,7 +57,7 @@ entrypoints:
     inputs:
       required: ["l'initiative, ou le chemin du handoff du BRD"]
       optional: ["pour un PRD autonome : le problème et les utilisateurs visés", "les résultats de tests déjà menés"]
-    tools: [vscode/askQuestions, read, search, edit, execute/runInTerminal, execute/getTerminalOutput, agent]
+    tools: [vscode/askQuestions, read, search, edit, execute, execute/runInTerminal, execute/getTerminalOutput, agent]
     handoffs: [tizi-sad]
 
   - name: tizi-sad
@@ -63,7 +68,7 @@ entrypoints:
     inputs:
       required: ["l'initiative, ou le chemin du handoff du PRD"]
       optional: ["le dépôt de code existant à analyser (brownfield)", "les décisions d'architecture déjà prises"]
-    tools: [vscode/askQuestions, read, search, edit, execute/runInTerminal, execute/getTerminalOutput, agent]
+    tools: [vscode/askQuestions, read, search, edit, execute, execute/runInTerminal, execute/getTerminalOutput, agent]
     handoffs: [tizi-plan]
 
   - name: tizi-plan
@@ -74,7 +79,7 @@ entrypoints:
     inputs:
       required: ["l'initiative"]
       optional: ["la cadence (sprint ou flux) et la capacité", "l'itération à revoir"]
-    tools: [vscode/askQuestions, read, search, edit, execute/runInTerminal, execute/getTerminalOutput, agent]
+    tools: [vscode/askQuestions, read, search, edit, execute, execute/runInTerminal, execute/getTerminalOutput, agent]
     handoffs: [tizi-backlog, tizi-impl]
 
   - name: tizi-sprint-review
@@ -85,7 +90,7 @@ entrypoints:
     inputs:
       required: ["l'initiative, si le dépôt en compte plusieurs"]
       optional: ["l'itération (sinon celle dont la sprint review est due)"]
-    tools: [vscode/askQuestions, read, search, edit, execute/runInTerminal, execute/getTerminalOutput]
+    tools: [vscode/askQuestions, read, search, edit, execute, execute/runInTerminal, execute/getTerminalOutput]
     handoffs: [tizi-plan]
     body: |
       Suis la phase Review du skill (`references/phase-review.md`).
@@ -102,7 +107,7 @@ entrypoints:
     inputs:
       required: ["l'initiative, si le dépôt en compte plusieurs", "ce que vous observez"]
       optional: ["la version testée, l'environnement, les données, les étapes", "l'activité, le parcours ou la story concernés", "la référence d'un bug déjà saisi dans GitHub ou Jira"]
-    tools: [vscode/askQuestions, read, search, execute/runInTerminal, execute/getTerminalOutput]
+    tools: [vscode/askQuestions, read, search, execute, execute/runInTerminal, execute/getTerminalOutput]
     handoffs: [tizi-plan, tizi-test]
     body: |
       Suis `references/defects.md` du skill.
@@ -120,7 +125,7 @@ entrypoints:
     inputs:
       required: ["l'initiative et la cible (github ou jira)"]
       optional: ["le niveau d'autonomie (complet, partiel, manuel)"]
-    tools: [read, execute/runInTerminal, execute/getTerminalOutput]
+    tools: [read, execute, execute/runInTerminal, execute/getTerminalOutput]
     handoffs: [tizi-impl]
 
   - name: tizi-impl
@@ -131,7 +136,7 @@ entrypoints:
     inputs:
       required: ["l'initiative"]
       optional: ["la tâche à prendre (sinon la première prête)"]
-    tools: [vscode/askQuestions, read, search, edit, execute/runInTerminal, execute/getTerminalOutput, agent]
+    tools: [vscode/askQuestions, read, search, edit, execute, execute/runInTerminal, execute/getTerminalOutput, agent]
     handoffs: [tizi-test]
 
   - name: tizi-test
@@ -142,5 +147,5 @@ entrypoints:
     inputs:
       required: ["l'initiative et la version candidate"]
       optional: ["l'emplacement des rapports de CI"]
-    tools: [vscode/askQuestions, read, search, edit, execute/runInTerminal, execute/getTerminalOutput]
+    tools: [vscode/askQuestions, read, search, edit, execute, execute/runInTerminal, execute/getTerminalOutput]
     handoffs: [tizi-plan]

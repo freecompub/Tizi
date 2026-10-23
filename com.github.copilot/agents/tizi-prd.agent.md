@@ -2,7 +2,7 @@
 name: tizi-prd
 description: "Étape 2 du SDLC : construire le PRD à partir du handoff du BRD (ou en mode autonome), avec story map, tests de valeur et d'usage, exigences et critères."
 argument-hint: "<initiative> [handoff du BRD]"
-tools: ['vscode/askQuestions', 'read', 'search', 'edit', 'execute/runInTerminal', 'execute/getTerminalOutput', 'agent']
+tools: ['vscode/askQuestions', 'read', 'search', 'edit', 'execute', 'execute/runInTerminal', 'execute/getTerminalOutput', 'agent']
 handoffs:
   - label: "→ Tizi — 3. Conception"
     agent: tizi-sad

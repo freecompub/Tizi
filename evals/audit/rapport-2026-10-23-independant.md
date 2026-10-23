@@ -246,6 +246,20 @@ Quatre choix, vérifiés avec l'outil plutôt que déduits de la documentation :
 - **le `$schema` est celui d'Agent Plugins 1.1.0**, le seul que Copilot accepte pour ce format — et
   Claude Code ignore le champ au chargement, ce qui a été revérifié après le changement.
 
+**Un constat trouvé en vérifiant les formats dans la documentation GitHub.** Les points d'entrée
+déclaraient leurs outils avec les noms namespacés de VS Code — `execute/runInTerminal`,
+`execute/getTerminalOutput`, `vscode/askQuestions`. Or Copilot « ignore tout nom d'outil inconnu » :
+ces noms n'accordaient donc **rien** à la CLI ni à l'agent cloud, qui attendent l'alias intégré
+`execute`. Comme chaque point d'entrée lance un script (`next-step.mjs`, `lint.mjs`, `close-sprint.mjs`),
+Tizi était **inerte sur ces deux surfaces** — un défaut antérieur au plugin, qui touchait aussi la cible
+`copilot` depuis l'origine. Les deux vocabulaires cohabitent désormais dans `entrypoints.yaml`, chaque
+surface prenant ce qu'elle reconnaît, et un test refuse un point d'entrée sans `execute`.
+
+En revanche les **hooks étaient justes** : `version: 1` au premier niveau, carte d'événements sous
+`hooks`, `type`/`command`/`timeoutSec`/`matcher`, et les cinq événements employés existent bien —
+`PreToolUse`, `Stop` (alias de `agentStop`), `PreCompact`, `SessionEnd`, `SessionStart`. Les noms
+PascalCase sélectionnent la charge utile en `snake_case`, celle que `lib/agent-io.mjs` normalise déjà.
+
 **Ce qui est vérifié, et ce qui ne l'est pas.** Côté Claude Code, de bout en bout :
 `claude plugin validate . --strict` passe, et une installation réelle charge 17 skills (7 skills + 10
 points d'entrée), 12 agents et 5 hooks ; l'installation d'essai a été retirée. Côté Copilot, le CLI

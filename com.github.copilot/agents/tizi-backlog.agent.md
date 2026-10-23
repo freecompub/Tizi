@@ -2,7 +2,7 @@
 name: tizi-backlog
 description: "Applique dans GitHub ou Jira un plan d'opérations déjà approuvé par son empreinte. Seul point d'entrée qui écrit dans le gestionnaire de tickets."
 argument-hint: "<initiative> <github|jira>"
-tools: ['read', 'execute/runInTerminal', 'execute/getTerminalOutput']
+tools: ['read', 'execute', 'execute/runInTerminal', 'execute/getTerminalOutput']
 handoffs:
   - label: "→ Tizi — 5. Implémentation"
     agent: tizi-impl

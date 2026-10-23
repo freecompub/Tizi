@@ -2,7 +2,7 @@
 name: tizi
 description: "Point d'entrée de Tizi : dit où en est chaque initiative (BRD, PRD, conception, plan, implémentation, tests) et propose l'étape suivante. À utiliser pour reprendre un travail ou quand on ne sait pas par où commencer."
 argument-hint: "[initiative]"
-tools: ['vscode/askQuestions', 'read', 'search', 'execute/runInTerminal', 'execute/getTerminalOutput']
+tools: ['vscode/askQuestions', 'read', 'search', 'execute', 'execute/runInTerminal', 'execute/getTerminalOutput']
 handoffs:
   - label: "→ Tizi — 1. Besoin métier (BRD)"
     agent: tizi-brd

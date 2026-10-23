@@ -2,7 +2,7 @@
 name: tizi-sad
 description: "Étape 3 du SDLC : concevoir l'architecture à partir du handoff du PRD (moteurs, domaine, C4, ADR, NFR, contrats, menaces), y compris sur un existant."
 argument-hint: "<initiative> [handoff du PRD]"
-tools: ['vscode/askQuestions', 'read', 'search', 'edit', 'execute/runInTerminal', 'execute/getTerminalOutput', 'agent']
+tools: ['vscode/askQuestions', 'read', 'search', 'edit', 'execute', 'execute/runInTerminal', 'execute/getTerminalOutput', 'agent']
 handoffs:
   - label: "→ Tizi — 4. Planification"
     agent: tizi-plan

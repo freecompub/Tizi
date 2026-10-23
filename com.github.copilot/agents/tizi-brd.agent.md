@@ -2,7 +2,7 @@
 name: tizi-brd
 description: "Étape 1 du SDLC : évaluer une opportunité puis construire le BRD (découverte, exigences métier, gouvernance), ou reprendre un BRD en cours."
 argument-hint: "<initiative> [demande initiale] [sources]"
-tools: ['vscode/askQuestions', 'read', 'search', 'edit', 'execute/runInTerminal', 'execute/getTerminalOutput', 'agent']
+tools: ['vscode/askQuestions', 'read', 'search', 'edit', 'execute', 'execute/runInTerminal', 'execute/getTerminalOutput', 'agent']
 handoffs:
   - label: "→ Tizi — 2. Produit (PRD)"
     agent: tizi-prd

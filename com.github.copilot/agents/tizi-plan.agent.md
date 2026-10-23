@@ -2,7 +2,7 @@
 name: tizi-plan
 description: "Étape 4 du SDLC : découper en stories et tâches, example mapping, sprint ou flux, revue de fin d'itération, préparation (sans écriture) de l'export vers GitHub ou Jira."
 argument-hint: "<initiative> [itération]"
-tools: ['vscode/askQuestions', 'read', 'search', 'edit', 'execute/runInTerminal', 'execute/getTerminalOutput', 'agent']
+tools: ['vscode/askQuestions', 'read', 'search', 'edit', 'execute', 'execute/runInTerminal', 'execute/getTerminalOutput', 'agent']
 handoffs:
   - label: "→ Tizi — 4 bis. Application du backlog"
     agent: tizi-backlog
