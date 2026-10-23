@@ -85,3 +85,41 @@ test('réalisé et prouvé : un réalisé non prouvé ferme la porte (R8), écar
   assert.match(m.out, /✗ R8 Rien de réalisé sans être prouvé — réalisé mais non prouvé : FR-001/);
   assert.match(m.md, /\*\*Prouvé sans être prévu\*\*[\s\S]*- AC-099/);
 });
+
+// adopt.mjs prenait ses fixtures pour l'application : un vrai package.json et un vrai projet Xcode
+// posés sous tests/fixtures/ étaient cartographiés comme l'existant à préserver, puis repris par la
+// conception et protégés par des tests de caractérisation. Lancé sur le dépôt de Tizi lui-même, il
+// proposait ses propres fixtures comme conteneurs. On les écarte — mais jamais en silence.
+test('adoption : fixtures et exemples écartés de la carte, signalés, et réintégrables', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'tizi-fx-'));
+  // L'application est à la racine ; une copie de la même pile vit sous tests/fixtures/ et sous examples/.
+  cpSync(join(FIX, 'depot-existant'), dir, { recursive: true });
+  mkdirSync(join(dir, 'tests/fixtures/ancien'), { recursive: true });
+  cpSync(join(FIX, 'depot-existant'), join(dir, 'tests/fixtures/ancien'), { recursive: true });
+  mkdirSync(join(dir, 'examples/vitrine'), { recursive: true });
+  cpSync(join(FIX, 'depot-existant'), join(dir, 'examples/vitrine'), { recursive: true });
+
+  const r = node(script('impl-builder', 'adopt.mjs'), ['.'], { cwd: dir });
+  assert.equal(r.code, 0, r.err);
+  const map = yaml.load(readFileSync(join(dir, '.tizi/adoption.yaml'), 'utf8'));
+
+  // Aucun élément ne doit venir des fixtures ou des exemples.
+  const dirs = map.elements.flatMap(e => e.dirs ?? []).concat(map.elements.flatMap(e => e.evidence ?? []));
+  assert.ok(!dirs.some(d => /(^|\/)(tests|fixtures|examples)\//.test(d)), `carte polluée : ${dirs.filter(d => /(tests|fixtures|examples)\//.test(d)).join(', ')}`);
+  // L'application de la racine, elle, est bien vue.
+  assert.ok(map.elements.some(e => (e.evidence ?? []).some(x => x.startsWith('web/package.json'))), 'l\'application de la racine doit être cartographiée');
+
+  // Et c'est dit, avec le moyen de revenir dessus.
+  const md = readFileSync(join(dir, '.tizi/adoption.md'), 'utf8');
+  assert.match(md, /tests\/fixtures\/ancien\/web\/package\.json écarté/);
+  assert.match(md, /examples\/vitrine\/web\/package\.json écarté/);
+  assert.match(md, /--inclure tests\/fixtures\/ancien\/web/);
+
+  // --inclure réintègre un chemin précis, et lui seul.
+  const r2 = node(script('impl-builder', 'adopt.mjs'), ['.', '--force', '--inclure', 'examples/vitrine'], { cwd: dir });
+  assert.equal(r2.code, 0, r2.err);
+  const map2 = yaml.load(readFileSync(join(dir, '.tizi/adoption.yaml'), 'utf8'));
+  const ev2 = map2.elements.flatMap(e => e.evidence ?? []);
+  assert.ok(ev2.some(x => x.startsWith('examples/vitrine/web/package.json')), '--inclure doit réintégrer le chemin demandé');
+  assert.ok(!ev2.some(x => x.startsWith('tests/fixtures/ancien/')), 'les autres restent écartés');
+});

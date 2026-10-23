@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Hook de début de session (Claude Code et GitHub Copilot) : rappelle ce qui attend l'équipe dans ce dépôt, sans rien
-// modifier — sprint reviews dues, blocages ouverts depuis plus de deux jours. Ne bloque jamais (code 0).
+// modifier — sprint reviews dues, signalements à trier, blocages anciens, dernière session sans condensé.
+// Ne bloque jamais (code 0).
 // Claude Code ajoute la sortie standard d'un hook SessionStart au contexte de l'agent.
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -9,6 +10,7 @@ import { normalizeHookInput } from './lib/agent-io.mjs';
 import yaml from './lib/vendor/js-yaml.mjs';
 import { dueReviews } from './due-reviews.mjs';
 import { loadBlocks, hoursBetween } from './block.mjs';
+import { loadIndex } from './lib/sessions.mjs';
 
 let raw = {};
 try { raw = JSON.parse(readFileSync(0, 'utf8') || '{}'); } catch { raw = {}; }
@@ -21,6 +23,19 @@ try {
     const n = (yaml.load(readFileSync(join(ddir, f), 'utf8'))?.defauts ?? []).filter(d => d.status === 'à_trier').length;
     if (n) lines.push(`- ${n} signalement(s) à trier pour ${f.replace(/\.yaml$/, '')} : /tizi-bug (Claude Code) ou l'agent tizi-bug (Copilot). Ils bloquent la release tant qu'ils ne sont pas triés.`);
   }
+  // Une session interrompue sans pause annoncée n'a pas de condensé : sans lui, la reprise repart de
+  // la transcription brute. Le rappel n'existait que dans status.mjs et /tizi, donc il dépendait de
+  // l'agent. C'est le moment même d'une reprise : il est dit ici, sans rien exiger.
+  const dernieres = new Map();
+  for (const x of loadIndex(root).sessions) for (const ini of x.initiatives ?? []) {
+    const vue = dernieres.get(ini);
+    if (!vue || String(x.ended) > String(vue.ended)) dernieres.set(ini, x);
+  }
+  for (const [ini, x] of dernieres) {
+    if (x.condensed && existsSync(join(root, x.condensed))) continue;
+    lines.push(`- Dernière session de ${ini} sans condensé (${String(x.ended).slice(0, 16).replace('T', ' ')}) : le rédiger depuis ${x.extract || 'son extrait'} avant de reprendre.`);
+  }
+
   const dir = join(root, '.tizi', 'blocages');
   if (existsSync(dir)) for (const f of readdirSync(dir).filter(x => x.endsWith('.yaml'))) for (const b of loadBlocks(root, f.replace(/\.yaml$/, ''))) {
     const h = hoursBetween(b.started, new Date().toISOString());

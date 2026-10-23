@@ -66,7 +66,7 @@ Quand l'utilisateur annonce une pause (« on s'arrête », « on reprend demain 
 
 1. **Pause courte, même machine** : la reprise native de l'outil restaure la conversation entière — `claude --continue` ou `claude --resume` (Claude Code), `copilot --continue` ou `copilot --resume` (Copilot CLI), l'historique des sessions de chat (VS Code). C'est la reprise la plus fidèle ; les étapes suivantes restent utiles si la session avait été compactée.
 2. Sinon, lance `node <chemin-du-skill>/scripts/status.mjs <document>/<slug>/state.yaml` : point d'étape déterministe (phase, compteurs par statut, zones d'ombre, questions ouvertes, prochaine action, dernières sessions).
-3. Lis le **condensé** de la dernière session. S'il n'existe pas (session interrompue sans pause annoncée), rédige-le d'abord à partir de l'extrait, et fais-le valider à l'utilisateur.
+3. Lis le **condensé** de la dernière session. Son absence est aussi rappelée par le hook de début de session, qui le signale pour chaque initiative concernée. S'il n'existe pas (session interrompue sans pause annoncée), rédige-le d'abord à partir de l'extrait, et fais-le valider à l'utilisateur.
 4. Pour un détail qui manque, **cherche** plutôt que de tout relire : `node <chemin-du-skill>/scripts/session-search.mjs "agents du soir" --initiative brd/<slug> --who user`.
 5. Présente le point d'étape à l'utilisateur : où l'on en est, ce qui restait en suspens, la prochaine action proposée. Il confirme avant que tu reprennes.
 

@@ -20,7 +20,30 @@ const rel = p => relative(root, p).split('\\').join('/');
 const files = [];
 const walk = (d, depth = 0) => { if (depth > 5) return; for (const n of readdirSync(d)) { if (IGNORE.has(n)) continue; const p = join(d, n); let st; try { st = statSync(p); } catch { continue; } if (st.isDirectory()) { if (n.endsWith('.xcodeproj') || n.endsWith('.xcworkspace')) files.push(p); walk(p, depth + 1); } else files.push(p); } };
 walk(root);
-const find = re => files.filter(p => re.test(rel(p)));
+// Du code qui ressemble à l'application sans en être : fixtures, exemples, données de test. Il porte
+// de vrais package.json, de vrais projets Xcode, et se retrouvait cartographié comme l'existant à
+// préserver — puis repris par la conception et protégé par des tests de caractérisation. Lancé sur le
+// dépôt de Tizi lui-même, adopt.mjs proposait ainsi ses propres fixtures comme conteneurs.
+// On ne les ignore pas en silence pour autant : un vrai composant peut vivre dans un dossier ainsi
+// nommé. Ils sont écartés de la proposition et signalés comme incertains, avec le moyen de les inclure.
+const HORS_APPLICATION = new Set([
+  'fixtures', '__fixtures__', 'testdata', 'test-data', 'test_data',
+  'examples', 'example', 'exemple', 'exemples', 'samples', 'sample',
+  // Un manifeste de projet situé sous l'arborescence de tests est du matériel de test, pas l'application.
+  'test', 'tests', '__tests__', 'spec', 'specs',
+]);
+const inclus = args.filter((a, i) => args[i - 1] === '--inclure').map(a => a.replace(/\/$/, ''));
+// Le segment fautif, s'il y en a un, pour pouvoir l'expliquer. Un chemin explicitement inclus passe.
+const horsApplication = relPath => {
+  if (inclus.some(i => relPath === i || relPath.startsWith(`${i}/`))) return '';
+  return relPath.split('/').slice(0, -1).find(seg => HORS_APPLICATION.has(seg.toLowerCase())) ?? '';
+};
+const ecartes = [];
+const find = re => files.filter(p => re.test(rel(p))).filter(p => {
+  const seg = horsApplication(rel(p));
+  if (seg) ecartes.push({ path: rel(p), seg });
+  return !seg;
+});
 const exists = p => existsSync(join(root, p));
 const json = p => { try { return JSON.parse(readFileSync(p, 'utf8')); } catch { return null; } };
 
@@ -64,7 +87,11 @@ for (const pj of find(/(^|\/)package\.json$/)) {
   tests.add(`${prefix}**/*.test.*`); tests.add(`${prefix}**/*.spec.*`);
 }
 // ── iOS / Swift ──
-const projects = files.filter(p => /\.xcodeproj$/.test(p));
+const projects = files.filter(p => /\.xcodeproj$/.test(p)).filter(p => {
+  const seg = horsApplication(rel(p));
+  if (seg) ecartes.push({ path: rel(p), seg });
+  return !seg;
+});
 for (const xp of projects) {
   const name = basename(xp, '.xcodeproj');
   const schemesDir = join(xp, 'xcshareddata', 'xcschemes');
@@ -101,6 +128,10 @@ for (const p of find(/(^|\/)(docker-)?compose\.ya?ml$/)) {
 }
 for (const p of find(/(^|\/)(openapi|swagger|asyncapi)[^/]*\.(ya?ml|json)$/i)) contracts.add(rel(p));
 if (exists('contracts')) contracts.add('contracts/**');
+// Ce qui a été écarté est dit, jamais tu : c'est à une personne de trancher.
+for (const { path, seg } of [...new Map(ecartes.map(e => [e.path, e])).values()]) {
+  uncertain.push(`${path} écarté : le dossier « ${seg} » désigne d'ordinaire du matériel de test ou un exemple, pas l'application. Si c'est bien un composant à préserver, relance avec --inclure ${path.split('/').slice(0, -1).join('/') || '.'}`);
+}
 if (!containers.length) uncertain.push('aucun conteneur établi : pile non reconnue ; décrire l\'existant avec la conception (sad-builder, mode brownfield)');
 if (!Object.keys(suites).length) uncertain.push('aucune commande de test trouvée : la renseigner à la main dans impl/config.yaml');
 uncertain.push('les échanges entre conteneurs (qui appelle qui) ne sont pas déduits : la conception les établit à partir du code, en mode brownfield');
