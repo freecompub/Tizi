@@ -9,7 +9,7 @@
 //   agents   claude → .claude/agents/<nom>.md   copilot → .github/agents/<nom>.agent.md   both → les deux
 //   hooks    claude → .claude/settings.json (fusionné)   copilot → .github/hooks/tizi.json   both → les deux
 //            PreToolUse → garde-fou TDD (si impl-builder est installé) ; Stop, PreCompact, SessionEnd → capture des sessions
-//   points d'entrée (entrypoints/entrypoints.yaml) : claude → .claude/commands/<nom>.md (/sdlc, /tizi-brd…)
+//   points d'entrée (entrypoints/entrypoints.yaml) : claude → .claude/commands/<nom>.md (/tizi, /tizi-brd…)
 //                                                  copilot → .github/agents/<nom>.agent.md (liste des agents)
 //   --ci : workflows GitHub Actions — porte de PR rejouée, preuves de release avec provenance, sprint reviews dues
 //   .gitignore : .impl/ et .tizi/sessions/*.jsonl
