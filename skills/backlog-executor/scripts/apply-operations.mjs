@@ -35,7 +35,19 @@ if (!['complet', 'partiel', 'manuel'].includes(autonomy)) fail(`Refus — niveau
 const root = dirname(statePath);
 const syncPath = join(root, 'exports', 'sync-map.yaml');
 const currentSync = existsSync(syncPath) ? fileSha256(syncPath) : '';
-if (plan.plan?.state_sha256 !== planStateDigest(s)) fail('Refus — plan périmé : l\'état du plan a changé depuis la préparation (autre chose qu\'une approbation). Prépare un nouveau plan d\'opérations.');
+if (plan.plan?.state_sha256 !== planStateDigest(s)) {
+  // Le refus est juste, mais il n'arrive pas là où la cause s'est produite : la cause la plus
+  // fréquente est une sprint review, qui reporte les fusions dans le plan. Si une revue a été
+  // enregistrée depuis la préparation, on la nomme plutôt que de laisser chercher.
+  const depuis = arr(s.iterations)
+    .map(i => ({ id: i.id, date: i.review?.team?.date ?? i.review?.date ?? '' }))
+    .filter(r => r.date && String(r.date) >= String(plan.generated ?? ''))
+    .sort((a, b) => String(a.date).localeCompare(String(b.date)));
+  const cause = depuis.length
+    ? ` Une sprint review a été enregistrée depuis : ${depuis.map(r => `${r.id} le ${r.date}`).join(', ')} — elle reporte les fusions dans le plan, ce qui change son état.`
+    : '';
+  fail(`Refus — plan périmé : l'état du plan a changé depuis sa préparation du ${plan.generated ?? '—'} (autre chose qu'une approbation).${cause} Prépare un nouveau plan d'opérations (plan-operations.mjs --target ${plan.target}) et fais réapprouver la nouvelle empreinte : aucune approbation ne se reporte d'un plan à l'autre.`);
+}
 if ((plan.sync_map_sha256 ?? '') !== currentSync) fail('Refus — plan périmé : la table de correspondance a changé depuis la préparation (une autre exécution a eu lieu). Prépare un nouveau plan.');
 const settings = s.settings ?? {};
 const destination = plan.target === 'github' ? settings.github?.repo : settings.jira?.project_key;

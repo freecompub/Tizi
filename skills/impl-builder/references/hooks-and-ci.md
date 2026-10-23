@@ -59,6 +59,13 @@ L'identifiant de tâche se lit dans le titre ou la branche de la PR (`TK-xxx`). 
 
 Quand `impl/config.yaml` change (commandes de test, dossiers des composants), relance `node <chemin-du-skill>/scripts/sync-agent-instructions.mjs .`. En CI, `sync-agent-instructions.mjs . --check` échoue si le bloc est absent ou périmé, ou si un dossier cité n'existe plus.
 
+## Ce que rappelle le hook de début de session
+
+Sans rien modifier et sans jamais bloquer : les sprint reviews dues, les signalements à trier, les
+blocages ouverts depuis plus de deux jours, et la **dernière session sans condensé** de chaque
+initiative. Ce dernier rappel n'existait que dans `status.mjs` et `/tizi` : il dépendait donc de
+l'agent, alors que le début de session est précisément le moment d'une reprise.
+
 ## Écrire hors d'une tâche : la dérogation
 
 Dès que `impl/config.yaml` existe, le garde-fou refuse toute écriture de code, de test ou de contrat

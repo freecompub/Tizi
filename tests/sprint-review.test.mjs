@@ -71,3 +71,42 @@ test('installation --ci : workflow planifié aux droits minimaux, hook de début
   assert.ok(JSON.parse(readFileSync(join(proj, '.claude/settings.json'), 'utf8')).hooks.SessionStart);
   assert.ok(JSON.parse(readFileSync(join(proj, '.github/hooks/tizi.json'), 'utf8')).hooks.SessionStart);
 });
+
+// La sprint review reporte les fusions dans le plan, ce qui change l'empreinte de son état et périme
+// tout export approuvé mais pas encore appliqué. L'exécuteur refusait : juste, mais loin de la cause,
+// et sans la nommer. On prévient à la cause, et on explique au symptôme.
+test('export approuvé périmé par la sprint review : averti avant, expliqué après', () => {
+  const repo = join(sandbox(), 'repo');
+  const sp = join(repo, 'plan/demo/state.yaml');
+
+  // TK-002 fusionnée côté implémentation, mais pas encore reportée dans le plan.
+  assert.equal(node(script('impl-builder', 'record-pr.mjs'), ['impl/demo/state.yaml', '--task', 'TK-002', '--approuvee', '--par', 'Chloé'], { cwd: repo }).code, 0);
+  assert.equal(node(script('impl-builder', 'record-pr.mjs'), ['impl/demo/state.yaml', '--task', 'TK-002', '--fusionnee'], { cwd: repo }).code, 0);
+  const plan = yaml.load(readFileSync(sp, 'utf8'));
+  plan.tasks.find(t => t.id === 'TK-002').status = 'validé';
+  plan.governance.backlog_approvals = [];
+  writeFileSync(sp, yaml.dump(plan, { lineWidth: 120 }));
+
+  // Un export préparé, puis approuvé : il est valide à cet instant.
+  assert.equal(node(script('plan-builder', 'plan-operations.mjs'), ['plan/demo/state.yaml', '--target', 'github', '--offline'], { cwd: repo }).code, 0);
+  const sha = readFileSync(join(repo, 'plan/demo/exports/github/operations.yaml.sha256'), 'utf8').trim().split(/\s+/)[0];
+  const p2 = yaml.load(readFileSync(sp, 'utf8'));
+  p2.governance.backlog_approvals = [{ target: 'github', sha256: sha, autonomy: 'manuel', ops: [], reviewed: [], declared_by: 'Alice', date: '2026-10-23' }];
+  writeFileSync(sp, yaml.dump(p2, { lineWidth: 120 }));
+  const avant = node(script('backlog-executor', 'apply-operations.mjs'), ['plan/demo/exports/github/operations.yaml', '--state', 'plan/demo/state.yaml', '--dry-run'], { cwd: repo });
+  assert.doesNotMatch(avant.err, /plan périmé/, 'avant la revue, l\'export est valide');
+
+  // La sprint review prévient, en nommant l'export, AVANT d'écrire l'état.
+  const cs = node(script('plan-builder', 'close-sprint.mjs'), ['plan/demo/state.yaml', '--iteration', 'IT-1', '--impl', 'impl/demo/state.yaml'], { cwd: repo });
+  assert.equal(cs.code, 0, cs.err);
+  assert.match(cs.err, /l'export github approuvé le 2026-10-23 par Alice/);
+  assert.match(cs.err, /devient périmé/);
+  assert.match(cs.err, /relance plan-operations\.mjs --target github/);
+
+  // Et le refus de l'exécuteur nomme désormais sa cause.
+  const apres = node(script('backlog-executor', 'apply-operations.mjs'), ['plan/demo/exports/github/operations.yaml', '--state', 'plan/demo/state.yaml', '--dry-run'], { cwd: repo });
+  assert.notEqual(apres.code, 0);
+  assert.match(apres.err, /plan périmé/);
+  assert.match(apres.err, /sprint review a été enregistrée depuis : IT-1/);
+  assert.match(apres.err, /aucune approbation ne se reporte d'un plan à l'autre/);
+});

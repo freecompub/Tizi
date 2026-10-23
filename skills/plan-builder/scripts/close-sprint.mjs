@@ -8,7 +8,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import yaml from './lib/vendor/js-yaml.mjs';
-import { arr, txt, table, loadState, writeOut, fail, today, humanReviewFooter } from './lib/common.mjs';
+import { arr, txt, table, loadState, writeOut, fail, today, humanReviewFooter, fileSha256, planStateDigest } from './lib/common.mjs';
 import { riskSize, plannedAttention, SIZE_ORDER } from './lib/rules.mjs';
 import { loadBlocks, hoursBetween, CAUSES } from './block.mjs';
 
@@ -26,13 +26,38 @@ const refs = existsSync(join(dirname(statePath), 'refs.yaml')) ? loadState(join(
 const implPath = opt('--impl') || `impl/${slug}/state.yaml`;
 const run = (script, extra) => spawnSync(process.execPath, [join(HERE, script), statePath, ...extra], { encoding: 'utf8' });
 
+// Plans d'opérations approuvés et encore valides à cet instant : leur empreinte d'état est celle de
+// l'état courant. Écrire l'état les périmera. On ne tient pas de registre « appliqué ou non » ; un
+// export déjà appliqué est, lui, déjà périmé par la table de correspondance, donc absent de cette liste.
+// `digestAvant` est l'empreinte de l'état AVANT toute modification : c'est celle que les exports
+// approuvés citent. La calculer après le report des fusions ne correspondrait jamais à rien.
+function perimes(plan, root, digestAvant) {
+  return arr(plan.governance?.backlog_approvals).filter(a => {
+    const ops = join(root, 'exports', String(a.target), 'operations.yaml');
+    if (!existsSync(ops)) return false;
+    try {
+      return fileSha256(ops) === a.sha256 && loadState(ops).plan?.state_sha256 === digestAvant;
+    } catch { return false; }
+  });
+}
+
 // 0. Report des fusions dans le plan : une tâche dont la fusion est enregistrée dans l'implémentation est terminée.
 // C'est un fait, pas une décision ; il est signalé dans le document.
 const synced = [];
+const digestAvant = planStateDigest(plan);
 if (existsSync(implPath)) {
   const implState = loadState(implPath);
   for (const t of arr(plan.tasks)) if (!['terminé', 'abandonné'].includes(t.status) && arr(implState.tasks).find(x => x.id === t.id)?.status === 'fusionnee') { t.status = 'terminé'; synced.push(t.id); }
-  if (synced.length) writeOut(statePath, `# État du plan — tâches fusionnées reportées par close-sprint.mjs le ${today()}\n${yaml.dump(plan, { lineWidth: 120 })}`);
+  if (synced.length) {
+    // Écrire l'état change son empreinte, donc périme tout plan d'opérations approuvé mais pas encore
+    // appliqué : l'exécuteur le refusera. Le refus est juste, mais il arrive loin de sa cause. On
+    // prévient ici, avant d'écrire, en nommant les exports concernés.
+    for (const a of perimes(plan, dirname(statePath), digestAvant)) {
+      console.warn(`Avertissement : l'export ${a.target} approuvé le ${a.date ?? '—'} par ${a.declared_by ?? '—'} (empreinte ${String(a.sha256).slice(0, 12)}…) devient périmé — le report des fusions modifie l'état du plan.`);
+      console.warn(`  S'il n'a pas encore été appliqué : relance plan-operations.mjs --target ${a.target} après la sprint review, et fais réapprouver la nouvelle empreinte.`);
+    }
+    writeOut(statePath, `# État du plan — tâches fusionnées reportées par close-sprint.mjs le ${today()}\n${yaml.dump(plan, { lineWidth: 120 })}`);
+  }
 }
 
 // 1. Les trois préparations existantes.
