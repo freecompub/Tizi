@@ -27,27 +27,41 @@ Le document de référence « Tizi — un SDLC agentique, du recueil du besoin a
 
 Il contient le sommaire, le nom et sa philosophie, les dix étapes, la construction des étapes 1 à 6, l'index des abréviations et identifiants, et les sources.
 
-## Installer comme plugin Claude Code
+## Installer comme plugin
 
-Le dépôt est aussi un **marketplace** Claude Code, et sa racine est la racine du plugin `tizi` :
+Le dépôt est aussi un **marketplace**, et sa racine est la racine du plugin `tizi`. Les deux outils
+lisent le même manifeste — `.claude-plugin/marketplace.json` et `.claude-plugin/plugin.json` sont des
+emplacements que Claude Code et Copilot CLI acceptent tous deux :
 
 ```
-claude plugin marketplace add freecompub/Tizi
+claude plugin marketplace add freecompub/Tizi     # Claude Code
 claude plugin install tizi@tizi
+
+copilot plugin marketplace add freecompub/Tizi    # GitHub Copilot CLI
+copilot plugin install tizi@tizi
 ```
 
-Les sept skills, les dix points d'entrée (`/tizi:tizi`, `/tizi:tizi-brd`…), les douze sous-agents et
-les cinq hooks arrivent d'un coup, et les mises à jour suivent le dépôt. Les chemins des scripts sont
-écrits en `${CLAUDE_PLUGIN_ROOT}/skills/…`, qui résout là où le plugin est installé.
+Les sept skills, les dix points d'entrée, les douze sous-agents et les hooks arrivent d'un coup, et
+les mises à jour suivent le dépôt.
 
-Ses artefacts — `commands/`, `agents/`, `hooks/hooks.json`, `.claude-plugin/plugin.json` — sont
-générés depuis la **même source unique** que les deux autres cibles (`entrypoints/entrypoints.yaml`
-et `skills/`), par `node install.mjs --project . --target plugin`, et commités pour qu'un clone
-suffise. Un test vérifie qu'ils n'ont pas dérivé de leur source ; `claude plugin validate . --strict`
-reste le contrôle qui fait foi.
+| | Partagé | Claude Code | GitHub Copilot |
+|---|---|---|---|
+| Skills | `skills/` | — | — |
+| Points d'entrée | — | `commands/` (`/tizi:tizi-brd`) | `com.github.copilot/agents/` (agent `tizi-brd`) |
+| Sous-agents | — | `agents/` | `com.github.copilot/agents/` |
+| Hooks | — | `hooks/hooks.json`, chemins en `${CLAUDE_PLUGIN_ROOT}` | `com.github.copilot/hooks/hooks.json`, chemins en `${PLUGIN_ROOT}` |
 
-Le plugin ne couvre que Claude Code. Pour GitHub Copilot, ou pour poser les skills dans un dépôt sans
-passer par un marketplace, l'installateur ci-dessous reste la voie.
+Les skills sont le gros du contenu et ils sont **communs** : l'espace de noms `com.github.copilot/`
+(format Agent Plugins 1.0) ne porte que ce qui diffère réellement entre les deux outils, c'est-à-dire
+la forme des points d'entrée et la variable qui donne la racine du plugin.
+
+Ces artefacts sont générés depuis la **même source unique** que les deux autres cibles
+(`entrypoints/entrypoints.yaml` et `skills/`), par `node install.mjs --project . --target plugin`, et
+commités pour qu'un clone suffise. Un test vérifie qu'ils n'ont pas dérivé de leur source.
+`claude plugin validate . --strict` reste le contrôle qui fait foi.
+
+Pour poser les skills dans un dépôt sans passer par un marketplace, l'installateur ci-dessous reste la
+voie — et c'est aussi lui qui pose les workflows de CI (`--ci`).
 
 ## Installer dans un dépôt
 

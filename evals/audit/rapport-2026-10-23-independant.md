@@ -214,30 +214,44 @@ Branche `audit/next-step-bug-et-plugin`. Suite : **150 sur 150**.
     d'étape — et surtout, **tout script cité par une commande posée existe**. C'est l'invariant que le
     repli de `{scripts}` sur `brd-builder`, sinon sur le premier skill installé, suppose sans le dire.
 
-## Le dépôt est aussi un marketplace
+## Le dépôt est aussi un marketplace, pour les deux outils
 
-Le dépôt porte désormais `.claude-plugin/marketplace.json`, et sa racine est la racine du plugin
-`tizi` : `claude plugin marketplace add freecompub/Tizi` puis `claude plugin install tizi@tizi`.
+Le dépôt porte `.claude-plugin/marketplace.json`, et sa racine est la racine du plugin `tizi`.
+Le point qui rend la chose possible : **Claude Code et Copilot CLI acceptent tous deux**
+`.claude-plugin/marketplace.json` et `.claude-plugin/plugin.json`. Un seul manifeste sert les deux.
 
-C'est une voie de distribution de plus, pas un remplacement : le plugin ne couvre que Claude Code, et
-`install.mjs` reste la seule voie pour GitHub Copilot et pour poser les skills dans un dépôt.
+```
+claude  plugin marketplace add freecompub/Tizi  &&  claude  plugin install tizi@tizi
+copilot plugin marketplace add freecompub/Tizi  &&  copilot plugin install tizi@tizi
+```
 
-Trois choix, vérifiés avec le vrai outil plutôt que déduits de la documentation :
+Ce qui est partagé l'est vraiment : `skills/` est le gros du contenu, et les deux outils le scannent au
+même endroit. L'espace de noms `com.github.copilot/` (format Agent Plugins 1.0) ne porte que ce qui
+diffère réellement — la forme d'un point d'entrée (une commande côté Claude Code, un agent côté
+Copilot) et la variable qui donne la racine du plugin (`${CLAUDE_PLUGIN_ROOT}` contre `${PLUGIN_ROOT}`).
 
-- **la racine du dépôt est la racine du plugin**, parce que `skills/` y est déjà à l'emplacement que
-  Claude Code scanne par défaut. Un plugin dans un sous-dossier aurait exigé de recopier les 318
-  fichiers de skills, ou de sortir de la racine du plugin — ce que la validation refuse ;
-- **les artefacts sont générés, pas écrits à la main** : `commands/`, `agents/`, `hooks/hooks.json` et
-  `.claude-plugin/plugin.json` viennent de `node install.mjs --project . --target plugin`, donc de la
-  même source unique que les deux autres cibles. Ils sont commités pour qu'un clone suffise, et un
-  test vérifie qu'ils n'ont pas dérivé ;
-- **le manifeste ne porte que des métadonnées.** Déclarer `commands`, `agents` ou `hooks` remplace le
+Quatre choix, vérifiés avec l'outil plutôt que déduits de la documentation :
+
+- **la racine du dépôt est la racine du plugin**, parce que `skills/` y est déjà à l'emplacement scanné
+  par défaut. Un plugin dans un sous-dossier aurait exigé de recopier les 318 fichiers de skills, ou de
+  sortir de la racine du plugin — ce que la validation refuse ;
+- **les artefacts sont générés, pas écrits à la main** : `commands/`, `agents/`, `hooks/hooks.json`,
+  `com.github.copilot/` et `.claude-plugin/plugin.json` viennent de
+  `node install.mjs --project . --target plugin`, donc de la même source unique que les deux autres
+  cibles. Ils sont commités pour qu'un clone suffise, et un test vérifie qu'ils n'ont pas dérivé ;
+- **le manifeste ne déclare aucun composant.** Déclarer `commands`, `agents` ou `hooks` remplace le
   scan par défaut, et une liste de fichiers sous la clé `agents` n'a **pas** chargé les sous-agents :
-  `claude plugin details tizi` affichait « Agents (0) ». Sans la clé, il affiche « Agents (12) ».
-  Moins le manifeste déclare, moins il peut mentir.
+  `claude plugin details tizi` affichait « Agents (0) ». Sans la clé, « Agents (12) ». Moins le
+  manifeste déclare, moins il peut mentir ;
+- **le `$schema` est celui d'Agent Plugins 1.1.0**, le seul que Copilot accepte pour ce format — et
+  Claude Code ignore le champ au chargement, ce qui a été revérifié après le changement.
 
-Vérifié de bout en bout : `claude plugin validate . --strict` passe, et une installation réelle charge
-17 skills (7 skills + 10 points d'entrée), 12 agents et 5 hooks. L'installation d'essai a été retirée.
+**Ce qui est vérifié, et ce qui ne l'est pas.** Côté Claude Code, de bout en bout :
+`claude plugin validate . --strict` passe, et une installation réelle charge 17 skills (7 skills + 10
+points d'entrée), 12 agents et 5 hooks ; l'installation d'essai a été retirée. Côté Copilot, le CLI
+n'est pas disponible sur cette machine : l'arborescence suit la documentation Agent Plugins 1.0 et est
+vérifiée par des tests de structure, mais **aucune installation réelle ne l'a confirmée**. C'est le
+seul endroit de cet audit où je livre sur la documentation plutôt que sur une exécution.
 
 ## Ce qui reste ouvert
 

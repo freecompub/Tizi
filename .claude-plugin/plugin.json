@@ -1,5 +1,5 @@
 {
-  "$schema": "https://json.schemastore.org/claude-code-plugin.json",
+  "$schema": "https://agent-plugins.org/schemas/1.1.0/plugin.schema.json",
   "name": "tizi",
   "displayName": "Tizi",
   "description": "Un SDLC agentique, du besoin à la preuve : BRD, PRD, conception, plan, implémentation sous garde-fou TDD, vérification de release avec preuves.",
