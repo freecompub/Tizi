@@ -3,7 +3,7 @@ source:
   initiative: Dossiers complets
   plan_version: '1.0'
   cadence: sprint
-  generated: '2026-10-21'
+  generated: '2026-10-23'
 definition_of_done:
   - Code revu et fusionné
   - Exemples automatisés
@@ -79,3 +79,4 @@ coverage:
 integrity:
   algorithm: sha256
   source_state: d134005b5570393c02b29f8bd5f119d87f0fe74ceece74556d5560b390041d4b
+  source_doc: 3babb267dfa29ffcc91142332437f80bf4e8d81ee81165d7221c338b87eb2b45

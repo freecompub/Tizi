@@ -15,7 +15,8 @@ import { writeOut, today, table } from './lib/common.mjs';
 
 const args = process.argv.slice(2);
 const opt = k => (args.includes(k) ? args[args.indexOf(k) + 1] : '');
-const root = args.find(a => !a.startsWith('--') && !['--branche', '--protection-json'].includes(args[args.indexOf(a) - 1])) ?? '.';
+const root = args.find(a => !a.startsWith('--') && !['--branche', '--protection-json'].includes(args[args.indexOf(a) - 1])) ;
+if (!root) { console.error('Usage : node ci-audit.mjs <dépôt>. Le dépôt est explicite : ce script écrit .tizi/ci-audit.md. Pour le dépôt courant : node ci-audit.mjs .'); process.exit(2); }
 const branch = opt('--branche') || 'main';
 const dir = join(root, '.github', 'workflows');
 const wfs = existsSync(dir) ? readdirSync(dir).filter(f => /\.ya?ml$/.test(f)).map(f => { const text = readFileSync(join(dir, f), 'utf8'); let doc = null; try { doc = yaml.load(text); } catch { doc = null; } return { file: f, text, doc }; }) : [];

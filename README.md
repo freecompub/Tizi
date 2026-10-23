@@ -6,7 +6,7 @@ Tizi est un cycle de développement outillé par des agents IA, de l'évaluation
 
 **Les vallées sont les étapes** : BRD, PRD, conception, planification, implémentation, vérification. C'est là que se fait le travail d'exploration, qui peut tourner en rond, revenir en arrière, se tromper.
 
-**Les cols sont les portes entre étapes.** On ne passe pas n'importe où ni n'importe quand : on s'arrête, on vérifie ce qu'on porte (version figée, empreinte du handoff, couverture mesurée), et une personne décide de franchir. Une charge altérée ne passe pas. Du col, on voit les deux vallées : la traçabilité va du besoin au code, et du code au besoin.
+**Les cols sont les portes entre étapes.** On ne passe pas n'importe où ni n'importe quand : on s'arrête, on vérifie ce qu'on porte (version figée, empreinte du handoff — **celle de l'état et celle du document** —, couverture mesurée), et une personne décide de franchir. Une charge altérée ne passe pas : un document figé modifié après le gel est détecté comme l'état l'est. Du col, on voit les deux vallées : la traçabilité va du besoin au code, et du code au besoin.
 
 **Les agents portent, les humains décident du passage, les cols vérifient.** Les agents font l'essentiel de la marche ; rien de ce qu'ils produisent n'est accepté sans vérification déterministe ou adversariale, et aucune approbation n'est déduite.
 
@@ -21,7 +21,7 @@ Point de départ : `/tizi` dans Claude Code, ou l'agent `tizi` dans Copilot.
 
 ## documentation/
 
-Le document de référence « Tizi — un SDLC agentique, du recueil du besoin au déploiement », exporté depuis le document vivant (révision 98) :
+Le document de référence « Tizi — un SDLC agentique, du recueil du besoin au déploiement », exporté depuis le document vivant ; il porte sa propre date en en-tête :
 - en Markdown, modifiable ;
 - en PDF (A4, 46 pages), pour la lecture.
 
@@ -64,7 +64,7 @@ L'installateur pose aussi les **points d'entrée**, générés depuis une source
 
 **Instructions du dépôt.** `sync-agent-instructions.mjs` écrit dans `AGENTS.md` un bloc délimité, tiré des états de Tizi : règles des ADR, dossiers de chaque composant, contrats, données sensibles, commandes de test. `CLAUDE.md` l'importe. Ce sont les consignes que lisent les agents qui ne passent pas par Tizi. Le reste du fichier n'est jamais touché, et `--check` signale un bloc périmé ou un dossier disparu.
 
-Ce sont des coquilles : chacune charge son skill, qui reste la seule source des règles. Les agents Copilot n'ont que les outils de leur étape (l'entrée `tizi` et `tizi-backlog` ne peuvent pas éditer de fichiers) et proposent des boutons de passage vers l'étape suivante. Les sous-agents internes (critiques du council, perspectives de revue, vérificateur) sont marqués non invocables : ils n'apparaissent pas dans la liste de l'utilisateur.
+Ce sont des coquilles : chacune charge son skill, qui reste la seule source des règles. Les agents Copilot n'ont que les outils de leur étape (l'entrée `tizi` et `tizi-backlog` ne peuvent pas éditer de fichiers) et proposent des boutons de passage vers l'étape suivante. Les sous-agents internes (critiques du council, perspectives de revue, vérificateur) portent la marque `user-invocable: false` des deux côtés : **Copilot les exclut** de la liste de l'utilisateur ; **Claude Code les affiche encore**, d'où la mention « ne pas utiliser directement » dans leur description. Un test vérifie la marque et la mention sur les deux cibles.
 
 Options : `--ci` ajoute trois workflows GitHub Actions : `tizi-pr-gate.yml` rejoue la porte de PR sur chaque pull request ; `tizi-preuves.yml` produit les preuves de release sur le commit lui-même, avec leur manifeste de provenance ; `tizi-sprint-review.yml` prépare chaque jour ouvré les sprint reviews dues et ouvre une issue (droits : lecture du dépôt, et écriture des issues pour ce dernier). `ci-audit.mjs` vérifie ensuite la configuration de la CI ; `--skills brd-builder,prd-builder` pour n'en installer qu'une partie, `--user` pour les skills et agents personnels, `--dry-run` pour voir sans écrire. La commande est idempotente. Il faut Node.js 18 ou plus ; aucune dépendance n'est à installer.
 
@@ -90,12 +90,12 @@ Les sept skills, au format ouvert Agent Skills (validés par `skills-ref`), util
 | `sad-builder` | 3 | Conception : moteurs, domaine, C4, ADR (MADR v4), NFR, contrats, STRIDE, brownfield léger |
 | `plan-builder` | 4 | Plan : stories, example mapping, tâches, sprint ou flux, revue, préparation de l'export (lecture seule) |
 | `backlog-executor` | 4 | Seul skill qui écrit dans GitHub ou Jira, après approbation de l'empreinte du plan d'opérations |
-| `impl-builder` | 5 | Implémentation tâche par tâche : compréhension validée, BDD puis TDD sous contrôle d'un hook, porte de PR |
+| `impl-builder` | 5 | Implémentation tâche par tâche : compréhension validée, BDD puis TDD sous contrôle d'un hook, porte de PR. Hors tâche, le hook refuse ; le chemin « hors Tizi » et les correctifs d'urgence passent par une **dérogation** nommée, motivée et datée (`derogation.mjs`), tracée dans `.tizi/derogations.jsonl` |
 | `test-builder` | 6 | Vérification de release : matrice de couverture des exigences, exploratoire, porte de release, preuves |
 
 Chaque skill sait reprendre une session interrompue (`references/sessions.md`) : un hook conserve la transcription et en tire un extrait, `status.mjs` donne le point d'étape, `session-search.mjs` retrouve un détail.
 
-Fichiers communs, identiques d'un skill à l'autre, dont `scripts/lib/agent-io.mjs` qui adapte les hooks à Claude Code, à Copilot et à VS Code : `scripts/lib/common.mjs`, `scripts/lib/rules.mjs` (catalogue de vérification), `scripts/lint.mjs`, `scripts/freeze-version.mjs`, `scripts/verify-handoff.mjs`, `scripts/lib/sessions.mjs`, `scripts/session-capture.mjs`, `scripts/session-search.mjs`, `scripts/status.mjs`, `scripts/next-step.mjs`, `scripts/choose-path.mjs`, `scripts/sync-agent-instructions.mjs`, `scripts/adopt.mjs`, `scripts/block.mjs`, `scripts/constitution.mjs`, `scripts/ask-five.mjs`, `scripts/review-checklist.mjs`, `scripts/cross-context.mjs`, `scripts/cross-merge.mjs`, et `scripts/lib/testing.mjs` pour les étapes 5 et 6. Toute modification de l'un d'eux se recopie dans tous les skills qui l'ont.
+Fichiers communs, identiques d'un skill à l'autre, dont `scripts/lib/agent-io.mjs` qui adapte les hooks à Claude Code, à Copilot et à VS Code : `scripts/lib/common.mjs`, `scripts/lib/rules.mjs` (catalogue de vérification), `scripts/lib/sessions.mjs`, `scripts/lib/checklists.mjs`, `scripts/session-capture.mjs`, `scripts/session-search.mjs`, `scripts/session-start.mjs`, `scripts/status.mjs`, `scripts/next-step.mjs`, `scripts/choose-path.mjs`, `scripts/sync-agent-instructions.mjs`, `scripts/adopt.mjs`, `scripts/block.mjs`, `scripts/due-reviews.mjs`, `scripts/constitution.mjs`, `scripts/ask-five.mjs`, `scripts/review-checklist.mjs`, `scripts/cross-context.mjs`, `scripts/cross-merge.mjs`. Trois autres sont communs aux seuls skills qui produisent un document — `brd-builder`, `prd-builder`, `sad-builder`, `plan-builder` : `scripts/lint.mjs`, `scripts/freeze-version.mjs`, `scripts/verify-handoff.mjs` (ce dernier également dans `impl-builder` et `test-builder`). `scripts/lib/testing.mjs` sert aux étapes 5 et 6. Toute modification de l'un d'eux se recopie dans tous les skills qui l'ont.
 
 ## tests/
 
@@ -109,14 +109,6 @@ Deux bancs d'évaluation, à lancer avec un vrai agent (Claude Code ou Copilot) 
 - **déclenchement** (`run-triggers.mjs`) : des requêtes proches, jouées plusieurs fois, pour vérifier que le bon skill s'active (ou aucun), avec une séparation entraînement/test fixe. `description-overlap.mjs` contrôle en plus, sans agent, que les descriptions des skills ne se chevauchent pas.
 
 Voir `evals/README.md`.
-
-## lectures/
-
-Les notes de lecture intégrales qui ont servi aux comparaisons :
-- Yves Constantinidis, *Expression des besoins pour le SI* (Eyrolles, 2010), et IIBA, *BABOK Guide* v3 (2015) ;
-- Jeff Patton, *User Story Mapping* (O'Reilly, 2014).
-
-Les décisions issues de ces comparaisons, et de celle avec hve-core, sont consignées dans la section « Sources » du document.
 
 ## exemple/
 

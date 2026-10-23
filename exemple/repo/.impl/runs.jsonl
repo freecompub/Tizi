@@ -1,0 +1,5 @@
+{"task":"TK-002","suite":"unit","at":"2026-10-20T17:55:34.411Z","seconds":0.2,"exit":1,"total":1,"failed":1,"ids":[]}
+{"task":"TK-002","suite":"unit","at":"2026-10-20T17:55:34.966Z","seconds":0.2,"exit":0,"total":1,"failed":0,"ids":[]}
+{"task":"TK-002","suite":"acceptance","at":"2026-10-20T17:55:35.195Z","seconds":0.2,"exit":0,"total":2,"failed":0,"ids":["EX-001","AC-001","EX-002"]}
+{"task":"TK-002","suite":"refactor","at":"2026-10-20T17:55:35.329Z"}
+{"task":"TK-002","suite":"mutation","at":"2026-10-20T17:55:35.533Z","seconds":0.1,"exit":0,"score":75,"survived":1}

@@ -2,7 +2,7 @@
 // déclenchement des skills, rétrospective sourcée.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, rmSync, appendFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { sandbox, node, script, ROOT } from './helpers.mjs';
 import { checkState } from '../skills/brd-builder/scripts/lib/rules.mjs';
@@ -72,4 +72,38 @@ test('rétrospective : preuves sourcées pour une itération', () => {
   assert.equal(r.code, 0, r.err);
   const md = readFileSync(join(repo, 'plan/demo/review/IT-1/preuves.md'), 'utf8');
   assert.match(md, /## Sources lues/); assert.match(md, /TK-002/); assert.match(md, /`impl\/demo\/state\.yaml`/);
+});
+
+// Le garde-fou refuse toute écriture hors tâche. Le choix du chemin, lui, autorise des changements qui
+// ne passent pas par une tâche (« hors Tizi », correctif d'urgence) : sans issue nommée, le garde-fou
+// interdisait ce que la méthode permet. L'issue est une dérogation tracée, motivée, datée — jamais déduite.
+test('dérogation : hors tâche, le garde-fou ne s\'ouvre que sur une décision nommée et datée', () => {
+  const repo = join(sandbox(), 'repo');
+  rmSync(join(repo, '.impl/current.json'), { force: true });
+  const write = () => node(script('impl-builder', 'tdd-guard.mjs'), [], { cwd: repo, input: JSON.stringify({ cwd: repo, tool_name: 'Write', tool_input: { file_path: 'src/app.js' } }) });
+  const derog = (...a) => node(script('impl-builder', 'derogation.mjs'), ['.', ...a], { cwd: repo });
+
+  const refus = write();
+  assert.equal(refus.code, 2, 'hors tâche et sans dérogation : refus');
+  assert.match(refus.err, /ouvre une dérogation tracée/, 'le refus doit dire comment faire');
+
+  assert.match(derog().out, /Aucune dérogation active/);
+  assert.equal(derog('--par', 'Samir', '--raison', 'correctif d\'urgence').code, 0);
+  assert.equal(write().code, 0, 'dérogation active : écriture permise');
+
+  // La trace est versionnée : une dérogation se relit après coup, avec sa raison et son auteur.
+  const trace = readFileSync(join(repo, '.tizi/derogations.jsonl'), 'utf8').trim().split('\n').map(l => JSON.parse(l));
+  assert.equal(trace.at(-1).approved_by, 'Samir');
+  assert.match(trace.at(-1).reason, /urgence/);
+  assert.ok(new Date(trace.at(-1).expires_at) > new Date(trace.at(-1).at), 'la dérogation expire');
+
+  // Ni cumulable, ni silencieusement reconduite.
+  assert.notEqual(derog('--par', 'Autre', '--raison', 'autre chose').code, 0, 'pas deux dérogations à la fois');
+  assert.equal(derog('--fermer', '--par', 'Samir').code, 0);
+  assert.equal(write().code, 2, 'fermée : le garde-fou s\'applique de nouveau');
+
+  // Une dérogation expirée ne protège plus rien.
+  const passe = new Date(Date.now() - 60000).toISOString();
+  appendFileSync(join(repo, '.tizi/derogations.jsonl'), `${JSON.stringify({ action: 'ouverte', at: passe, expires_at: passe, approved_by: 'Samir', reason: 'expirée' })}\n`);
+  assert.equal(write().code, 2, 'expirée : refus');
 });

@@ -1,6 +1,6 @@
 # Handoff BRD → PRD — Dossiers complets (BRD v1.0)
 
-Généré le 2026-10-20 à partir de la version figée. Le PRD doit couvrir les exigences ci-dessous et en conserver les identifiants.
+Généré le 2026-10-23 à partir de la version figée. Le PRD doit couvrir les exigences ci-dessous et en conserver les identifiants.
 
 ## Problème
 
@@ -30,6 +30,12 @@ Le PRD décide lesquelles automatiser ; chaque règle automatisée doit être co
 |---|---|---|---|---|
 | RG-001 | Un dossier ne doit pas être transmis sans justificatif de domicile. | comportement | stricte | Alice (SH-01) |
 | RG-002 | Le délai de relance est de 5 jours ouvrés. | comportement | — | — |
+
+## Exigences de transition
+
+Le PRD les rattache à une release ; le plan les planifie.
+
+_Aucun élément._
 
 ## Droits de décision
 
@@ -70,4 +76,4 @@ _Aucun élément._
 | Exigences métier avec critère d'acceptation | 1/2 | 50 % | 100 % | **non atteint** |
 | Objectifs servis par au moins une exigence | 1/1 | 100 % | 100 % | atteint |
 
-Empreinte SHA-256 de handoff.yaml : `d69a003919e2996330a89ab4633d4588003ad85b302ed820e247f470ac91b663`. L'étape suivante la vérifie avec verify-handoff.mjs avant d'ingérer.
+Empreinte SHA-256 de handoff.yaml : `5e6d8e60cd407e17f1b6c85a5b4761b936144a1933dd2fcf090ee302b83216d0`. L'étape suivante la vérifie avec verify-handoff.mjs avant d'ingérer.

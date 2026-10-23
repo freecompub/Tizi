@@ -58,3 +58,21 @@ L'identifiant de tâche se lit dans le titre ou la branche de la PR (`TK-xxx`). 
 ## Instructions du dépôt
 
 Quand `impl/config.yaml` change (commandes de test, dossiers des composants), relance `node <chemin-du-skill>/scripts/sync-agent-instructions.mjs .`. En CI, `sync-agent-instructions.mjs . --check` échoue si le bloc est absent ou périmé, ou si un dossier cité n'existe plus.
+
+## Écrire hors d'une tâche : la dérogation
+
+Dès que `impl/config.yaml` existe, le garde-fou refuse toute écriture de code, de test ou de contrat
+hors d'une tâche Tizi. C'est voulu — mais le choix du chemin autorise des changements qui ne passent
+pas par une tâche : une coquille sur le chemin « hors Tizi », un correctif d'urgence en production.
+Sans issue nommée, le garde-fou interdirait ce que la méthode permet.
+
+L'issue est une **dérogation** : jamais déduite, toujours demandée, motivée, attribuée à une personne,
+et bornée dans le temps (une heure par défaut, huit au plus — au-delà, c'est une tâche du plan).
+
+    node scripts/derogation.mjs --par "<nom>" --raison "<raison>" [--minutes 60]
+    node scripts/derogation.mjs                      # état courant
+    node scripts/derogation.mjs --fermer --par "<nom>"
+
+La trace va dans `.tizi/derogations.jsonl`, **versionné** : une dérogation se relit après coup, avec
+sa raison, son auteur et sa durée. Fermer dès que possible ; une dérogation expirée ne protège plus
+rien et le garde-fou reprend seul.

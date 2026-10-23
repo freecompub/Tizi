@@ -19,6 +19,14 @@ const opt = (k, d) => (args.includes(k) ? args[args.indexOf(k) + 1] : d);
 const cfgPath = opt('--config', 'impl/config.yaml');
 const outDir = opt('--dossier', 'tizi-preuves');
 const manifestPath = join(outDir, 'tizi-ci-manifest.json');
+// Exécuter des commandes de shell venues d'un fichier du dépôt ne peut pas être un comportement par
+// défaut : l'intention est déclarée. --lancer exécute les suites (ce que fait la CI), --sans-lancer
+// se contente de regrouper les rapports déjà présents et d'écrire le manifeste.
+if (!args.includes('--lancer') && !args.includes('--sans-lancer')) {
+  fail('Usage : node ci-run-suites.mjs --lancer | --sans-lancer [--config impl/config.yaml] [--dossier tizi-preuves]\n'
+    + '  --lancer       exécute les commandes des suites de impl/config.yaml (c\'est ce que lance la CI) ;\n'
+    + '  --sans-lancer  n\'exécute rien : regroupe les rapports déjà présents et écrit le manifeste.', 2);
+}
 if (!existsSync(cfgPath)) fail(`Configuration absente : ${cfgPath}.`);
 const cfg = yaml.load(readFileSync(cfgPath, 'utf8')) ?? {};
 const git = (...a) => { const r = spawnSync('git', a, { encoding: 'utf8' }); return r.status === 0 ? r.stdout.trim() : ''; };

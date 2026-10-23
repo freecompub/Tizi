@@ -1,2 +1,2 @@
-.impl/
-reports/
+# Même raison que exemple/repo/.gitignore : cette fixture est une donnée de test du dépôt Tizi.
+# Son état local et ses rapports doivent rester versionnés pour que la suite passe sur un clone neuf.

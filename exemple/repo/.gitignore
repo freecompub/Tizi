@@ -1,2 +1,6 @@
-.impl/
-reports/
+# Dans un vrai dépôt, Tizi ignore ici .impl/ (état local de la tâche en cours, journal TDD) et
+# reports/ (rapports de test produits par la CI) : c'est ce que pose install.mjs.
+#
+# exemple/repo est une donnée de test du dépôt Tizi, pas un vrai dépôt : son journal TDD et ses
+# rapports doivent être VERSIONNÉS. Ignorés, ils n'existaient que dans l'arbre de travail de l'auteur
+# et 12 tests sur 124 échouaient sur tout clone neuf — donc en CI. Ne pas remettre ces règles ici.

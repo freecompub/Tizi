@@ -9,7 +9,7 @@
 //   agents   claude → .claude/agents/<nom>.md   copilot → .github/agents/<nom>.agent.md   both → les deux
 //   hooks    claude → .claude/settings.json (fusionné)   copilot → .github/hooks/tizi.json   both → les deux
 //            PreToolUse → garde-fou TDD (si impl-builder est installé) ; Stop, PreCompact, SessionEnd → capture des sessions
-//   points d'entrée (entrypoints/entrypoints.yaml) : claude → .claude/commands/<nom>.md (/sdlc, /tizi-brd…)
+//   points d'entrée (entrypoints/entrypoints.yaml) : claude → .claude/commands/<nom>.md (/tizi, /tizi-brd…)
 //                                                  copilot → .github/agents/<nom>.agent.md (liste des agents)
 //   --ci : workflows GitHub Actions — porte de PR rejouée, preuves de release avec provenance, sprint reviews dues
 //   .gitignore : .impl/ et .tizi/sessions/*.jsonl
@@ -53,8 +53,15 @@ for (const s of skills) {
     const text = readFileSync(join(dir, f), 'utf8');
     const name = f.replace(/\.md$/, '');
     if (claude) {
+      // Même marque que pour Copilot : un sous-agent interne n'est pas un point d'entrée. Copilot
+      // l'exclut de la liste de l'utilisateur ; Claude Code l'affiche encore, d'où la mention
+      // « ne pas utiliser directement » dans sa description. La marque est posée des deux côtés
+      // pour que la règle soit lisible, vérifiable par les tests, et honorée dès que l'outil le permet.
+      const marked = /^---\n/.test(text) && !/^user-invocable:/m.test(text)
+        ? text.replace(/^---\n([\s\S]*?)---\n/, (_, fm) => `---\n${fm}user-invocable: false\n---\n`)
+        : text;
       const d = user ? join(homedir(), '.claude', 'agents') : join(project, '.claude', 'agents');
-      act(`agent ${name} → ${d}/${f}`, () => { mkdirSync(d, { recursive: true }); writeFileSync(join(d, f), text); });
+      act(`agent ${name} → ${d}/${f}`, () => { mkdirSync(d, { recursive: true }); writeFileSync(join(d, f), marked); });
     }
     if (copilot) {
       // Format des agents personnalisés de Copilot : outils de lecture seule, mêmes consignes.
@@ -165,8 +172,8 @@ jobs:
   sprint-reviews:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 20
       - name: Préparer les sprint reviews dues et ouvrir une issue
@@ -193,10 +200,10 @@ jobs:
     name: Tizi — porte de PR
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 20
       # Installer ici les dépendances du projet nécessaires aux suites de tests.
@@ -229,14 +236,14 @@ jobs:
     name: Tizi — preuves
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 20
       # Installer ici les dépendances du projet nécessaires aux suites de tests.
       - name: Suites de tests et manifeste de provenance
-        run: node ${relSkills}/test-builder/scripts/ci-run-suites.mjs
-      - uses: actions/upload-artifact@v4
+        run: node ${relSkills}/test-builder/scripts/ci-run-suites.mjs --lancer
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
           name: tizi-preuves

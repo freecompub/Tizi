@@ -12,7 +12,8 @@ import yaml from './lib/vendor/js-yaml.mjs';
 import { writeOut, today } from './lib/common.mjs';
 
 const args = process.argv.slice(2);
-const root = args.find(a => !a.startsWith('--')) ?? '.';
+const root = args.find(a => !a.startsWith('--')) ;
+if (!root) { console.error('Usage : node adopt.mjs <dépôt> [options]. Le dépôt est explicite : ce script écrit (.tizi/adoption.yaml, impl/config.yaml). Pour le dépôt courant : node adopt.mjs .'); process.exit(2); }
 const force = args.includes('--force');
 const IGNORE = new Set(['node_modules', '.git', '.build', 'build', 'dist', '.next', 'DerivedData', 'Pods', 'vendor', '.tizi', '.impl', 'reports', 'coverage']);
 const rel = p => relative(root, p).split('\\').join('/');

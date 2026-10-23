@@ -4,7 +4,8 @@
 // Entrée : JSON sur stdin. Sortie : code 0 pour autoriser, 2 pour refuser (raison sur stderr et en JSON sur stdout).
 // Règles, pour chaque fichier touché par l'appel :
 //   1. chemins toujours autorisés (impl/, .impl/, docs/, reports/) ;
-//   2. sans tâche en cours : pas d'écriture de code, de test ni de contrat ;
+//   2. sans tâche en cours : pas d'écriture de code, de test ni de contrat — sauf dérogation nommée,
+//      motivée et datée (derogation.mjs), pour le chemin « hors Tizi » et les correctifs d'urgence ;
 //   3. compréhension non validée : pas d'écriture de code, de test ni de contrat ;
 //   4. tests : autorisés ;
 //   5. contrats : seulement si la tâche cite une opération ;
@@ -17,6 +18,7 @@ import yaml from './lib/vendor/js-yaml.mjs';
 import { matchesAny, toPosix } from './lib/testing.mjs';
 import { normalizeHookInput, isWriteTool, writtenPaths, deny } from './lib/agent-io.mjs';
 import { understandingDigest } from './lib/impl.mjs';
+import { derogationActive } from './derogation.mjs';
 
 let raw = {};
 try { raw = JSON.parse(readFileSync(0, 'utf8') || '{}'); } catch { process.exit(0); }
@@ -33,6 +35,7 @@ const curPath = join(h.cwd, '.impl/current.json');
 const cur = existsSync(curPath) ? JSON.parse(readFileSync(curPath, 'utf8')) : null;
 const state = cur && existsSync(join(h.cwd, cur.state)) ? yaml.load(readFileSync(join(h.cwd, cur.state), 'utf8')) : null;
 const task = cur ? (state?.tasks ?? []).find(t => t.id === cur.task) : null;
+const derogation = derogationActive(h.cwd);
 const runsPath = join(h.cwd, '.impl/runs.jsonl');
 const lastRun = () => {
   const runs = existsSync(runsPath) ? readFileSync(runsPath, 'utf8').split('\n').filter(Boolean).map(l => JSON.parse(l))
@@ -45,7 +48,14 @@ function verdict(path) {
   if (matchesAny(path, P.always_allowed ?? ['impl/**', '.impl/**'])) return '';
   const isTest = matchesAny(path, P.tests ?? []), isContract = matchesAny(path, P.contracts ?? []), isProd = matchesAny(path, P.production ?? []);
   if (!isTest && !isContract && !isProd) return '';
-  if (!cur) return no('aucune tâche en cours. Lance scripts/start-task.mjs pour prendre une tâche du plan.');
+  // Hors tâche : refus par défaut, sauf dérogation ouverte par une personne, motivée et non expirée.
+  // Le chemin « hors Tizi » et les correctifs d'urgence passent par là, et y laissent une trace.
+  if (!cur) {
+    if (derogation) return '';
+    return no('aucune tâche en cours. Lance scripts/start-task.mjs pour prendre une tâche du plan. '
+      + 'Si ce changement ne passe pas par une tâche (chemin « hors Tizi », correctif d\'urgence), ouvre une dérogation tracée : '
+      + 'scripts/derogation.mjs --par "<nom>" --raison "<raison>".');
+  }
   if (!task?.understanding?.approved_by) return no(`la compréhension de ${cur.task} n'est pas validée. Reformule la tâche, pose tes questions, et fais valider avant d'écrire du code ou des tests.`);
   if (task.understanding.approved_digest && task.understanding.approved_digest !== understandingDigest(task.understanding)) return no(`la compréhension de ${cur.task} a été modifiée après sa validation. Fais valider la nouvelle version (approve-understanding.mjs) avant d'écrire.`);
   if (['bloquee', 'en_revue', 'fusionnee'].includes(task.status)) return no(`${cur.task} est ${task.status} : aucune écriture.`);

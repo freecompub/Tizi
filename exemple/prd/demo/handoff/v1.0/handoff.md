@@ -1,6 +1,6 @@
 # Handoff PRD → conception et planification — Dossiers complets (PRD v1.0)
 
-Généré le 2026-10-20 à partir de la version figée, issue du BRD v1.0. La conception et la planification conservent les identifiants FR, NFR et AC.
+Généré le 2026-10-23 à partir de la version figée, issue du BRD v1.0. La conception et la planification conservent les identifiants FR, NFR et AC.
 
 ## REL-1 — MVP
 
@@ -74,4 +74,4 @@ _Aucun élément._
 | FR Must avec un scénario d'erreur | 0/1 | 0 % | 100 % | **non atteint** |
 | Exigences du BRD couvertes par une FR ou une NFR | 1/1 | 100 % | 100 % | atteint |
 
-Empreinte SHA-256 de handoff.yaml : `25bd155232b261f8f657e47c7beb6ef2faf76efb282b57faef32a320cdbdffba`. L'étape suivante la vérifie avec verify-handoff.mjs avant d'ingérer.
+Empreinte SHA-256 de handoff.yaml : `6d536fff79ce7a5cd46b78ae1d6a82ca8eeaa99cd654df9471d972f7c4a060a5`. L'étape suivante la vérifie avec verify-handoff.mjs avant d'ingérer.
