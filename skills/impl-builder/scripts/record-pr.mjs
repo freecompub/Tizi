@@ -2,6 +2,8 @@
 // Enregistre ce que les humains décident sur la PR d'une tâche, avec l'heure : c'est ce qui permet de mesurer
 // l'attente de relecture et les allers-retours. Seulement sur déclaration de l'utilisateur.
 // Usage : node record-pr.mjs <impl/<slug>/state.yaml> --task TK-xxx (--approuvee --par "<nom>" | --corrections --par "<nom>" [--note "…"] | --fusionnee) [--url <lien>]
+import { existsSync, readFileSync, rmSync } from 'node:fs';
+import { join, dirname } from 'node:path';
 import { arr, loadState, fail, today } from './lib/common.mjs';
 import { saveState, logEvent } from './lib/impl.mjs';
 
@@ -22,3 +24,19 @@ if (what === 'fusionnée') { if (!t.pr.approved_by) fail('Fusion sans approbatio
 saveState(statePath, s);
 logEvent(statePath, taskId, what, { ...(opt('--par') ? { by: opt('--par') } : {}), ...(opt('--note') ? { note: opt('--note') } : {}) });
 console.log(`${taskId} : ${what.replace('_', ' ')}${opt('--par') ? ` par ${opt('--par')}` : ''}.`);
+
+// Une tâche fusionnée est terminée : elle ne peut pas rester la tâche en cours, sinon le garde-fou
+// refuse toute écriture jusqu'à ce qu'on en prenne une autre, sans dire pourquoi. On libère.
+if (what === 'fusionnée') {
+  // .impl/ est à la racine du dépôt : impl/<slug>/state.yaml → deux niveaux au-dessus.
+  const root = dirname(dirname(dirname(statePath))) || '.';
+  const cur = join(root, '.impl', 'current.json');
+  let encours = null;
+  try { encours = JSON.parse(readFileSync(cur, 'utf8')); } catch { /* aucune tâche en cours */ }
+  if (encours?.task === taskId) {
+    rmSync(cur, { force: true });
+    console.log(`${taskId} n'est plus la tâche en cours. Prends la suivante : scripts/start-task.mjs.`);
+  } else if (existsSync(cur)) {
+    console.log(`Tâche en cours inchangée (${encours?.task ?? 'inconnue'}).`);
+  }
+}

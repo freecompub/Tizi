@@ -107,3 +107,39 @@ test('dérogation : hors tâche, le garde-fou ne s\'ouvre que sur une décision 
   appendFileSync(join(repo, '.tizi/derogations.jsonl'), `${JSON.stringify({ action: 'ouverte', at: passe, expires_at: passe, approved_by: 'Samir', reason: 'expirée' })}\n`);
   assert.equal(write().code, 2, 'expirée : refus');
 });
+
+// Une tâche fusionnée restait la tâche en cours : le garde-fou refusait alors toute écriture jusqu'à
+// ce qu'on en prenne une autre, et son message parlait du statut sans dire quoi faire.
+test('tâche fusionnée : la tâche en cours est libérée, et le garde-fou dit quoi faire', () => {
+  const repo = join(sandbox(), 'repo');
+  const cur = join(repo, '.impl/current.json');
+  const rec = (...a) => node(script('impl-builder', 'record-pr.mjs'), ['impl/demo/state.yaml', '--task', 'TK-002', ...a], { cwd: repo });
+
+  // La fusion exige toujours une approbation humaine enregistrée.
+  assert.notEqual(rec('--fusionnee').code, 0, 'fusion sans approbation : refusée');
+  assert.ok(existsSync(cur), 'refus : la tâche en cours ne bouge pas');
+
+  assert.equal(rec('--approuvee', '--par', 'Chloé').code, 0);
+  const r = rec('--fusionnee');
+  assert.equal(r.code, 0, r.err);
+  assert.match(r.out, /n'est plus la tâche en cours/);
+  assert.ok(!existsSync(cur), 'tâche fusionnée : la tâche en cours est libérée');
+
+  // Et le refus suivant est utile : il nomme l'action, pas seulement le statut.
+  const g = node(script('impl-builder', 'tdd-guard.mjs'), [], { cwd: repo, input: JSON.stringify({ cwd: repo, tool_name: 'Write', tool_input: { file_path: 'src/completude/x.js' } }) });
+  assert.equal(g.code, 2);
+  assert.match(g.err, /start-task\.mjs/);
+});
+
+test('tâche fusionnée : une autre tâche en cours n\'est pas libérée', () => {
+  const repo = join(sandbox(), 'repo');
+  const cur = join(repo, '.impl/current.json');
+  const c = JSON.parse(readFileSync(cur, 'utf8'));
+  writeFileSync(cur, JSON.stringify({ ...c, task: 'TK-003' }));
+  const rec = (...a) => node(script('impl-builder', 'record-pr.mjs'), ['impl/demo/state.yaml', '--task', 'TK-002', ...a], { cwd: repo });
+  assert.equal(rec('--approuvee', '--par', 'Chloé').code, 0);
+  const r = rec('--fusionnee');
+  assert.equal(r.code, 0, r.err);
+  assert.match(r.out, /Tâche en cours inchangée \(TK-003\)/);
+  assert.equal(JSON.parse(readFileSync(cur, 'utf8')).task, 'TK-003');
+});

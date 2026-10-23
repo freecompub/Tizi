@@ -8,6 +8,7 @@ Un fichier d'état dit où l'on en est, pas comment on y est arrivé. Pour repre
 | Condensé | `.tizi/sessions/<date>-<session>.condense.md` | Le fil de la discussion | L'agent, à la pause ou à la reprise |
 | Extrait | `.tizi/sessions/<date>-<session>.extrait.md` | Vos messages mot pour mot, questions, fichiers et identifiants touchés | Le hook, automatiquement |
 | Transcription | `.tizi/sessions/<date>-<session>.jsonl` | L'échange complet, consultable par recherche | Le hook, automatiquement |
+| Entrée d'index | `.tizi/sessions/<date>-<session>.index.yaml` | Dates, initiatives touchées, tâche, tokens, chemins des trois fichiers ci-dessus | Le hook, automatiquement |
 
 La transcription seule ne suffirait pas : elle contient des affirmations que la suite a corrigées. L'état reste la référence ; les sessions servent à retrouver le pourquoi.
 
@@ -43,6 +44,12 @@ Le plus simple : `node install.mjs --project <dépôt> --target claude|copilot|b
 Le script est identique dans tous les skills ; un seul suffit. La capture se fait à **chaque fin de tour** (`Stop`), avant chaque compactage et en fin de session : la copie est donc toujours à jour, même si la session s'interrompt brutalement. Les secrets probables (jetons, clés) sont masqués dans les copies.
 
 Le script lit les deux formats de transcription : celui de Claude Code et celui de Copilot (`events.jsonl`). Copilot ne transmet pas le chemin de la transcription en fin de session : le script le retrouve alors dans `~/.copilot/session-state/<session>/`. Dans l'agent cloud de Copilot, le bac à sable est effacé à la fin du travail : rien n'y est conservé, ce qui est sans conséquence (une session de l'agent cloud aboutit à une PR, pas à une reprise).
+
+**Un fichier d'index par session.** L'index était un fichier unique, `index.yaml`, réécrit à chaque
+tour. Versionné, il produisait un conflit Git dès que deux personnes travaillaient le même jour — sur
+un fichier que personne ne modifie à la main. Chaque session écrit donc désormais sa seule entrée,
+dans son propre fichier ; les scripts lisent l'ensemble du dossier. Un `index.yaml` historique reste
+lu s'il existe, et n'est plus jamais réécrit : rien à migrer.
 
 **Données sensibles.** Les transcriptions contiennent ce qui a été dit en séance, y compris des notes d'entretien. Décidez en équipe de ce qui est versionné. Par défaut, ajoutez `.tizi/sessions/*.jsonl` au `.gitignore` et versionnez les extraits et les condensés ; versionnez aussi les transcriptions si la reprise doit pouvoir se faire depuis une autre machine ou par une autre personne.
 

@@ -92,3 +92,35 @@ test('revue de code : vérification adversariale, confiance retirée, revue pér
   writeFileSync(join(repo, 'src/completude/index.js'), readFileSync(join(repo, 'src/completude/index.js'), 'utf8') + '// modif\n');
   assert.match(merge().err, /périmée/);
 });
+
+// L'index des sessions était un fichier unique, versionné, réécrit à chaque tour par chaque
+// développeur : deux personnes travaillant le même jour obtenaient un conflit Git sur un fichier que
+// personne ne modifie à la main. Un fichier par session : il n'y a plus rien à fusionner.
+test('index des sessions : un fichier par session, aucun écrivain partagé', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'tizi-idx-'));
+  const cap = (id, at) => {
+    const t = join(dir, `${id}.jsonl`);
+    writeFileSync(t, `${JSON.stringify({ type: 'user', message: { content: 'On reprend plan/demo.' }, timestamp: at })}\n`);
+    return node(script('brd-builder', 'session-capture.mjs'), [], { cwd: dir, input: JSON.stringify({ cwd: dir, session_id: id, transcript_path: t, hook_event_name: 'Stop' }) });
+  };
+
+  // Un index historique en un seul fichier reste lu, mais plus jamais réécrit.
+  mkdirSync(join(dir, '.tizi/sessions'), { recursive: true });
+  const legacy = join(dir, '.tizi/sessions/index.yaml');
+  writeFileSync(legacy, 'sessions:\n  - session: ancienne\n    ended: "2026-01-01T00:00:00Z"\n    initiatives: [plan/demo]\n');
+  const avant = readFileSync(legacy, 'utf8');
+
+  assert.equal(cap('aaaa1111', '2026-10-30T09:00:00.000Z').code, 0);
+  assert.equal(cap('bbbb2222', '2026-10-30T10:00:00.000Z').code, 0);
+
+  const propres = readdirSync(join(dir, '.tizi/sessions')).filter(f => f.endsWith('.index.yaml'));
+  assert.equal(propres.length, 2, 'une entrée d\'index par session');
+  assert.equal(readFileSync(legacy, 'utf8'), avant, 'l\'index historique ne doit plus être réécrit');
+
+  // Les lecteurs voient l'ensemble : l'historique et les deux nouvelles.
+  const r = node(script('brd-builder', 'status.mjs'), ['plan/demo/state.yaml'], { cwd: dir });
+  assert.ok(r.code !== null);
+  const vues = propres.map(f => readFileSync(join(dir, '.tizi/sessions', f), 'utf8'));
+  assert.ok(vues.every(v => /^session: /m.test(v)), 'chaque fichier porte une seule session');
+  assert.equal(new Set(vues.map(v => v.match(/^session: (.*)$/m)[1])).size, 2, 'deux sessions distinctes');
+});

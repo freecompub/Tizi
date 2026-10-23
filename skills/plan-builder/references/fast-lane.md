@@ -26,7 +26,7 @@ Un défaut trié (`defect.mjs`, classement `defaut`) se corrige par une story en
 - origine `{ type: defaut, ref: DEF-xxx }` ;
 - rattachée à l'épopée de l'exigence que le défaut contredit (`attach_to: ACT-xx`), pour être regroupée et exportée avec elle (sinon S78) ;
 - un exemple de reproduction : étant donné, quand, **alors attendu** — l'attendu recopié de l'exigence ;
-- le lien enregistré dans le registre : `defect.mjs <initiative> --corrige-par DEF-xxx US-yyy`.
+- le lien enregistré dans le registre : `node scripts/defect.mjs <initiative> --corrige-par DEF-xxx US-yyy` (le script est aussi dans ce skill : la voie rapide n'exige pas que `test-builder` soit installé).
 
 L'implémentation commence par le test de régression, étiqueté `@DEF-xxx` et avec l'identifiant de l'exigence, vu en échec. Le défaut est résolu quand ce test passe sur la version candidate ; personne ne le déclare résolu.
 

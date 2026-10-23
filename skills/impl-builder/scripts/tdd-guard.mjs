@@ -56,9 +56,13 @@ function verdict(path) {
       + 'Si ce changement ne passe pas par une tâche (chemin « hors Tizi », correctif d\'urgence), ouvre une dérogation tracée : '
       + 'scripts/derogation.mjs --par "<nom>" --raison "<raison>".');
   }
+  // Un état d'implémentation disparu n'est pas une compréhension non validée : le dire tel quel.
+  if (!state) return no(`l'état d'implémentation est introuvable (${cur.state}) alors que ${cur.task} est en cours. Rétablis-le, ou reprends une tâche avec scripts/start-task.mjs.`);
+  if (!task) return no(`${cur.task} ne figure pas dans ${cur.state} : état incohérent. Reprends une tâche avec scripts/start-task.mjs.`);
   if (!task?.understanding?.approved_by) return no(`la compréhension de ${cur.task} n'est pas validée. Reformule la tâche, pose tes questions, et fais valider avant d'écrire du code ou des tests.`);
   if (task.understanding.approved_digest && task.understanding.approved_digest !== understandingDigest(task.understanding)) return no(`la compréhension de ${cur.task} a été modifiée après sa validation. Fais valider la nouvelle version (approve-understanding.mjs) avant d'écrire.`);
-  if (['bloquee', 'en_revue', 'fusionnee'].includes(task.status)) return no(`${cur.task} est ${task.status} : aucune écriture.`);
+  if (task.status === 'fusionnee') return no(`${cur.task} est déjà fusionnée : son travail est terminé. Prends la tâche suivante avec scripts/start-task.mjs (record-pr.mjs --fusionnee libère la tâche en cours).`);
+  if (['bloquee', 'en_revue'].includes(task.status)) return no(`${cur.task} est ${task.status} : aucune écriture.`);
   if (isTest) return '';
   if (isContract) return cur.contracts_allowed ? '' : no(`${cur.task} ne cite aucune opération de contrat. Modifier un contrat exige une décision de conception : arrête-toi et pose la question.`);
   if (!matchesAny(path, cur.allowed_paths ?? [])) return no(`hors du périmètre de ${cur.task} (${(cur.allowed_paths ?? []).join(', ') || 'aucun chemin'}). Si ce fichier doit changer, c'est une question pour le plan ou la conception.`);
