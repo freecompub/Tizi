@@ -3,7 +3,7 @@
 // l'attente, les allers-retours et les blocages. Tout est calculé à partir de ce qui est déjà enregistré :
 //   - le journal horodaté de chaque tâche (impl/<slug>/state.yaml, écrit par les scripts d'impl-builder) ;
 //   - le registre des blocages (.tizi/blocages/<slug>.yaml, block.mjs) ;
-//   - l'index des sessions (.tizi/sessions/index.yaml : tâches et tokens consommés).
+//   - l'index des sessions (.tizi/sessions/*.index.yaml : tâches et tokens consommés).
 // Usage : node measure.mjs <plan/<slug>/state.yaml> [--impl impl/<slug>/state.yaml] [--release REL-x]
 import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
