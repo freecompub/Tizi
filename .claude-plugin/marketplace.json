@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "tizi",
+  "description": "Tizi — un SDLC agentique, du besoin à la preuve. Les cols vérifient, les agents portent, les humains décident du passage.",
+  "owner": {
+    "name": "Samir Alili",
+    "url": "https://github.com/freecompub/Tizi"
+  },
+  "plugins": [
+    {
+      "name": "tizi",
+      "source": "./",
+      "description": "Les sept skills du SDLC et leurs dix points d'entrée : BRD, PRD, conception, planification, application du backlog, implémentation sous garde-fou TDD, vérification de release avec preuves."
+    }
+  ]
+}

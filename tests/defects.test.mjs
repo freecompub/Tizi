@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { sandbox, node, script } from './helpers.mjs';
+import { sandbox, node, script, ROOT } from './helpers.mjs';
 import { checkState } from '../skills/brd-builder/scripts/lib/rules.mjs';
 import yaml from '../skills/brd-builder/scripts/lib/vendor/js-yaml.mjs';
 
@@ -64,4 +64,39 @@ test('voie rapide : sans épopée signalée (S78), rattachée à l\'épopée de 
   const sp = join(repo, 'plan/demo/state.yaml'); const s = yaml.load(readFileSync(sp, 'utf8'));
   s.stories.find(x => x.id === 'US-003').attach_to = 'ACT-01'; writeFileSync(sp, yaml.dump(s));
   assert.match(gate(repo).md, /### ACT-01 Transmettre[\s\S]*US-003/);
+});
+
+// Le point d'étape ne connaissait que 9 des 10 points d'entrée : tizi-bug n'était jamais proposé, et
+// les signalements à trier n'apparaissaient nulle part — seul le hook de début de session les
+// mentionnait. Or ils ferment la porte de release tant qu'ils ne sont pas triés.
+test('point d\'étape : un signalement à trier propose tizi-bug et se voit dans les notes', () => {
+  const repo = join(sandbox(), 'repo');
+  const etape = () => JSON.parse(node(script('test-builder', 'next-step.mjs'), ['.', '--json'], { cwd: repo }).out).find(x => x.slug === 'demo');
+
+  const avant = etape();
+  assert.notEqual(avant.next.entry, 'tizi-bug', 'sans signalement, tizi-bug n\'a rien à faire là');
+  assert.ok(!avant.notes.some(n => /signalement/.test(n)));
+
+  assert.equal(node(script('test-builder', 'defect.mjs'), ['demo', '--signaler', '--titre', 'Dossier incomplet transmis',
+    '--observe', 'le dossier part sans la pièce manquante', '--version', '1.0.0-rc1', '--par', 'Chloé'], { cwd: repo }).code, 0);
+
+  const apres = etape();
+  assert.equal(apres.next.entry, 'tizi-bug', 'un signalement à trier passe devant');
+  assert.match(apres.next.why, /1 signalement\(s\) à trier \(DEF-001\)/);
+  assert.match(apres.next.why, /ferment la porte de release/);
+  assert.ok(apres.notes.some(n => /1 signalement\(s\) à trier : tizi-bug/.test(n)), 'et il est dit dans les points à noter');
+
+  // Trié, il ne monopolise plus l'étape suivante.
+  assert.equal(node(script('test-builder', 'defect.mjs'), ['demo', '--trier', 'DEF-001', '--classement', 'non_reproductible'], { cwd: repo }).code, 0);
+  assert.notEqual(etape().next.entry, 'tizi-bug');
+});
+
+// Les dix points d'entrée doivent être atteignables : un point d'entrée que rien ne propose jamais est
+// un point d'entrée que personne ne trouve.
+test('point d\'étape : tous les points d\'entrée du SDLC sont joignables', () => {
+  const source = yaml.load(readFileSync(join(ROOT, 'entrypoints/entrypoints.yaml'), 'utf8')).entrypoints.map(e => e.name);
+  const code = readFileSync(join(ROOT, 'skills/brd-builder/scripts/next-step.mjs'), 'utf8');
+  const cites = source.filter(n => n !== 'tizi' && new RegExp(`'${n}'`).test(code));
+  const manquants = source.filter(n => n !== 'tizi' && !cites.includes(n));
+  assert.deepEqual(manquants, [], `points d'entrée jamais proposés par next-step.mjs : ${manquants.join(', ')}`);
 });

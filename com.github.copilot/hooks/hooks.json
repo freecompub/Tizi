@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "hooks": {
+    "PreToolUse": [
+      {
+        "type": "command",
+        "command": "node \"${PLUGIN_ROOT}/skills/impl-builder/scripts/tdd-guard.mjs\"",
+        "timeoutSec": 30
+      }
+    ],
+    "Stop": [
+      {
+        "type": "command",
+        "command": "node \"${PLUGIN_ROOT}/skills/backlog-executor/scripts/session-capture.mjs\"",
+        "timeoutSec": 30
+      }
+    ],
+    "PreCompact": [
+      {
+        "type": "command",
+        "command": "node \"${PLUGIN_ROOT}/skills/backlog-executor/scripts/session-capture.mjs\"",
+        "timeoutSec": 30
+      }
+    ],
+    "SessionEnd": [
+      {
+        "type": "command",
+        "command": "node \"${PLUGIN_ROOT}/skills/backlog-executor/scripts/session-capture.mjs\"",
+        "timeoutSec": 30
+      }
+    ],
+    "SessionStart": [
+      {
+        "type": "command",
+        "command": "node \"${PLUGIN_ROOT}/skills/backlog-executor/scripts/session-start.mjs\"",
+        "timeoutSec": 30
+      }
+    ]
+  }
+}

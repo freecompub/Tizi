@@ -199,15 +199,67 @@ Branche `audit/constat-5-signature-constitution`. Suite : **134 sur 134**.
     `--generer-cle` **refuse** d'écrire la clé privée dans le dépôt : versionnée, elle ne protégerait
     plus rien. Sept cas sont testés, dont la resignature par une autre clé, qui ne vaut rien.
 
+## Quatrième série : les deux derniers manques de forme
+
+Branche `audit/next-step-bug-et-plugin`. Suite : **150 sur 150**.
+
+19. **Les dix points d'entrée sont joignables** (nº 8 du 22 octobre, la part qui restait).
+    `next-step.mjs` lit le registre des défauts : un signalement non trié devient un point à noter et
+    fait proposer `tizi-bug`, en passant devant la sprint review — trier ferme la porte de release et
+    prend quelques minutes, là où une revue est une réunion à organiser. Un second test vérifie
+    qu'aucun point d'entrée n'est injoignable, pour que le manque ne revienne pas.
+
+20. **L'installation partielle est testée** (nº 15). Sept cas, un par skill : `--skills <un seul>`
+    pose bien ce skill seul, ne pose aucun point d'entrée dont le skill manque, pose toujours le point
+    d'étape — et surtout, **tout script cité par une commande posée existe**. C'est l'invariant que le
+    repli de `{scripts}` sur `brd-builder`, sinon sur le premier skill installé, suppose sans le dire.
+
+## Le dépôt est aussi un marketplace, pour les deux outils
+
+Le dépôt porte `.claude-plugin/marketplace.json`, et sa racine est la racine du plugin `tizi`.
+Le point qui rend la chose possible : **Claude Code et Copilot CLI acceptent tous deux**
+`.claude-plugin/marketplace.json` et `.claude-plugin/plugin.json`. Un seul manifeste sert les deux.
+
+```
+claude  plugin marketplace add freecompub/Tizi  &&  claude  plugin install tizi@tizi
+copilot plugin marketplace add freecompub/Tizi  &&  copilot plugin install tizi@tizi
+```
+
+Ce qui est partagé l'est vraiment : `skills/` est le gros du contenu, et les deux outils le scannent au
+même endroit. L'espace de noms `com.github.copilot/` (format Agent Plugins 1.0) ne porte que ce qui
+diffère réellement — la forme d'un point d'entrée (une commande côté Claude Code, un agent côté
+Copilot) et la variable qui donne la racine du plugin (`${CLAUDE_PLUGIN_ROOT}` contre `${PLUGIN_ROOT}`).
+
+Quatre choix, vérifiés avec l'outil plutôt que déduits de la documentation :
+
+- **la racine du dépôt est la racine du plugin**, parce que `skills/` y est déjà à l'emplacement scanné
+  par défaut. Un plugin dans un sous-dossier aurait exigé de recopier les 318 fichiers de skills, ou de
+  sortir de la racine du plugin — ce que la validation refuse ;
+- **les artefacts sont générés, pas écrits à la main** : `commands/`, `agents/`, `hooks/hooks.json`,
+  `com.github.copilot/` et `.claude-plugin/plugin.json` viennent de
+  `node install.mjs --project . --target plugin`, donc de la même source unique que les deux autres
+  cibles. Ils sont commités pour qu'un clone suffise, et un test vérifie qu'ils n'ont pas dérivé ;
+- **le manifeste ne déclare aucun composant.** Déclarer `commands`, `agents` ou `hooks` remplace le
+  scan par défaut, et une liste de fichiers sous la clé `agents` n'a **pas** chargé les sous-agents :
+  `claude plugin details tizi` affichait « Agents (0) ». Sans la clé, « Agents (12) ». Moins le
+  manifeste déclare, moins il peut mentir ;
+- **le `$schema` est celui d'Agent Plugins 1.1.0**, le seul que Copilot accepte pour ce format — et
+  Claude Code ignore le champ au chargement, ce qui a été revérifié après le changement.
+
+**Ce qui est vérifié, et ce qui ne l'est pas.** Côté Claude Code, de bout en bout :
+`claude plugin validate . --strict` passe, et une installation réelle charge 17 skills (7 skills + 10
+points d'entrée), 12 agents et 5 hooks ; l'installation d'essai a été retirée. Côté Copilot, le CLI
+n'est pas disponible sur cette machine : l'arborescence suit la documentation Agent Plugins 1.0 et est
+vérifiée par des tests de structure, mais **aucune installation réelle ne l'a confirmée**. C'est le
+seul endroit de cet audit où je livre sur la documentation plutôt que sur une exécution.
+
 ## Ce qui reste ouvert
 
 Par ordre de ce que je corrigerais ensuite :
 
-- **Le nº 8 du 22 octobre, en partie** : le hook de début de session signale les signalements à trier,
-  mais `next-step.mjs` ne connaît toujours que 9 points d'entrée sur 10.
 - **Faire passer Tizi par Tizi** (nº 12) : ce serait le premier cas réel, et cela réglerait l'audit de
-  CI de son propre dépôt.
+  CI de son propre dépôt. C'est ce qui reste de plus important.
 - **Commiter un résultat d'eval**, même mauvais, même sur 3 cas. Aujourd'hui le seul argument en
-  faveur de la méthode est sa cohérence interne.
-- **L'installation partielle** (nº 15) : `--skills <un seul>` n'est testée par aucun cas.
+  faveur de la méthode est sa cohérence interne — et cet audit a montré que la cohérence interne,
+  seule, laissait douze tests en échec en CI sans que personne le voie.
 - **Les 23 règles jamais exercées**, et le reporter JUnit de Node 18 à vérifier (nº 16).

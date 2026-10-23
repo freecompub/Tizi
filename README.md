@@ -21,11 +21,58 @@ Point de départ : `/tizi` dans Claude Code, ou l'agent `tizi` dans Copilot.
 
 ## documentation/
 
-Le document de référence « Tizi — un SDLC agentique, du recueil du besoin au déploiement », exporté depuis le document vivant ; il porte sa propre date en en-tête :
-- en Markdown, modifiable ;
-- en PDF (A4, 46 pages), pour la lecture.
+Le document de référence « Tizi — un SDLC agentique, du recueil du besoin au déploiement », en Markdown ; il porte sa propre date en en-tête. Il contient le sommaire, le nom et sa philosophie, les dix étapes, la construction des étapes 1 à 6, l'index des abréviations et identifiants, et les sources.
 
-Il contient le sommaire, le nom et sa philosophie, les dix étapes, la construction des étapes 1 à 6, l'index des abréviations et identifiants, et les sources.
+> **Le PDF a été retiré.** Il était exporté à la main depuis le document vivant, et le Markdown vient d'être corrigé sur dix passages que l'audit du 23 octobre a rendus faux (scellement du document figé, signature des contrôles de la constitution, dérogation au garde-fou TDD, portée réelle de la non-invocabilité des sous-agents, index des sessions, marketplace de plugins). Livrer un PDF qui contredit le Markdown serait pire que ne pas en livrer : à remettre après réexport depuis le document vivant, une fois les mêmes corrections portées à la source.
+
+## Installer comme plugin
+
+Le dépôt est aussi un **marketplace**, et sa racine est la racine du plugin `tizi`. Les deux outils
+lisent le même manifeste — `.claude-plugin/marketplace.json` et `.claude-plugin/plugin.json` sont des
+emplacements que Claude Code et Copilot CLI acceptent tous deux :
+
+```
+claude plugin marketplace add freecompub/Tizi     # Claude Code
+claude plugin install tizi@tizi
+
+copilot plugin marketplace add freecompub/Tizi    # GitHub Copilot CLI
+copilot plugin install tizi@tizi
+```
+
+Les sept skills, les dix points d'entrée, les douze sous-agents et les hooks arrivent d'un coup, et
+les mises à jour suivent le dépôt.
+
+| | Partagé | Claude Code | GitHub Copilot |
+|---|---|---|---|
+| Skills | `skills/` | — | — |
+| Points d'entrée | — | `commands/` (`/tizi:tizi-brd`) | `com.github.copilot/agents/` (agent `tizi-brd`) |
+| Sous-agents | — | `agents/` | `com.github.copilot/agents/` |
+| Hooks | — | `hooks/hooks.json`, chemins en `${CLAUDE_PLUGIN_ROOT}` | `com.github.copilot/hooks/hooks.json`, chemins en `${PLUGIN_ROOT}` |
+
+Les skills sont le gros du contenu et ils sont **communs** : l'espace de noms `com.github.copilot/`
+(format Agent Plugins 1.0) ne porte que ce qui diffère réellement entre les deux outils, c'est-à-dire
+la forme des points d'entrée et la variable qui donne la racine du plugin.
+
+Ces artefacts sont générés depuis la **même source unique** que les deux autres cibles
+(`entrypoints/entrypoints.yaml` et `skills/`), par `node install.mjs --project . --target plugin`, et
+commités pour qu'un clone suffise. Ils ne s'éditent pas à la main : un test les régénère et les compare
+octet par octet. `claude plugin validate . --strict` reste le contrôle qui fait foi.
+
+**Deux choses à savoir avant d'installer.** La racine du dépôt est la racine du plugin, pour que les
+skills ne soient pas recopiés — mais tout le dépôt part donc avec, soit **7 Mo installés dont un peu
+plus de la moitié ne sert jamais** au plugin (le PDF de la documentation, l'exemple, les évaluations,
+les tests). Pour ne prendre que l'utile :
+
+```
+claude plugin marketplace add freecompub/Tizi --sparse .claude-plugin skills commands agents hooks com.github.copilot
+```
+
+Et le manifeste porte un `version`, reprise de `package.json` : Claude Code **épingle** les utilisateurs
+sur cette version jusqu'à ce qu'elle change. Toute release du plugin doit donc incrémenter
+`package.json`, sans quoi les gens déjà installés ne recevront rien.
+
+Pour poser les skills dans un dépôt sans passer par un marketplace, l'installateur ci-dessous reste la
+voie — et c'est aussi lui qui pose les workflows de CI (`--ci`).
 
 ## Installer dans un dépôt
 
@@ -41,7 +88,7 @@ L'installateur pose aussi les **points d'entrée**, générés depuis une source
 
 | Point d'entrée | Claude Code | GitHub Copilot | Rôle |
 |---|---|---|---|
-| `tizi` | `/tizi` | agent `tizi` | Où en est chaque initiative, et quelle étape suivante (calculé par `next-step.mjs`) ; ne modifie rien |
+| `tizi` | `/tizi` | agent `tizi` | Où en est chaque initiative, et quelle étape suivante (calculé par `next-step.mjs`) : il propose les dix autres points d'entrée, signalements à trier compris ; ne modifie rien |
 | `tizi-brd` | `/tizi-brd` | agent `tizi-brd` | Étape 1 : opportunité et BRD |
 | `tizi-prd` | `/tizi-prd` | agent `tizi-prd` | Étape 2 : PRD |
 | `tizi-sad` | `/tizi-sad` | agent `tizi-sad` | Étape 3 : conception |
@@ -61,6 +108,8 @@ L'installateur pose aussi les **points d'entrée**, générés depuis une source
 **Questions, relectures, analyse croisée.** `ask-five.mjs` présente les cinq zones d'ombre qui comptent le plus ; `review-checklist.mjs` génère des listes de contrôle de relecture par domaine, cochées par un relecteur nommé et jamais par l'agent (S80) ; `cross-context.mjs` et `cross-merge.mjs` encadrent une analyse croisée du sens, dont les constats deviennent des questions.
 
 **Estimer quand les agents codent.** Le temps de codage n'est plus la ressource rare ; l'attention humaine, l'attente, les allers-retours et les blocages le sont. La taille d'une tâche se lit comme un risque, calculé depuis ses données ; chaque tâche porte une attention humaine prévue, comparée à la capacité de l'itération. `measure.mjs` mesure le réel à partir du journal horodaté des tâches, du registre des blocages (`block.mjs`, causes typées) et des sessions (tokens), et propose la calibration ; `forecast.mjs` prévoit la fin à partir du débit réel.
+
+**Rien ne s'écrit ni ne s'exécute par défaut.** Les scripts qui écrivent (`adopt.mjs`, `sync-agent-instructions.mjs`, `constitution.mjs`, `ci-audit.mjs`) exigent un dépôt explicite : sans argument, ils affichent leur usage au lieu d'agir sur le dossier courant. `ci-run-suites.mjs` exige `--lancer` ou `--sans-lancer` : exécuter des commandes de shell venues d'un fichier du dépôt ne peut pas être un comportement par défaut. Et le garde-fou TDD refuse toute écriture hors d'une tâche, sauf **dérogation** nommée, motivée et datée (`derogation.mjs`), tracée dans `.tizi/derogations.jsonl`.
 
 **Instructions du dépôt.** `sync-agent-instructions.mjs` écrit dans `AGENTS.md` un bloc délimité, tiré des états de Tizi : règles des ADR, dossiers de chaque composant, contrats, données sensibles, commandes de test. `CLAUDE.md` l'importe. Ce sont les consignes que lisent les agents qui ne passent pas par Tizi. Le reste du fichier n'est jamais touché, et `--check` signale un bloc périmé ou un dossier disparu.
 
@@ -93,13 +142,13 @@ Les sept skills, au format ouvert Agent Skills (validés par `skills-ref`), util
 | `impl-builder` | 5 | Implémentation tâche par tâche : compréhension validée, BDD puis TDD sous contrôle d'un hook, porte de PR. Hors tâche, le hook refuse ; le chemin « hors Tizi » et les correctifs d'urgence passent par une **dérogation** nommée, motivée et datée (`derogation.mjs`), tracée dans `.tizi/derogations.jsonl` |
 | `test-builder` | 6 | Vérification de release : matrice de couverture des exigences, exploratoire, porte de release, preuves |
 
-Chaque skill sait reprendre une session interrompue (`references/sessions.md`) : un hook conserve la transcription et en tire un extrait, `status.mjs` donne le point d'étape, `session-search.mjs` retrouve un détail.
+Chaque skill sait reprendre une session interrompue (`references/sessions.md`) : un hook conserve la transcription et en tire un extrait, `status.mjs` donne le point d'étape, `session-search.mjs` retrouve un détail. Chaque session écrit **sa seule entrée d'index** dans `.tizi/sessions/<date>-<id>.index.yaml` : un fichier par session, donc aucun conflit Git entre développeurs. Le hook de début de session rappelle la dernière session sans condensé.
 
 Fichiers communs, identiques d'un skill à l'autre, dont `scripts/lib/agent-io.mjs` qui adapte les hooks à Claude Code, à Copilot et à VS Code : `scripts/lib/common.mjs`, `scripts/lib/rules.mjs` (catalogue de vérification), `scripts/lib/sessions.mjs`, `scripts/lib/checklists.mjs`, `scripts/session-capture.mjs`, `scripts/session-search.mjs`, `scripts/session-start.mjs`, `scripts/status.mjs`, `scripts/next-step.mjs`, `scripts/choose-path.mjs`, `scripts/sync-agent-instructions.mjs`, `scripts/adopt.mjs`, `scripts/block.mjs`, `scripts/due-reviews.mjs`, `scripts/constitution.mjs`, `scripts/ask-five.mjs`, `scripts/review-checklist.mjs`, `scripts/cross-context.mjs`, `scripts/cross-merge.mjs`. Trois autres sont communs aux seuls skills qui produisent un document — `brd-builder`, `prd-builder`, `sad-builder`, `plan-builder` : `scripts/lint.mjs`, `scripts/freeze-version.mjs`, `scripts/verify-handoff.mjs` (ce dernier également dans `impl-builder` et `test-builder`). `scripts/lib/testing.mjs` sert aux étapes 5 et 6. Toute modification de l'un d'eux se recopie dans tous les skills qui l'ont.
 
 ## tests/
 
-`npm test` (ou `node --test tests/*.test.mjs`) rejoue toute la chaîne sur une copie du cas d'exemple, sans dépendance : conformité des skills à la spécification Agent Skills, identité des fichiers communs, vérification et rendu des quatre documents, intégrité des handoffs, verrous de l'exécuteur, garde-fou TDD avec les charges utiles de Claude Code, Copilot et VS Code, capture des sessions, installation, revue de code, portes de PR et de release, réalisé et prouvé. Les constats de la vérification sont comparés à des références figées (`tests/golden/`) : `npm run test:update-golden` après un changement voulu. À lancer après toute modification d'un fichier commun.
+`npm test` (ou `node --test tests/*.test.mjs`) rejoue toute la chaîne sur une copie du cas d'exemple, sans dépendance : conformité des skills à la spécification Agent Skills, identité des fichiers communs — et, par défaut, de **tout** fichier ou sous-agent homonyme entre deux skills —, vérification et rendu des quatre documents, intégrité des handoffs (état **et** document scellés), verrous de l'exécuteur, garde-fou TDD avec les charges utiles de Claude Code, Copilot et VS Code et sa dérogation, signature des contrôles de la constitution, capture des sessions, installation complète **et partielle** (`--skills`, un cas par skill), manifestes du plugin et non-dérive de ses artefacts, revue de code, portes de PR et de release, réalisé et prouvé. Les données de test du dépôt sont vérifiées versionnées : ignorées, elles n'existeraient que chez leur auteur. Les constats de la vérification sont comparés à des références figées (`tests/golden/`) : `npm run test:update-golden` après un changement voulu. À lancer après toute modification d'un fichier commun.
 
 ## evals/
 

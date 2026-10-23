@@ -5,6 +5,7 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { arr, loadState, table } from './lib/common.mjs';
+import yaml from './lib/vendor/js-yaml.mjs';
 import { sessionsFor } from './lib/sessions.mjs';
 import { loadPath } from './choose-path.mjs';
 import { dueReviews } from './due-reviews.mjs';
@@ -24,6 +25,14 @@ if (existsSync(join(root, '.tizi', 'chemins'))) for (const f of readdirSync(join
 const load = (doc, slug) => { const p = join(root, doc, slug, 'state.yaml'); return existsSync(p) ? loadState(p) : null; };
 const baseline = s => ['baseline', 'validé', 'approuvé'].includes(s?.governance?.status) || !!s?.governance?.version && s.governance.status !== 'brouillon';
 const hasHandoff = (doc, slug) => existsSync(join(root, doc, slug, 'handoff')) && readdirSync(join(root, doc, slug, 'handoff')).length > 0;
+// Signalements pas encore triés : ils bloquent la release tant qu'on ne sait pas si chacun est un
+// défaut, un changement, une question, un doublon ou un non reproductible. Le point d'étape les
+// ignorait, et ne proposait donc jamais tizi-bug — seul le hook de début de session les mentionnait.
+const toTriage = slug => {
+  const p = join(root, '.tizi', 'defauts', `${slug}.yaml`);
+  if (!existsSync(p)) return [];
+  try { return arr(yaml.load(readFileSync(p, 'utf8'))?.defauts).filter(d => d.status === 'à_trier'); } catch { return []; }
+};
 
 function assess(slug) {
   const st = Object.fromEntries(STEPS.map(s => [s.doc, load(s.doc, slug)]));
@@ -57,7 +66,11 @@ function assess(slug) {
       const blocked = tasks.filter(t => t.status === 'bloquee');
       if (blocked.length) reasons.push(`${blocked.length} tâche(s) bloquée(s) : ${blocked.map(t => t.id).join(', ')} — question pour le plan`);
       const due = dueReviews(root).find(d => d.initiative === slug);
-      if (due) next = go('tizi-sprint-review', `${due.iteration} finie${due.days_since_end != null ? ` depuis ${due.days_since_end} jour(s)` : ''}, sprint review non faite`);
+      // Trier passe avant : un signalement non trié ferme la porte de release, et le tri prend
+      // quelques minutes — là où une sprint review est une réunion à organiser.
+      const triage = toTriage(slug);
+      if (triage.length) next = go('tizi-bug', `${triage.length} signalement(s) à trier (${triage.slice(0, 3).map(d => d.id).join(', ')}${triage.length > 3 ? '…' : ''}) : ils ferment la porte de release`);
+      else if (due) next = go('tizi-sprint-review', `${due.iteration} finie${due.days_since_end != null ? ` depuis ${due.days_since_end} jour(s)` : ''}, sprint review non faite`);
       else if (st.qa && arr(st.qa.approvals).some(a => a.decision === 'approuvé')) next = go('tizi-plan', 'release approuvée : mesurer les outcomes et préparer la suite');
       else if (st.qa) next = go('tizi-test', 'vérification de la release en cours');
       else if (open.length || !tasks.length) next = go('tizi-impl', open.length ? `${open.length} tâche(s) en cours ou à faire` : 'aucune tâche prise : prendre la première tâche prête');
@@ -79,6 +92,8 @@ function assess(slug) {
   }
   const zo = Object.values(st).filter(Boolean).flatMap(s => arr(s.shadow_zones)).filter(z => z.status === 'ouverte' && z.blocking);
   if (zo.length) reasons.push(`${zo.length} zone(s) d'ombre bloquante(s)`);
+  const aTrier = toTriage(slug);
+  if (aTrier.length) reasons.push(`${aTrier.length} signalement(s) à trier : tizi-bug`);
   const sess = STEPS.flatMap(s => sessionsFor(`${s.doc}/${slug}`, root)).sort((a, b) => String(a.ended).localeCompare(String(b.ended))).at(-1);
   if (sess && !sess.condensed) reasons.push('dernière session sans condensé : le rédiger avant de reprendre');
   const skipped = s => (route ? !route.steps.includes(s.doc) : STEPS.findIndex(x => x.doc === s.doc) < STEPS.findIndex(x => x.doc === ([...STEPS].reverse().find(y => st[y.doc])?.doc)));
