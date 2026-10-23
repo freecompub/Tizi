@@ -3,11 +3,13 @@ name: Tests
 # Les pull requests sont le moment qui compte : rien ne doit entrer dans main sans être passé ici.
 # `push` est restreint à main : sur une branche de travail, c'est la pull request qui fait foi, et on
 # évite deux passages identiques pour le même commit.
+# `pull_request` n'est volontairement filtré sur aucune branche de destination : une PR empilée sur une
+# autre PR doit être vérifiée comme les autres. Restreindre à `branches: [main]` la laissait sans
+# aucune vérification, ce qui est pire que le double passage qu'on cherchait à éviter.
 on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
 
 # Un nouveau commit sur une PR annule le passage précédent : seul le dernier état compte.
 concurrency:

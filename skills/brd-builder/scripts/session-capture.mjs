@@ -7,12 +7,12 @@
 // Sorties, dans <cwd>/.tizi/sessions/ :
 //   <date>-<session>.jsonl        copie de la transcription, secrets probables masqués (archive consultable)
 //   <date>-<session>.extrait.md   extrait déterministe : vos messages mot pour mot, questions, fichiers, identifiants
-//   index.yaml                    sessions et initiatives touchées
+//   <date>-<id>.index.yaml        entrée d'index de cette session (un fichier par session : pas de conflit Git)
 // Chaque passage remplace les fichiers de la même session, par écriture atomique : rien n'est perdu au compactage, et deux
 // déclenchements simultanés (hook déclaré pour deux outils) ne laissent jamais un fichier à moitié écrit.
 import { readFileSync, writeFileSync, existsSync, mkdirSync, renameSync } from 'node:fs';
 import { join } from 'node:path';
-import { readTranscript, initiativesIn, buildExtract, maskSecrets, loadIndex, saveIndex, SESSIONS_DIR, usageOf } from './lib/sessions.mjs';
+import { readTranscript, initiativesIn, buildExtract, maskSecrets, loadIndex, saveSessionEntry, SESSIONS_DIR, usageOf } from './lib/sessions.mjs';
 import { normalizeHookInput, copilotTranscript } from './lib/agent-io.mjs';
 
 const atomicWrite = (path, content) => { const tmp = `${path}.${process.pid}.tmp`; writeFileSync(tmp, content); renameSync(tmp, path); };
@@ -34,8 +34,8 @@ try {
   mkdirSync(join(cwd, SESSIONS_DIR), { recursive: true });
   atomicWrite(`${base}.jsonl`, maskSecrets(readFileSync(src, 'utf8')));
   atomicWrite(`${base}.extrait.md`, buildExtract(turns, { date, session: sid, initiatives, event: h.event || 'Stop' }));
-  const index = loadIndex(cwd);
-  const entry = index.sessions.find(s => s.session === sid) ?? (index.sessions.push({ session: sid }), index.sessions.at(-1));
+  // On ne relit que notre propre entrée : aucun autre écrivain ne touche ce fichier.
+  const entry = loadIndex(cwd).sessions.find(s => s.session === sid) ?? { session: sid };
   Object.assign(entry, {
     started: first, ended: [...turns].reverse().find(t => t.at)?.at ?? first, initiatives,
     user_messages: turns.filter(t => t.role === 'user').length,
@@ -47,7 +47,7 @@ try {
     tasks: [...new Set([...(entry.tasks ?? []), ...(() => { try { return [JSON.parse(readFileSync(join(cwd, '.impl', 'current.json'), 'utf8')).task]; } catch { return []; } })()].filter(Boolean))],
     tokens: usageOf(src) ?? 'inconnu',
   });
-  saveIndex(index, cwd);
+  saveSessionEntry(entry, cwd);
 } catch (e) {
   process.stderr.write(`[session-capture] capture incomplète : ${e.message}\n`);
 }

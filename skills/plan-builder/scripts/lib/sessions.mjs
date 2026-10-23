@@ -1,12 +1,17 @@
 // Continuité entre sessions : lecture des transcriptions Claude Code, extraits déterministes, index des sessions.
 // Commun à tous les skills du SDLC. Les transcriptions sont des fichiers JSONL (une ligne par événement).
-import { existsSync, readFileSync, writeFileSync, mkdirSync, renameSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, mkdirSync, renameSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import yaml from './vendor/js-yaml.mjs';
 import { isWriteTool, writtenPaths } from './agent-io.mjs';
 
 export const SESSIONS_DIR = '.tizi/sessions';
+// Index historique, en un seul fichier : encore lu, plus jamais écrit. Il était réécrit à chaque tour
+// par chaque développeur, et versionné : deux personnes travaillant le même jour obtenaient un conflit
+// Git sur un fichier que personne ne modifie à la main. L'index est désormais éclaté en un fichier par
+// session (<date>-<id>.index.yaml) : chacun n'écrit que le sien, et il n'y a plus rien à fusionner.
 export const INDEX = `${SESSIONS_DIR}/index.yaml`;
+export const sessionIndexPath = (date, session) => `${SESSIONS_DIR}/${date}-${session}.index.yaml`;
 
 // Dossiers d'initiative reconnus : <document>/<slug>/
 const INITIATIVE_RE = /\b(brd|prd|sad|plan|impl|qa)\/([a-z0-9][a-z0-9-]*)\//g;
@@ -114,16 +119,34 @@ export function buildExtract(turns, meta) {
   return md.join('\n');
 }
 
+// Index complet : l'ancien fichier unique s'il existe encore, plus un fichier par session.
+// En cas de doublon, le fichier par session fait foi (il est le seul encore écrit).
 export function loadIndex(root = '.') {
-  const p = join(root, INDEX);
-  return existsSync(p) ? (yaml.load(readFileSync(p, 'utf8')) ?? { sessions: [] }) : { sessions: [] };
+  const sessions = new Map();
+  const legacy = join(root, INDEX);
+  if (existsSync(legacy)) {
+    for (const e of (yaml.load(readFileSync(legacy, 'utf8')) ?? {}).sessions ?? []) {
+      if (e?.session) sessions.set(e.session, e);
+    }
+  }
+  const dir = join(root, SESSIONS_DIR);
+  if (existsSync(dir)) {
+    for (const f of readdirSync(dir).filter(f => f.endsWith('.index.yaml')).sort()) {
+      try {
+        const e = yaml.load(readFileSync(join(dir, f), 'utf8'));
+        if (e?.session) sessions.set(e.session, e);
+      } catch { /* un index de session illisible n'empêche pas de lire les autres */ }
+    }
+  }
+  return { sessions: [...sessions.values()].sort((a, b) => String(a.ended).localeCompare(String(b.ended))) };
 }
-export function saveIndex(index, root = '.') {
-  const p = join(root, INDEX);
+
+// Écrit la seule entrée de cette session, dans son propre fichier : aucun écrivain concurrent.
+export function saveSessionEntry(entry, root = '.') {
+  const p = join(root, sessionIndexPath(String(entry.started ?? '').slice(0, 10) || 'sans-date', entry.session));
   mkdirSync(dirname(p), { recursive: true });
-  index.sessions.sort((a, b) => String(a.ended).localeCompare(String(b.ended)));
   const tmp = `${p}.${process.pid}.tmp`;
-  writeFileSync(tmp, `# Index des sessions — mis à jour par session-capture.mjs.\n${yaml.dump(index, { lineWidth: 120 })}`);
+  writeFileSync(tmp, `# Index d'une session — écrit par session-capture.mjs. Un fichier par session : rien à fusionner.\n${yaml.dump(entry, { lineWidth: 120 })}`);
   renameSync(tmp, p);
 }
 export const sessionsFor = (initiative, root = '.') => loadIndex(root).sessions.filter(s => (s.initiatives ?? []).includes(initiative));
