@@ -73,11 +73,22 @@ if (cfg.review?.required) {
 }
 // C10 : les principes de la constitution à contrôle automatique passent.
 if (existsSync('.tizi/constitution.yaml')) {
-  const { activePrinciples, loadConstitution } = await import('./constitution.mjs');
-  const autos = activePrinciples(loadConstitution('.')).filter(p => p.check?.type === 'automatique');
+  const { activePrinciples, loadConstitution, mayExecute, EXEC_SANS_SIGNATURE } = await import('./constitution.mjs');
+  const c = loadConstitution('.');
+  const autos = activePrinciples(c).filter(p => p.check?.type === 'automatique');
   if (autos.length) {
-    const failed = autos.filter(p => spawnSync(p.check.command, { shell: true, encoding: 'utf8' }).status !== 0).map(p => p.id);
-    check('C10', 'Principes de la constitution à contrôle automatique respectés', !failed.length, failed.length ? `en échec : ${failed.join(', ')}` : `${autos.length} contrôle(s) au vert`);
+    // Ces commandes viennent d'un fichier du dépôt et sont exécutées ici, y compris en CI sur chaque
+    // pull request. Elles ne tournent donc que si la surface exécutable est signée par une clé de
+    // confiance déclarée HORS du dépôt. Sans cela, la porte ne peut pas affirmer C10 : elle le dit.
+    const g = mayExecute('.', c);
+    if (!g.allowed) {
+      check('C10', 'Principes de la constitution à contrôle automatique respectés', false,
+        `non exécutés — constitution non signée (${g.state}) : ${g.detail}. Signe-la (constitution.mjs --signer), ou accepte le risque hors du dépôt (${EXEC_SANS_SIGNATURE}=1)`);
+    } else {
+      const failed = autos.filter(p => spawnSync(p.check.command, { shell: true, encoding: 'utf8' }).status !== 0).map(p => p.id);
+      check('C10', 'Principes de la constitution à contrôle automatique respectés', !failed.length,
+        `${failed.length ? `en échec : ${failed.join(', ')}` : `${autos.length} contrôle(s) au vert`}${g.forced ? ` — ${g.detail}` : g.detail ? ` (${g.detail})` : ''}`);
+    }
   }
 }
 const ok = checks.every(c => c.ok);

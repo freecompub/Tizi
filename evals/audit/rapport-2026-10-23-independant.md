@@ -14,7 +14,7 @@ constats marqués **corrigé** l'ont été dans la branche `audit/correctifs-202
 | 1 | **Bloquant** | La suite de tests échouait sur **tout clone neuf, donc en CI** : 12 tests en échec, 112 passants sur 124. `exemple/repo/.gitignore` ignorait `reports/` et `.impl/`, qui sont des **données de test** du dépôt Tizi et non l'état local d'un vrai dépôt. Les rapports de CI et le journal TDD de l'exemple n'étaient jamais commités : ils n'existaient que dans l'arbre de travail de leur auteur. Le `.gitignore` racine affirmait l'inverse (« les dossiers `.impl/` et `.tizi/` de `exemple/` restent versionnés »). | `git check-ignore -v exemple/repo/reports/unit.xml` → `exemple/repo/.gitignore:2:reports/` ; `git ls-files exemple/repo/reports` vide ; clone neuf + `npm test` → 12 échecs | **corrigé** |
 | 2 | **Bloquant** | `npm test` échouait dans l'arbre de travail de l'auteur (1 test sur 124), et ne pouvait passer qu'après un clone. `freeze-version.mjs:144` met les versions figées en `0o444` ; git ne porte pas ce mode ; `tests/helpers.mjs` copiait l'exemple avec `cpSync`, qui **préserve** les modes. La consigne « à lancer après toute modification d'un fichier commun » était donc inapplicable là où elle compte. Corollaire : la lecture seule des versions figées ne survit pas à un clone — l'intégrité ne peut reposer que sur les empreintes. | `EACCES … /repo/plan/demo/versions/v1.0/state.yaml` ; `git ls-files -s` : tous les modes à `100644` | **corrigé** |
 | 3 | **Bloquant** | Le test d'adoption exigeait l'existence de `tests/fixtures/depot-existant/web/app/api/`, **dossier vide** que git ne peut pas versionner : il n'existait sur aucune autre machine. La fixture ne contenait que 6 fichiers depuis son premier commit. | `adopt.mjs:49` teste l'existence du dossier ; `git log --name-status -- tests/fixtures/depot-existant/` → 6 fichiers ajoutés, jamais `web/app/` | **corrigé** |
-| 4 | **Bloquant** | Les 8 constats du rapport mécanique du 22 octobre étaient **tous ouverts** : ce rapport est le dernier commit du dépôt, rien n'a été corrigé après. Dont le bloquant nº 1 : dès que `impl/config.yaml` existe, le garde-fou TDD refuse toute écriture hors tâche, ce qui interdit le chemin « hors Tizi » et les correctifs d'urgence que le choix du chemin autorise. | `git log e585d3c..HEAD` vide ; `tdd-guard.mjs:48` | **corrigé** (nº 1, 2, 3, 4, 6, 7, 8 ; seul le nº 5 reste ouvert) |
+| 4 | **Bloquant** | Les 8 constats du rapport mécanique du 22 octobre étaient **tous ouverts** : ce rapport est le dernier commit du dépôt, rien n'a été corrigé après. Dont le bloquant nº 1 : dès que `impl/config.yaml` existe, le garde-fou TDD refuse toute écriture hors tâche, ce qui interdit le chemin « hors Tizi » et les correctifs d'urgence que le choix du chemin autorise. | `git log e585d3c..HEAD` vide ; `tdd-guard.mjs:48` | **corrigé** (les 8) |
 | 5 | **Bloquant** | « Une charge altérée ne passe pas » ne valait que pour l'état machine. Altérer le **document figé** — celui que les relecteurs lisent et que les décideurs approuvent — n'était pas détecté : `verify-handoff` répondait « Handoff intègre ». Seul `state.yaml` était scellé. Sur un projet qui se revendique de l'exigence « dispositif médical », c'est l'artefact dont l'intégrité compte le plus. | altération de `exemple/brd/demo/versions/v1.0/brd.md` → `Handoff intègre` ; altération de `state.yaml` → détectée | **corrigé** |
 | 6 | **Bloquant** | La vérification d'intégrité se désarmait en silence. `verifyHandoff` (`lib/common.mjs`) ne contrôlait la version figée que `if (m && …)` : sans empreinte `source_state`, le contrôle était **sauté sans un mot**. Vider `source_state` puis recalculer le `.sha256` voisin — trois lignes, les deux fichiers étant en clair dans le dépôt — rendait invisible un état figé altéré. | `source_state: ''` + `.sha256` recalculé → `Handoff intègre` malgré l'état altéré | **corrigé** |
 | 7 | À corriger | Des scripts **écrivaient et exécutaient** sur le dossier courant quand on les lançait **sans aucun argument** (défaut `?? '.'`). Lancer chaque script une fois pour voir s'il plantait a créé `AGENTS.md`, `CLAUDE.md`, `.tizi/`, `impl/`, `reports/`, `tizi-preuves/` dans le dépôt, puis exécuté `npx vitest` et `xcodebuild` via `spawnSync(cmd, {shell: true})` à partir du `impl/config.yaml` qu'`adopt.mjs` venait de générer. C'est un piège tendu aux agents : la première chose qu'un agent fait pour comprendre un script, c'est le lancer. | `git status` après le passage ; `tizi-preuves/tizi-ci-manifest.json` : 3 suites, exits 1, 1, 64 | **corrigé** |
@@ -170,17 +170,41 @@ Branche `audit/constat-7-session-start-adopt`. Suite : **135 sur 135**.
     `demo/` et `templates/` sont volontairement absents de la liste, trop ambigus (dans une
     application web, `templates/` est du code de production).
 
+## Correctif du dernier constat de sécurité
+
+Branche `audit/constat-5-signature-constitution`. Suite : **134 sur 134**.
+
+18. **Les contrôles de la constitution ne s'exécutent plus sans signature** (nº 5 du 22 octobre, le
+    dernier). Ces contrôles sont des commandes de shell lues dans `.tizi/constitution.yaml` et lancées
+    par `pr-gate.mjs` et `constitution.mjs --controler`, **localement et en CI sur chaque pull
+    request** : une contribution qui modifiait ce fichier modifiait ce qui s'exécute.
+
+    Une empreinte approuvée — le réflexe du reste de Tizi — n'y suffisait pas : qui modifie le fichier
+    recalcule l'empreinte dans le même commit. Il fallait une signature asymétrique (Ed25519, via
+    `node:crypto`, sans dépendance), et surtout une **ancre de confiance hors du dépôt** : sinon la
+    même contribution remplacerait la clé publique et se signerait elle-même. La clé publique se
+    déclare donc par l'environnement (`TIZI_CONSTITUTION_PUBKEY`), variable du dépôt en CI, profil du
+    développeur en local — une pull request ne peut pas les changer. `install.mjs --ci` passe la
+    variable au workflow de porte de PR.
+
+    Trois décisions de conception :
+    - la signature ne couvre que la **surface exécutable** — identifiant et commande des principes
+      actifs à contrôle automatique, triés. Récrire un énoncé ou ajouter une dérogation ne la casse
+      pas ; ajouter, modifier ou activer une commande, si. On signe le risque, pas la prose ;
+    - **fail closed** : sans signature valide, rien n'est exécuté, et la porte **refuse C10** au lieu
+      de l'affirmer. Un dépôt sans principe à contrôle automatique n'est pas concerné (`rien-a-faire`) ;
+    - l'échappatoire existe (`TIZI_CONSTITUTION_EXEC_SANS_SIGNATURE=1`) mais elle est, elle aussi, hors
+      du dépôt : une pull request ne peut pas se l'accorder.
+
+    `--generer-cle` **refuse** d'écrire la clé privée dans le dépôt : versionnée, elle ne protégerait
+    plus rien. Sept cas sont testés, dont la resignature par une autre clé, qui ne vaut rien.
+
 ## Ce qui reste ouvert
 
 Par ordre de ce que je corrigerais ensuite :
 
-- **Le seul constat restant du rapport mécanique, le nº 5** : `pr-gate.mjs:79` et
-  `constitution.mjs:81` exécutent en shell les commandes de contrôle de la constitution
-  (`spawnSync(…, { shell: true })`), localement et en CI. C'est le dernier vrai trou de sécurité, et
-  c'est une décision de modèle de menace avant d'être un correctif — liste blanche de commandes, bac à
-  sable, ou signature du fichier.
-- **Le nº 8** (`tizi-bug` jamais proposé par le point d'étape) : le hook de début de session le
-  signale, mais `next-step.mjs` ne connaît toujours que 9 points d'entrée sur 10.
+- **Le nº 8 du 22 octobre, en partie** : le hook de début de session signale les signalements à trier,
+  mais `next-step.mjs` ne connaît toujours que 9 points d'entrée sur 10.
 - **Faire passer Tizi par Tizi** (nº 12) : ce serait le premier cas réel, et cela réglerait l'audit de
   CI de son propre dépôt.
 - **Commiter un résultat d'eval**, même mauvais, même sur 3 cas. Aujourd'hui le seul argument en

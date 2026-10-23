@@ -211,6 +211,12 @@ jobs:
         env:
           TITLE: \${{ github.event.pull_request.title }}
           BRANCH: \${{ github.head_ref }}
+          # Clé publique qui autorise l'exécution des contrôles automatiques de la constitution.
+          # Une VARIABLE du dépôt, pas un secret et surtout pas un fichier du dépôt : une pull request
+          # peut modifier .tizi/constitution.yaml, donc les commandes exécutées ici. Elle ne peut pas
+          # modifier les variables du dépôt. Sans cette clé, la porte refuse C10 au lieu de l'affirmer.
+          # À poser dans Settings → Secrets and variables → Actions → Variables.
+          TIZI_CONSTITUTION_PUBKEY: \${{ vars.TIZI_CONSTITUTION_PUBKEY }}
         run: |
           TASK=$(printf '%s %s' "$TITLE" "$BRANCH" | grep -oE 'TK-[0-9]+' | head -1)
           if [ -z "$TASK" ]; then echo "Aucune tâche Tizi citée (TK-xxx) : porte non applicable."; exit 0; fi

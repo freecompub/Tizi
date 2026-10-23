@@ -1,7 +1,8 @@
 // Constitution du produit, cinq questions, listes de contrôle de relecture, analyse croisée du sens.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { createPublicKey } from 'node:crypto';
 import { join } from 'node:path';
 import { sandbox, node, script } from './helpers.mjs';
 import { checkState } from '../skills/brd-builder/scripts/lib/rules.mjs';
@@ -40,9 +41,89 @@ test('constitution dans la chaîne : S79 au BRD et à la conception, fiche de co
   assert.match(readFileSync(join(dir, 'AGENTS.md'), 'utf8'), /### Principes du produit[\s\S]*PC-01/);
   const repo = join(dir, 'repo'); mkdirSync(join(repo, '.tizi'), { recursive: true });
   writeFileSync(join(repo, '.tizi/constitution.yaml'), readFileSync(join(dir, '.tizi/constitution.yaml')));
-  assert.match(node(script('impl-builder', 'pr-gate.mjs'), ['impl/demo/state.yaml', '--task', 'TK-002'], { cwd: repo }).out, /✓ Principes de la constitution à contrôle automatique respectés/);
+  const gate = env => node(script('impl-builder', 'pr-gate.mjs'), ['impl/demo/state.yaml', '--task', 'TK-002'], { cwd: repo, env });
+
+  // La clé de confiance vit HORS du dépôt : ici, à côté de lui, et déclarée par l'environnement.
+  const cle = join(dir, 'cle-constitution.pem');
+  assert.equal(node(script('impl-builder', 'constitution.mjs'), ['.', '--generer-cle', '--sortie', cle], { cwd: repo }).code, 0);
+  const pub = createPublicKey(readFileSync(cle, 'utf8')).export({ type: 'spki', format: 'pem' }).toString();
+  const signe = (...a) => node(script('impl-builder', 'constitution.mjs'), ['.', '--signer', '--cle', cle, '--par', 'Samir', ...a], { cwd: repo });
+
+  assert.equal(signe().code, 0);
+  assert.match(gate({ TIZI_CONSTITUTION_PUBKEY: pub }).out, /✓ Principes de la constitution à contrôle automatique respectés/);
   writeFileSync(join(repo, 'src/completude/fuite.js'), 'console.log(dossier.glycemie)\n');
-  assert.match(node(script('impl-builder', 'pr-gate.mjs'), ['impl/demo/state.yaml', '--task', 'TK-002'], { cwd: repo }).out, /✗ Principes de la constitution à contrôle automatique respectés — en échec : PC-01/);
+  assert.match(gate({ TIZI_CONSTITUTION_PUBKEY: pub }).out, /✗ Principes de la constitution à contrôle automatique respectés — en échec : PC-01/);
+});
+
+// Les contrôles automatiques sont des commandes de shell lues dans un fichier du dépôt, exécutées par
+// la porte de PR localement ET en CI sur chaque pull request. Une empreinte approuvée n'y suffirait
+// pas : qui modifie le fichier la recalcule. Il faut une signature, et une clé de confiance hors du
+// dépôt — sinon la même contribution remplacerait la clé et se signerait elle-même.
+test('constitution : aucune commande exécutée sans signature valide d\'une clé de confiance hors du dépôt', () => {
+  const dir = sandbox(); withConstitution(dir);
+  const repo = join(dir, 'repo'); mkdirSync(join(repo, '.tizi'), { recursive: true });
+  const cfile = join(repo, '.tizi/constitution.yaml');
+  writeFileSync(cfile, readFileSync(join(dir, '.tizi/constitution.yaml')));
+  const K = (...a) => node(script('impl-builder', 'constitution.mjs'), ['.', ...a], { cwd: repo });
+  const gate = env => node(script('impl-builder', 'pr-gate.mjs'), ['impl/demo/state.yaml', '--task', 'TK-002'], { cwd: repo, env });
+
+  const cle = join(dir, 'cle.pem');
+  assert.equal(K('--generer-cle', '--sortie', cle).code, 0);
+  const pub = createPublicKey(readFileSync(cle, 'utf8')).export({ type: 'spki', format: 'pem' }).toString();
+  const autre = join(dir, 'autre.pem');
+  assert.equal(K('--generer-cle', '--sortie', autre).code, 0);
+
+  // Une clé privée dans le dépôt finirait commitée et ne protégerait plus rien : le chemin est refusé.
+  const dedans = K('--generer-cle', '--sortie', '.tizi/cle.pem');
+  assert.equal(dedans.code, 2);
+  assert.match(dedans.err, /est dans le dépôt/);
+  assert.ok(!existsSync(join(repo, '.tizi/cle.pem')), 'aucune clé ne doit être écrite dans le dépôt');
+
+  // 1a. Aucune clé de confiance déclarée : on ne peut rien vérifier, donc on n'exécute rien et on ne
+  // conclut pas. C'est l'état par défaut d'un dépôt qui n'a pas encore choisi son ancre de confiance.
+  assert.notEqual(K('--controler').code, 0, 'sans clé déclarée, --controler refuse');
+  assert.match(K('--controler').err, /non exécutés — constitution non signée \(sans-cle\)/);
+  assert.match(K('--controler').err, /TIZI_CONSTITUTION_PUBKEY/);
+
+  // 1b. Clé déclarée, mais surface non signée : refus, et la porte ne prétend pas que C10 passe.
+  const sansSig = node(script('impl-builder', 'constitution.mjs'), ['.', '--controler'], { cwd: repo, env: { TIZI_CONSTITUTION_PUBKEY: pub } });
+  assert.notEqual(sansSig.code, 0);
+  assert.match(sansSig.err, /non exécutés — constitution non signée \(absente\)/);
+  assert.match(gate({ TIZI_CONSTITUTION_PUBKEY: pub }).out, /✗ Principes de la constitution.*non exécutés/);
+
+  // 2. Signée : les contrôles tournent.
+  assert.equal(K('--signer', '--cle', cle, '--par', 'Samir').code, 0);
+  assert.equal(K('--verifier-signature', ...[]).code, 1, 'sans clé déclarée, on ne conclut pas');
+  const avecCle = { TIZI_CONSTITUTION_PUBKEY: pub };
+  assert.equal(node(script('impl-builder', 'constitution.mjs'), ['.', '--controler'], { cwd: repo, env: avecCle }).code, 0);
+
+  // 3. Une commande modifiée après la signature : refusé. C'est l'attaque qu'on empêche.
+  const c = yaml.load(readFileSync(cfile, 'utf8'));
+  c.principles.find(x => x.id === 'PC-01').check.command = 'echo compromis';
+  writeFileSync(cfile, yaml.dump(c));
+  const apres = node(script('impl-builder', 'constitution.mjs'), ['.', '--controler'], { cwd: repo, env: avecCle });
+  assert.notEqual(apres.code, 0);
+  assert.match(apres.err, /\(invalide\)/);
+  assert.match(gate(avecCle).out, /✗ Principes de la constitution.*non exécutés/);
+
+  // 4. Resigner avec une AUTRE clé ne suffit pas : la confiance vient de l'environnement, pas du dépôt.
+  assert.equal(K('--signer', '--cle', autre, '--par', 'Intrus').code, 0);
+  const usurpe = node(script('impl-builder', 'constitution.mjs'), ['.', '--controler'], { cwd: repo, env: avecCle });
+  assert.notEqual(usurpe.code, 0, 'une signature d\'une clé non déclarée ne vaut rien');
+  assert.match(usurpe.err, /\(invalide\)/);
+
+  // 5. L'échappatoire existe, mais elle est hors du dépôt : une pull request ne peut pas se l'accorder.
+  const force = node(script('impl-builder', 'constitution.mjs'), ['.', '--controler'], { cwd: repo, env: { ...avecCle, TIZI_CONSTITUTION_EXEC_SANS_SIGNATURE: '1' } });
+  assert.equal(force.code, 0, 'exécution forcée explicitement');
+  assert.match(force.err, /Avertissement/);
+
+  // 6. Récrire l'énoncé d'un principe ne casse pas la signature : seules les commandes sont signées.
+  writeFileSync(cfile, readFileSync(join(dir, '.tizi/constitution.yaml')));
+  assert.equal(K('--signer', '--cle', cle, '--par', 'Samir').code, 0);
+  const c2 = yaml.load(readFileSync(cfile, 'utf8'));
+  c2.principles.find(x => x.id === 'PC-01').statement += ' Et cela ne doit pas changer.';
+  writeFileSync(cfile, yaml.dump(c2));
+  assert.equal(node(script('impl-builder', 'constitution.mjs'), ['.', '--controler'], { cwd: repo, env: avecCle }).code, 0, 'un énoncé récrit ne doit pas exiger une nouvelle signature');
 });
 
 test('cinq questions : bloquantes et contradictions d\'abord, cinq au plus', () => {
