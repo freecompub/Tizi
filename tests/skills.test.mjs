@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { readdirSync, readFileSync, existsSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { join } from 'node:path';
-import { SKILLS } from './helpers.mjs';
+import { SKILLS, ROOT, run } from './helpers.mjs';
 import yaml from '../skills/brd-builder/scripts/lib/vendor/js-yaml.mjs';
 
 const skills = readdirSync(SKILLS).filter(d => existsSync(join(SKILLS, d, 'SKILL.md')));
@@ -27,4 +27,32 @@ const COMMON = ['lib/common.mjs', 'lib/agent-io.mjs', 'lib/sessions.mjs', 'lib/v
 for (const f of COMMON) test(`fichier commun identique partout : ${f}`, () => {
   const hashes = skills.filter(s => existsSync(join(SKILLS, s, 'scripts', f))).map(s => createHash('md5').update(readFileSync(join(SKILLS, s, 'scripts', f))).digest('hex'));
   assert.ok(hashes.length >= 2); assert.equal(new Set(hashes).size, 1, `${f} diverge entre skills`);
+});
+
+// Les données de test du dépôt doivent être versionnées. Ignorées, elles n'existent que dans l'arbre
+// de travail de celui qui les a produites : 12 tests sur 124 échouaient sur tout clone neuf, donc en
+// CI, parce que exemple/repo/.gitignore masquait reports/ et .impl/. Et un dossier vide ne traverse
+// pas un clone : la fixture d'adoption attendait web/app/api/, que git ne peut pas versionner.
+test('données de test versionnées : rien d\'ignoré, aucun dossier vide attendu', () => {
+  const attendus = [
+    'exemple/repo/.impl/runs.jsonl',
+    'exemple/repo/.impl/current.json',
+    'exemple/repo/reports/unit.xml',
+    'exemple/repo/reports/acceptance.xml',
+    'exemple/repo/reports/mutation/mutation.json',
+    'tests/fixtures/depot-existant/web/app/api/notifications/route.ts',
+  ];
+  for (const f of attendus) assert.ok(existsSync(join(ROOT, f)), `${f} : absent du dépôt`);
+
+  // Les contrôles git n'ont de sens que dans un vrai checkout : hors de là (archive, paquet),
+  // la présence des fichiers suffit, et on ne fabrique pas un échec qui ne dit rien.
+  const estCheckout = run('git', ['rev-parse', '--is-inside-work-tree'], { cwd: ROOT }).out.trim() === 'true'
+    && run('git', ['ls-files', 'package.json'], { cwd: ROOT }).out.trim() === 'package.json';
+  if (!estCheckout) return;
+
+  for (const f of attendus) {
+    const ignore = run('git', ['check-ignore', '-v', f], { cwd: ROOT });
+    assert.equal(ignore.code, 1, `${f} est ignoré par git : ${ignore.out.trim()} — il n'existera pas sur un clone neuf`);
+    assert.equal(run('git', ['ls-files', '--error-unmatch', f], { cwd: ROOT }).code, 0, `${f} n'est pas suivi par git`);
+  }
 });

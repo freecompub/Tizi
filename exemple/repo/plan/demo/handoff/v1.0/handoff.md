@@ -1,6 +1,6 @@
 # Handoff plan → implémentation — Dossiers complets (plan v1.0)
 
-Généré le 2026-10-20. Les tâches sont dans l'ordre d'exécution : une tâche ne démarre que lorsque ses dépendances sont terminées. Chaque PR cite l'identifiant de sa tâche.
+Généré le 2026-10-23. Les tâches sont dans l'ordre d'exécution : une tâche ne démarre que lorsque ses dépendances sont terminées. Chaque PR cite l'identifiant de sa tâche.
 
 | Rang | Tâche | Type | Taille | Affectation | Dépend de | Attend hors engagement | Fiche de contexte |
 |---|---|---|---|---|---|---|---|
@@ -22,4 +22,4 @@ Généré le 2026-10-20. Les tâches sont dans l'ordre d'exécution : une tâche
 | Vérifications de NFR (étape tests) planifiées | 1/1 | 100 % | 100 % | atteint |
 | Stories prêtes | 2/5 | 40 % | 0 % | atteint |
 
-Empreinte SHA-256 de handoff.yaml : `9f7d75b950a5916296fb27f655f38431d30579b0216abd62687ab39800eb2d95`. L'étape suivante la vérifie avec verify-handoff.mjs avant d'ingérer.
+Empreinte SHA-256 de handoff.yaml : `da538e93727b8cca40257aa4415aee8a657ba4a245b2acc2720fa83729f02157`. L'étape suivante la vérifie avec verify-handoff.mjs avant d'ingérer.

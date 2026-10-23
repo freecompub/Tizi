@@ -2,6 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync, appendFileSync, readdirSync, existsSync, cpSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { join } from 'node:path';
 import { sandbox, node, script, golden, lintSignature, FIX } from './helpers.mjs';
 
@@ -38,6 +39,34 @@ test('handoffs : intègres, puis refusés une fois altérés', () => {
       assert.notEqual(node(script('brd-builder', 'verify-handoff.mjs'), [h], { cwd: dir }).code, 0, `${doc} ${v} altéré devrait être refusé`);
     }
   }
+});
+
+test('le col scelle le document, pas seulement l\'état (source_doc)', () => {
+  const dir = sandbox();
+  const h = join(dir, 'brd/demo/handoff/v1.0/handoff.yaml');
+  const frozen = join(dir, 'brd/demo/versions/v1.0');
+  const verify = () => node(script('prd-builder', 'verify-handoff.mjs'), [h], { cwd: dir });
+  assert.equal(verify().code, 0, 'handoff intact');
+
+  // Le document figé est ce que relisent et approuvent les personnes : l'altérer doit fermer le col.
+  // Avant le scellement du document, seul l'état était couvert et cette modification passait.
+  const doc = join(frozen, 'brd.md');
+  writeFileSync(doc, `ALTÉRÉ\n${readFileSync(doc, 'utf8')}`);
+  const alt = verify();
+  assert.notEqual(alt.code, 0, 'document figé altéré : doit être refusé');
+  assert.match(alt.err + alt.out, /document figé d'origine \(brd\.md\) a été modifié/);
+  writeFileSync(doc, readFileSync(doc, 'utf8').replace('ALTÉRÉ\n', ''));
+  assert.equal(verify().code, 0, 'document rétabli');
+
+  // Vider l'empreinte et recalculer le .sha256 voisin désarmait le contrôle en silence.
+  const etat = join(frozen, 'state.yaml');
+  appendFileSync(etat, '\n# tampered\n');
+  assert.notEqual(verify().code, 0, 'état figé altéré : doit être refusé');
+  writeFileSync(h, readFileSync(h, 'utf8').replace(/source_state: [0-9a-f]{64}/, "source_state: ''"));
+  writeFileSync(`${h}.sha256`, `${createHash('sha256').update(readFileSync(h)).digest('hex')}  handoff.yaml\n`);
+  const vide = verify();
+  assert.notEqual(vide.code, 0, 'empreinte vidée : le contrôle ne doit pas être sauté');
+  assert.match(vide.err + vide.out, /ne porte pas l'empreinte de sa version figée/);
 });
 
 test('exécuteur : refuse un plan d\'opérations non approuvé, puis altéré', () => {

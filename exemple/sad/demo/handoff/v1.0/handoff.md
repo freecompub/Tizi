@@ -1,6 +1,6 @@
 # Handoff conception → planification — Dossiers complets (SAD v1.0)
 
-Généré le 2026-10-20 à partir de la version figée, issue du PRD v1.0. La planification conserve les identifiants (CT, CP, API, OP, NR, TH, ADR) pour préserver la traçabilité jusqu'au code.
+Généré le 2026-10-23 à partir de la version figée, issue du PRD v1.0. La planification conserve les identifiants (CT, CP, API, OP, NR, TH, ADR) pour préserver la traçabilité jusqu'au code.
 
 ## Éléments à construire ou à modifier
 
@@ -50,9 +50,9 @@ Généré le 2026-10-20 à partir de la version figée, issue du PRD v1.0. La pl
 
 ## Décisions à respecter
 
-| ADR | Décision | Option retenue | Confirmation |
-|---|---|---|---|
-| ADR-001 | Notifier le partenaire par un worker asynchrone | Worker asynchrone | test de charge sur la transmission |
+| ADR | Décision | Règle | Empêche | Confirmation |
+|---|---|---|---|---|
+| ADR-001 | Notifier le partenaire par un worker asynchrone | — | — | test de charge sur la transmission |
 
 ## Dette technique concernée
 
@@ -78,4 +78,4 @@ _Aucun élément._
 | NFR avec une réponse de conception | 1/2 | 50 % | 100 % | **non atteint** |
 | Moteurs servis par un ADR accepté ou une réponse | 1/2 | 50 % | 100 % | **non atteint** |
 
-Empreinte SHA-256 de handoff.yaml : `6e57ea30ea3c8739499195cec7150584df2757d6cfbeeaa14b2a43ba6423eea6`. L'étape suivante la vérifie avec verify-handoff.mjs avant d'ingérer.
+Empreinte SHA-256 de handoff.yaml : `c28c801db4985e8ae0dab5316000c1559016216f91f94e7a9cda449e095edbfc`. L'étape suivante la vérifie avec verify-handoff.mjs avant d'ingérer.

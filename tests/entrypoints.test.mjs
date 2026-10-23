@@ -32,6 +32,13 @@ for (const target of ['claude', 'copilot', 'both']) test(`génération des point
       assert.ok(front(join(proj, '.claude/commands', c)).description);
       for (const m of text.matchAll(/`([^`]*\/SKILL\.md)`/g)) assert.ok(existsSync(join(proj, m[1])), `${c} : chemin ${m[1]} introuvable`);
     }
+    // Les sous-agents internes portent la même marque que côté Copilot : ce ne sont pas des points d'entrée.
+    const adir = join(proj, '.claude/agents');
+    if (existsSync(adir)) for (const f of readdirSync(adir)) {
+      const a = front(join(adir, f));
+      assert.equal(a['user-invocable'], false, `${f} : sous-agent interne non marqué non invocable`);
+      assert.match(a.description ?? '', /ne pas utiliser directement/, `${f} : la description doit le dire aussi, Claude Code l'affichant encore`);
+    }
   }
   if (target !== 'claude') {
     const dir = join(proj, '.github/agents');

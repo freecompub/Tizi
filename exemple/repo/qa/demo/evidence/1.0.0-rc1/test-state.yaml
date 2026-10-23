@@ -1,6 +1,6 @@
 document: test
 initiative: { name: Dossiers complets, slug: demo }
-source_plan: { path: plan/demo/handoff/v1.0/handoff.yaml, version: "1.0", sha256: "9f7d75b950a5916296fb27f655f38431d30579b0216abd62687ab39800eb2d95" }
+source_plan: { path: plan/demo/handoff/v1.0/handoff.yaml, version: "1.0", sha256: "da538e93727b8cca40257aa4415aee8a657ba4a245b2acc2720fa83729f02157" }
 release: REL-1
 candidate: 1.0.0-rc1
 settings:

@@ -5,7 +5,7 @@ source:
   status: baseline
   context_mode: brownfield
   prd_version: '1.0'
-  generated: '2026-10-20'
+  generated: '2026-10-23'
 work_items:
   - id: CT-01
     name: Application web
@@ -64,6 +64,8 @@ decisions:
   - id: ADR-001
     title: Notifier le partenaire par un worker asynchrone
     outcome: Worker asynchrone
+    prevents: ''
+    rule: ''
     confirmation: test de charge sur la transmission
     elements:
       - CT-03
@@ -164,3 +166,4 @@ coverage:
 integrity:
   algorithm: sha256
   source_state: f46dc814b487336fa340a0e22e5431c9fbd9d6f06162bc46eb5bd976181201ff
+  source_doc: 806522bb335429a1551f5b9eaf291f8175cbaa2b3c8b3e19eee7097127d88eab

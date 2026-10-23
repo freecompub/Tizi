@@ -15,7 +15,8 @@ import yaml from './lib/vendor/js-yaml.mjs';
 import { arr, writeOut, approxTokens } from './lib/common.mjs';
 
 const args = process.argv.slice(2);
-const root = args.find(a => !a.startsWith('--')) ?? '.';
+const root = args.find(a => !a.startsWith('--')) ;
+if (!root) { console.error('Usage : node sync-agent-instructions.mjs <dépôt> [--check]. Le dépôt est explicite : ce script écrit AGENTS.md et CLAUDE.md. Pour le dépôt courant : node sync-agent-instructions.mjs .'); process.exit(2); }
 const check = args.includes('--check');
 const BEGIN = '<!-- tizi:début — bloc généré par Tizi (sync-agent-instructions.mjs), ne pas modifier à la main -->';
 const END = '<!-- tizi:fin -->';

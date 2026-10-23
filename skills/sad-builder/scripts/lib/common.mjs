@@ -1,7 +1,7 @@
 // Utilitaires partagés par les scripts du BRD Builder.
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import { readFileSync, readdirSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { dirname } from 'node:path';
+import { dirname, join, basename } from 'node:path';
 import yaml from './vendor/js-yaml.mjs';
 
 export const arr = v => (Array.isArray(v) ? v : []);
@@ -51,15 +51,33 @@ export const PRIORITY_ORDER = ['must', 'should', 'could', 'wont'];
 export const validated = coll => arr(coll).filter(x => x.status === 'validé');
 
 // ── Intégrité des handoffs ───────────────────────────────────────────────────
-// Chaque handoff est écrit avec une empreinte SHA-256 (fichier voisin <nom>.sha256) et l'empreinte
-// de la version figée dont il est issu. L'étape suivante vérifie les deux avant d'ingérer.
+// Chaque handoff est écrit avec une empreinte SHA-256 (fichier voisin <nom>.sha256) et les empreintes
+// de la version figée dont il est issu : son état (source_state) ET son document (source_doc).
+// Sceller les deux est nécessaire : l'état est ce que lisent les scripts, le document est ce que
+// relisent et approuvent les personnes. Un document altéré après le gel ne doit pas franchir le col.
+// L'étape suivante vérifie le tout avant d'ingérer.
 
 export const sha256 = data => createHash('sha256').update(data).digest('hex');
 export const fileSha256 = path => sha256(readFileSync(path));
 
+// Le document figé voisin d'un état figé : versions/v<x.y>/<doc>.md, seul .md du dossier hors CHANGELOG.
+// Renvoie '' si le dossier n'est pas lisible ou ne contient pas exactement un document.
+export function frozenDocOf(frozenStatePath) {
+  try {
+    const dir = dirname(frozenStatePath);
+    const docs = readdirSync(dir).filter(f => f.endsWith('.md') && f !== 'CHANGELOG.md');
+    return docs.length === 1 ? join(dir, docs[0]) : '';
+  } catch { return ''; }
+}
+
 // Écrit handoff.yaml et handoff.yaml.sha256. `sourceState` = chemin de la version figée (state.yaml).
 export function writeHandoff(path, header, payload, sourceState) {
-  const withIntegrity = { ...payload, integrity: { algorithm: 'sha256', source_state: sourceState ? fileSha256(sourceState) : '' } };
+  const sourceDoc = sourceState ? frozenDocOf(sourceState) : '';
+  const withIntegrity = { ...payload, integrity: {
+    algorithm: 'sha256',
+    source_state: sourceState ? fileSha256(sourceState) : '',
+    source_doc: sourceDoc ? fileSha256(sourceDoc) : '',
+  } };
   const content = `${header}\n${yaml.dump(withIntegrity, { lineWidth: 120 })}`;
   // Écriture brute : un fichier signé ne doit pas être retouché (writeOut normalise les lignes vides).
   mkdirSync(dirname(path), { recursive: true });
@@ -78,9 +96,20 @@ export function verifyHandoff(path, frozenStatePath) {
   const side = `${path}.sha256`;
   if (!existsSync(side)) problems.push('empreinte absente (fichier .sha256 manquant) : handoff produit par une version antérieure des scripts, ou altéré');
   else if (readFileSync(side, 'utf8').trim().split(/\s+/)[0] !== actual) problems.push('le handoff a été modifié après sa génération (empreinte différente)');
+  // Le caller qui fournit la version figée affirme que le handoff en est issu : l'absence d'empreinte
+  // est un problème, pas une raison de sauter le contrôle. Sinon il suffisait de vider source_state.
   if (frozenStatePath && existsSync(frozenStatePath)) {
-    const m = readFileSync(path, 'utf8').match(/source_state:\s*['"]?([0-9a-f]{64})/);
-    if (m && fileSha256(frozenStatePath) !== m[1]) problems.push('la version figée d\'origine a été modifiée depuis le handoff');
+    const text = readFileSync(path, 'utf8');
+    const empreinte = cle => (text.match(new RegExp(`${cle}:\\s*['"]?([0-9a-f]{64})`)) ?? [])[1] ?? '';
+    const attenduEtat = empreinte('source_state');
+    if (!attenduEtat) problems.push('le handoff ne porte pas l\'empreinte de sa version figée (source_state absent ou vide) : handoff produit par une version antérieure des scripts, ou vidé pour désarmer le contrôle — régénère-le avec build-handoff.mjs');
+    else if (fileSha256(frozenStatePath) !== attenduEtat) problems.push('la version figée d\'origine a été modifiée depuis le handoff');
+    const docPath = frozenDocOf(frozenStatePath);
+    if (docPath) {
+      const attenduDoc = empreinte('source_doc');
+      if (!attenduDoc) problems.push(`le handoff ne scelle pas le document figé (${basename(docPath)}) : handoff produit par une version antérieure des scripts — régénère-le avec build-handoff.mjs`);
+      else if (fileSha256(docPath) !== attenduDoc) problems.push(`le document figé d'origine (${basename(docPath)}) a été modifié depuis le handoff`);
+    }
   }
   return { ok: problems.length === 0, sha256: actual, problems };
 }

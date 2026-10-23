@@ -1,22 +1,76 @@
 name: Tests
 
+# Les pull requests sont le moment qui compte : rien ne doit entrer dans main sans être passé ici.
+# `push` est restreint à main : sur une branche de travail, c'est la pull request qui fait foi, et on
+# évite deux passages identiques pour le même commit.
 on:
   push:
+    branches: [main]
   pull_request:
+    branches: [main]
+
+# Un nouveau commit sur une PR annule le passage précédent : seul le dernier état compte.
+concurrency:
+  group: tests-${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
 
 jobs:
   tests:
+    name: Suite de tests (Node ${{ matrix.node }})
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        node: [18, 20, 22]
+        node: [18, 20, 22, 24]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: ${{ matrix.node }}
       - name: Suite de tests (aucune dépendance à installer)
         run: npm test
+
+  installation:
+    # Rien ne vérifiait l'installateur en CI : ses workflows générés, son idempotence et son audit de
+    # CI n'étaient éprouvés que par la suite de tests, sur un dépôt factice. On l'installe pour de vrai.
+    name: Installation dans un dépôt neuf
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+      - name: Installer dans un dépôt neuf, pour les deux outils, avec la CI
+        run: |
+          mkdir -p /tmp/cible && cd /tmp/cible
+          git init -q . && git config user.email ci@tizi && git config user.name ci
+          printf '{"name":"cible","scripts":{"test":"node --test"}}\n' > package.json
+          git add -A && git commit -qm initial
+          cd "$GITHUB_WORKSPACE" && node install.mjs --project /tmp/cible --target both --ci
+      - name: L'installation est idempotente
+        run: |
+          cd /tmp/cible && git add -A && git commit -qm installation
+          cd "$GITHUB_WORKSPACE" && node install.mjs --project /tmp/cible --target both --ci
+          cd /tmp/cible
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "La seconde installation a modifié le dépôt :"; git status --porcelain; exit 1
+          fi
+      - name: Les workflows générés sont du YAML valide
+        run: |
+          cd /tmp/cible
+          for f in .github/workflows/tizi-*.yml; do
+            node --input-type=module -e "
+              import yaml from '$GITHUB_WORKSPACE/skills/brd-builder/scripts/lib/vendor/js-yaml.mjs';
+              import { readFileSync } from 'node:fs';
+              const d = yaml.load(readFileSync('$f', 'utf8'));
+              if (!d || !d.jobs) { console.error('$f : aucun job'); process.exit(1); }
+              console.log('$f : ' + Object.keys(d.jobs).length + ' job(s)');
+            "
+          done
+      - name: L'audit de CI ne relève aucun point bloquant
+        run: |
+          cd /tmp/cible
+          node .claude/skills/test-builder/scripts/ci-audit.mjs .

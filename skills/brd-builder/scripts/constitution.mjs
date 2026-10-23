@@ -41,7 +41,8 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const args = process.argv.slice(2);
   const opt = k => (args.includes(k) ? args[args.indexOf(k) + 1] : '');
   const valued = ['--texte', '--type', '--raison', '--controle', '--par', '--commande', '--initiative', '--decider', '--responsable', '--amender', '--deroger', '--element'];
-  const root = args.find((a, i) => !a.startsWith('--') && !valued.includes(args[i - 1])) ?? '.';
+  const root = args.find((a, i) => !a.startsWith('--') && !valued.includes(args[i - 1])) ;
+if (!root) fail('Usage : node constitution.mjs <dépôt> [options]. Le dépôt est explicite : ce script écrit .tizi/constitution.yaml. Pour le dépôt courant : node constitution.mjs .', 2);
   const c = loadConstitution(root) ?? { version: 0, principles: [], amendments: [], waivers: [] };
   const save = () => writeOut(constitutionFile(root), `# Constitution du produit — tenue par constitution.mjs. Les principes actifs s'appliquent à toutes les initiatives.\n${yaml.dump(c, { lineWidth: 120 })}`);
   const find = id => { const p = arr(c.principles).find(x => x.id === id); if (!p) fail(`${id} introuvable.`); return p; };

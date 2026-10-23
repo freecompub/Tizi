@@ -1,0 +1,20 @@
+{
+  "task": "TK-002",
+  "state": "impl/demo/state.yaml",
+  "story": "US-001",
+  "kind": "dev",
+  "phase": "vert",
+  "allowed_paths": [
+    "src/completude/**"
+  ],
+  "contracts_allowed": true,
+  "expected_ids": [
+    "EX-001",
+    "EX-002",
+    "AC-001"
+  ],
+  "operations": [
+    "OP-001"
+  ],
+  "started": "2026-10-20T17:55:34.064Z"
+}

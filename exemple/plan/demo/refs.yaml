@@ -4,8 +4,8 @@ paths:
   prd: ../../prd/demo/handoff/v1.0/handoff.yaml
   sad: ../../sad/demo/handoff/v1.0/handoff.yaml
 sha256:
-  prd: 25bd155232b261f8f657e47c7beb6ef2faf76efb282b57faef32a320cdbdffba
-  sad: 6e57ea30ea3c8739499195cec7150584df2757d6cfbeeaa14b2a43ba6423eea6
+  prd: 6d536fff79ce7a5cd46b78ae1d6a82ca8eeaa99cd654df9471d972f7c4a060a5
+  sad: c28c801db4985e8ae0dab5316000c1559016216f91f94e7a9cda449e095edbfc
 prd:
   source:
     initiative: Dossiers complets
