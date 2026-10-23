@@ -3,6 +3,8 @@ description: "Fin d'itération : sprint review (ce qui a été réalisé et prou
 argument-hint: "<initiative> [IT-n]"
 ---
 
+<!-- Généré par install.mjs --target plugin depuis entrypoints/entrypoints.yaml. Ne pas éditer : la modification serait perdue, et tests/plugin.test.mjs la signalerait. -->
+
 # Tizi — Sprint review et rétrospective
 
 Arguments reçus : $ARGUMENTS

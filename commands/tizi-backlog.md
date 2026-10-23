@@ -3,6 +3,8 @@ description: "Applique dans GitHub ou Jira un plan d'opérations déjà approuv�
 argument-hint: "<initiative> <github|jira>"
 ---
 
+<!-- Généré par install.mjs --target plugin depuis entrypoints/entrypoints.yaml. Ne pas éditer : la modification serait perdue, et tests/plugin.test.mjs la signalerait. -->
+
 # Tizi — 4 bis. Application du backlog
 
 Arguments reçus : $ARGUMENTS

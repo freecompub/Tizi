@@ -38,6 +38,9 @@ const skills = opt('--skills') ? opt('--skills').split(',').map(s => s.trim()) :
 for (const s of skills) if (!all.includes(s)) { console.error(`Skill inconnu : ${s}`); process.exit(2); }
 const log = [];
 const act = (msg, fn) => { log.push(msg); if (!dry) fn(); };
+// Marque posée dans chaque artefact généré du plugin. Pas de fichier à part : un README.md dans
+// commands/ ou agents/ serait chargé COMME commande et COMME agent (vérifié : « Skills (18) … README »).
+const GENERE = (quoi, source) => `<!-- Généré par install.mjs --target plugin depuis ${source}. Ne pas éditer : la modification serait perdue, et tests/plugin.test.mjs la signalerait. -->`;
 const plugin = target === 'plugin';
 const claude = target === 'claude' || target === 'both', copilot = target === 'copilot' || target === 'both';
 if (plugin && user) { console.error('--user n\'a pas de sens avec --target plugin : le plugin se distribue par un marketplace.'); process.exit(2); }
@@ -81,13 +84,14 @@ for (const s of skills) {
       const marked = /^---\n/.test(text) && !/^user-invocable:/m.test(text)
         ? text.replace(/^---\n([\s\S]*?)---\n/, (_, fm) => `---\n${fm}user-invocable: false\n---\n`)
         : text;
+      const marque = marked.replace(/^(---\n[\s\S]*?---\n)/, `$1\n${GENERE('sous-agent', `skills/*/agents/${f}`)}\n`);
       const d = join(project, 'agents');
-      act(`agent ${name} → agents/${f}`, () => { mkdirSync(d, { recursive: true }); writeFileSync(join(d, f), marked); });
+      act(`agent ${name} → agents/${f}`, () => { mkdirSync(d, { recursive: true }); writeFileSync(join(d, f), marque); });
       // Copilot lit com.github.copilot/agents/<nom>.agent.md : l'espace de noms évite toute collision
       // avec les composants de Claude Code dans le même plugin.
       const body = text.replace(/^---[\s\S]*?---\n/, '');
       const desc = (text.match(/^description: (.*)$/m) ?? [])[1] ?? '';
-      const cop = `---\nname: ${name}\ndescription: ${desc}\ntools: ['read', 'search']\nuser-invocable: false\n---\n${body}`;
+      const cop = `---\nname: ${name}\ndescription: ${desc}\ntools: ['read', 'search']\nuser-invocable: false\n---\n\n${GENERE('sous-agent', `skills/*/agents/${f}`)}\n${body}`;
       const dc = join(project, 'com.github.copilot', 'agents');
       act(`agent ${name} → com.github.copilot/agents/${name}.agent.md`, () => { mkdirSync(dc, { recursive: true }); writeFileSync(join(dc, `${name}.agent.md`), cop); });
     }
@@ -135,12 +139,12 @@ for (const e of usable) {
   }
   if (plugin) {
     const d = join(project, 'commands');
-    const text = `---\ndescription: ${q(e.description)}\nargument-hint: ${q(e.argument_hint ?? '')}\n---\n\n${bodyOf(e, 'claude')}`;
+    const text = `---\ndescription: ${q(e.description)}\nargument-hint: ${q(e.argument_hint ?? '')}\n---\n\n${GENERE('commande', 'entrypoints/entrypoints.yaml')}\n\n${bodyOf(e, 'claude')}`;
     act(`commande /tizi:${e.name} → commands/${e.name}.md`, () => { mkdirSync(d, { recursive: true }); writeFileSync(join(d, `${e.name}.md`), text); });
     // Côté Copilot, un point d'entrée est un agent, comme pour la cible copilot : mêmes outils,
     // mêmes boutons de passage, mais les chemins pointent dans le plugin par ${PLUGIN_ROOT}.
     const handoffs = (e.handoffs ?? []).filter(h => byName.has(h)).map(h => `  - label: ${q(`→ ${byName.get(h).title}`)}\n    agent: ${h}\n    prompt: ${q(`Reprends l'initiative en cours à l'étape « ${byName.get(h).title} ».`)}\n    send: false`);
-    const cop = `---\nname: ${e.name}\ndescription: ${q(e.description)}\nargument-hint: ${q(e.argument_hint ?? '')}\ntools: [${(e.tools ?? []).map(t => `'${t}'`).join(', ')}]\n${handoffs.length ? `handoffs:\n${handoffs.join('\n')}\n` : ''}---\n\n${bodyOf(e, 'copilot')}`;
+    const cop = `---\nname: ${e.name}\ndescription: ${q(e.description)}\nargument-hint: ${q(e.argument_hint ?? '')}\ntools: [${(e.tools ?? []).map(t => `'${t}'`).join(', ')}]\n${handoffs.length ? `handoffs:\n${handoffs.join('\n')}\n` : ''}---\n\n${GENERE('agent', 'entrypoints/entrypoints.yaml')}\n\n${bodyOf(e, 'copilot')}`;
     const dc = join(project, 'com.github.copilot', 'agents');
     act(`agent ${e.name} → com.github.copilot/agents/${e.name}.agent.md`, () => { mkdirSync(dc, { recursive: true }); writeFileSync(join(dc, `${e.name}.agent.md`), cop); });
   }

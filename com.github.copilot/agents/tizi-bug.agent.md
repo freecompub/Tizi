@@ -14,6 +14,8 @@ handoffs:
     send: false
 ---
 
+<!-- Généré par install.mjs --target plugin depuis entrypoints/entrypoints.yaml. Ne pas éditer : la modification serait perdue, et tests/plugin.test.mjs la signalerait. -->
+
 # Tizi — Signaler un problème
 
 Charge le skill `test-builder` : lis `${PLUGIN_ROOT}/skills/test-builder/SKILL.md` en entier et suis-le, à commencer par sa section « Démarrage ». Ce point d'entrée n'ajoute aucune règle : en cas de doute, le skill fait foi.

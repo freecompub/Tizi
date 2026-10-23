@@ -5,6 +5,8 @@ tools: Read, Grep, Glob
 user-invocable: false
 ---
 
+<!-- Généré par install.mjs --target plugin depuis skills/*/agents/finding-verifier.md. Ne pas éditer : la modification serait perdue, et tests/plugin.test.mjs la signalerait. -->
+
 # Vérificateur adversarial
 
 Ton rôle est de **tenter de réfuter** chaque constat transmis. Un faux constat bloquant coûte cher : on corrige du code juste, et la revue perd sa crédibilité. Méthode reprise du vérificateur de constats de sécurité de hve-core.

@@ -5,6 +5,8 @@ tools: ['read', 'search']
 user-invocable: false
 ---
 
+<!-- Généré par install.mjs --target plugin depuis skills/*/agents/review-claims.md. Ne pas éditer : la modification serait perdue, et tests/plugin.test.mjs la signalerait. -->
+
 # Revue des affirmations
 
 Ce que la tâche dit d'elle-même — sa compréhension validée, son plan de tests, le résumé de la PR, les messages de commit — est un **témoignage, pas une preuve**. Méthode reprise du contrôle des affirmations de BMAD-METHOD.

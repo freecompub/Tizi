@@ -5,6 +5,8 @@ tools: ['read', 'search']
 user-invocable: false
 ---
 
+<!-- Généré par install.mjs --target plugin depuis skills/*/agents/review-architecture.md. Ne pas éditer : la modification serait perdue, et tests/plugin.test.mjs la signalerait. -->
+
 # Revue architecture et contrats
 
 - **ADR** de la fiche : chaque **règle** est-elle respectée ? La règle dit ce que le code doit faire ; « Empêche » dit la divergence qu'elle évite. Une violation de règle est **bloquante**. Applique aussi le moyen de confirmation écrit dans l'ADR quand il se vérifie à la lecture.

@@ -3,6 +3,8 @@ description: "Pour les testeurs : signaler un problème, retrouver ce qui était
 argument-hint: "<initiative> [ce que vous observez]"
 ---
 
+<!-- Généré par install.mjs --target plugin depuis entrypoints/entrypoints.yaml. Ne pas éditer : la modification serait perdue, et tests/plugin.test.mjs la signalerait. -->
+
 # Tizi — Signaler un problème
 
 Arguments reçus : $ARGUMENTS

@@ -10,6 +10,8 @@ handoffs:
     send: false
 ---
 
+<!-- Généré par install.mjs --target plugin depuis entrypoints/entrypoints.yaml. Ne pas éditer : la modification serait perdue, et tests/plugin.test.mjs la signalerait. -->
+
 # Tizi — 1. Besoin métier (BRD)
 
 Charge le skill `brd-builder` : lis `${PLUGIN_ROOT}/skills/brd-builder/SKILL.md` en entier et suis-le, à commencer par sa section « Démarrage ». Ce point d'entrée n'ajoute aucune règle : en cas de doute, le skill fait foi.

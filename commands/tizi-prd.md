@@ -3,6 +3,8 @@ description: "Étape 2 du SDLC : construire le PRD à partir du handoff du BRD (
 argument-hint: "<initiative> [handoff du BRD]"
 ---
 
+<!-- Généré par install.mjs --target plugin depuis entrypoints/entrypoints.yaml. Ne pas éditer : la modification serait perdue, et tests/plugin.test.mjs la signalerait. -->
+
 # Tizi — 2. Produit (PRD)
 
 Arguments reçus : $ARGUMENTS

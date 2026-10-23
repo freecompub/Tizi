@@ -3,6 +3,8 @@ description: "Étape 6 du SDLC : vérifier une release — parcours critiques, t
 argument-hint: "<initiative> <version candidate>"
 ---
 
+<!-- Généré par install.mjs --target plugin depuis entrypoints/entrypoints.yaml. Ne pas éditer : la modification serait perdue, et tests/plugin.test.mjs la signalerait. -->
+
 # Tizi — 6. Vérification de release
 
 Arguments reçus : $ARGUMENTS

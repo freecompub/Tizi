@@ -5,6 +5,8 @@ tools: ['read', 'search']
 user-invocable: false
 ---
 
+<!-- Généré par install.mjs --target plugin depuis skills/*/agents/review-functional.md. Ne pas éditer : la modification serait perdue, et tests/plugin.test.mjs la signalerait. -->
+
 # Revue fonctionnelle
 
 Vérifie que le code fait **ce que la fiche de contexte demande, et seulement cela**.

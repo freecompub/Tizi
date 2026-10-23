@@ -5,6 +5,8 @@ tools: Read, Grep, Glob
 user-invocable: false
 ---
 
+<!-- Généré par install.mjs --target plugin depuis skills/*/agents/review-security.md. Ne pas éditer : la modification serait perdue, et tests/plugin.test.mjs la signalerait. -->
+
 # Revue sécurité
 
 - **Mesures de la conception** (`TH`) que la tâche doit réaliser : sont-elles réellement en place, et vérifiées par un test ?

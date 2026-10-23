@@ -3,6 +3,8 @@ description: "Étape 5 du SDLC : implémenter une tâche prête du plan — comp
 argument-hint: "<initiative> [TK-xxx]"
 ---
 
+<!-- Généré par install.mjs --target plugin depuis entrypoints/entrypoints.yaml. Ne pas éditer : la modification serait perdue, et tests/plugin.test.mjs la signalerait. -->
+
 # Tizi — 5. Implémentation
 
 Arguments reçus : $ARGUMENTS

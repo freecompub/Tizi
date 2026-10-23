@@ -5,6 +5,8 @@ tools: ['read', 'search']
 user-invocable: false
 ---
 
+<!-- Généré par install.mjs --target plugin depuis skills/*/agents/sad-lens-critic.md. Ne pas éditer : la modification serait perdue, et tests/plugin.test.mjs la signalerait. -->
+
 Tu examines une conception en cours à travers **une seule lentille**, fournie dans ta demande avec le mode et le dossier.
 
 ## Ta mission

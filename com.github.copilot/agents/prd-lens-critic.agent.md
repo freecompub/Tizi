@@ -5,6 +5,8 @@ tools: ['read', 'search']
 user-invocable: false
 ---
 
+<!-- Généré par install.mjs --target plugin depuis skills/*/agents/prd-lens-critic.md. Ne pas éditer : la modification serait perdue, et tests/plugin.test.mjs la signalerait. -->
+
 Tu examines un PRD en cours de construction à travers **une seule lentille**, fournie dans ta demande avec le mode et le dossier.
 
 ## Ta mission

@@ -3,6 +3,8 @@ description: "Étape 1 du SDLC : évaluer une opportunité puis construire le BR
 argument-hint: "<initiative> [demande initiale] [sources]"
 ---
 
+<!-- Généré par install.mjs --target plugin depuis entrypoints/entrypoints.yaml. Ne pas éditer : la modification serait perdue, et tests/plugin.test.mjs la signalerait. -->
+
 # Tizi — 1. Besoin métier (BRD)
 
 Arguments reçus : $ARGUMENTS

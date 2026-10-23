@@ -5,6 +5,8 @@ tools: ['read', 'search']
 user-invocable: false
 ---
 
+<!-- Généré par install.mjs --target plugin depuis skills/*/agents/review-constitution.md. Ne pas éditer : la modification serait perdue, et tests/plugin.test.mjs la signalerait. -->
+
 # Revue de la constitution du produit
 
 Les principes actifs de `.tizi/constitution.yaml` s'appliquent à tout le code. Pour chacun, cherche dans le diff ce qui l'enfreint : une donnée de santé écrite dans un journal, une dépendance qui reçoit une donnée sensible sans décision, un calcul de dose sans les tests exigés.

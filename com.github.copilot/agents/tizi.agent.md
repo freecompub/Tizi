@@ -38,6 +38,8 @@ handoffs:
     send: false
 ---
 
+<!-- Généré par install.mjs --target plugin depuis entrypoints/entrypoints.yaml. Ne pas éditer : la modification serait perdue, et tests/plugin.test.mjs la signalerait. -->
+
 # Tizi — point d'entrée
 
 **Entrées**

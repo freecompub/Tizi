@@ -5,6 +5,8 @@ tools: ['read', 'search']
 user-invocable: false
 ---
 
+<!-- Généré par install.mjs --target plugin depuis skills/*/agents/review-tests.md. Ne pas éditer : la modification serait perdue, et tests/plugin.test.mjs la signalerait. -->
+
 # Revue des manques de vérification
 
 Cherche le comportement que ce changement modifie et qui pourrait régresser plus tard **sans qu'aucun test n'échoue**. Ne chasse pas les bugs ; signale ceux que tu croises en traçant. Méthode reprise de la lentille « Verification Gap » de BMAD-METHOD.
