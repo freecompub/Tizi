@@ -27,6 +27,28 @@ Le document de référence « Tizi — un SDLC agentique, du recueil du besoin a
 
 Il contient le sommaire, le nom et sa philosophie, les dix étapes, la construction des étapes 1 à 6, l'index des abréviations et identifiants, et les sources.
 
+## Installer comme plugin Claude Code
+
+Le dépôt est aussi un **marketplace** Claude Code, et sa racine est la racine du plugin `tizi` :
+
+```
+claude plugin marketplace add freecompub/Tizi
+claude plugin install tizi@tizi
+```
+
+Les sept skills, les dix points d'entrée (`/tizi:tizi`, `/tizi:tizi-brd`…), les douze sous-agents et
+les cinq hooks arrivent d'un coup, et les mises à jour suivent le dépôt. Les chemins des scripts sont
+écrits en `${CLAUDE_PLUGIN_ROOT}/skills/…`, qui résout là où le plugin est installé.
+
+Ses artefacts — `commands/`, `agents/`, `hooks/hooks.json`, `.claude-plugin/plugin.json` — sont
+générés depuis la **même source unique** que les deux autres cibles (`entrypoints/entrypoints.yaml`
+et `skills/`), par `node install.mjs --project . --target plugin`, et commités pour qu'un clone
+suffise. Un test vérifie qu'ils n'ont pas dérivé de leur source ; `claude plugin validate . --strict`
+reste le contrôle qui fait foi.
+
+Le plugin ne couvre que Claude Code. Pour GitHub Copilot, ou pour poser les skills dans un dépôt sans
+passer par un marketplace, l'installateur ci-dessous reste la voie.
+
 ## Installer dans un dépôt
 
 ```

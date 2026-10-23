@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin.json",
+  "name": "tizi",
+  "displayName": "Tizi",
+  "description": "Un SDLC agentique, du besoin à la preuve : BRD, PRD, conception, plan, implémentation sous garde-fou TDD, vérification de release avec preuves.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Samir Alili"
+  },
+  "repository": "https://github.com/freecompub/Tizi",
+  "license": "MIT",
+  "keywords": [
+    "sdlc",
+    "brd",
+    "prd",
+    "architecture",
+    "tdd",
+    "traceability"
+  ]
+}

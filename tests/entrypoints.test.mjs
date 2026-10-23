@@ -64,3 +64,33 @@ test('étape suivante calculée sur l\'exemple', () => {
   const repo = node(script('brd-builder', 'next-step.mjs'), ['.', '--json'], { cwd: join(dir, 'repo') });
   assert.equal(JSON.parse(repo.out).find(x => x.slug === 'demo').next.entry, 'tizi-test');
 });
+
+// Installation partielle. Le point d'entrée « tizi » n'a pas de skill : install.mjs fait tomber son
+// {scripts} sur brd-builder, sinon sur le premier skill installé. Cela marche parce que les scripts
+// communs qu'il appelle sont dans les sept skills — règle vraie, jamais écrite, jamais vérifiée. Un
+// script commun ajouté à six skills sur sept casserait --skills <le septième> en silence.
+for (const seul of ['backlog-executor', 'brd-builder', 'impl-builder', 'plan-builder', 'prd-builder', 'sad-builder', 'test-builder'])
+  test(`installation partielle : --skills ${seul} produit des points d'entrée utilisables`, () => {
+    const proj = mkdtempSync(join(tmpdir(), `tizi-part-${seul}-`));
+    const r = node(join(ROOT, 'install.mjs'), ['--project', proj, '--target', 'claude', '--skills', seul]);
+    assert.equal(r.code, 0, r.err);
+
+    // Seul le skill demandé est posé.
+    assert.deepEqual(readdirSync(join(proj, '.claude/skills')), [seul]);
+
+    // Les points d'entrée posés sont ceux de ce skill, plus « tizi » qui n'en a pas.
+    const cmds = readdirSync(join(proj, '.claude/commands')).map(f => f.replace(/\.md$/, ''));
+    assert.ok(cmds.includes('tizi'), 'le point d\'étape est toujours posé');
+    for (const e of source) {
+      if (e.skill && e.skill !== seul) assert.ok(!cmds.includes(e.name), `${e.name} ne devrait pas être posé sans ${e.skill}`);
+    }
+
+    // Et surtout : tout script cité par une commande posée doit exister.
+    for (const c of cmds) {
+      const text = readFileSync(join(proj, '.claude/commands', `${c}.md`), 'utf8');
+      for (const m of text.matchAll(/`?(\.claude\/skills\/[a-z-]+\/scripts\/[a-z0-9-]+\.mjs)`?/g)) {
+        assert.ok(existsSync(join(proj, m[1])), `/${c} appelle ${m[1]}, absent avec --skills ${seul}`);
+      }
+      for (const m of text.matchAll(/`([^`]*\/SKILL\.md)`/g)) assert.ok(existsSync(join(proj, m[1])), `/${c} : ${m[1]} introuvable`);
+    }
+  });
