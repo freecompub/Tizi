@@ -2,7 +2,7 @@
 name: tizi-test
 description: "Étape 6 du SDLC : vérifier une release — parcours critiques, tests exploratoires, NFR, matrice de couverture des exigences, porte de release, preuves."
 argument-hint: "<initiative> <version candidate>"
-tools: ['vscode/askQuestions', 'read', 'search', 'edit', 'execute/runInTerminal', 'execute/getTerminalOutput']
+tools: ['vscode/askQuestions', 'read', 'search', 'edit', 'execute', 'execute/runInTerminal', 'execute/getTerminalOutput']
 handoffs:
   - label: "→ Tizi — 4. Planification"
     agent: tizi-plan

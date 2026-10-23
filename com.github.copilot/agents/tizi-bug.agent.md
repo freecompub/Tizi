@@ -2,7 +2,7 @@
 name: tizi-bug
 description: "Pour les testeurs : signaler un problème, retrouver ce qui était convenu dans la spécification, et le trier — défaut rattaché à l'exigence qu'il contredit, demande de changement, question, doublon ou non reproductible."
 argument-hint: "<initiative> [ce que vous observez]"
-tools: ['vscode/askQuestions', 'read', 'search', 'execute/runInTerminal', 'execute/getTerminalOutput']
+tools: ['vscode/askQuestions', 'read', 'search', 'execute', 'execute/runInTerminal', 'execute/getTerminalOutput']
 handoffs:
   - label: "→ Tizi — 4. Planification"
     agent: tizi-plan

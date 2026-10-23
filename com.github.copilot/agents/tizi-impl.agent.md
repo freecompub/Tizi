@@ -2,7 +2,7 @@
 name: tizi-impl
 description: "Étape 5 du SDLC : implémenter une tâche prête du plan — compréhension validée, BDD puis TDD sous garde-fou, revue de code par agents, PR."
 argument-hint: "<initiative> [TK-xxx]"
-tools: ['vscode/askQuestions', 'read', 'search', 'edit', 'execute/runInTerminal', 'execute/getTerminalOutput', 'agent']
+tools: ['vscode/askQuestions', 'read', 'search', 'edit', 'execute', 'execute/runInTerminal', 'execute/getTerminalOutput', 'agent']
 handoffs:
   - label: "→ Tizi — 6. Vérification de release"
     agent: tizi-test

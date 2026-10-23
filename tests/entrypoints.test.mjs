@@ -20,6 +20,34 @@ test('source des points d\'entrée : skills existants, passages vers des entrée
   assert.ok(!source.find(e => e.name === 'tizi-backlog').tools.includes('edit'));
 });
 
+// Copilot « ignore tout nom d'outil inconnu » : un nom namespacé de VS Code comme
+// execute/runInTerminal n'accorde donc RIEN à la CLI ni à l'agent cloud. Or chaque point d'entrée lance
+// un script. Sans l'alias intégré `execute`, Tizi serait inerte sur ces deux surfaces.
+// Alias intégrés, d'après la référence « Custom agents configuration » :
+// execute (shell, Bash, powershell), read, edit, search, agent (custom-agent, Task), web, todo.
+const ALIAS_COPILOT = new Set(['execute', 'read', 'edit', 'search', 'agent', 'web', 'todo',
+  'shell', 'Bash', 'powershell', 'Read', 'NotebookRead', 'Edit', 'MultiEdit', 'Write', 'NotebookEdit',
+  'Grep', 'Glob', 'custom-agent', 'Task', 'WebSearch', 'WebFetch', 'TodoWrite']);
+test('outils des agents Copilot : au moins un alias intégré par capacité nécessaire', () => {
+  for (const e of source) {
+    const tools = e.tools ?? [];
+    assert.ok(tools.length, `${e.name} : aucun outil déclaré`);
+    // Tout point d'entrée lance au moins un script : l'alias execute est indispensable.
+    assert.ok(tools.includes('execute'), `${e.name} : sans l'alias « execute », la CLI et l'agent cloud ne peuvent lancer aucun script`);
+    assert.ok(tools.some(t => ALIAS_COPILOT.has(t) && ['read', 'Read'].includes(t)), `${e.name} : aucun alias de lecture reconnu`);
+    // Un nom namespacé est toléré (ignoré par la CLI), mais jamais SEUL pour une capacité.
+    for (const t of tools.filter(x => x.includes('/'))) {
+      const famille = t.split('/')[0];
+      if (famille === 'execute') assert.ok(tools.includes('execute'), `${e.name} : ${t} sans l'alias execute`);
+    }
+  }
+  // Et ce qui ne doit pas pouvoir écrire ne le peut toujours pas.
+  for (const n of ['tizi', 'tizi-backlog', 'tizi-bug']) {
+    const e = source.find(x => x.name === n);
+    assert.ok(!(e.tools ?? []).includes('edit'), `${n} ne doit pas pouvoir éditer`);
+  }
+});
+
 for (const target of ['claude', 'copilot', 'both']) test(`génération des points d'entrée : cible ${target}`, () => {
   const proj = mkdtempSync(join(tmpdir(), `tizi-ep-${target}-`));
   assert.equal(node(join(ROOT, 'install.mjs'), ['--project', proj, '--target', target]).code, 0);

@@ -2,7 +2,7 @@
 name: tizi-sprint-review
 description: "Fin d'itération : sprint review (ce qui a été réalisé et prouvé, adaptation du backlog, prévision) puis rétrospective (coûts, blocages, actions et leur suivi), à partir des mesures réelles."
 argument-hint: "<initiative> [IT-n]"
-tools: ['vscode/askQuestions', 'read', 'search', 'edit', 'execute/runInTerminal', 'execute/getTerminalOutput']
+tools: ['vscode/askQuestions', 'read', 'search', 'edit', 'execute', 'execute/runInTerminal', 'execute/getTerminalOutput']
 handoffs:
   - label: "→ Tizi — 4. Planification"
     agent: tizi-plan
