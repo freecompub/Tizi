@@ -103,6 +103,15 @@ test('export approuvé périmé par la sprint review : averti avant, expliqué a
   assert.match(cs.err, /devient périmé/);
   assert.match(cs.err, /relance plan-operations\.mjs --target github/);
 
+  // Un avertissement de console se perd ; la sprint review se relit. L'export périmé est donc nommé
+  // dans le document lui-même, là où le backlog s'adapte.
+  const doc = readFileSync(join(repo, 'plan/demo/review/IT-1/sprint-review.md'), 'utf8');
+  assert.match(doc, /Exports du backlog périmés par cette revue/);
+  assert.match(doc, /github/);
+  assert.match(doc, /2026-10-23/);
+  assert.match(doc, /Alice/);
+  assert.match(doc, /relancer plan-operations\.mjs --target github/);
+
   // Et le refus de l'exécuteur nomme désormais sa cause.
   const apres = node(script('backlog-executor', 'apply-operations.mjs'), ['plan/demo/exports/github/operations.yaml', '--state', 'plan/demo/state.yaml', '--dry-run'], { cwd: repo });
   assert.notEqual(apres.code, 0);

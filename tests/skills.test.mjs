@@ -29,6 +29,28 @@ for (const f of COMMON) test(`fichier commun identique partout : ${f}`, () => {
   assert.ok(hashes.length >= 2); assert.equal(new Set(hashes).size, 1, `${f} diverge entre skills`);
 });
 
+// Les références homonymes ne sont pas toutes communes : council.md, lenses.md, phase-govern.md et
+// shadow-zones.md sont propres à chaque skill par construction, et l'invariant par défaut ci-dessous
+// ne porte que sur les scripts. Deux références sont vraiment communes et doivent rester identiques :
+// la continuité entre sessions, et la forme d'une question.
+const COMMON_REFS = ['sessions.md', 'questions.md'];
+for (const f of COMMON_REFS) test(`référence commune identique partout : ${f}`, () => {
+  const copies = skills.filter(s => existsSync(join(SKILLS, s, 'references', f)));
+  assert.deepEqual(copies, skills, `${f} manque dans un skill`);
+  const hashes = copies.map(s => createHash('md5').update(readFileSync(join(SKILLS, s, 'references', f))).digest('hex'));
+  assert.equal(new Set(hashes).size, 1, `${f} diverge entre skills`);
+});
+
+// Une référence que le SKILL.md ne cite pas n'est jamais lue : la posture ne vaut que si chaque skill
+// y renvoie depuis sa section Posture.
+test('chaque skill porte la posture des questions', () => {
+  for (const s of skills) {
+    const text = readFileSync(join(SKILLS, s, 'SKILL.md'), 'utf8');
+    assert.match(text, /^## Posture/m, `${s} : aucune section Posture`);
+    assert.match(text, /references\/questions\.md/, `${s} : la posture ne cite pas references/questions.md`);
+  }
+});
+
 // La liste ci-dessus est tenue à la main : un fichier dupliqué qu'on oublie d'y mettre n'est plus
 // comparé, et peut diverger sans que rien ne le dise. On vérifie donc l'invariant par défaut : tout
 // fichier portant le même nom dans deux skills est identique, sauf ceux qui sont propres au document

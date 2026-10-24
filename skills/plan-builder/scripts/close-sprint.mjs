@@ -45,6 +45,9 @@ function perimes(plan, root, digestAvant) {
 // C'est un fait, pas une décision ; il est signalé dans le document.
 const synced = [];
 const digestAvant = planStateDigest(plan);
+// Les exports que le report des fusions périme. Un avertissement de console se perd ; la sprint review
+// se relit. Ils sont donc nommés aussi dans le document, dans la partie « adapter le backlog ».
+const perimesParLaRevue = [];
 if (existsSync(implPath)) {
   const implState = loadState(implPath);
   for (const t of arr(plan.tasks)) if (!['terminé', 'abandonné'].includes(t.status) && arr(implState.tasks).find(x => x.id === t.id)?.status === 'fusionnee') { t.status = 'terminé'; synced.push(t.id); }
@@ -52,7 +55,8 @@ if (existsSync(implPath)) {
     // Écrire l'état change son empreinte, donc périme tout plan d'opérations approuvé mais pas encore
     // appliqué : l'exécuteur le refusera. Le refus est juste, mais il arrive loin de sa cause. On
     // prévient ici, avant d'écrire, en nommant les exports concernés.
-    for (const a of perimes(plan, dirname(statePath), digestAvant)) {
+    perimesParLaRevue.push(...perimes(plan, dirname(statePath), digestAvant));
+    for (const a of perimesParLaRevue) {
       console.warn(`Avertissement : l'export ${a.target} approuvé le ${a.date ?? '—'} par ${a.declared_by ?? '—'} (empreinte ${String(a.sha256).slice(0, 12)}…) devient périmé — le report des fusions modifie l'état du plan.`);
       console.warn(`  S'il n'a pas encore été appliqué : relance plan-operations.mjs --target ${a.target} après la sprint review, et fais réapprouver la nouvelle empreinte.`);
     }
@@ -119,6 +123,10 @@ if (fr.length) md.push('Réalisé et prouvé, d\'après la dernière vérificati
 md.push('## Adapter le backlog — décisions à prendre', '');
 md.push('**Tâches du sprint non finies** : pour chacune, continuer, découper ou reporter (à enregistrer dans `review.carryover`).', '', unfinished.length ? table(['Tâche', 'Taille', 'Statut', 'Décision'], unfinished.map(t => [`${t.id} — ${txt(t.title)}`, t.size, t.status, ''])) : '_Aucune._', '');
 md.push('**Tailles à revoir** : la taille retenue diffère du risque calculé.', '', resize.length ? table(['Tâche', 'Taille retenue', 'Risque calculé', 'Facteurs'], resize.map(({ t, r }) => [`${t.id} — ${txt(t.title)}`, t.size, r.size, r.factors.map(([n, v]) => `${n} ${v}`).join(', ') || '—'])) : '_Aucune._', '');
+md.push('**Exports du backlog périmés par cette revue** : le report des fusions change l\'empreinte du plan, et un plan d\'opérations approuvé mais pas encore appliqué ne passera plus. L\'exécuteur le refusera, loin de sa cause : la voici.', '',
+  perimesParLaRevue.length
+    ? table(['Cible', 'Approuvé le', 'Par', 'Empreinte approuvée', 'À faire'], perimesParLaRevue.map(a => [a.target, txt(a.date), txt(a.declared_by), `${String(a.sha256).slice(0, 12)}…`, `relancer plan-operations.mjs --target ${a.target}, puis faire réapprouver la nouvelle empreinte`]))
+    : '_Aucun._', '');
 md.push('## Prévoir la suite', '', `D'après ${recent.length} itération(s) : **${cap.throughput} tâche(s) fusionnée(s)** par itération, pour **${cap.attention} min** d'attention humaine consommée. Quand les agents codent, c'est l'attention et la relecture qui limitent le débit : planifier au plus ce débit, et fixer \`settings.attention_capacity\` d'après ce que l'équipe peut réellement donner. Pour une date de fin, \`forecast.mjs\` donne la probabilité à 85 %. L'équipe décide ; ce ne sont que des propositions.`, '');
 if (Object.keys(calibration).length && !Object.keys(plan.settings?.attention_by_size ?? {}).length) md.push(`**Calibration disponible** : reprendre \`attention_by_size: ${JSON.stringify(calibration).replace(/"/g, '')}\` dans les réglages du plan.`, '');
 
