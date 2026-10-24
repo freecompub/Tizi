@@ -47,6 +47,24 @@ test('capture de session : transcriptions Claude Code et Copilot', () => {
   const all = extracts.join('\n') + files.filter(f => f.endsWith('.jsonl')).map(f => readFileSync(join(dir, '.tizi/sessions', f), 'utf8')).join('\n');
   assert.doesNotMatch(all, /ghp_[A-Za-z0-9]{20,}/, 'jeton non masqué');
   assert.match(all, /agents du soir/); assert.match(all, /Chloé n'a pas répondu/);
+
+  // Une question posée par l'outil de questions de l'hôte n'est pas dans le texte de l'assistant :
+  // elle est dans l'appel. Sans la lire là, l'extrait gardait les réponses et perdait les questions.
+  const claude = extracts.find(e => e.includes('agents du soir'));
+  assert.match(claude, /règle écrite, ou une habitude/, 'question posée par l\'outil perdue');
+  assert.match(claude, /propositions : Règle écrite · Habitude/, 'réponses proposées perdues');
+  assert.match(claude, /\*\*Réponses\*\* : Habitude/, 'réponse reçue perdue');
+  // Un appel porte plusieurs questions et ne renvoie qu'un résultat : la réponse appartient à l'appel.
+  assert.equal(claude.match(/\*\*Réponses?\*\* : Habitude/g).length, 1, 'la réponse est recopiée sur chaque question');
+  // Côté Copilot, aucun événement ne relie un résultat à son appel : la question est conservée, sa
+  // réponse ne l'est pas. Mieux vaut une question sans réponse qu'une réponse sans question.
+  const copilot = extracts.find(e => e.includes('US-002'));
+  assert.match(copilot, /passe-t-elle en « bon »/, 'question posée par l\'outil Copilot perdue');
+  assert.match(copilot, /propositions : Oui, version bon · Non, on la reporte/);
+
+  // Et une question à laquelle il a été répondu n'est plus en suspens.
+  const suspens = claude.split('## Questions en suspens')[1] ?? '';
+  assert.doesNotMatch(suspens, /règle écrite, ou une habitude/, 'question répondue laissée en suspens');
   assert.doesNotMatch(extracts.join('\n'), /\(sous-agent|à ignorer\)/, 'message de sous-agent repris dans un extrait');
 });
 

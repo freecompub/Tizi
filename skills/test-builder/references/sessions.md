@@ -6,7 +6,7 @@ Un fichier d'état dit où l'on en est, pas comment on y est arrivé. Pour repre
 |---|---|---|---|
 | État | `<document>/<slug>/state.yaml` | Ce qui est vrai maintenant : la référence | L'agent, après chaque échange validé |
 | Condensé | `.tizi/sessions/<date>-<session>.condense.md` | Le fil de la discussion | L'agent, à la pause ou à la reprise |
-| Extrait | `.tizi/sessions/<date>-<session>.extrait.md` | Vos messages mot pour mot, questions, fichiers et identifiants touchés | Le hook, automatiquement |
+| Extrait | `.tizi/sessions/<date>-<session>.extrait.md` | Vos messages mot pour mot, les questions posées — celles écrites comme celles passées par l'outil de questions de l'hôte, avec leurs réponses proposées et la réponse reçue —, les fichiers et les identifiants touchés | Le hook, automatiquement |
 | Transcription | `.tizi/sessions/<date>-<session>.jsonl` | L'échange complet, consultable par recherche | Le hook, automatiquement |
 | Entrée d'index | `.tizi/sessions/<date>-<session>.index.yaml` | Dates, initiatives touchées, tâche, tokens, chemins des trois fichiers ci-dessus | Le hook, automatiquement |
 

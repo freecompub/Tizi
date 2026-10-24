@@ -4,6 +4,7 @@
 {"type":"assistant.turn_start","timestamp":"2026-10-28T08:00:06.000Z","data":{}}
 {"type":"assistant.message","timestamp":"2026-10-28T08:00:07.000Z","data":{"content":"Je mets à jour plan/demo/state.yaml.","toolRequests":[{"name":"edit","arguments":"{\"path\":\"plan/demo/state.yaml\"}"}]}}
 {"type":"tool.execution_start","timestamp":"2026-10-28T08:00:07.500Z","data":{"toolName":"bash","arguments":{"command":"node .github/skills/plan-builder/scripts/render-plan.mjs plan/demo/state.yaml"}}}
+{"type":"tool.execution_start","timestamp":"2026-10-28T08:00:07.800Z","data":{"toolName":"vscode/askQuestions","arguments":{"questions":[{"question":"US-002 passe-t-elle en « bon » pour tenir l'itération ?","options":[{"label":"Oui, version bon"},{"label":"Non, on la reporte"}]}]}}}
 {"type":"assistant.message","timestamp":"2026-10-28T08:00:08.000Z","data":{"content":"(sous-agent)","parentToolCallId":"t9"}}
 {"type":"assistant.message","timestamp":"2026-10-28T08:00:09.000Z","data":{"content":"C'est fait : US-002 reste non prête. Faut-il relancer Chloé par écrit avant la revue de vendredi ?"}}
 {"type":"assistant.turn_end","timestamp":"2026-10-28T08:00:10.000Z","data":{}}

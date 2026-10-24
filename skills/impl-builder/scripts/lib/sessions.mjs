@@ -17,6 +17,24 @@ export const sessionIndexPath = (date, session) => `${SESSIONS_DIR}/${date}-${se
 const INITIATIVE_RE = /\b(brd|prd|sad|plan|impl|qa)\/([a-z0-9][a-z0-9-]*)\//g;
 const QUESTION_RE = /[^.!?\n]*\?(?=\s|$)/g;
 
+// ── Les questions posées par l'outil de l'hôte ───────────────────────────────
+// Une question posée avec l'outil de questions (AskUserQuestion dans Claude Code, askQuestions dans
+// VS Code) n'est PAS dans le texte de l'assistant : elle est dans l'appel d'outil, et la réponse revient
+// dans son résultat. L'extrait ne balayait que le texte : il gardait les réponses et perdait les
+// questions. Depuis que la règle des questions impose cet outil pour les choix fermés, la perte était
+// systématique — et un extrait qui montre des réponses sans leurs questions est pire qu'un extrait vide.
+const isQuestionTool = name => /^(askuserquestion|ask_user_question|askquestions|vscode\/askquestions)$/i.test(String(name ?? ''));
+
+// Formes acceptées : { questions: [{ question, options: [{ label }] }] } et une question seule. Ce qui
+// n'est pas reconnu est ignoré plutôt que deviné : l'extrait ne doit rien inventer.
+export function questionsOf(input) {
+  const list = Array.isArray(input?.questions) ? input.questions : (input?.question || input?.prompt ? [input] : []);
+  return list.map(q => ({
+    question: String(q?.question ?? q?.prompt ?? q?.text ?? '').trim(),
+    options: (Array.isArray(q?.options) ? q.options : []).map(o => String(o?.label ?? o ?? '').trim()).filter(Boolean),
+  })).filter(q => q.question);
+}
+
 // Masquage des secrets probables avant toute copie (les transcriptions peuvent contenir des jetons collés par erreur).
 const SECRET_RE = /(gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|xox[abpr]-[A-Za-z0-9-]{10,}|AKIA[0-9A-Z]{16}|sk-[A-Za-z0-9_-]{20,}|-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z ]*PRIVATE KEY-----)/g;
 export const maskSecrets = text => String(text).replace(SECRET_RE, '[secret masqué]');
@@ -34,6 +52,8 @@ const textOf = content => {
 // Les messages de sous-agents (isSidechain, agentId, parentToolCallId) et les résultats d'outils sont ignorés.
 export function readTranscript(path) {
   const turns = [];
+  // Appels de l'outil de questions, pour rattacher chaque réponse à sa question.
+  const askIds = new Set();
   const lastAssistant = () => { for (let k = turns.length - 1; k >= 0; k--) if (turns[k].role === 'assistant') return turns[k]; return null; };
   for (const line of readFileSync(path, 'utf8').split('\n')) {
     if (!line.trim()) continue;
@@ -53,6 +73,7 @@ export function readTranscript(path) {
       continue;
     }
     if (e.type === 'tool.execution_start') {
+      // Copilot ne relie pas un résultat à son appel : on garde la question, sans sa réponse.
       const tool = { name: e.data?.toolName ?? e.data?.name ?? '', input: parseArgs(e.data?.arguments ?? e.data?.args) };
       const a = lastAssistant();
       if (a) a.tools = [...(a.tools ?? []), tool]; else turns.push({ role: 'assistant', at, text: '', tools: [tool] });
@@ -62,13 +83,23 @@ export function readTranscript(path) {
     const msg = e.message ?? {};
     if (e.type === 'user') {
       const content = msg.content;
-      if (Array.isArray(content) && content.every(c => c?.type === 'tool_result')) continue; // résultat d'outil, pas une parole
+      if (Array.isArray(content) && content.every(c => c?.type === 'tool_result')) {
+        // Résultat d'outil, donc pas une parole — sauf celui d'une question : c'est la réponse de
+        // l'utilisateur, et elle n'apparaît nulle part ailleurs. On la rattache à son appel.
+        for (const r of content) {
+          if (!askIds.has(r?.tool_use_id)) continue;
+          const rep = (typeof r.content === 'string' ? r.content : textOf(r.content)).trim();
+          if (rep) turns.push({ role: 'answer', at, ref: r.tool_use_id, text: rep });
+        }
+        continue;
+      }
       const text = textOf(content).trim();
       if (text && !text.startsWith('<command-') && !text.startsWith('<local-command')) turns.push({ role: 'user', at, text });
     } else if (e.type === 'assistant') {
       const content = Array.isArray(msg.content) ? msg.content : [];
       const text = textOf(content).trim();
-      const tools = content.filter(c => c?.type === 'tool_use').map(c => ({ name: c.name, input: c.input ?? {} }));
+      const tools = content.filter(c => c?.type === 'tool_use').map(c => ({ name: c.name, id: c.id, input: c.input ?? {} }));
+      for (const t of tools) if (isQuestionTool(t.name)) askIds.add(t.id);
       if (text || tools.length) turns.push({ role: 'assistant', at, text, tools });
     }
   }
@@ -98,7 +129,20 @@ export function buildExtract(turns, meta) {
     .filter(c => /scripts\/[a-z-]+\.mjs/.test(c)).map(c => c.match(/scripts\/([a-z-]+\.mjs)/)[1]))];
   const ids = [...new Set(turns.flatMap(t => [t.text, ...(t.tools ?? []).map(x => JSON.stringify(x.input))].join(' ').match(/\b[A-Z]{1,4}-S?\d{1,3}\b/g) ?? []))].sort();
   const lastAssistant = [...assistants].reverse().find(a => a.text);
-  const openQuestions = lastAssistant ? [...lastAssistant.text.matchAll(QUESTION_RE)].map(m => m[0].trim()).filter(q => q.length > 10) : [];
+  // Questions posées par l'outil, dans l'ordre, avec la réponse reçue quand l'hôte la relie à l'appel.
+  const reponses = new Map(turns.filter(t => t.role === 'answer').map(t => [t.ref, t.text]));
+  const appels = assistants.flatMap(a => (a.tools ?? []).filter(t => isQuestionTool(t.name))
+    .map(t => ({ questions: questionsOf(t.input), reponse: reponses.get(t.id) ?? '' }))).filter(c => c.questions.length);
+  const posees = appels.flatMap(c => c.questions);
+  const ecrites = assistants.flatMap(a => [...(a.text ?? '').matchAll(QUESTION_RE)].map(m => m[0].trim()).filter(q => q.length > 10));
+  const ligneQuestion = q => `- ${maskSecrets(q.question)}${q.options.length ? ` _(propositions : ${q.options.map(maskSecrets).join(' · ')})_` : ''}`;
+  // La réponse appartient à l'appel, pas à chacune de ses questions.
+  const blocAppel = c => [...c.questions.map(ligneQuestion), ...(c.reponse ? [`  **${c.questions.length > 1 ? 'Réponses' : 'Réponse'}** : ${maskSecrets(c.reponse)}`] : [])];
+  // Une question posée par l'outil et restée sans réponse est en suspens, comme celles de la dernière réponse.
+  const openQuestions = [
+    ...appels.filter(c => !c.reponse).flatMap(c => c.questions.map(q => q.question)),
+    ...(lastAssistant ? [...lastAssistant.text.matchAll(QUESTION_RE)].map(m => m[0].trim()).filter(q => q.length > 10) : []),
+  ];
   const md = [
     `# Extrait de session — ${meta.date}`, '',
     `> Généré automatiquement depuis la transcription (${meta.session}), sans interprétation. Le condensé narratif, s'il existe, est dans le fichier \`.condense.md\` voisin.`, '',
@@ -106,7 +150,9 @@ export function buildExtract(turns, meta) {
     '## Messages de l\'utilisateur, mot pour mot', '',
     ...users.flatMap((u, i) => [`### ${i + 1}. ${u.at ? u.at.replace('T', ' ').slice(0, 16) : ''}`, '', maskSecrets(u.text).split('\n').map(l => `> ${l}`).join('\n'), '']),
     '## Questions posées par l\'assistant', '',
-    ...assistants.flatMap(a => [...(a.text ?? '').matchAll(QUESTION_RE)].map(m => m[0].trim()).filter(q => q.length > 10).map(q => `- ${maskSecrets(q)}`)), '',
+    ...(appels.length || ecrites.length
+      ? [...appels.flatMap(blocAppel), ...ecrites.map(q => `- ${maskSecrets(q)}`)]
+      : ['_Aucune._']), '',
     '## Dernière réponse de l\'assistant', '',
     lastAssistant ? maskSecrets(lastAssistant.text).slice(0, 3000) : '_Aucune._', '',
     '## Questions en suspens à la fin de la session', '',
