@@ -21,7 +21,15 @@ Point de départ : `/tizi` dans Claude Code, ou l'agent `tizi` dans Copilot.
 
 ## documentation/
 
-Le document de référence « Tizi — un SDLC agentique, du recueil du besoin au déploiement », en Markdown ; il porte sa propre date en en-tête. Il contient le sommaire, le nom et sa philosophie, les dix étapes, la construction des étapes 1 à 6, l'index des abréviations et identifiants, et les sources.
+Trois fichiers : le document de référence, et les notes de lecture des ouvrages dont la méthode est tirée.
+
+| Fichier | Contenu |
+|---|---|
+| `Tizi - un SDLC agentique.md` | Le document de référence ; il porte sa propre date en en-tête. Sommaire, nom et philosophie, dix étapes, construction des étapes 1 à 6, index des abréviations et identifiants, sources |
+| `notes-Constantinidis-et-BABOK-v3.md` | Notes de lecture de Constantinidis, *Expression des besoins pour le SI* (2010), et du *BABOK v3* (IIBA, 2015), lus en entier |
+| `notes-Patton-User-Story-Mapping.md` | Notes de lecture de Jeff Patton, *User Story Mapping* (O'Reilly, 2014), lu en entier |
+
+Les notes sont découpées par **tranches de lecture**, dans l'ordre des chapitres, annexes et glossaires compris. Elles ne sont pas un résumé à lire d'affilée : ce sont les traces qui permettent de retrouver d'où vient chaque pratique, et de vérifier une correspondance du tableau des sources sans rouvrir les livres. Elles portent aussi les rapprochements relevés à la lecture — les « zones d'ombre » du chapitre 4 de Constantinidis portent déjà ce nom, et les *Perspectives* du BABOK sont nos lentilles.
 
 > **Le PDF a été retiré.** Il était exporté à la main depuis le document vivant, et le Markdown vient d'être corrigé sur dix passages que l'audit du 23 octobre a rendus faux (scellement du document figé, signature des contrôles de la constitution, dérogation au garde-fou TDD, portée réelle de la non-invocabilité des sous-agents, index des sessions, marketplace de plugins). Livrer un PDF qui contredit le Markdown serait pire que ne pas en livrer : à remettre après réexport depuis le document vivant, une fois les mêmes corrections portées à la source.
 
