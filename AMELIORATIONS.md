@@ -10,6 +10,9 @@ qu'une fois décidée — sinon l'issue ne dit pas ce qu'il faut faire.
 
 Dernière vérification de ce registre : **24 octobre 2026**, en exécutant les scripts.
 
+Ce qui est affirmé sans avoir été observé ne vit pas ici mais dans `INCERTITUDES.md` : une piste est
+une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
+
 ## Faites
 
 | Piste | Date | Où |

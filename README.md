@@ -171,6 +171,14 @@ Deux bancs d'évaluation, à lancer avec un vrai agent (Claude Code ou Copilot) 
 
 Voir `evals/README.md`.
 
+## INCERTITUDES.md
+
+Ce que le dépôt affirme **sans que personne l'ait observé**. Tizi refuse une exigence sans source : ce
+fichier applique la règle à Tizi lui-même, avec les trois classes de preuve du catalogue (observé,
+rapporté, supposé). Une entrée naît dès qu'on écrit quelque chose qu'on n'a pas vu fonctionner, et
+sort quand quelqu'un l'observe — pas quand un test passe, si ce test s'appuie sur la même supposition.
+Une fixture inventée prouve que le code la lit, pas qu'il lit la réalité.
+
 ## AMELIORATIONS.md
 
 Le registre des pistes : ce qui est fait, ce qui reste ouvert avec sa preuve, ce qui n'est pas encore
