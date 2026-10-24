@@ -10,6 +10,11 @@
 #   ce qu'elle reconnaît. Sans l'alias `execute`, la CLI et l'agent cloud n'auraient AUCUN moyen de
 #   lancer un script — alors que chaque point d'entrée en lance. Ne pas retirer `execute`.
 # handoffs : boutons de passage proposés par l'agent Copilot ; la commande Claude les cite en fin de réponse.
+#
+# Les corps ci-dessous demandent l'outil de questions de l'hôte là où l'étape pose des choix fermés
+# (le chemin, le tri d'un défaut, le sort d'une tâche non finie). Ce n'est pas une règle de méthode :
+# la méthode reste dans les skills (references/questions.md), et le point d'entrée ne fait que nommer
+# l'outil, parce que c'est lui qui connaît la surface — askQuestions existe dans VS Code et pas ailleurs.
 
 entrypoints:
   - name: tizi
@@ -28,7 +33,7 @@ entrypoints:
 
       **Application existante, Tizi pas encore adopté** (du code dans le dépôt, mais ni `impl/config.yaml` ni `.tizi/adoption.md`) : propose d'abord `node {scripts}/adopt.mjs .`. Il observe le dépôt sans rien exécuter et propose la configuration des tests et une carte grossière de l'existant, chaque élément avec sa preuve ; fais relire ce qu'il signale comme incertain. C'est aussi le moment d'écrire une première **constitution du produit** (`constitution.mjs`) à partir de ce qui existe déjà : documentation réglementaire, règles de sécurité, habitudes d'équipe — quelques principes, chacun avec son moyen de vérification et son responsable.
 
-      **Nouvelle initiative, ou initiative sans chemin décidé** : avant toute étape, choisis le chemin avec l'utilisateur. Pose en un seul message les six questions fermées (oui ou non) :
+      **Nouvelle initiative, ou initiative sans chemin décidé** : avant toute étape, choisis le chemin avec l'utilisateur. Pose les six questions fermées (oui ou non) avec l'outil de questions de l'hôte — `vscode/askQuestions` dans VS Code, l'outil de questions de Claude Code — en deux appels, quatre puis deux, parce qu'un appel n'en porte pas plus. « Oui » et « non » comme réponses proposées, la réponse libre toujours ouverte, et pour chacune ce qui dépend de la réponse. Sans l'outil (mode non interactif, éditeur qui ne l'expose pas), numérote-les dans un seul message, avec une ligne « Autre : … ». Les six, dans cet ordre :
       1. S'agit-il d'une modification évidente et sans risque (coquille, texte, configuration) ?
       2. Le changement touche-t-il une exigence réglementaire ou la sécurité des patients ou des utilisateurs ?
       3. L'intention est-elle floue, ou défendue différemment par plusieurs personnes ?
@@ -95,7 +100,7 @@ entrypoints:
     body: |
       Suis la phase Review du skill (`references/phase-review.md`).
       1. Lance `node {scripts}/due-reviews.mjs .` pour trouver l'itération concernée, puis `node {scripts}/close-sprint.mjs plan/<initiative>/state.yaml --iteration <IT-n>` : il prépare les mesures, les fiches, les preuves et le document `review/<IT-n>/sprint-review.md`.
-      2. **Sprint review**, avec les parties prenantes : ce qui a été réalisé et prouvé, puis l'adaptation du backlog. Fais décider, pour chaque tâche non finie, continuer, découper ou reporter (`review.carryover`), et les tailles à revoir.
+      2. **Sprint review**, avec les parties prenantes : ce qui a été réalisé et prouvé, puis l'adaptation du backlog. Fais décider, pour chaque tâche non finie, continuer, découper ou reporter (`review.carryover`), et les tailles à revoir : trois réponses proposées avec leur conséquence, par l'outil de questions de l'hôte (`vscode/askQuestions` dans VS Code, l'outil de questions de Claude Code), la réponse libre toujours ouverte, et un appel par lot de tâches plutôt qu'une liste tronquée.
       3. **Rétrospective**, entre membres de l'équipe : coûts du sprint, causes de blocage récurrentes (une action et un responsable chacune, `review.blockage_actions`), suivi des actions du sprint précédent (`review.actions_followup`), puis une ou deux actions à essayer (`review.team.process.try`).
       Les notes et les décisions viennent de l'équipe : enregistre-les seulement quand elles sont déclarées, puis lance `lint.mjs` pour vérifier qu'aucune décision ne manque (S76, S77).
 
@@ -113,7 +118,7 @@ entrypoints:
       Suis `references/defects.md` du skill.
       1. Recueille la fiche : version candidate, environnement, données, étapes, observé. Puis `node {scripts}/defect.mjs <initiative> --signaler …`. Un bug déjà saisi dans GitHub ou Jira se reprend par `import-defects.mjs` plutôt que d'être ressaisi.
       2. Lance `node {scripts}/find-expectations.mjs <initiative> "<observation>"` et montre les attentes proches, avec leur texte exact et l'état de leur preuve. Si rien n'en ressort, propose de parcourir par activité, parcours ou story.
-      3. Pose les trois questions, dans l'ordre : une attente écrite couvre-t-elle la situation ? le comportement la contredit-il ? l'attente paraît-elle fausse ? Vérifie les doublons (`--ouverts`). Le testeur tranche ; une demande de changement va au décideur désigné.
+      3. Pose les trois questions du tri, dans l'ordre, avec l'outil de questions de l'hôte (`vscode/askQuestions` dans VS Code, l'outil de questions de Claude Code) : une attente écrite couvre-t-elle la situation ? le comportement la contredit-il ? l'attente paraît-elle fausse ? Puis le classement (défaut, changement, question, doublon, non reproductible) et la sévérité, réponses proposées avec leur conséquence et la réponse libre toujours ouverte. Vérifie les doublons (`--ouverts`). Le testeur tranche ; une demande de changement va au décideur désigné.
       4. Enregistre le tri avec `defect.mjs --trier`. Pour un défaut, propose la story corrective en voie rapide (`tizi-plan`), rattachée à l'épopée de l'exigence.
       Tu ne modifies aucun fichier toi-même : seuls les scripts écrivent au registre.
 

@@ -4,27 +4,27 @@ Ce fichier tient ce qui est **évoqué mais pas encore tranché**, et l'état de
 constats d'audit, eux, vivent dans `evals/audit/` avec leur preuve : un constat est une chose
 observée, une piste est une intention. Les deux ne se rangent pas au même endroit.
 
-Chaque ligne dit son état : **fait** (avec la branche ou le commit), **ouvert** (vérifié, avec sa
+Chaque ligne dit son état : **faite** (avec sa date et sa branche), **ouverte** (vérifiée, avec sa
 preuve), **à trancher** (la question n'a pas de réponse décidée). Une piste ne devient une issue
 qu'une fois décidée — sinon l'issue ne dit pas ce qu'il faut faire.
 
 Dernière vérification de ce registre : **24 octobre 2026**, en exécutant les scripts.
 
-## Fait
+## Faites
 
-| Piste | Où |
-|---|---|
-| Garde-fou TDD : mode hors tâche tracé (`derogation.mjs`), borné dans le temps | `audit/correctifs-2026-10-23` |
-| Tâche fusionnée libérée à la fusion, message qui dit quoi faire | `audit/correctifs-2026-10-23` |
-| Index des sessions : un fichier par session, aucun écrivain partagé | `audit/correctifs-2026-10-23` |
-| `defect.mjs` commun à `plan-builder` et `test-builder` | `audit/correctifs-2026-10-23` |
-| Signature Ed25519 de la surface exécutable de la constitution, ancre de confiance hors du dépôt | `audit/correctifs-2026-10-23` |
-| Garde-fou : « état d'implémentation introuvable » au lieu de « compréhension non validée » | `audit/correctifs-2026-10-23` |
-| `next-step.mjs` signale les signalements à trier et propose `tizi-bug` | `audit/correctifs-2026-10-23` |
-| Export de backlog périmé par la sprint review : nommé dans `review/<IT-n>/sprint-review.md`, pas seulement sur la console | `audit/correctifs-2026-10-24` |
-| `--generer-cle` écrit la clé publique en `<chemin>.pub` au lieu de l'afficher seulement | `audit/correctifs-2026-10-24` |
-| Rapport d'audit de la CI (`.tizi/ci-audit.md`) ignoré par Git : lancer l'audit ne salit plus l'arbre | `audit/correctifs-2026-10-24` |
-| Posture des questions : les trois formes, dans les sept skills | `audit/correctifs-2026-10-24` |
+| Piste | Date | Où |
+|---|---|---|
+| Garde-fou TDD : mode hors tâche tracé (`derogation.mjs`), borné dans le temps | 23 octobre 2026 | `audit/correctifs-2026-10-23` |
+| Tâche fusionnée libérée à la fusion, message qui dit quoi faire | 23 octobre 2026 | `audit/correctifs-2026-10-23` |
+| Index des sessions : un fichier par session, aucun écrivain partagé | 23 octobre 2026 | `audit/correctifs-2026-10-23` |
+| `defect.mjs` commun à `plan-builder` et `test-builder` | 23 octobre 2026 | `audit/correctifs-2026-10-23` |
+| Signature Ed25519 de la surface exécutable de la constitution, ancre de confiance hors du dépôt | 23 octobre 2026 | `audit/correctifs-2026-10-23` |
+| Garde-fou : « état d'implémentation introuvable » au lieu de « compréhension non validée » | 23 octobre 2026 | `audit/correctifs-2026-10-23` |
+| `next-step.mjs` signale les signalements à trier et propose `tizi-bug` | 23 octobre 2026 | `audit/correctifs-2026-10-23` |
+| Export de backlog périmé par la sprint review : nommé dans `review/<IT-n>/sprint-review.md`, pas seulement sur la console | 24 octobre 2026 | `audit/correctifs-2026-10-24` |
+| `--generer-cle` écrit la clé publique en `<chemin>.pub` au lieu de l'afficher seulement | 24 octobre 2026 | `audit/correctifs-2026-10-24` |
+| Rapport d'audit de la CI (`.tizi/ci-audit.md`) ignoré par Git : lancer l'audit ne salit plus l'arbre | 24 octobre 2026 | `audit/correctifs-2026-10-24` |
+| Règle des questions : trois formes (choix fermé, arbitrage, élicitation), outil de questions de l'hôte, limites et repli, dans les sept skills et dans les trois points d'entrée à choix fermés | 24 octobre 2026 | `audit/correctifs-2026-10-24` |
 
 ## Ouvert
 
@@ -49,10 +49,6 @@ Dernière vérification de ce registre : **24 octobre 2026**, en exécutant les 
   versions couvertes par cette borne. Deux issues possibles, pas trois : remonter le plancher à la
   version qui porte le reporter, ou générer une commande compatible 18. Tant que ce n'est pas tranché,
   la configuration proposée peut être inexécutable sur la version minimale annoncée (constat nº 16).
-- **Points d'entrée et posture.** La posture des questions a été ajoutée aux skills. Elle n'a **pas**
-  été ajoutée aux points d'entrée, parce que `entrypoints/entrypoints.yaml` l'interdit en propres
-  termes : « Ces points d'entrée sont des coquilles : tout le savoir reste dans les skills. N'y ajoute
-  aucune règle de méthode. » À trancher : garder l'invariant, ou l'assouplir et dire pourquoi.
 
 ## Pistes non tranchées
 
