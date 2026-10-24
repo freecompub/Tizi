@@ -21,7 +21,7 @@ Trouver ce que cette lentille remarquerait comme **manquant, ambigu, non testabl
 - Ne répète pas une zone d'ombre déjà listée dans le dossier.
 - Une question par zone d'ombre, ouverte et non orientée ; cite l'élément concerné (`FR-xxx`, `PJ-xx`, `REL-n`…) quand il y en a un.
 - Indique qui peut répondre (rôle).
-- 8 questions au maximum ; zéro est une réponse valide.
+- 8 questions au maximum ; zéro est une réponse valide. Tu ne hiérarchises pas entre lentilles et tu n'en gardes pas « les meilleures » : tu transmets tout ce que la tienne a trouvé. Réduire à cinq est le travail de l'orchestrateur, qui seul voit l'ensemble.
 
 ## Format de sortie
 
