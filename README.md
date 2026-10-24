@@ -144,11 +144,13 @@ Les sept skills, au format ouvert Agent Skills (validés par `skills-ref`), util
 
 Chaque skill sait reprendre une session interrompue (`references/sessions.md`) : un hook conserve la transcription et en tire un extrait, `status.mjs` donne le point d'étape, `session-search.mjs` retrouve un détail. Chaque session écrit **sa seule entrée d'index** dans `.tizi/sessions/<date>-<id>.index.yaml` : un fichier par session, donc aucun conflit Git entre développeurs. Le hook de début de session rappelle la dernière session sans condensé.
 
+Deux **références** sont communes aux sept skills et vérifiées identiques : `references/sessions.md` (reprendre une session interrompue) et `references/questions.md` (la forme d'une question selon ce qu'on cherche — choix fermé avec recommandation, arbitrage avec ses conséquences mais sans recommandation, élicitation en question ouverte). Les autres références homonymes — `council.md`, `lenses.md`, `phase-govern.md`, `shadow-zones.md` — sont propres à chaque skill par construction.
+
 Fichiers communs, identiques d'un skill à l'autre, dont `scripts/lib/agent-io.mjs` qui adapte les hooks à Claude Code, à Copilot et à VS Code : `scripts/lib/common.mjs`, `scripts/lib/rules.mjs` (catalogue de vérification), `scripts/lib/sessions.mjs`, `scripts/lib/checklists.mjs`, `scripts/session-capture.mjs`, `scripts/session-search.mjs`, `scripts/session-start.mjs`, `scripts/status.mjs`, `scripts/next-step.mjs`, `scripts/choose-path.mjs`, `scripts/sync-agent-instructions.mjs`, `scripts/adopt.mjs`, `scripts/block.mjs`, `scripts/due-reviews.mjs`, `scripts/constitution.mjs`, `scripts/ask-five.mjs`, `scripts/review-checklist.mjs`, `scripts/cross-context.mjs`, `scripts/cross-merge.mjs`. Trois autres sont communs aux seuls skills qui produisent un document — `brd-builder`, `prd-builder`, `sad-builder`, `plan-builder` : `scripts/lint.mjs`, `scripts/freeze-version.mjs`, `scripts/verify-handoff.mjs` (ce dernier également dans `impl-builder` et `test-builder`). `scripts/lib/testing.mjs` sert aux étapes 5 et 6. Toute modification de l'un d'eux se recopie dans tous les skills qui l'ont.
 
 ## tests/
 
-`npm test` (ou `node --test tests/*.test.mjs`) rejoue toute la chaîne sur une copie du cas d'exemple, sans dépendance : conformité des skills à la spécification Agent Skills, identité des fichiers communs — et, par défaut, de **tout** fichier ou sous-agent homonyme entre deux skills —, vérification et rendu des quatre documents, intégrité des handoffs (état **et** document scellés), verrous de l'exécuteur, garde-fou TDD avec les charges utiles de Claude Code, Copilot et VS Code et sa dérogation, signature des contrôles de la constitution, capture des sessions, installation complète **et partielle** (`--skills`, un cas par skill), manifestes du plugin et non-dérive de ses artefacts, revue de code, portes de PR et de release, réalisé et prouvé. Les données de test du dépôt sont vérifiées versionnées : ignorées, elles n'existeraient que chez leur auteur. Les constats de la vérification sont comparés à des références figées (`tests/golden/`) : `npm run test:update-golden` après un changement voulu. À lancer après toute modification d'un fichier commun.
+`npm test` (ou `node --test tests/*.test.mjs`) rejoue toute la chaîne sur une copie du cas d'exemple, sans dépendance : conformité des skills à la spécification Agent Skills, identité des fichiers communs — et, par défaut, de **tout** fichier ou sous-agent homonyme entre deux skills —, identité des deux références communes et présence de la posture des questions dans chaque skill, vérification et rendu des quatre documents, intégrité des handoffs (état **et** document scellés), verrous de l'exécuteur, garde-fou TDD avec les charges utiles de Claude Code, Copilot et VS Code et sa dérogation, signature des contrôles de la constitution, capture des sessions, installation complète **et partielle** (`--skills`, un cas par skill), manifestes du plugin et non-dérive de ses artefacts, revue de code, portes de PR et de release, réalisé et prouvé. Les données de test du dépôt sont vérifiées versionnées : ignorées, elles n'existeraient que chez leur auteur. Les constats de la vérification sont comparés à des références figées (`tests/golden/`) : `npm run test:update-golden` après un changement voulu. À lancer après toute modification d'un fichier commun.
 
 ## evals/
 
@@ -158,6 +160,13 @@ Deux bancs d'évaluation, à lancer avec un vrai agent (Claude Code ou Copilot) 
 - **déclenchement** (`run-triggers.mjs`) : des requêtes proches, jouées plusieurs fois, pour vérifier que le bon skill s'active (ou aucun), avec une séparation entraînement/test fixe. `description-overlap.mjs` contrôle en plus, sans agent, que les descriptions des skills ne se chevauchent pas.
 
 Voir `evals/README.md`.
+
+## AMELIORATIONS.md
+
+Le registre des pistes : ce qui est fait, ce qui reste ouvert avec sa preuve, ce qui n'est pas encore
+tranché. Les constats d'audit, eux, vivent dans `evals/audit/` : un constat est une chose observée,
+une piste est une intention, et les deux ne se rangent pas au même endroit. Une piste ne devient une
+issue qu'une fois décidée.
 
 ## exemple/
 

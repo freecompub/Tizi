@@ -12,7 +12,8 @@
 //   --amender PC-xx --texte "…" --raison "…" --par "<responsable>"  nouvelle version, ancienne conservée
 //   --deroger PC-xx --initiative <slug> --element <ID> --raison "…" --par "<approbateur>"
 //   --controler                      lance les contrôles automatiques (CI, porte de PR) ; code 1 si l'un échoue
-//   --generer-cle --sortie <chemin>  crée une paire Ed25519 : clé privée hors du dépôt, clé publique à déclarer
+//   --generer-cle --sortie <chemin>  crée une paire Ed25519 hors du dépôt : la clé privée en <chemin>, la clé
+//                                    publique en <chemin>.pub, à déclarer par TIZI_CONSTITUTION_PUBKEY[_FILE]
 //   --signer --cle <chemin> --par "<nom>"   signe la surface exécutable → .tizi/constitution.sig
 //   --verifier-signature             dit si la surface exécutable est signée par une clé de confiance
 // Usage : node constitution.mjs [racine] <action> …
@@ -159,15 +160,22 @@ if (!root) fail('Usage : node constitution.mjs <dépôt> [options]. Le dépôt e
     // dans le dépôt peut signer. On refuse le chemin plutôt que de laisser l'erreur se produire.
     const dedans = resolve(out) === resolve(root) || resolve(out).startsWith(`${resolve(root)}${sep}`);
     if (dedans) fail(`${out} est dans le dépôt : une clé privée versionnée ne protège plus rien, puisque qui peut écrire dans le dépôt peut signer.\n  Choisis un chemin hors du dépôt, par exemple ~/.tizi/cle-constitution.pem`, 2);
-    if (existsSync(out) && !args.includes('--force')) fail(`${out} existe déjà : --force pour le remplacer (l'ancienne signature deviendra invérifiable).`);
+    const pubPath = `${out}.pub`;
+    for (const f of [out, pubPath]) if (existsSync(f) && !args.includes('--force')) fail(`${f} existe déjà : --force pour le remplacer (l'ancienne signature deviendra invérifiable).`);
     const { privateKey, publicKey } = generateKeyPairSync('ed25519');
     mkdirSync(dirname(out) || '.', { recursive: true });
     writeFileSync(out, privateKey.export({ type: 'pkcs8', format: 'pem' }));
     try { chmodSync(out, 0o600); } catch { /* droits non supportés : ignoré */ }
     const pub = publicKey.export({ type: 'spki', format: 'pem' }).toString();
+    // La clé publique est ÉCRITE, pas seulement affichée. La recopier à la main depuis le terminal
+    // produit un fichier mal découpé, et la vérification répond alors « clé publique illisible » —
+    // ce qui ressemble à une signature invalide sans en être une, et envoie chercher au mauvais endroit.
+    writeFileSync(pubPath, pub);
     console.log(`Clé privée écrite : ${out} (droits 600). Ne la commite pas, ne la partage pas.`);
-    console.log('\nDéclare la clé publique hors du dépôt — c\'est elle qui fait la confiance :');
-    console.log(`\n  export TIZI_CONSTITUTION_PUBKEY='${pub.trim()}'\n`);
+    console.log(`Clé publique écrite : ${pubPath}. C'est elle qui fait la confiance : elle se déclare, elle ne se commite pas.`);
+    console.log('\nDéclare-la hors du dépôt, par le fichier ou par sa valeur :');
+    console.log(`\n  export TIZI_CONSTITUTION_PUBKEY_FILE='${resolve(pubPath)}'`);
+    console.log(`  export TIZI_CONSTITUTION_PUBKEY='${pub.trim()}'\n`);
     console.log('En CI : une variable du dépôt (GitHub → Settings → Variables), pas un secret du commit.');
     console.log('Puis signe : node constitution.mjs . --signer --cle ' + out + ' --par "<nom>"');
   } else if (args.includes('--signer')) {

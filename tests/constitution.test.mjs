@@ -1,7 +1,7 @@
 // Constitution du produit, cinq questions, listes de contrôle de relecture, analyse croisée du sens.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, mkdirSync, rmSync } from 'node:fs';
 import { createPublicKey } from 'node:crypto';
 import { join } from 'node:path';
 import { sandbox, node, script } from './helpers.mjs';
@@ -73,6 +73,21 @@ test('constitution : aucune commande exécutée sans signature valide d\'une cl�
   const autre = join(dir, 'autre.pem');
   assert.equal(K('--generer-cle', '--sortie', autre).code, 0);
 
+  // La clé publique est ÉCRITE à côté de la privée, pas seulement affichée : la recopier à la main
+  // depuis le terminal produit un fichier mal découpé, et la vérification répond alors « clé publique
+  // illisible » — ce qui ressemble à une signature invalide sans en être une.
+  assert.ok(existsSync(`${cle}.pub`), 'la clé publique est écrite à côté de la privée');
+  assert.equal(readFileSync(`${cle}.pub`, 'utf8'), pub, 'le fichier .pub porte la clé publique de la paire');
+
+  // Le garde du remplacement porte sur les deux fichiers : une clé publique restée seule ne se laisse
+  // pas écraser en silence, sinon l'ancienne signature deviendrait invérifiable sans un mot.
+  const troisieme = join(dir, 'troisieme.pem');
+  assert.equal(K('--generer-cle', '--sortie', troisieme).code, 0);
+  rmSync(troisieme);
+  const orpheline = K('--generer-cle', '--sortie', troisieme);
+  assert.notEqual(orpheline.code, 0, 'une clé publique orpheline bloque la génération');
+  assert.match(orpheline.err, /\.pub existe déjà/);
+
   // Une clé privée dans le dépôt finirait commitée et ne protégerait plus rien : le chemin est refusé.
   const dedans = K('--generer-cle', '--sortie', '.tizi/cle.pem');
   assert.equal(dedans.code, 2);
@@ -96,6 +111,8 @@ test('constitution : aucune commande exécutée sans signature valide d\'une cl�
   assert.equal(K('--verifier-signature', ...[]).code, 1, 'sans clé déclarée, on ne conclut pas');
   const avecCle = { TIZI_CONSTITUTION_PUBKEY: pub };
   assert.equal(node(script('impl-builder', 'constitution.mjs'), ['.', '--controler'], { cwd: repo, env: avecCle }).code, 0);
+  assert.equal(node(script('impl-builder', 'constitution.mjs'), ['.', '--controler'], { cwd: repo, env: { TIZI_CONSTITUTION_PUBKEY_FILE: `${cle}.pub` } }).code, 0,
+    'le fichier .pub écrit par --generer-cle est utilisable tel quel comme ancre de confiance');
 
   // 3. Une commande modifiée après la signature : refusé. C'est l'attaque qu'on empêche.
   const c = yaml.load(readFileSync(cfile, 'utf8'));
