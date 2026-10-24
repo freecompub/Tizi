@@ -1,6 +1,6 @@
 # Tizi — un SDLC agentique, du recueil du besoin au déploiement
 
-Oct 19, 2026 · @Samir Alili
+Oct 24, 2026 · @Samir Alili
 
 ## Sommaire
 
@@ -888,12 +888,19 @@ Pour un logiciel comme Diabeo, ces exigences s’appliquent à toutes les étape
 
 ## Sources
 
-Les étapes 1 et 2 ont été confrontées en octobre 2026 à deux ouvrages de référence, lus en entier. Le tableau indique d’où vient chaque pratique ajoutée ou confirmée.
+Trois ouvrages ont été lus en entier en octobre 2026 : deux ont servi à confronter les étapes 1 et 2, le troisième les étapes 2 et 4. Les tableaux et paragraphes ci-dessous indiquent d’où vient chaque pratique ajoutée ou confirmée.
+
+### Notes de lecture
+
+Les notes prises à la lecture sont versionnées à côté de ce document : `notes-Constantinidis-et-BABOK-v3.md` et `notes-Patton-User-Story-Mapping.md`. Elles suivent l’ordre des chapitres, par **tranches de lecture**, annexes et glossaires compris, et conservent les rapprochements relevés en chemin. Ce sont elles qui permettent de vérifier une correspondance du tableau sans rouvrir les livres, et de voir ce qui a été lu sans être retenu.
+
+Deux rapprochements y sont notés à l’endroit où ils sont apparus : les **zones d’ombre** portent déjà ce nom chez Constantinidis (ch. 4, à propos des incompréhensions qu’un cahier des charges laisse volontairement dans l’ombre et qui reportent le conflit à la livraison), et les **Perspectives** du BABOK — les lentilles à travers lesquelles un praticien voit son travail selon le contexte — sont nos lentilles de revue.
 
 ### Ouvrages de référence
 
 - Yves Constantinidis, [*Expression des besoins pour le SI — Guide d’élaboration du cahier des charges*](https://actualitte.com/livres/584526/extraits/expression-des-besoins-pour-le-si-yves-constantinidis-9782212675771), Eyrolles, collection Solutions d’entreprise. Édition de 2010 lue ; réédition parue le 11 janvier 2018.
 - International Institute of Business Analysis (IIBA), [*A Guide to the Business Analysis Body of Knowledge (BABOK Guide)*, version 3](https://randolph.ocln.org/Record/292590), Toronto, 2015 ; [annonce de parution du 15 avril 2015](https://www.modernanalyst.com/Resources/News/tabid/177/ID/3243/IIBA-LAUNCHES-THE-ESSENTIAL-STANDARD-FOR-BUSINESS-ANALYSIS.aspx).
+- Jeff Patton, *User Story Mapping: Discover the Whole Story, Build the Right Product*, O’Reilly, 2014, 324 p. Sa contribution est détaillée plus bas, avec les chapitres.
 
 ### Correspondance avec le SDLC
 
@@ -914,22 +921,36 @@ Les étapes 1 et 2 ont été confrontées en octobre 2026 à deux ouvrages de r�
 | Identifiant jamais modifié ni réutilisé | ch. 18, attributs d’une exigence | 3.4 Plan Business Analysis Information Management |
 | Baseline et demandes de changement avec analyse d’impact | ch. 18, gestion des exigences | 5.4 Assess Requirements Changes |
 | Traçabilité exigence ↔ source ↔ objectif | ch. 18 | 5.1 Trace Requirements |
+| Lentilles de revue et council de points de vue | — | ch. 11, Perspectives : les lentilles du praticien selon le contexte, non exclusives |
+| Exigences de transition `TR-xx` | ch. 12, contraintes de projet : migration et reprise de données, formation par profil, mise en exploitation | ch. 2, classification des exigences : *transition requirements*, temporaires |
+| Fin prévue en probabilité plutôt qu’en date, et hypothèses données avec la prévision | ch. 16, chiffrage grossier de la réalisation dans la note de cadrage | technique Estimation : fourchette avec intervalle de confiance plutôt qu’un nombre, hypothèses et contraintes communiquées avec l’estimation |
+| Mesures qui décrivent le réel sans noter personne, et prévision refusée sans historique suffisant | ch. 15, indicateur d’avancement par exigences validées | 3.5 Business Analysis Performance Improvements et technique Metrics and KPIs : toute métrique encourage certains comportements, les personnes mesurées optimisent la métrique au détriment du reste, et un relevé de référence est obligatoire |
+| Listes de contrôle de relecture cochées par un relecteur nommé, jamais par l’auteur ni par l’agent | ch. 15, revue formelle : animateur distinct de l’auteur, secrétaire distinct de l’animateur | technique Reviews : facilitateur neutre, et un relecteur hiérarchique nuit à la franchise |
+| Niveaux d’agrégation activité, parcours, story | ch. 9, portée de conception et niveau d’objectif des cas d’utilisation | — |
 
 Le modèle de Kano, la *quality gateway* et le modèle Volere des Robertson, ainsi que la notion de validation authentique de Michel Volle, sont cités d’après Constantinidis.
 
 ### Autres méthodes employées
 
-Ces références sont données de mémoire, sans vérification en ligne pour cette révision : EARS (Mavin et al., 2009) pour la rédaction des FR ; Gherkin (Cucumber) pour les critères d’acceptation ; ISO/IEC 25010 pour les catégories de NFR ; Impact Mapping (Gojko Adzic, 2012) ; User Story Mapping (Jeff Patton, 2014) ; Event Storming (Alberto Brandolini) ; MoSCoW (DSDM).
+Ces références sont données de mémoire, sans vérification en ligne pour cette révision : EARS (Mavin et al., 2009) pour la rédaction des FR ; Gherkin (Cucumber) pour les critères d’acceptation ; ISO/IEC 25010 pour les catégories de NFR ; Impact Mapping (Gojko Adzic, 2012) ; Event Storming (Alberto Brandolini) ; MoSCoW (DSDM). User Story Mapping n’y figure plus : l’ouvrage a été lu en entier et ses notes sont versionnées.
 
 Pour l’étape 3 : le [modèle C4](https://c4model.com/) de Simon Brown (CC BY 4.0) ; le format [MADR v4](https://adr.github.io/madr/) (CC0 et MIT) et la pratique des ADR de Michael Nygard (2011) ; les scénarios de qualité de Bass, Clements et Kazman, *Software Architecture in Practice* ; le Domain-Driven Design d’Eric Evans (2003) et l’Event Storming d’Alberto Brandolini ; la classification STRIDE de Microsoft (Kohnfelder et Garg, 1999). Ces références sont reformulées, jamais reproduites ; ATAM et arc42 sont seulement cités.
 
 L’étape 3 a aussi été comparée au dépôt [microsoft/hve-core](https://github.com/microsoft/hve-core), lu au commit du 20 octobre 2026 : ADR Creator (MADR v4), System Architecture Reviewer, Security Planner (STRIDE par famille de composants) et skill c4-architecture (Mermaid, éléments fondés sur des preuves). hve-core n’a pas de dossier d’architecture unique ; le SDLC en génère un à partir du même modèle que les ADR et les vues.
 
-Pour l’étape 4, également données de mémoire : l’example mapping de Matt Wynne (Cucumber, 2015), le User Story Mapping de Jeff Patton (2014) déjà employé au PRD, le walking skeleton d’Alistair Cockburn, et la gestion de backlog du BABOK v3 (technique Backlog Management : juste assez de travail sur chaque élément, au dernier moment responsable).
+Pour l’étape 4 : l’example mapping de Matt Wynne (Cucumber, 2015), donné de mémoire ; le User Story Mapping de Jeff Patton déjà employé au PRD, et la gestion de backlog du BABOK v3 (technique Backlog Management : détail proportionnel à la proximité du haut de la pile, juste assez de travail sur chaque élément), tous deux lus et notés ; le walking skeleton d’Alistair Cockburn, cité d’après Patton (ch. 4, avec « steel thread » et « tracer bullet »).
 
 Emprunts à hve-core intégrés après comparaison (même commit du 20 octobre 2026) : l’empreinte SHA-256 des handoffs et les seuils de couverture avec dérogations (BRD et PRD Builder), la grille ISO/IEC/IEEE 29148 notée de 0 à 3 avec quatre caractéristiques bloquantes (BRD Quality Reviewer), la séparation entre planification en lecture seule et exécution par plateforme, la validation des types et champs, le dédoublonnage, les garde-fous de contenu et les niveaux d’autonomie (Functional Planner, Backlog Manager, skill backlog-management), la revue par piliers (System Architecture Reviewer) et le rattachement à des référentiels de contrôles (Security Planner). Les normes et référentiels cités (ISO/IEC/IEEE 29148, Microsoft Azure Well-Architected Framework, OWASP ASVS et MASVS, NIST SP 800-53 Rév. 5, CIS Controls) le sont sans reproduction de leur texte.
 
-Jeff Patton, *User Story Mapping: Discover the Whole Story, Build the Right Product*, O’Reilly, 2014, lu en entier en octobre 2026. Il a apporté : la chaîne par opportunité et la phase d’évaluation avec son canevas (ch. 11 et 13), les tests de valeur et d’usage avant de spécifier (ch. 3 et 15), la revue d’équipe, la revue avec les parties prenantes, la maturité de release et la mesure des outcomes (ch. 9, 11 et 18), la voie rapide (ch. 17), la stratégie ouverture–milieu–fin et le découpage bon–mieux–meilleur (ch. 4 et 16), le titre court avec qui, quoi et pourquoi et la démonstration convenue en atelier (ch. 6, 7 et 16). La proposition de faire entrer l’ingénierie et les esquisses d’interface dans le PRD a été écartée : la séparation entre le quoi et le comment est conservée.
+**Jeff Patton** a apporté : la chaîne par opportunité et la phase d’évaluation avec son canevas (ch. 11 et 13), les tests de valeur et d’usage avant de spécifier (ch. 3 et 15), la revue d’équipe, la revue avec les parties prenantes, la maturité de release et la mesure des outcomes (ch. 9, 11 et 18), la voie rapide (ch. 17), la stratégie ouverture–milieu–fin et le découpage bon–mieux–meilleur (ch. 4 et 16), le titre court avec qui, quoi et pourquoi et la démonstration convenue en atelier (ch. 6, 7 et 16).
+
+Deux de ses formules disent ce que le chemin de Tizi fait déjà, et valent d’être citées telles quelles. « **Le périmètre ne dérive pas, la compréhension grandit** » (ch. 2) : c’est la raison pour laquelle un chemin enregistré ne se rétrécit jamais et s’élargit quand une étape découvre ce qu’il fallait. Et « **chaque release est une expérience : savoir ce qu’on veut apprendre** » (ch. 3) : d’où l’objectif d’apprentissage attaché à une tranche, avant la liste des fonctions.
+
+La revue de fin d’itération lui doit plus que le tableau ne le disait. La **vélocité** comptée en travail fini et le **reste commencé non fini** viennent du ch. 18, comme la **définition du fini construite en commun** et les **trois qualités notées** en revue d’équipe — expérience utilisateur, fonctionnelle, code — que le plan reprend telles quelles. La vélocité n’a pas remplacé la mesure du réel : elle la complète, parce qu’un nombre de tâches finies ne dit pas à lui seul ce qu’une itération a coûté en attention humaine quand ce sont des agents qui codent.
+
+Une seule proposition a été écartée : faire entrer l’ingénierie et les esquisses d’interface dans le PRD (ch. 14). La séparation entre le quoi et le comment est conservée. Deux autres ont été reprises en déplaçant la décision, sans la retirer à l’équipe : la stratégie en trois temps reste classée par l’équipe, qui voit le mieux où sont les risques, mais elle est enregistrée story par story dans le plan et la vérification de forme signale une story de milieu planifiée avant une ouverture encore ouverte ; et les tranches restent des jalons internes avec ce qu’on veut en apprendre, non calqués sur les sprints.
+
+Reste un avertissement de Patton que Tizi ne peut pas suivre, et qu’il vaut mieux écrire que taire : un outil de suivi ne sert pas à construire la compréhension partagée (ch. 8, les « radiateurs d’information » contre les « glacières »). Tizi est fait de fichiers et d’états, donc du mauvais côté de cette distinction. C’est pourquoi rien n’y remplace l’atelier : les documents sont générés, les décisions sont déclarées par des personnes, et l’example mapping, la relecture et la sprint review supposent une conversation que le dépôt ne fait qu’enregistrer.
 
 Le design thinking de hve-core (agent DT Coach et skills `dt-*`, même commit du 20 octobre 2026) a apporté : le classement de la demande figée ou fluide (méthode 1), les contraintes d’environnement relevées sur le terrain (méthodes 1 et 2), la validation de synthèse en cinq dimensions (méthode 3), l’exploration de concepts sur les axes désirable, faisable et viable (méthodes 4 et 5), le principe de finition minimale des supports de test (contraintes de qualité), et les classes de preuve et marqueurs de confiance (modèle de preuves et contrat de passage vers RPI), repris dans la classe de preuve calculée et le pont d’import. Les exigences de transition viennent du BABOK v3 ; le design thinking (méthode 9) en a confirmé le besoin.
 
