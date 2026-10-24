@@ -4,6 +4,7 @@ Même protocole que pour le BRD et le PRD : plusieurs lentilles indépendantes e
 
 ## Règles non négociables
 
+0. Le council **se lance**, il ne se propose pas. Son moment est prescrit par la phase : une vérification qui cherche ce que l'agent a manqué ne peut pas dépendre de l'accord de cet agent, ni de la patience de l'utilisateur. Ce qui se décide, c'est le sort des questions trouvées, pas la tenue du council.
 1. Une lentille est un **point de vue d'analyse**, pas une personne.
 2. Le council ne produit que des **zones d'ombre candidates** sous forme de questions : jamais de décision, d'option retenue ni de technologie.
 3. Un résultat du council ne lève aucune zone d'ombre et ne fait accepter aucun ADR ; seule une source, une mesure ou une décision déclarée le peut.

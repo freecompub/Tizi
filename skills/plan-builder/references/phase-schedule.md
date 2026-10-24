@@ -28,6 +28,12 @@ Suis `references/cadence.md`.
 - **Sprint** : propose un objectif d'itération et un contenu dans la capacité (somme des poids de taille). Une tâche ne peut pas passer avant une tâche dont elle dépend, et les stories d'ouverture passent avant celles de milieu et de fin de partie. Après les premières revues, pars de la **capacité suggérée** (`render-plan.mjs`), qui compte la relecture humaine des tâches d'agents. Si tout ne rentre pas, ramène d'abord une story de « mieux » à « bon ».
 - **Flux** : propose l'ordre de la file « prêt » et un réapprovisionnement de la taille convenue, sous la limite d'encours.
 
+## 5. Council
+
+Avant l'engagement, et une fois l'itération ou le réapprovisionnement rempli, **lance** un council en mode `planification` (`references/council.md`) : stories trop grosses, dépendances oubliées, tâches mal affectées à des agents, mesures non planifiées, capacité irréaliste. Le council ne se demande pas : son moment est prescrit, et la vérification qui cherche ce que tu as manqué ne peut pas dépendre de ton accord. L'utilisateur n'est sollicité qu'au triage des questions.
+
+C'est le dernier moment où une story trop grosse coûte encore peu : après l'engagement, elle coûte une itération.
+
 ## Fin de la phase
 
-**Propose** le passage à Govern quand l'itération ou le réapprovisionnement est rempli de tâches validées, ordonnées, estimées et affectées, sans cycle ni dépassement de capacité, et que `lint.mjs` a été lancé. Si l'utilisateur accepte, passe `phase: govern`.
+**Propose** le passage à Govern quand l'itération ou le réapprovisionnement est rempli de tâches validées, ordonnées, estimées et affectées, sans cycle ni dépassement de capacité, que le council en mode planification a été passé et ses questions triées, et que `lint.mjs` a été lancé. Si l'utilisateur accepte, passe `phase: govern`.

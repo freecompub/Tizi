@@ -2,6 +2,8 @@
 
 Même protocole que pour les étapes précédentes : des lentilles indépendantes examinent le plan et renvoient des zones d'ombre candidates sous forme de questions, jamais des décisions.
 
+Le council **se lance**, il ne se propose pas : son moment est prescrit par la phase (`references/phase-schedule.md`, avant l'engagement). Une vérification qui cherche ce que l'agent a manqué ne peut pas dépendre de l'accord de cet agent. Ce qui se décide, c'est le sort des questions trouvées, pas la tenue du council.
+
 ## Mode
 
 | Mode | Moment | Ce qu'on cherche |
