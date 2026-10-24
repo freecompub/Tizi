@@ -48,6 +48,29 @@ test('outils des agents Copilot : au moins un alias intégré par capacité néc
   }
 });
 
+// Un choix fermé posé en texte libre se répond de travers : la personne devine les options, et la
+// réponse est enregistrée comme une décision. Les trois étapes qui en posent demandent donc l'outil
+// de questions, et l'ont dans leurs outils. tizi-backlog en est exclu : il n'applique qu'un plan déjà
+// approuvé, et son niveau d'autonomie arrive en argument.
+const A_CHOIX_FERMES = ['tizi', 'tizi-bug', 'tizi-sprint-review'];
+test('choix fermés : l\'outil de questions est demandé, et accordé', () => {
+  for (const n of A_CHOIX_FERMES) {
+    const e = source.find(x => x.name === n);
+    assert.ok((e.tools ?? []).includes('vscode/askQuestions'), `${n} : l'outil de questions n'est pas dans ses outils`);
+    assert.match(e.body ?? '', /outil de questions de l'hôte/, `${n} : son corps ne demande pas l'outil de questions`);
+    // La consigne doit survivre à la génération, des deux côtés.
+    for (const f of [join(ROOT, 'commands', `${n}.md`), join(ROOT, 'com.github.copilot/agents', `${n}.agent.md`)]) {
+      assert.match(readFileSync(f, 'utf8'), /outil de questions de l'hôte/, `${f} : consigne perdue à la génération`);
+    }
+    assert.match(readFileSync(join(ROOT, 'com.github.copilot/agents', `${n}.agent.md`), 'utf8'), /vscode\/askQuestions/, `${n} : outil absent de l'agent Copilot généré`);
+  }
+  // Toute étape qui dialogue a l'outil ; seul l'exécuteur du backlog s'en passe, et c'est voulu.
+  for (const e of source) {
+    if (e.name === 'tizi-backlog') { assert.ok(!(e.tools ?? []).includes('vscode/askQuestions'), 'tizi-backlog n\'a pas à poser de question'); continue; }
+    assert.ok((e.tools ?? []).includes('vscode/askQuestions'), `${e.name} : aucun outil de questions`);
+  }
+});
+
 for (const target of ['claude', 'copilot', 'both']) test(`génération des points d'entrée : cible ${target}`, () => {
   const proj = mkdtempSync(join(tmpdir(), `tizi-ep-${target}-`));
   assert.equal(node(join(ROOT, 'install.mjs'), ['--project', proj, '--target', target]).code, 0);

@@ -24,7 +24,7 @@ Si une entrée obligatoire manque, demande-la en une seule question, puis commen
 Suis `references/defects.md` du skill.
 1. Recueille la fiche : version candidate, environnement, données, étapes, observé. Puis `node ${CLAUDE_PLUGIN_ROOT}/skills/test-builder/scripts/defect.mjs <initiative> --signaler …`. Un bug déjà saisi dans GitHub ou Jira se reprend par `import-defects.mjs` plutôt que d'être ressaisi.
 2. Lance `node ${CLAUDE_PLUGIN_ROOT}/skills/test-builder/scripts/find-expectations.mjs <initiative> "<observation>"` et montre les attentes proches, avec leur texte exact et l'état de leur preuve. Si rien n'en ressort, propose de parcourir par activité, parcours ou story.
-3. Pose les trois questions, dans l'ordre : une attente écrite couvre-t-elle la situation ? le comportement la contredit-il ? l'attente paraît-elle fausse ? Vérifie les doublons (`--ouverts`). Le testeur tranche ; une demande de changement va au décideur désigné.
+3. Pose les trois questions du tri, dans l'ordre, avec l'outil de questions de l'hôte (`vscode/askQuestions` dans VS Code, l'outil de questions de Claude Code) : une attente écrite couvre-t-elle la situation ? le comportement la contredit-il ? l'attente paraît-elle fausse ? Puis le classement (défaut, changement, question, doublon, non reproductible) et la sévérité, réponses proposées avec leur conséquence et la réponse libre toujours ouverte. Vérifie les doublons (`--ouverts`). Le testeur tranche ; une demande de changement va au décideur désigné.
 4. Enregistre le tri avec `defect.mjs --trier`. Pour un défaut, propose la story corrective en voie rapide (`tizi-plan`), rattachée à l'épopée de l'exigence.
 Tu ne modifies aucun fichier toi-même : seuls les scripts écrivent au registre.
 
