@@ -41,6 +41,19 @@ for (const f of COMMON_REFS) test(`référence commune identique partout : ${f}`
   assert.equal(new Set(hashes).size, 1, `${f} diverge entre skills`);
 });
 
+// Cinq, c'est ce que ask-five.mjs retient ; deux ou trois, ce qu'on pose par tour. Un skill qui ne dit
+// que le premier nombre fait poser les cinq d'un coup, et c'est arrivé.
+test('les skills qui classent les questions disent aussi combien on en pose à la fois', () => {
+  for (const s of skills) {
+    const text = readFileSync(join(SKILLS, s, 'SKILL.md'), 'utf8');
+    if (!text.includes('ask-five.mjs')) continue;
+    assert.ok(text.includes(', pas un lot à poser'), `${s} : cinq questions retenues se lisent comme un lot à poser`);
+    assert.ok(text.includes('deux ou trois'), `${s} : le nombre de questions par tour n'est pas dit`);
+    // Deux nombres différents dans la même posture, et l'agent suit celui qu'il veut.
+    assert.doesNotMatch(text, /2 à 3 questions à la fois/, `${s} : deuxième nombre de questions par tour, contradictoire`);
+  }
+});
+
 // Une référence que le SKILL.md ne cite pas n'est jamais lue : la posture ne vaut que si chaque skill
 // y renvoie depuis sa section Posture.
 test('chaque skill porte la posture des questions', () => {

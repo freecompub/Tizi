@@ -21,5 +21,7 @@ Même protocole que pour le BRD et le PRD : plusieurs lentilles indépendantes e
 1. **Dossier unique** construit depuis `state.yaml` : moteurs (scénarios, cotes), contextes et carte, éléments et relations (noms, types, cycle de vie), et en mode `conception` les ADR (options, résultat, conséquences), les réponses aux NFR, les données classifiées, les menaces ; titres des zones d'ombre existantes.
 2. **Lancement** : invoque l'agent `sad-lens-critic` comme sous-agent (Claude Code ou GitHub Copilot) une fois par lentille, en parallèle, avec sa définition (`references/lenses.md`), le mode et le dossier. Sans subagents, traite les lentilles une par une en repartant du dossier seul, et préviens que l'indépendance est moindre.
 3. **Arbitrage** (par toi) : fusionne les doublons (plusieurs lentilles = signal de priorité), écarte ce qui est déjà couvert ou qui impose une solution, type chaque question (`references/shadow-zones.md`), priorise, présente 10 questions au plus.
+
+   Cette liste se **trie**, elle ne se pose pas : l'utilisateur retient, reformule ou rejette, et les questions retenues deviennent des zones d'ombre. C'est ensuite `ask-five.mjs` qui dit lesquelles poser, deux ou trois à la fois. Dix questions posées d'un coup, c'est un formulaire : on obtient des réponses courtes aux faciles et rien aux autres.
 4. **Choix de l'utilisateur** : les questions retenues deviennent des zones d'ombre `origin: council:<lentille>`.
 5. **Trace** dans `council_runs` : date, mode, lentilles, questions proposées, écartées, retenues.

@@ -151,6 +151,14 @@ test('cinq questions : bloquantes et contradictions d\'abord, cinq au plus', () 
     { id: 'ZO-F', type: 'contradiction', question: 'f ?', status: 'résolue' }] }));
   const top = JSON.parse(node(script('prd-builder', 'ask-five.mjs'), [p, '--json'], { cwd: dir }).out);
   assert.equal(top.length, 5); assert.deepEqual(top.slice(0, 2).map(z => z.id), ['ZO-B', 'ZO-C']); assert.ok(!top.some(z => z.id === 'ZO-F'));
+
+  // La sortie lisible dit que cinq est une sélection, et combien on en pose à la fois. « Pose-les »
+  // faisait vider les cinq questions dans un seul tour.
+  const out = node(script('prd-builder', 'ask-five.mjs'), [p], { cwd: dir }).out;
+  assert.match(out, /sélection, pas un lot à poser/);
+  assert.match(out, /deux ou trois à la fois/);
+  assert.match(out, /une question ouverte se pose seule/);
+  assert.doesNotMatch(out, /Pose-les/, 'la sélection ne doit pas se lire comme un lot à envoyer');
 });
 
 test('listes de contrôle : jamais cochées sans relecteur nommé, complètes avant la gouvernance (S80)', () => {
