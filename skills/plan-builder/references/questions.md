@@ -23,9 +23,29 @@ les six questions du chemin en demandent deux (quatre, puis deux), dans l'ordre,
 chacune est conservée. Une question qu'on supprime pour tenir dans un appel est une réponse qu'on
 invente.
 
-**Cinq au plus à la fois**, limite de l'outil ou non : c'est la règle de `ask-five.mjs`, qui classe les
-zones d'ombre ouvertes par impact et n'en garde que cinq. Vingt questions d'un coup noient celles qui
-comptent.
+## Combien à la fois
+
+Deux nombres, et on les confond facilement — c'est ainsi qu'un agent finit par tout demander d'un coup.
+
+| Nombre | Ce qu'il compte |
+|---|---|
+| **cinq** | Ce que `ask-five.mjs` **retient** : les zones d'ombre ouvertes les plus déterminantes, classées par impact. Une sélection, pas un message |
+| **deux ou trois** | Ce qu'on **pose** par tour, dans l'ordre de la sélection, avant d'attendre les réponses et de les réécrire dans l'état |
+
+**Présenter une liste n'est pas poser des questions.** Le council présente jusqu'à dix questions
+candidates, et l'analyse croisée une table de constats : ce sont des listes à **trier** — l'utilisateur
+retient, reformule ou rejette, et ce qu'il retient devient une zone d'ombre. Elles n'attendent pas de
+réponse sur le fond. Les réponses viendront après, par `ask-five.mjs`, deux ou trois à la fois.
+Confondre les deux actes est la façon la plus courante de noyer quelqu'un sous un formulaire.
+
+**Une question ouverte se pose seule.** Trois questions ouvertes dans le même message reviennent à n'en
+poser qu'une : la personne répond à celle qu'elle a comprise, souvent la dernière, et les deux autres
+disparaissent sans que personne le remarque. Après la question, le silence — c'est lui qui fait venir
+la précision, pas la relance.
+
+Le fait que l'outil de l'hôte accepte quatre questions par appel ne change rien à cette règle : c'est
+une limite technique, pas une invitation. Quatre choix fermés dans un appel, oui ; quatre questions
+ouvertes, jamais.
 
 ## Quand l'outil n'existe pas
 
@@ -58,6 +78,6 @@ l'utilisateur au motif que l'outil manque.
 - Elle ne recommande pas quand le décideur est désigné : tu prépares les options, il tranche.
 - Elle ne vaut pas approbation. Une réponse à une question n'est pas une approbation enregistrée ;
   seule une approbation déclarée l'est.
-- Pour l'élicitation, elle ne propose rien : une question ouverte, puis le silence. `ask-five.mjs` dit
-  lesquelles poser maintenant ; là où le skill fournit `elicitation-patterns.md`, il dit comment faire
-  émerger le non-dit.
+- Pour l'élicitation, elle ne propose rien et ne vient pas accompagnée : une seule question ouverte,
+  puis le silence. `ask-five.mjs` dit lesquelles poser maintenant ; là où le skill fournit
+  `elicitation-patterns.md`, il dit comment faire émerger le non-dit.

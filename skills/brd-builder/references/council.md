@@ -48,7 +48,9 @@ Tu es l'arbitre. Sur l'ensemble des résultats :
 
 ### 4. Faire choisir l'utilisateur
 
-Présente les questions regroupées par type, avec pour chacune : la lentille d'origine, qui peut y répondre, l'action proposée. L'utilisateur retient, reformule ou rejette.
+Présente les questions regroupées par type, avec pour chacune : la lentille d'origine, qui peut y répondre, l'action proposée.
+
+Cette liste se **trie**, elle ne se pose pas : l'utilisateur retient, reformule ou rejette, et les questions retenues deviennent des zones d'ombre. C'est ensuite `ask-five.mjs` qui dit lesquelles poser, deux ou trois à la fois. Dix questions posées d'un coup, c'est un formulaire : on obtient des réponses courtes aux faciles et rien aux autres.
 
 Enregistre les questions retenues comme zones d'ombre avec `origin: council:<lentille>`. En mode `preparation`, propose de les intégrer aux guides d'entretien concernés.
 

@@ -22,4 +22,7 @@ const top = ranked.slice(0, max);
 if (args.includes('--json')) { console.log(JSON.stringify(top, null, 2)); process.exit(0); }
 if (!top.length) { console.log('Aucune zone d\'ombre ouverte.'); process.exit(0); }
 console.log(table(['#', 'Zone', 'Question', 'Pourquoi maintenant', 'À qui'], top.map((z, i) => [i + 1, z.id, z.question ?? z.text ?? '', z.reasons.join(', ') || 'à lever', z.ask_to ?? z.owner ?? '—'])));
-console.log(`\n${top.length} question(s) sur ${ranked.length} ouverte(s). Pose-les, puis réécris chaque réponse dans l'état : résolution de la zone d'ombre et mise à jour des éléments touchés. Les suivantes viendront ensuite.`);
+// Ce script CLASSE, il ne compose pas un message. Dire « pose-les » faisait lire la sélection comme
+// un lot à envoyer d'un coup : l'agent vidait les cinq questions dans un seul tour, et les réponses
+// arrivaient mélangées quand elles arrivaient. Le nombre posé à la fois est dit ici, où il sera lu.
+console.log(`\n${top.length} question(s) retenue(s) sur ${ranked.length} ouverte(s) : c'est une sélection, pas un lot à poser. Pose-en deux ou trois à la fois, dans cet ordre, et attends les réponses avant les suivantes ; une question ouverte se pose seule. Réécris chaque réponse dans l'état : résolution de la zone d'ombre et mise à jour des éléments touchés.`);

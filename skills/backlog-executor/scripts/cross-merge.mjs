@@ -29,7 +29,7 @@ for (const f of raw) {
 }
 const proposals = kept.map((f, i) => ({ id: `ZO-analyse-${String(i + 1).padStart(2, '0')}`, type: f.kind === 'contradiction' ? 'contradiction' : f.kind === 'manque' ? 'regle_metier_manquante' : 'hypothese_non_verifiee', question: f.question, related: f.items, origin: 'analyse croisée', blocking: f.kind === 'contradiction', status: 'proposée' }));
 writeOut(join(dir, 'proposals.yaml'), `# Zones d'ombre proposées par l'analyse croisée (${today()}) — à valider avec l'utilisateur avant de les ajouter à l'état\n${yaml.dump({ shadow_zones: proposals }, { lineWidth: 120 })}`);
-const md = [`# Analyse croisée — ${today()}`, '', `${kept.length} constat(s) retenu(s), ${rejected.length} rejeté(s) pour forme. Chaque constat est une question pour l'humain, pas une correction.`, '',
+const md = [`# Analyse croisée — ${today()}`, '', `${kept.length} constat(s) retenu(s), ${rejected.length} rejeté(s) pour forme. Chaque constat est une question pour l'humain, pas une correction. Cette liste se trie, elle ne se pose pas : les questions retenues deviennent des zones d'ombre, et ask-five.mjs dira lesquelles poser, deux ou trois à la fois.`, '',
   kept.length ? table(['Nature', 'Énoncés', 'Explication', 'Question à poser'], kept.map(f => [f.kind, f.items.join(', '), f.explanation, f.question])) : '_Aucun constat._', '',
   ...(rejected.length ? ['## Constats rejetés pour forme', '', ...rejected.map(r => `- ${r}`), ''] : []), ...(stripped.length ? [`_Mentions de confiance retirées : ${stripped.join(', ')}._`, ''] : [])];
 writeOut(join(dir, 'report.md'), md.join('\n') + humanReviewFooter('rapport d\'analyse croisée'));
