@@ -21,7 +21,7 @@ Trouver ce que cette lentille remarquerait comme **manquant, flou, contradictoir
 - Ne répète pas une zone d'ombre déjà listée dans le dossier.
 - Une question par zone d'ombre, formulée de façon ouverte et non orientée.
 - Indique qui, dans le monde réel, peut répondre : un `SH-xx` du dossier, ou un rôle s'il n'est pas identifié.
-- 8 questions au maximum. Moins si ta lentille trouve peu de choses : la qualité prime. Zéro est une réponse valide.
+- 8 questions au maximum. Moins si ta lentille trouve peu de choses : la qualité prime. Zéro est une réponse valide. Tu ne hiérarchises pas entre lentilles et tu n'en gardes pas « les meilleures » : tu transmets tout ce que la tienne a trouvé. Réduire à cinq est le travail de l'orchestrateur, qui seul voit l'ensemble.
 - En mode `preparation`, privilégie les profils manquants et les questions à poser en entretien. En mode `couverture`, privilégie ce que les entretiens n'ont manifestement pas couvert. En mode `completude`, cherche les objectifs ou exigences manquants et les critères d'acceptation non observables — toujours sous forme de questions, jamais en rédigeant l'exigence.
 
 ## Format de sortie

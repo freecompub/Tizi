@@ -32,11 +32,15 @@ Deux nombres, et on les confond facilement — c'est ainsi qu'un agent finit par
 | **cinq** | Ce que `ask-five.mjs` **retient** : les zones d'ombre ouvertes les plus déterminantes, classées par impact. Une sélection, pas un message |
 | **deux ou trois** | Ce qu'on **pose** par tour, dans l'ordre de la sélection, avant d'attendre les réponses et de les réécrire dans l'état |
 
-**Présenter une liste n'est pas poser des questions.** Le council présente jusqu'à dix questions
-candidates, et l'analyse croisée une table de constats : ce sont des listes à **trier** — l'utilisateur
-retient, reformule ou rejette, et ce qu'il retient devient une zone d'ombre. Elles n'attendent pas de
-réponse sur le fond. Les réponses viendront après, par `ask-five.mjs`, deux ou trois à la fois.
-Confondre les deux actes est la façon la plus courante de noyer quelqu'un sous un formulaire.
+Le plafond n'est jamais un quota : rien n'oblige à poser les cinq, ni à les poser d'un coup. Une seule
+question qui ouvre une vraie conversation vaut mieux que cinq qui tiennent dans un message.
+
+**Présenter une liste n'est pas poser des questions.** Le council réduit à cinq questions candidates —
+les lentilles transmettent tout ce qu'elles trouvent, et c'est l'orchestrateur qui réduit — et
+l'analyse croisée produit une table de constats. Ce sont des listes à **trier** : l'utilisateur retient,
+reformule ou rejette, et ce qu'il retient devient une zone d'ombre. Elles n'attendent pas de réponse
+sur le fond. Les réponses viennent après, par `ask-five.mjs`, deux ou trois à la fois. Confondre les
+deux actes est la façon la plus courante de noyer quelqu'un sous un formulaire.
 
 **Une question ouverte se pose seule.** Trois questions ouvertes dans le même message reviennent à n'en
 poser qu'une : la personne répond à celle qu'elle a comprise, souvent la dernière, et les deux autres

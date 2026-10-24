@@ -44,13 +44,13 @@ Tu es l'arbitre. Sur l'ensemble des résultats :
 2. **Écarte** ce qui est déjà couvert par une source ou une zone d'ombre existante, ce qui est une solution ou un besoin déguisé en question, et ce qui sort du périmètre confirmé.
 3. **Classe** chaque question restante dans un type de la typologie (`phase-discover.md`, section 0).
 4. **Priorise** : bloquantes d'abord, puis par nombre de lentilles d'origine.
-5. **Limite** la présentation à 10 questions au maximum ; indique combien ont été écartées et pourquoi, en une ligne.
+5. **Réduis à cinq questions au maximum.** Les lentilles te transmettent tout ce qu'elles ont trouvé, sans hiérarchiser entre elles : réduire est ton travail d'orchestrateur, pas le leur. Indique combien ont été écartées et pourquoi, en une ligne ; ce qui est écarté sans être traité reste disponible pour un prochain council.
 
 ### 4. Faire choisir l'utilisateur
 
 Présente les questions regroupées par type, avec pour chacune : la lentille d'origine, qui peut y répondre, l'action proposée.
 
-Cette liste se **trie**, elle ne se pose pas : l'utilisateur retient, reformule ou rejette, et les questions retenues deviennent des zones d'ombre. C'est ensuite `ask-five.mjs` qui dit lesquelles poser, deux ou trois à la fois. Dix questions posées d'un coup, c'est un formulaire : on obtient des réponses courtes aux faciles et rien aux autres.
+Ces cinq questions se **trient** avant de se poser : l'utilisateur retient, reformule ou rejette, et ce qu'il retient devient une zone d'ombre. Les réponses viennent ensuite, deux ou trois à la fois. **Rien n'oblige à poser les cinq d'un coup**, ni même à les présenter en un bloc : cinq est un plafond de sélection, pas un lot à envoyer. Si l'une mérite une conversation à elle seule, prends-la seule et garde les autres pour la suite — elles sont enregistrées, elles ne se perdent pas. Cinq questions posées d'un coup, c'est un formulaire : on obtient des réponses courtes aux faciles, et rien aux autres.
 
 Enregistre les questions retenues comme zones d'ombre avec `origin: council:<lentille>`. En mode `preparation`, propose de les intégrer aux guides d'entretien concernés.
 

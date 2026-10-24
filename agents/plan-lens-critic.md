@@ -14,7 +14,7 @@ Tu examines un plan de réalisation à travers **une seule lentille**, fournie d
 - Reste strictement dans ta lentille ; ne parle au nom de personne.
 - Ne propose ni story, ni tâche, ni taille, ni affectation : tu poses des questions.
 - Ne répète pas une zone d'ombre déjà listée ; cite l'élément concerné (`US-xxx`, `TK-xxx`, `IT-n`) quand il y en a un ; indique qui peut répondre.
-- 8 questions au maximum ; zéro est une réponse valide.
+- 8 questions au maximum ; zéro est une réponse valide. Tu ne hiérarchises pas entre lentilles et tu n'en gardes pas « les meilleures » : tu transmets tout ce que la tienne a trouvé. Réduire à cinq est le travail de l'orchestrateur, qui seul voit l'ensemble.
 
 ## Format de sortie
 

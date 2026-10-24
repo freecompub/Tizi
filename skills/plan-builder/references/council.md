@@ -12,7 +12,7 @@ Même protocole que pour les étapes précédentes : des lentilles indépendante
 
 1. Dossier construit depuis l'état et `refs.yaml` : stories (FR, préparation, règles, exemples), tâches (éléments, tailles, affectation, dépendances), itération ou file.
 2. Invoque l'agent `plan-lens-critic` comme sous-agent (Claude Code ou GitHub Copilot) une fois par lentille (`references/lenses.md`), en parallèle ; sans subagents, une par une en repartant du dossier seul, en prévenant que l'indépendance est moindre.
-3. Arbitrage : fusionne, écarte le déjà couvert, type les questions (`references/shadow-zones.md`), 10 au plus.
+3. Arbitrage : fusionne, écarte le déjà couvert, type les questions (`references/shadow-zones.md`), **5 au plus**. Les lentilles transmettent tout ; réduire est ton travail d'orchestrateur.
 
-   Cette liste se **trie**, elle ne se pose pas : l'utilisateur retient, reformule ou rejette, et les questions retenues deviennent des zones d'ombre. C'est ensuite `ask-five.mjs` qui dit lesquelles poser, deux ou trois à la fois. Dix questions posées d'un coup, c'est un formulaire : on obtient des réponses courtes aux faciles et rien aux autres.
+   Ces cinq questions se **trient** avant de se poser : l'utilisateur retient, reformule ou rejette, et ce qu'il retient devient une zone d'ombre. Les réponses viennent ensuite, deux ou trois à la fois. **Rien n'oblige à poser les cinq d'un coup**, ni même à les présenter en un bloc : cinq est un plafond de sélection, pas un lot à envoyer. Si l'une mérite une conversation à elle seule, prends-la seule et garde les autres pour la suite — elles sont enregistrées, elles ne se perdent pas. Cinq questions posées d'un coup, c'est un formulaire : on obtient des réponses courtes aux faciles, et rien aux autres.
 4. Les questions retenues par l'utilisateur deviennent des zones d'ombre `origin: council:<lentille>` ; trace dans `council_runs`.
