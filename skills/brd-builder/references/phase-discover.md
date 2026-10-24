@@ -67,7 +67,7 @@ Règles :
 - Si une réponse décrit une solution, applique la remontée au besoin.
 - Si l'utilisateur ne sait pas, enregistre une zone d'ombre du type correspondant et passe au thème suivant.
 
-**Sortie** : `problem`, `success_signals`, `scope`, `constraints`, une première liste de `stakeholders`, une première carte `decision_rights` et les premières zones d'ombre dans `state.yaml`. Fais confirmer la carte des droits de décision par le sponsor (`confirmed_by`) ; tant qu'elle ne l'est pas, elle reste une hypothèse. Termine par une reformulation du problème en 2 à 3 phrases et demande si elle est juste. Propose ensuite un council en mode **préparation** (capacité 7).
+**Sortie** : `problem`, `success_signals`, `scope`, `constraints`, une première liste de `stakeholders`, une première carte `decision_rights` et les premières zones d'ombre dans `state.yaml`. Fais confirmer la carte des droits de décision par le sponsor (`confirmed_by`) ; tant qu'elle ne l'est pas, elle reste une hypothèse. Termine par une reformulation du problème en 2 à 3 phrases et demande si elle est juste. Lance ensuite un council en mode **préparation** (capacité 7). Le council ne se demande pas : son moment est prescrit, et la vérification qui cherche ce que tu as manqué ne peut pas dépendre de ton accord. L'utilisateur n'est sollicité qu'au triage des questions.
 
 ---
 
@@ -230,7 +230,7 @@ Quand ces conditions te semblent réunies, **propose** le passage à Define, san
 - aucune contradiction `interets` n'est ouverte sans arbitre ;
 - pour chaque processus touché, la question des attendus implicites a été posée (zone `attendu_implicite` levée, assumée, ou sans objet) ;
 - les besoins candidats sont sourcés ;
-- un council en mode couverture a été proposé ;
+- un council en mode couverture a été passé, et ses questions triées ;
 - la **porte de synthèse** est passée : avec l'utilisateur, juge chacune des cinq dimensions (`synthesis_check`) — **fidélité** (la synthèse reflète les sources, pas des suppositions), **couverture** (toutes les parties prenantes concernées sont représentées, y compris les silencieuses), **robustesse** (chaque besoin retenu repose sur plusieurs sources ; `lint.mjs` signale les besoins à source unique), **actionnabilité** (le problème est assez net pour guider la suite), **alignement** (les participants se reconnaîtraient dans la synthèse). Une dimension faible se corrige (retour aux sources, entretien complémentaire) ou s'assume avec une raison. Idée reprise de la validation de synthèse en cinq dimensions du design thinking de hve-core ;
 - `lint.mjs` a été lancé sur l'état ; les avertissements restants sont listés à l'utilisateur, sans bloquer.
 

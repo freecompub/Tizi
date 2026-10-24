@@ -103,9 +103,9 @@ Signale sous forme de questions, sans verdict :
 
 ---
 
-## 9. Council (optionnel)
+## 9. Council
 
-Après la spécification du MVP, propose un council en mode `specification` (`references/council.md`) : cas limites, états d'erreur, NFR oubliées, testabilité, inflation de périmètre.
+Après la spécification du MVP, **lance** un council en mode `specification` (`references/council.md`) : cas limites, états d'erreur, NFR oubliées, testabilité, inflation de périmètre. Le council ne se demande pas : son moment est prescrit, et la vérification qui cherche ce que tu as manqué ne peut pas dépendre de ton accord. L'utilisateur n'est sollicité qu'au triage des questions.
 
 ---
 
@@ -124,6 +124,7 @@ Le document comprend la matrice de couverture (BR → FR/NFR → AC en mode cha�
 ## Fin de la phase
 
 **Propose** le passage à Govern quand :
+- le council en mode specification a été passé, et ses questions triées ;
 - toutes les sections de `prd_sections` sont validées ;
 - chaque FR validée a une origine, au moins un AC, une release et une priorité ;
 - chaque NFR validée a une métrique, une cible et un moyen de mesure ;

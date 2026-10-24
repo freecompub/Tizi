@@ -90,9 +90,9 @@ Cette étape est **conditionnelle** : sans hypothèse de valeur ou d'usage à ri
 
 ---
 
-## 9. Council (optionnel)
+## 9. Council
 
-Après l'étape 5 ou 7, propose un council en mode `cadrage` (`references/council.md`) pour faire apparaître les personas oubliés, les parcours non couverts et les cas limites.
+Après l'étape 5 ou 7, **lance** un council en mode `cadrage` (`references/council.md`) pour faire apparaître les personas oubliés, les parcours non couverts et les cas limites. Le council ne se demande pas : son moment est prescrit, et la vérification qui cherche ce que tu as manqué ne peut pas dépendre de ton accord. L'utilisateur n'est sollicité qu'au triage des questions.
 
 ---
 
@@ -106,6 +106,7 @@ Après l'étape 5 ou 7, propose un council en mode `cadrage` (`references/counci
 - le MVP satisfait les critères de `references/mvp.md` ;
 - `decision_rights` désigne au moins un décideur pour le périmètre et les priorités ;
 - chaque hypothèse de valeur ou d'usage à risque fort est testée (avec un résultat) ou assumée avec une raison ;
+- le council en mode cadrage a été passé, et ses questions triées ;
 - aucune zone d'ombre bloquante n'est ouverte.
 
 Si l'utilisateur accepte, passe `phase: specify`.

@@ -41,6 +41,22 @@ for (const f of COMMON_REFS) test(`référence commune identique partout : ${f}`
   assert.equal(new Set(hashes).size, 1, `${f} diverge entre skills`);
 });
 
+// Un council cherche ce que l'agent a manqué : le faire dépendre de son accord, ou de la patience de
+// l'utilisateur, revient à rendre optionnelle la seule vérification adversariale de l'étape. Et un
+// council défini sans phase pour le lancer n'existe pas : plan-builder en avait un dans ce cas.
+test('un council se lance, et chaque council défini a une phase qui le lance', () => {
+  for (const s of skills) {
+    if (!existsSync(join(SKILLS, s, 'references', 'council.md'))) continue;
+    const phases = readdirSync(join(SKILLS, s, 'references')).filter(f => f.startsWith('phase-'));
+    const textes = phases.map(f => readFileSync(join(SKILLS, s, 'references', f), 'utf8'));
+    for (const [i, t] of textes.entries()) {
+      assert.ok(!/propose[rz]?\s+(ensuite\s+)?un council/i.test(t), `${s}/${phases[i]} : le council y est proposé au lieu d'être lancé`);
+    }
+    assert.ok(textes.some(t => /\*\*lance\*\*\s+un council|lance\s+(ensuite\s+)?un council/i.test(t)),
+      `${s} : council.md existe, mais aucune phase ne le lance`);
+  }
+});
+
 // Cinq, c'est ce que ask-five.mjs retient ; deux ou trois, ce qu'on pose par tour. Un skill qui ne dit
 // que le premier nombre fait poser les cinq d'un coup, et c'est arrivé.
 test('les skills qui classent les questions disent aussi combien on en pose à la fois', () => {

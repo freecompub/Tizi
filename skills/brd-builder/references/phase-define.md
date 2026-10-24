@@ -171,7 +171,7 @@ Si une zone d'ombre bloquante apparaît (contradiction, valeur actuelle inconnue
 
 ## Council en mode complétude (optionnel)
 
-Après l'étape 2, propose un council en mode `completude` (protocole : `references/council.md`). Les lentilles cherchent des exigences ou des objectifs manquants et les renvoient **sous forme de questions**. Une question retenue devient une zone d'ombre ; elle ne devient une exigence qu'après avoir été levée par une source.
+Après l'étape 2, **lance** un council en mode `completude` (protocole : `references/council.md`). Le council ne se demande pas : son moment est prescrit, et la vérification qui cherche ce que tu as manqué ne peut pas dépendre de ton accord. L'utilisateur n'est sollicité qu'au triage des questions. Les lentilles cherchent des exigences ou des objectifs manquants et les renvoient **sous forme de questions**. Une question retenue devient une zone d'ombre ; elle ne devient une exigence qu'après avoir été levée par une source.
 
 ---
 
