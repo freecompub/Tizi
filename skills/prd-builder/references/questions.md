@@ -112,6 +112,7 @@ au lieu d'être lancé, et le principe candidat « proposé une fois, non demand
 |---|---|
 | Le **council** (`references/council.md`) | Il ne produit que des questions candidates. Ce qui se décide, c'est leur sort, jamais sa tenue |
 | Un **principe candidat** (`constitution.mjs --proposer`) | Il entre en `PC-xx`, en attente. Seul le responsable de la constitution l'accepte ou le refuse (`--decider`) |
+| La **suite de la phase**, celle que nomme le point d'étape ou `next-step.mjs` | Elle est prescrite, et tout ce qu'elle produit est soumis avant d'être validé. L'utilisateur interrompt quand il veut : il n'a pas à autoriser d'avance |
 
 Ce qui se demande, en revanche : tout ce qui écrit dans le dépôt **hors du dossier de l'initiative**.
 Synchroniser les instructions du dépôt (`sync-agent-instructions.mjs`) en est une — elle modifie
@@ -119,6 +120,16 @@ Synchroniser les instructions du dépôt (`sync-agent-instructions.mjs`) en est 
 
 Et ne demande jamais l'autorisation de proposer. « Dis-moi si tu veux que je te le propose » fait deux
 tours là où il en faut un : propose, l'autre dispose.
+
+**Ni l'autorisation de travailler.** « Dites-moi si vous voulez que j'enchaîne maintenant, ou qu'on
+s'arrête là » porte sur des étapes que la phase prescrit et qui n'engagent rien. La règle du contexte
+le dit déjà en creux : une question énonce **ce qui dépend de la réponse**. Quand rien n'en dépend, il
+n'y a pas de question — il y a un bouton qui apprend à cliquer sans lire.
+
+**Et la consignation n'est la branche d'aucune question.** « Sinon je consigne et je commite » laisse
+croire que la trace dépend de la réponse. Elle n'en dépend jamais : ce qui a été recueilli se réécrit
+dans l'état tout de suite, et le condensé comme le commit sont dus en fin de session quelle que soit
+la suite (`references/sessions.md`). Mettre la trace d'un côté d'un choix, c'est la faire négocier.
 
 ## Ce que la question ne fait jamais
 

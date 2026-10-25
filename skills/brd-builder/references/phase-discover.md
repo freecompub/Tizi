@@ -168,7 +168,13 @@ Présente en quelques lignes :
 - les parties prenantes interrogées / restantes ;
 - le nombre de besoins candidats et ceux confirmés par plusieurs sources ;
 - les zones d'ombre ouvertes, regroupées par type, les bloquantes en premier ;
-- **une** prochaine action recommandée, choisie pour lever le plus de zones d'ombre bloquantes.
+- **une** prochaine action, choisie pour lever le plus de zones d'ombre bloquantes.
+
+Le point d'étape **n'attend rien** : il se lit. La prochaine action qu'il nomme, tu la **fais** —
+ni « je recommande », ni « dites-moi si j'enchaîne ». Elle ne se demande que dans deux cas : elle
+écrit hors du dossier de l'initiative, ou elle engage une décision qui revient à un décideur
+désigné. Dans le second, c'est cette décision que tu poses, jamais la permission de travailler
+(`references/questions.md`).
 
 ---
 

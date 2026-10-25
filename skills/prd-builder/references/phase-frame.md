@@ -34,7 +34,7 @@ Propose une vision en 2 à 4 phrases : pour qui, quel problème, ce qui change p
 ## 3. Objectifs produit (`GOAL-xx`)
 
 1. Mode chaîné : dérive les objectifs produit des objectifs du BRD (`brd_objectives`). Un objectif produit précise la contribution du produit à un objectif métier ; il ne le duplique pas.
-2. Chaque objectif est SMART : énoncé, KPI, valeur actuelle, cible, horizon. Une valeur inconnue devient une zone d'ombre `objectif_non_mesurable`, jamais une valeur inventée.
+2. Chaque objectif est SMART : énoncé, KPI, valeur actuelle, cible, horizon. Une valeur inconnue devient une zone d'ombre `objectif_non_mesurable`, jamais une valeur inventée. **La valeur actuelle se mesure, la cible se décide** : elle vient du décideur désigné (`decision_rights`) et ne se déduit pas de la valeur actuelle. Avoir mesuré les métriques en entretien ne donne donc aucune cible — c'est là la question à poser, et `S01` la réclame (« objectif produit sans KPI ou sans cible »).
 3. 2 à 5 objectifs.
 
 ---

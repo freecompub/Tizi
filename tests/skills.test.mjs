@@ -322,3 +322,36 @@ test('données de test versionnées : rien d\'ignoré, aucun dossier vide attend
     assert.equal(run('git', ['ls-files', '--error-unmatch', f], { cwd: ROOT }).code, 0, `${f} n'est pas suivi par git`);
   }
 });
+
+// Après un entretien, l'agent a listé ses chiffres, annoncé quatre étapes « sans vous », puis demandé
+// « dites-moi si vous voulez que j'enchaîne maintenant, ou qu'on s'arrête là — dans ce cas je consigne
+// et je commite ». Trois défauts en une phrase : la permission de travailler sur des étapes prescrites
+// qui n'engagent rien, la trace mise sur une branche du choix, et la vraie question — les cibles des
+// objectifs, qu'aucune mesure ne donne — jamais posée. Deux consignes l'y invitaient : « une prochaine
+// action **recommandée** » et « il confirme avant que tu reprennes », écrite pour la reprise mais sans
+// borne.
+test('on ne demande ni la permission de travailler, ni la trace en gage', () => {
+  const quest = readFileSync(join(SKILLS, 'brd-builder', 'references', 'questions.md'), 'utf8');
+  assert.match(quest, /autorisation de travailler/, 'rien n\'interdit de demander la permission de travailler');
+  assert.match(quest, /branche d'aucune question/, 'la consignation peut encore dépendre d\'une réponse');
+  assert.match(quest, /suite de la phase/, 'la suite de la phase n\'est pas nommée parmi ce qui ne se demande pas');
+
+  // Le point d'étape : il se lit, et ce qu'il nomme se fait.
+  const disc = readFileSync(join(SKILLS, 'brd-builder', 'references', 'phase-discover.md'), 'utf8');
+  const etape = disc.split('## 6. Point d\'étape')[1].split(/\n## /)[0];
+  // Le mot seul ne dit rien : la consigne s'interdit elle-même « je recommande ». C'est l'action
+  // qualifiée de recommandée qui ouvrait la porte au feu vert.
+  assert.doesNotMatch(etape, /action recommand/i, 'la prochaine action du point d\'étape est de nouveau « recommandée »');
+  assert.match(etape, /n'attend rien|se lit, il ne se valide pas/, 'le point d\'étape peut encore attendre une réponse');
+  assert.match(etape, /tu la \*\*fais\*\*|se fait/, 'rien ne dit que la prochaine action s\'exécute');
+
+  // La confirmation de reprise ne doit pas se lire comme une habitude de milieu de session.
+  const sess = readFileSync(join(SKILLS, 'brd-builder', 'references', 'sessions.md'), 'utf8');
+  assert.match(sess, /propre à la reprise/, 'la confirmation avant de reprendre n\'est bornée à aucun moment');
+  const pause = sess.split('## Avant une pause')[1].split(/\n## /)[0];
+  assert.match(pause, /jamais d'une proposition de l'agent/, 'l\'agent peut encore proposer la pause lui-même');
+
+  // Et la question qui engageait vraiment quelque chose dans ce tour-là.
+  assert.match(readFileSync(join(SKILLS, 'prd-builder', 'references', 'phase-frame.md'), 'utf8'),
+    /cible se décide/, 'une cible d\'objectif produit peut encore se déduire de la valeur mesurée');
+});
