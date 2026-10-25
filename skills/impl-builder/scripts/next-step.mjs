@@ -6,7 +6,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { arr, loadState, table } from './lib/common.mjs';
 import yaml from './lib/vendor/js-yaml.mjs';
-import { sessionsFor } from './lib/sessions.mjs';
+import { condenseOf, sessionsFor } from './lib/sessions.mjs';
 import { loadPath } from './choose-path.mjs';
 import { dueReviews } from './due-reviews.mjs';
 
@@ -95,7 +95,7 @@ function assess(slug) {
   const aTrier = toTriage(slug);
   if (aTrier.length) reasons.push(`${aTrier.length} signalement(s) à trier : tizi-bug`);
   const sess = STEPS.flatMap(s => sessionsFor(`${s.doc}/${slug}`, root)).sort((a, b) => String(a.ended).localeCompare(String(b.ended))).at(-1);
-  if (sess && !sess.condensed) reasons.push('dernière session sans condensé : le rédiger avant de reprendre');
+  if (sess && !condenseOf(sess, root)) reasons.push('dernière session sans condensé : le rédiger avant de reprendre');
   const skipped = s => (route ? !route.steps.includes(s.doc) : STEPS.findIndex(x => x.doc === s.doc) < STEPS.findIndex(x => x.doc === ([...STEPS].reverse().find(y => st[y.doc])?.doc)));
   return { slug, path: route?.path ?? '', progress: STEPS.map(s => (st[s.doc] ? (baseline(st[s.doc]) && s.doc !== 'impl' && s.doc !== 'qa' ? '✓' : '…') : skipped(s) ? '–' : '·')).join(' '), next, notes: reasons };
 }

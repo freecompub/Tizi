@@ -45,6 +45,21 @@ export function writtenPaths(toolInput) {
   return [...paths];
 }
 
+// Outils de shell : un agent y lance les scripts du SDLC, et il peut aussi y écrire des fichiers.
+export const isShellTool = name => /^(bash|powershell|run_in_terminal|shell|run_command|runcommands)$/i.test(String(name ?? ''));
+
+// Les écritures faites au shell. Un agent qui écrit avec `cat > f <<'EOF'` ou `tee` ne passe par aucun
+// outil d'écriture : sur le premier dossier réel, huit fichiers ont été créés et l'extrait de session
+// affichait « Fichiers modifiés : _Aucun._ ». On n'interprète pas le shell — seulement la redirection
+// et `tee`, qui désignent leur cible sans ambiguïté. Le reste n'est pas devinable, et l'extrait dit
+// alors combien de commandes il n'a pas pu lire plutôt que de conclure qu'il n'y a rien eu.
+const SHELL_WRITE_RE = /(?:^|[|;&(]|\s)(?:>>?\s*|tee\s+(?:-a\s+)?)(['"]?)((?!\/dev\/)[\w./~@+-]+)\1/g;
+export function shellWrittenPaths(command) {
+  const paths = new Set();
+  for (const m of String(command ?? '').matchAll(SHELL_WRITE_RE)) paths.add(m[2]);
+  return [...paths];
+}
+
 // Refus compris par les trois outils :
 //   - Claude Code et VS Code : code de sortie 2, message sur la sortie d'erreur, renvoyé à l'agent ;
 //   - Copilot : toute sortie non nulle d'un hook preToolUse refuse l'appel ; la raison est aussi donnée en JSON sur la sortie standard.

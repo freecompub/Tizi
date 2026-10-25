@@ -3,7 +3,7 @@
 import { existsSync, readFileSync, writeFileSync, mkdirSync, renameSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import yaml from './vendor/js-yaml.mjs';
-import { isWriteTool, writtenPaths } from './agent-io.mjs';
+import { isShellTool, isWriteTool, shellWrittenPaths, writtenPaths } from './agent-io.mjs';
 
 export const SESSIONS_DIR = '.tizi/sessions';
 // Index historique, en un seul fichier : encore lu, plus jamais écrit. Il était réécrit à chaque tour
@@ -16,6 +16,11 @@ export const sessionIndexPath = (date, session) => `${SESSIONS_DIR}/${date}-${se
 // Dossiers d'initiative reconnus : <document>/<slug>/
 const INITIATIVE_RE = /\b(brd|prd|sad|plan|impl|qa)\/([a-z0-9][a-z0-9-]*)\//g;
 const QUESTION_RE = /[^.!?\n]*\?(?=\s|$)/g;
+// Enveloppes que l'hôte fait passer par le canal « utilisateur » : sortie de commande, rappel système,
+// notification de tâche. Ce ne sont pas des paroles. Sur le premier dossier réel, trois notifications
+// de sous-agent étaient comptées parmi les messages de l'utilisateur — 13 au lieu de 10 — et recopiées
+// mot pour mot sous « Messages de l'utilisateur », chemins de travail et compteurs de jetons compris.
+const ENVELOPPES = ['<command-', '<local-command', '<task-notification', '<system-reminder'];
 
 // ── Les questions posées par l'outil de l'hôte ───────────────────────────────
 // Une question posée avec l'outil de questions (AskUserQuestion dans Claude Code, askQuestions dans
@@ -94,7 +99,7 @@ export function readTranscript(path) {
         continue;
       }
       const text = textOf(content).trim();
-      if (text && !text.startsWith('<command-') && !text.startsWith('<local-command')) turns.push({ role: 'user', at, text });
+      if (text && !ENVELOPPES.some(e => text.startsWith(e))) turns.push({ role: 'user', at, text });
     } else if (e.type === 'assistant') {
       const content = Array.isArray(msg.content) ? msg.content : [];
       const text = textOf(content).trim();
@@ -116,33 +121,92 @@ export function initiativesIn(turns) {
   return [...found].sort();
 }
 
+// Réponses de l'outil de questions. Claude Code renvoie une phrase de service en anglais qui renomme
+// chaque question avec sa réponse : `Your questions have been answered: "…"="…", "…"="…". You can now…`.
+// La recopier telle quelle donnait une « réponse » qui était une phrase anglaise contenant la question
+// déjà écrite au-dessus — et comme un appel porte jusqu'à quatre questions pour un seul résultat,
+// c'était le seul endroit où la réponse de chacune aurait pu être lue. On lit les paires.
+export function answersOf(raw) {
+  return new Map([...String(raw ?? '').matchAll(/"([^"]*)"\s*=\s*"([^"]*)"/g)].map(([, q, a]) => [q.trim(), a.trim()]));
+}
+
+// Un extrait ne tronque pas en plein mot, et ne tronque pas en silence : la dernière réponse du premier
+// dossier réel s'arrêtait sur « **cette se », sans rien dire de ce qui manquait.
+const borne = (texte, max = 3000) => {
+  const s = maskSecrets(texte);
+  if (s.length <= max) return s;
+  const coupe = s.slice(0, max);
+  const bord = Math.max(coupe.lastIndexOf('\n\n'), coupe.lastIndexOf('\n'));
+  const garde = bord > max / 2 ? coupe.slice(0, bord) : coupe.replace(/\s+\S*$/, '');
+  return `${garde}\n\n_[…] ${s.length - garde.length} caractère(s) de plus dans la transcription._`;
+};
+
+// Une question écrite en texte libre arrive avec son markdown, et souvent avec ses voisines. On retire
+// les marques et on dédoublonne ; on garde le numéro du tour, parce que c'est lui qui montre que
+// plusieurs questions ouvertes ont été posées dans le même message — ce que `references/questions.md`
+// interdit, et ce qui est arrivé sur le premier dossier réel, où le coût de l'inaction a été demandé
+// trois fois sans jamais obtenir de réponse.
+const nettoieQuestion = q => q.replace(/\*\*/g, '').replace(/^[\s>*_#•–-]+/, '').replace(/\s+/g, ' ').trim();
+const questionsEcrites = (texte, tour) => [...String(texte ?? '').matchAll(QUESTION_RE)]
+  .map(m => ({ tour, question: nettoieQuestion(m[0]) })).filter(q => q.question.length > 10);
+
 // Extrait déterministe d'une session : ce qui ne dépend d'aucune interprétation.
 export function buildExtract(turns, meta) {
   const users = turns.filter(t => t.role === 'user');
   const assistants = turns.filter(t => t.role === 'assistant');
+  const tourDe = new Map(assistants.map((a, i) => [a, i + 1]));
+
+  // Fichiers touchés. Les outils d'écriture nomment leur cible ; au shell, seules la redirection et
+  // `tee` la nomment. Le reste n'est pas devinable : on le compte au lieu de conclure qu'il n'y a rien.
   const written = new Map();
+  let shellLances = 0;
   for (const a of assistants) for (const tl of a.tools ?? []) {
-    if (!isWriteTool(tl.name)) continue;
-    for (const p of writtenPaths(tl.input)) written.set(p, (written.get(p) ?? 0) + 1);
+    if (isWriteTool(tl.name)) { for (const p of writtenPaths(tl.input)) written.set(p, (written.get(p) ?? 0) + 1); continue; }
+    if (!isShellTool(tl.name)) continue;
+    const cmd = String(tl.input?.command ?? tl.input?.raw ?? '');
+    if (cmd.trim()) shellLances += 1;
+    for (const p of shellWrittenPaths(cmd)) written.set(p, (written.get(p) ?? 0) + 1);
   }
-  const scripts = [...new Set(assistants.flatMap(a => (a.tools ?? []).filter(t => /^(bash|powershell|run_in_terminal|shell)$/i.test(t.name)).map(t => String(t.input?.command ?? t.input?.raw ?? '')))
+  const scripts = [...new Set(assistants.flatMap(a => (a.tools ?? []).filter(t => isShellTool(t.name)).map(t => String(t.input?.command ?? t.input?.raw ?? '')))
     .filter(c => /scripts\/[a-z-]+\.mjs/.test(c)).map(c => c.match(/scripts\/([a-z-]+\.mjs)/)[1]))];
   const ids = [...new Set(turns.flatMap(t => [t.text, ...(t.tools ?? []).map(x => JSON.stringify(x.input))].join(' ').match(/\b[A-Z]{1,4}-S?\d{1,3}\b/g) ?? []))].sort();
   const lastAssistant = [...assistants].reverse().find(a => a.text);
-  // Questions posées par l'outil, dans l'ordre, avec la réponse reçue quand l'hôte la relie à l'appel.
+
+  // Questions posées par l'outil, dans l'ordre, chacune avec sa réponse quand l'hôte la nomme.
   const reponses = new Map(turns.filter(t => t.role === 'answer').map(t => [t.ref, t.text]));
-  const appels = assistants.flatMap(a => (a.tools ?? []).filter(t => isQuestionTool(t.name))
-    .map(t => ({ questions: questionsOf(t.input), reponse: reponses.get(t.id) ?? '' }))).filter(c => c.questions.length);
-  const posees = appels.flatMap(c => c.questions);
-  const ecrites = assistants.flatMap(a => [...(a.text ?? '').matchAll(QUESTION_RE)].map(m => m[0].trim()).filter(q => q.length > 10));
+  const appels = assistants.flatMap(a => (a.tools ?? []).filter(t => isQuestionTool(t.name)).map(t => {
+    const brut = reponses.get(t.id) ?? '';
+    const paires = answersOf(brut);
+    const questions = questionsOf(t.input).map(q => ({ ...q, reponse: paires.get(q.question) ?? '' }));
+    // Tout rattaché : la phrase de service n'apprend plus rien. Sinon on la garde telle quelle —
+    // une réponse mal placée vaut mieux qu'une réponse perdue.
+    const rattachees = questions.length > 0 && questions.every(q => q.reponse);
+    return { tour: tourDe.get(a), questions, reponse: rattachees ? '' : brut };
+  })).filter(c => c.questions.length);
+
+  // Questions en texte libre, dédoublonnées, avec le tour qui les portait.
+  const ecrites = [];
+  const vues = new Set();
+  for (const a of assistants) for (const q of questionsEcrites(a.text, tourDe.get(a))) {
+    const cle = q.question.toLowerCase();
+    if (vues.has(cle)) continue;
+    vues.add(cle); ecrites.push(q);
+  }
+  const parTour = new Map();
+  for (const e of ecrites) parTour.set(e.tour, (parTour.get(e.tour) ?? 0) + 1);
+  const groupes = [...parTour].filter(([, n]) => n > 1);
+
   const ligneQuestion = q => `- ${maskSecrets(q.question)}${q.options.length ? ` _(propositions : ${q.options.map(maskSecrets).join(' · ')})_` : ''}`;
-  // La réponse appartient à l'appel, pas à chacune de ses questions.
-  const blocAppel = c => [...c.questions.map(ligneQuestion), ...(c.reponse ? [`  **${c.questions.length > 1 ? 'Réponses' : 'Réponse'}** : ${maskSecrets(c.reponse)}`] : [])];
-  // Une question posée par l'outil et restée sans réponse est en suspens, comme celles de la dernière réponse.
-  const openQuestions = [
-    ...appels.filter(c => !c.reponse).flatMap(c => c.questions.map(q => q.question)),
-    ...(lastAssistant ? [...lastAssistant.text.matchAll(QUESTION_RE)].map(m => m[0].trim()).filter(q => q.length > 10) : []),
+  const blocAppel = c => [
+    ...c.questions.map(q => `${ligneQuestion(q)}${q.reponse ? `\n  **Réponse** : ${maskSecrets(q.reponse)}` : ''}`),
+    ...(c.reponse ? [`  **${c.questions.length > 1 ? 'Réponses' : 'Réponse'}** : ${maskSecrets(c.reponse)}`] : []),
   ];
+  // Une question posée par l'outil et restée sans réponse est en suspens, comme celles de la dernière réponse.
+  const enSuspens = [...new Set([
+    ...appels.flatMap(c => c.questions.filter(q => !q.reponse && !c.reponse).map(q => q.question)),
+    ...(lastAssistant ? questionsEcrites(lastAssistant.text, 0).map(q => q.question) : []),
+  ])];
+
   const md = [
     `# Extrait de session — ${meta.date}`, '',
     `> Généré automatiquement depuis la transcription (${meta.session}), sans interprétation. Le condensé narratif, s'il existe, est dans le fichier \`.condense.md\` voisin.`, '',
@@ -150,15 +214,20 @@ export function buildExtract(turns, meta) {
     '## Messages de l\'utilisateur, mot pour mot', '',
     ...users.flatMap((u, i) => [`### ${i + 1}. ${u.at ? u.at.replace('T', ' ').slice(0, 16) : ''}`, '', maskSecrets(u.text).split('\n').map(l => `> ${l}`).join('\n'), '']),
     '## Questions posées par l\'assistant', '',
-    ...(appels.length || ecrites.length
-      ? [...appels.flatMap(blocAppel), ...ecrites.map(q => `- ${maskSecrets(q)}`)]
-      : ['_Aucune._']), '',
+    '### Avec l\'outil de questions', '',
+    ...(appels.length ? appels.flatMap(blocAppel) : ['_Aucune._']), '',
+    '### En texte libre', '',
+    ...(ecrites.length ? ecrites.map(e => `- (tour ${e.tour}) ${maskSecrets(e.question)}`) : ['_Aucune._']), '',
+    ...(groupes.length ? [`> ${groupes.length} tour(s) portent plus d'une question en texte libre : ${groupes.map(([t, n]) => `tour ${t} (${n})`).join(', ')}. Une question ouverte se pose seule.`, ''] : []),
     '## Dernière réponse de l\'assistant', '',
-    lastAssistant ? maskSecrets(lastAssistant.text).slice(0, 3000) : '_Aucune._', '',
+    lastAssistant ? borne(lastAssistant.text) : '_Aucune._', '',
     '## Questions en suspens à la fin de la session', '',
-    ...(openQuestions.length ? openQuestions.map(q => `- ${maskSecrets(q)}`) : ['_Aucune question dans la dernière réponse._']), '',
+    ...(enSuspens.length ? enSuspens.map(q => `- ${maskSecrets(q)}`) : ['_Aucune question dans la dernière réponse._']), '',
     '## Fichiers modifiés', '',
-    ...(written.size ? [...written].map(([p, n]) => `- \`${p}\` (${n} modification(s))`) : ['_Aucun._']), '',
+    ...(written.size || shellLances
+      ? [...[...written].map(([p, n]) => `- \`${p}\` (${n} modification(s))`),
+        ...(shellLances ? [`- _${shellLances} commande(s) de shell lancée(s)_ : seules la redirection et \`tee\` y désignent un fichier ; une écriture faite autrement — \`sed -i\`, un script, un éditeur — ne se lit pas dans la transcription.`] : [])]
+      : ['_Aucun._']), '',
     '## Scripts lancés', '', scripts.length ? scripts.map(s => `- ${s}`).join('\n') : '_Aucun._', '',
     '## Identifiants mentionnés', '', ids.join(', ') || '—', '',
   ];
@@ -196,6 +265,18 @@ export function saveSessionEntry(entry, root = '.') {
   renameSync(tmp, p);
 }
 export const sessionsFor = (initiative, root = '.') => loadIndex(root).sessions.filter(s => (s.initiatives ?? []).includes(initiative));
+
+// Le condensé d'une session, s'il existe. Le champ `condensed` de l'index n'est qu'un cache : il est
+// écrit par `session-capture.mjs`, qui tourne sur `Stop`, donc après tout ce que l'agent a fait dans
+// le tour — y compris le commit. Sur le premier dossier réel, le condensé était écrit et commité, et
+// l'index commité disait encore `condensed: ''` : `status.mjs`, `next-step.mjs` et `session-start.mjs`
+// demandaient tous les trois à la session suivante de rédiger un condensé qui existait déjà. On regarde
+// donc le fichier, à l'emplacement que le champ indique ou à celui que la convention de nom impose.
+export function condenseOf(entry, root = '.') {
+  const date = String(entry?.started ?? entry?.ended ?? '').slice(0, 10);
+  const candidats = [entry?.condensed, date && entry?.session ? `${SESSIONS_DIR}/${date}-${entry.session}.condense.md` : ''].filter(Boolean);
+  return candidats.find(p => existsSync(join(root, p))) ?? '';
+}
 
 // Consommation de tokens d'une transcription. Claude Code : message.usage (input_tokens, output_tokens, cache_*).
 // Copilot : un objet de consommation sous data.usage ou usage, s'il existe ; sinon la consommation est « inconnue »,
