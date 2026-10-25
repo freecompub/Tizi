@@ -3,9 +3,9 @@
 // Usage : node list-opportunities.mjs [dossier racine, par défaut .]
 import { readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { arr, table, loadState } from './lib/common.mjs';
+import { arr, table, loadState, rootArg } from './lib/common.mjs';
 
-const root = process.argv[2] ?? '.';
+const root = rootArg(process.argv[2], 'Usage : node list-opportunities.mjs [racine] — pour le dépôt courant : node list-opportunities.mjs .');
 const dir = join(root, 'brd');
 if (!existsSync(dir)) { console.log('Aucune initiative : le dossier brd/ n\'existe pas.'); process.exit(0); }
 const rows = [];

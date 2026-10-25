@@ -39,6 +39,20 @@ test('chemin enregistré : ne se rétrécit pas, s\'élargit avec historique, gu
 // Une initiative découpée n'est pas une initiative jetée. Le vocabulaire d'Assess n'avait que `jeter`
 // pour clore : sur le premier dossier réel, la mère portait `decision: jeter` avec la vérité en
 // commentaire YAML, et les deux outils de portefeuille annonçaient un abandon.
+// Tous les scripts du dossier prennent un chemin d'état ; trois prennent la racine du dépôt. Donné un
+// chemin d'état, `next-step.mjs` le prenait pour une racine, n'y trouvait rien, et répondait « Aucune
+// initiative dans ce dépôt » avec un code de sortie 0 — sur un dépôt qui en contenait trois.
+test('racine attendue : un chemin d\'état est refusé, pas interprété comme un dépôt vide', () => {
+  const dir = sandbox();
+  for (const s of ['next-step.mjs', 'list-opportunities.mjs']) {
+    const r = node(script('brd-builder', s), ['brd/demo/state.yaml'], { cwd: dir });
+    assert.equal(r.code, 2, `${s} : un chemin d'état passe pour une racine`);
+    assert.match(r.err, /est un fichier, et ce script attend la racine du dépôt/);
+    // La forme juste continue de marcher.
+    assert.equal(node(script('brd-builder', s), ['.'], { cwd: dir }).code, 0, `${s} : la racine ne marche plus`);
+  }
+});
+
 test('initiative découpée : close sans abandon, filles nommées, point d\'étape et portefeuille', () => {
   const dir = tempDir('tizi-decoup');
   const ecrire = (slug, opp) => {

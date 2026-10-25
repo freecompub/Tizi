@@ -52,7 +52,12 @@ export function sandbox() {
   return dir;
 }
 export function run(cmd, args, { cwd, input, env } = {}) {
-  const r = spawnSync(cmd, args, { cwd, input, env: { ...process.env, ...env }, encoding: 'utf8' });
+  // Une valeur `undefined` retire la variable, au lieu d'en poser une qui vaut la chaîne « undefined ».
+  // Nécessaire pour `NODE_TEST_CONTEXT` : `node --test` le pose à « child-v8 », et un `node --test`
+  // lancé depuis un test le voit, parle le protocole de son parent et n'écrit plus son rapport. Un test
+  // qui vérifie une commande de test doit donc l'effacer, sinon il mesure l'imbrication.
+  const merged = Object.fromEntries(Object.entries({ ...process.env, ...env }).filter(([, v]) => v !== undefined));
+  const r = spawnSync(cmd, args, { cwd, input, env: merged, encoding: 'utf8' });
   return { code: r.status, out: r.stdout ?? '', err: r.stderr ?? '' };
 }
 export const node = (file, args = [], opts = {}) => run(process.execPath, [file, ...args], opts);

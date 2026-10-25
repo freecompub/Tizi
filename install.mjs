@@ -361,7 +361,7 @@ jobs:
 
 // 4. .gitignore
 const gi = join(project, '.gitignore');
-const lines = plugin ? [] : ['# Tizi : état local de la tâche en cours, transcriptions brutes, copies téléchargées depuis la CI, rapport d\'audit de la CI (l\'archive des preuves, elle, se commite)', '.impl/', '.tizi/sessions/*.jsonl', '.tizi/sessions/*.tmp', '.tizi/ci-audit.md', 'qa/*/ci/*/'];
+const lines = plugin ? [] : ['# Tizi : état local de la tâche en cours, transcriptions brutes, rapports de test, copies téléchargées depuis la CI, rapport d\'audit de la CI (l\'archive des preuves, elle, se commite)', '.impl/', '.tizi/sessions/*.jsonl', '.tizi/sessions/*.tmp', '.tizi/ci-audit.md', 'reports/', 'qa/*/ci/*/'];
 if (lines.length) act(`.gitignore → ${gi}`, () => {
   const cur = existsSync(gi) ? readFileSync(gi, 'utf8') : '';
   const missing = lines.filter(l => !cur.split('\n').includes(l));

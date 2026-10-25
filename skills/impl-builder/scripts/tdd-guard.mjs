@@ -46,6 +46,13 @@ const lastRun = () => {
 function verdict(path) {
   const no = msg => `[tdd-guard] Écriture refusée sur ${path} : ${msg}`;
   if (matchesAny(path, P.always_allowed ?? ['impl/**', '.impl/**'])) return '';
+  // Un garde-fou qui ne sait pas ce qu'est du code de production ne protège rien, et il le faisait en
+  // silence : sans `paths.production`, tout fichier tombe dans « ni test, ni contrat, ni production » et
+  // passe. `adopt.mjs` laisse cette liste vide quand il ne reconnaît pas la pile — c'est arrivé sur le
+  // dépôt de Tizi lui-même. Une dérogation ouverte reste honorée : quelqu'un a alors pris la décision.
+  if (!(P.production ?? []).length && !derogation) {
+    return no('impl/config.yaml ne déclare aucun chemin de code de production (paths.production) : le garde-fou ne peut rien classer, donc rien protéger. Renseigne-le — adopt.mjs le laisse vide quand il ne reconnaît pas la pile. Pour écrire malgré tout, ouvre une dérogation tracée : scripts/derogation.mjs --par "<nom>" --raison "<raison>".');
+  }
   const isTest = matchesAny(path, P.tests ?? []), isContract = matchesAny(path, P.contracts ?? []), isProd = matchesAny(path, P.production ?? []);
   if (!isTest && !isContract && !isProd) return '';
   // Hors tâche : refus par défaut, sauf dérogation ouverte par une personne, motivée et non expirée.
