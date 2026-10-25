@@ -41,6 +41,15 @@ Lecture : de gauche à droite on va du présent vers le futur ; de haut en bas, 
 
 Note les **plus grandes hypothèses** dans `hypotheses` (`H-xxx`) : ce qui, si c'est faux, rend l'opportunité sans objet.
 
+## La première source
+
+L'échange qui ouvre l'initiative est une source : enregistre-le en `SRC-001`, type `cadrage`, au nom de
+**la personne avec qui tu parles** — pas de celle dont elle rapporte les besoins. C'est fréquent qu'un
+demandeur porte la demande d'un sponsor qu'il n'est pas : dans ce cas le demandeur est une partie
+prenante à part entière, le sponsor reste `à interroger`, et tout ce qui vient de là est **rapporté**,
+jamais observé. `lint.mjs` le signale (S81) si la source est attribuée à quelqu'un que l'état déclare
+ne pas avoir entendu.
+
 ## La décision
 
 Propose une décision avec sa raison, puis fais-la rendre par la personne habilitée (le sponsor ou le product owner). Tu ne décides pas.

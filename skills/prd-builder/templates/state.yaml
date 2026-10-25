@@ -37,7 +37,8 @@ problem:                  # repris du BRD (chaîné) ou établi en Frame (autono
   confirmed: false
 
 sources: []               # preuves produit (entretiens, tests utilisateurs, analytics, études, décisions)
-#  - { id: SRC-001, type: entretien, date: "", who: "", path: "", feedback: à envoyer }   # type : entretien | observation | test | analytics | étude | décision
+#  - { id: SRC-001, type: entretien, date: "", who: "", path: "", feedback: à envoyer }   # type : cadrage | entretien | observation | test | analytics | étude | décision
+#                          # cadrage : l'échange qui ouvre l'initiative — le brief, les notes, l'idée. Déclaratif.
 
 # ─────────────── Frame ───────────────
 vision: ""                # 2 à 4 phrases

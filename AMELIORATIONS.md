@@ -40,6 +40,9 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
 | `council_runs` garde les questions du council (retenues, écartées avec leur raison, réservées), pas seulement leur nombre — premier dossier réel | 25 octobre 2026 | `correctifs-premier-test` |
 | Extrait de session : réponse rattachée à sa question, écritures au shell visibles, enveloppes de l'hôte écartées, troncature annoncée, questions en texte libre nettoyées et datées de leur tour | 25 octobre 2026 | `correctifs-premier-test` |
 | Condensé cherché sur le disque et non dans le champ d'index, que le hook écrit après le commit du tour | 25 octobre 2026 | `correctifs-premier-test` |
+| Type de source `cadrage` : l'échange qui ouvre l'initiative, au nom de qui a parlé | 25 octobre 2026 | `consignes-et-scripts-orphelins` |
+| Plafond des lentilles dit en plafond et non en cible ; chaque question du council désigne l'élément visé (`target`), et l'arbitrage s'en sert pour fusionner | 25 octobre 2026 | `consignes-et-scripts-orphelins` |
+| 23 copies de scripts sans appelant retirées, listes de relecture prescrites dans le BRD, et un test qui refuse désormais un script livré sans phase qui l'appelle | 25 octobre 2026 | `consignes-et-scripts-orphelins` |
 
 ## Ouvert
 
@@ -59,12 +62,6 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
 
 ### Premier dossier réel — ce qui reste
 
-- **Le plafond des lentilles se lit comme un quota.** `agents/*-lens-critic.md` dit « 8 questions au
-  maximum […] Zéro est une réponse valide ». Les cinq lentilles du council ont rendu **exactement
-  40 questions** — 5 × 8, le plafond saturé par toutes — dont une seule retenue. Le mot est le même que
-  celui qu'on a corrigé côté orchestrateur le 24 octobre (« le plafond n'est jamais un quota ») ; la
-  correction, non. Manque aussi, et ce n'est prescrit nulle part : l'obligation pour chaque question de
-  **citer l'élément visé**, sans quoi on ne peut pas écarter un doublon sans relire tout le dossier.
 - **La porte de synthèse n'est jamais montrée avant qu'il soit trop tard.** `synthesis_check` existe
   dans l'état (fidélité, couverture, robustesse, actionnabilité, alignement) et c'est exactement
   l'indicateur « prêt pour la définition » qui manque en Discover. Mais `S65` ne la regarde que dans
@@ -77,19 +74,10 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
   reportee` pour l'enregistrer. Sur le dossier réel, l'initiative mère porte `decision: jeter` avec la
   vérité en commentaire YAML ; `next-step` affiche « opportunité jetée », `list-opportunities` affiche
   « jeter ». La vérité machine du dépôt dit qu'on a abandonné. Manque `decoupee` + `split_into`.
-- **`review-checklist.mjs` est un script sans appelant dans cinq skills sur sept.** Prescrit seulement
-  dans `prd-builder` et `sad-builder` (`phase-govern.md`), alors que `S80` sanctionne « points de
-  relecture non traités avant la gouvernance » dans le catalogue commun : le BRD a une règle qui ferme
-  une porte sans qu'aucune de ses phases ne dise d'ouvrir le dossier. Même famille que le council du
-  plan, trouvé le 24 octobre. Et le domaine `donnees-sante` existe : le dossier réel collecte
-  vaccinations et allergies de mineurs.
 - **Les écritures au shell restent partiellement invisibles.** L'extrait lit maintenant la redirection
   et `tee`, et dit combien de commandes de shell ont été lancées. Un `sed -i`, un script qui écrit, un
   éditeur en ligne de commande : la cible n'est pas devinable sans interpréter le shell, et on ne
   l'interprète pas. Le compte dit où regarder, il ne dit pas quoi.
-- **`sources.type` n'a pas de valeur pour l'échange de cadrage avec le demandeur.** La source la plus
-  fréquente en pratique — la conversation qui ouvre l'initiative — est typée `autre`, avec un
-  commentaire pour dire ce qu'elle est. Sur le dossier réel, c'est la source unique de tout le cadrage.
 
 ## À trancher
 

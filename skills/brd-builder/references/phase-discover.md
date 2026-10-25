@@ -123,7 +123,7 @@ Indique en fin de guide, pour l'intervieweur seulement, la correspondance questi
 
 Déclencheur : l'utilisateur fournit un contenu ou un fichier.
 
-1. Enregistre la source : attribue un `SRC-xxx`, son type, sa date, la partie prenante concernée. Demande les informations manquantes.
+1. Enregistre la source : attribue un `SRC-xxx`, son type, sa date, la partie prenante concernée. Demande les informations manquantes. La partie prenante d'une source est **celle qui a parlé**, pas celle dont on rapporte les besoins : quand le demandeur parle au nom du directeur, la source est à son nom, et le directeur reste `à interroger` (`lint.mjs`, S81). Si le demandeur n'est pas encore dans la cartographie, ajoute-le : c'est une partie prenante, et souvent la seule entendue au départ.
 2. Extrais, en citant à chaque fois l'emplacement exact (ligne, horodatage ou paragraphe) :
    - les **irritants** (ce qui ne va pas aujourd'hui) ;
    - les **besoins candidats**, formulés côté métier (« pouvoir… », « éviter que… ») ;

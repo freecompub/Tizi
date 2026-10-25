@@ -13,6 +13,7 @@ Tous se lancent avec `node <chemin-du-skill>/scripts/<script> …` (dépendance 
 | `review-pack.mjs brd/<slug>/state.yaml` | Dossier de revue de la version courante | `review/v<version>/synthese.md`, `relecteur-<SH-xx>.md` |
 | `freeze-version.mjs brd/<slug>/state.yaml [--baseline]` | Copie immuable de l'état et du BRD, avec changelog par identifiants | `versions/v<version>/` |
 | `build-handoff.mjs brd/<slug>/versions/v<version>/state.yaml` | Paquet de handoff vers le PRD, à partir d'une version figée | `handoff/v<version>/handoff.yaml`, `handoff.md` |
+| `review-checklist.mjs brd/<slug>/state.yaml --domaines <liste>` | Listes de contrôle de relecture par domaine | `checklists/<domaine>.md` |
 
 ## Versions
 
@@ -35,10 +36,11 @@ Une version figée n'est jamais modifiée. Pour figer à nouveau, incrémente d'
 2. **Version candidate** : propose un numéro (`0.x`), fais-le valider, renseigne `governance.version`, passe `governance.status` à `en_revue`.
 3. **Toilette avant d'envoyer** : lance `lint.mjs` sur l'état complet et traite les avertissements de forme. Une revue sert à obtenir un accord sur le fond ; des relecteurs qui passent leur temps sur des imprécisions de rédaction ne regardent plus le fond.
 4. **Fige la version** avec `freeze-version.mjs`, puis génère le dossier avec `review-pack.mjs`. Le dossier contient une synthèse d'une page (problème, objectifs, exigences Must, risques, points à trancher) et, pour chaque relecteur, les exigences issues de ses propres échanges et les questions qui lui sont adressées.
-5. **Canal de diffusion** — demande lequel l'utilisateur préfère :
+5. **Listes de contrôle de relecture** : `review-checklist.mjs brd/<slug>/state.yaml --domaines securite,accessibilite,ergonomie,donnees-sante,performance` génère, pour les domaines retenus **avec l'utilisateur** (choix fermé, `references/questions.md`), des questions sur la qualité des exigences — pas sur le code. **Un relecteur nommé les coche ; tu ne les coches jamais.** Un point écarté porte son nom et sa raison. Les points non traités ferment la porte de gouvernance (S80) ; `--etat` en fait le compte. Les listes partent avec le dossier de revue : c'est le relecteur du domaine qui les remplit, pas l'approbateur.
+6. **Canal de diffusion** — demande lequel l'utilisateur préfère :
    - **export** (par défaut, adapté aux relecteurs métier) : le BRD et les fiches sont envoyés en Word, PDF ou document partagé. Si `pandoc` est disponible, propose `pandoc brd.md -o brd.docx` ; préviens que les diagrammes Mermaid ne sont pas convertis et devront être exportés en image si nécessaire. Sinon, l'utilisateur exporte lui-même ;
    - **pull request** : adaptée si les relecteurs utilisent GitHub ; les commentaires de la PR sont ensuite traités comme des retours.
-6. Enregistre le cycle dans `governance.review_rounds` (`RV-n`, version, date d'envoi, canal, échéance).
+7. Enregistre le cycle dans `governance.review_rounds` (`RV-n`, version, date d'envoi, canal, échéance).
 
 ---
 
