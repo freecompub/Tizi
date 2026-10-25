@@ -66,6 +66,13 @@ Conséquence : un recueil fondé uniquement sur des entretiens laisse de côté 
 
 ## 4. Questions à intégrer aux guides d'entretien
 
+Un guide se range dans `<dossier de l'initiative>/interviews/guide-<qui>.md`, un fichier par personne ou
+par voix à entendre — le BRD les nomme par partie prenante (`guide-<SH-xx>`), un PRD autonome n'a pas de
+registre de parties prenantes et les nomme par la voix visée (`guide-parents.md`). Un seul guide pour
+deux voix mélange deux entretiens qui ne se mèneront pas ensemble. Chaque guide dit, pour l'intervieweur
+seulement, quelle zone d'ombre chaque question vise.
+
+
 Choisis-en quelques-unes selon l'objectif ; ne les égrène pas.
 
 **Besoins exprimés en négatif** — souvent plus faciles à formuler, et précieux pour entendre les personnes réticentes, qui sont fréquemment les plus inventives :

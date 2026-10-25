@@ -63,7 +63,7 @@ Suis `references/c4-modelling.md`.
 
 ## 6. Council
 
-Après les moteurs et le domaine, **lance** un council en mode `exploration` (`references/council.md`) : moteurs oubliés, scénarios non mesurables, dépendances externes fragiles, frontières de contexte douteuses. Le council ne se demande pas : son moment est prescrit, et la vérification qui cherche ce que tu as manqué ne peut pas dépendre de ton accord. L'utilisateur n'est sollicité qu'au triage des questions.
+Après les moteurs et le domaine, **lance** un council en mode `exploration` (`references/council.md`) : moteurs oubliés, scénarios non mesurables, dépendances externes fragiles, frontières de contexte douteuses. Le council ne se demande pas : son moment est prescrit, et la vérification qui cherche ce que tu as manqué ne peut pas dépendre de ton accord. Ses questions deviennent des zones d'ombre et se posent **comme les autres**, classées par impact : l'utilisateur n'a jamais à trier une liste de questions sur la méthode, et ni le council, ni ses lentilles, ni son mode n'apparaissent dans ce que tu lui écris.
 
 ---
 

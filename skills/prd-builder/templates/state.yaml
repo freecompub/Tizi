@@ -46,9 +46,11 @@ vision: ""                # 2 à 4 phrases
 goals: []
 #  - id: GOAL-01
 #    statement: ""
-#    kpi: ""
-#    baseline: ""
-#    target: ""
+#    kpi: ""              # nomme la métrique quand il y en a une : « MET-01 — … »
+#    baseline: ""         # valeur actuelle : elle se MESURE, et cite sa source
+#    target: ""           # elle se DÉCIDE : une seule valeur, celle qui a été arrêtée
+#    decided_by: ""       # qui a arrêté la cible (decision_rights) ; vide = pas encore décidée
+#    decided_on: ""       # date de cette décision
 #    horizon: ""          # échéance ou release
 #    brd_objectives: []   # OBJ-xx (chaîné) ; vide en autonome
 #    status: proposé      # proposé | validé | abandonné
@@ -79,6 +81,7 @@ story_map: []             # activités → tâches, chaque tâche affectée à u
 releases: []
 #  - id: REL-1
 #    name: MVP
+#    window: ""           # la fenêtre où elle se joue, quand elle en a une (campagne, rentrée, échéance)
 #    learning_goal: ""    # hypothèse principale testée
 #    value: ""            # le parcours de bout en bout rendu possible
 #    signal: ""           # observation qui dira si l'hypothèse tient
@@ -213,7 +216,8 @@ questions: []             # checklist de questions persistante (voir SKILL.md)
 #  - group: 1
 #    title: ""
 #    items:
-#      - { id: 1.a, text: "", state: ouverte, answer: "" }   # ouverte | répondue | écartée
+#      - { id: 1.a, text: "", state: ouverte, answer: "" }   # ouverte | partielle | répondue | écartée
+#                                                           # partielle : ce qu'on sait déjà va dans `answer`, et ce qui manque reste à demander
 
 council_runs: []
 #  - date: ""

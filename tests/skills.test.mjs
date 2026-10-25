@@ -355,3 +355,42 @@ test('on ne demande ni la permission de travailler, ni la trace en gage', () => 
   assert.match(readFileSync(join(SKILLS, 'prd-builder', 'references', 'phase-frame.md'), 'utf8'),
     /cible se décide/, 'une cible d\'objectif produit peut encore se déduire de la valeur mesurée');
 });
+
+// La phrase « L'utilisateur n'est sollicité qu'au triage des questions » avait été retirée de
+// phase-discover.md et survivait dans six autres fichiers de phase, où elle contredit council.md depuis
+// — qui dit l'inverse : les questions s'enregistrent et se posent comme les autres. Le test d'alors
+// cherchait « questions trié », que « triage des questions » ne contient pas. Le motif est la
+// sollicitation de l'utilisateur sur la méthode, pas une tournure.
+test('aucune phase ne fait trier les questions du council par l\'utilisateur', () => {
+  for (const s of skills) {
+    const refs = join(SKILLS, s, 'references');
+    if (!existsSync(refs)) continue;
+    for (const f of readdirSync(refs).filter(x => x.startsWith('phase-'))) {
+      const t = readFileSync(join(refs, f), 'utf8');
+      assert.doesNotMatch(t, /sollicit\w+[^.]{0,60}tri(age|er)/i, `${s}/${f} : l'utilisateur y est sollicité pour trier`);
+      assert.doesNotMatch(t, /triage des questions/i, `${s}/${f} : le triage des questions y revient`);
+    }
+  }
+});
+
+// Trois choses que le deuxième dossier réel a dû inventer, faute de case : une réserve de périmètre
+// garée dans un champ libre de la release que rien ne lit, une cible décidée doublée d'un
+// `target_candidate` concurrent, et un chemin pour les guides d'entretien que le PRD ne prescrivait pas.
+test('réserve de périmètre, cible décidée, guides d\'entretien : chacun a sa case', () => {
+  const prd = (...f) => readFileSync(join(SKILLS, 'prd-builder', ...f), 'utf8');
+  assert.match(prd('references', 'mvp.md'), /perimetre_non_tranche/, 'une réserve de périmètre n\'est pas une zone d\'ombre');
+  assert.match(prd('references', 'shadow-zones.md'), /^\| `perimetre_non_tranche`/m, 'le type n\'est pas déclaré au catalogue');
+  assert.match(prd('agents', 'prd-lens-critic.md'), /perimetre_non_tranche/, 'une lentille ne peut pas rendre ce type');
+
+  const tpl = prd('templates', 'state.yaml');
+  assert.match(tpl, /decided_by: ""\s+# qui a arrêté la cible/, 'un objectif ne dit pas qui a arrêté sa cible');
+  assert.match(prd('references', 'phase-frame.md'), /aucun autre champ ne garde une valeur concurrente/, 'rien n\'interdit un second champ de cible');
+
+  for (const s of ['brd-builder', 'prd-builder']) {
+    assert.match(readFileSync(join(SKILLS, s, 'references', 'elicitation-patterns.md'), 'utf8'),
+      /interviews\/guide-<qui>\.md/, `${s} : les guides d'entretien n'ont pas de chemin`);
+  }
+
+  assert.match(tpl, /ouverte \| partielle \| répondue \| écartée/, 'la checklist n\'a pas d\'état partiel');
+  assert.match(prd('SKILL.md'), /◐ `partielle`/, 'la posture ne dit pas l\'état partiel');
+});

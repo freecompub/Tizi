@@ -9,6 +9,10 @@ if (!statePath) fail('Usage : node status.mjs <state.yaml>', 2);
 const s = loadState(statePath);
 const doc = s.document ?? 'brd';
 const initiative = statePath.replace(/\/state\.yaml$/, '').split('/').slice(-2).join('/');
+// Les sessions se cherchent à la racine du dépôt, pas dans le répertoire courant : lancé avec un chemin
+// absolu depuis ailleurs, le point d'étape annonçait « Sessions conservées : 0 » alors que l'index
+// existait. Il mentait au lieu de refuser.
+const racine = statePath.replace(/\/state\.yaml$/, '').split('/').slice(0, -2).join('/') || '.';
 const COLLECTIONS = {
   brd: ['candidate_needs', 'objectives', 'business_requirements', 'business_rules', 'decisions', 'risks'],
   prd: ['goals', 'personas', 'journeys', 'functional_requirements', 'acceptance_criteria', 'nfrs', 'design_decisions', 'hypotheses'],
@@ -58,11 +62,18 @@ if (doc === 'brd' && !['assess', 'close'].includes(s.phase)) {
     out.push(`  ${x.status === 'ok' ? '✓' : x.status ? '!' : '·'} ${d.padEnd(15)}${etat} — ${compte[d] || quoi}`);
   }
 }
-const qs = arr(s.questions).filter(q => (q.status ?? '').includes('ouverte') || String(q.state ?? q.status ?? '').includes('❓'));
-if (qs.length) { out.push('', `Questions ouvertes de la checklist : ${qs.length}`); for (const q of qs.slice(0, 8)) out.push(`  - ${q.id ?? ''} ${q.text ?? q.question ?? ''}`); }
+// La checklist est écrite par groupes (`- group: 1` puis `items:`), et ce filtre ne lisait que le
+// premier niveau : au deuxième dossier réel, sept questions ouvertes n'étaient affichées nulle part.
+// On aplatit, en gardant la forme plate au cas où un état ancien la porte encore.
+const items = arr(s.questions).flatMap(g => (arr(g.items).length ? arr(g.items).map(i => ({ ...i, group: g.title ?? g.group })) : [g]));
+const qs = items.filter(q => /ouverte|partielle|❓/.test(String(q.state ?? q.status ?? '')));
+if (qs.length) {
+  out.push('', `Questions ouvertes ou partielles de la checklist : ${qs.length}`);
+  for (const q of qs.slice(0, 8)) out.push(`  ${/partielle/.test(String(q.state ?? q.status ?? '')) ? '◐' : '-'} ${q.id ?? ''} ${q.text ?? q.question ?? ''}${q.group ? ` — ${q.group}` : ''}`);
+}
 if (s.session?.next_action) out.push('', `Prochaine action notée : ${s.session.next_action}`);
-const sess = sessionsFor(initiative);
+const sess = sessionsFor(initiative, racine);
 out.push('', `Sessions conservées pour ${initiative} : ${sess.length}`);
-for (const x of sess.slice(-3)) { const c = condenseOf(x); out.push(`  - ${String(x.ended).slice(0, 16).replace('T', ' ')} · ${x.user_messages} message(s) · extrait : ${x.extract}${c ? ` · condensé : ${c}` : ' · pas de condensé'}`); }
-if (sess.length && !condenseOf(sess.at(-1))) out.push('', 'La dernière session n\'a pas de condensé : le rédiger à partir de son extrait avant de reprendre.');
+for (const x of sess.slice(-3)) { const c = condenseOf(x, racine); out.push(`  - ${String(x.ended).slice(0, 16).replace('T', ' ')} · ${x.user_messages} message(s) · extrait : ${x.extract}${c ? ` · condensé : ${c}` : ' · pas de condensé'}`); }
+if (sess.length && !condenseOf(sess.at(-1), racine)) out.push('', 'La dernière session n\'a pas de condensé : le rédiger à partir de son extrait avant de reprendre.');
 console.log(out.join('\n'));

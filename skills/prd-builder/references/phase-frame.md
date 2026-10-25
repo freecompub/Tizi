@@ -34,7 +34,10 @@ Propose une vision en 2 à 4 phrases : pour qui, quel problème, ce qui change p
 ## 3. Objectifs produit (`GOAL-xx`)
 
 1. Mode chaîné : dérive les objectifs produit des objectifs du BRD (`brd_objectives`). Un objectif produit précise la contribution du produit à un objectif métier ; il ne le duplique pas.
-2. Chaque objectif est SMART : énoncé, KPI, valeur actuelle, cible, horizon. Une valeur inconnue devient une zone d'ombre `objectif_non_mesurable`, jamais une valeur inventée. **La valeur actuelle se mesure, la cible se décide** : elle vient du décideur désigné (`decision_rights`) et ne se déduit pas de la valeur actuelle. Avoir mesuré les métriques en entretien ne donne donc aucune cible — c'est là la question à poser, et `S01` la réclame (« objectif produit sans KPI ou sans cible »).
+2. Chaque objectif est SMART : énoncé, KPI, valeur actuelle, cible, horizon. Une valeur inconnue devient une zone d'ombre `objectif_non_mesurable`, jamais une valeur inventée. **La valeur actuelle se mesure, la cible se décide** : elle vient du décideur désigné (`decision_rights`) et ne se déduit pas de la valeur actuelle. Avoir mesuré les métriques en entretien ne donne donc aucune cible — c'est là la question à poser, et `S01` la réclame (« objectif produit sans KPI ou sans cible »). Une
+fois arrêtée, la cible décidée **remplace** la proposition : elle s'écrit dans `target`, avec
+`decided_by` et `decided_on`, et aucun autre champ ne garde une valeur concurrente — deux chiffres pour
+la même mesure en font un faux. La métrique correspondante reçoit la même cible (`S82`).
 3. 2 à 5 objectifs.
 
 ---
@@ -92,7 +95,7 @@ Cette étape est **conditionnelle** : sans hypothèse de valeur ou d'usage à ri
 
 ## 9. Council
 
-Après l'étape 5 ou 7, **lance** un council en mode `cadrage` (`references/council.md`) pour faire apparaître les personas oubliés, les parcours non couverts et les cas limites. Le council ne se demande pas : son moment est prescrit, et la vérification qui cherche ce que tu as manqué ne peut pas dépendre de ton accord. L'utilisateur n'est sollicité qu'au triage des questions.
+Après l'étape 5 ou 7, **lance** un council en mode `cadrage` (`references/council.md`) pour faire apparaître les personas oubliés, les parcours non couverts et les cas limites. Le council ne se demande pas : son moment est prescrit, et la vérification qui cherche ce que tu as manqué ne peut pas dépendre de ton accord. Ses questions deviennent des zones d'ombre et se posent **comme les autres**, classées par impact : l'utilisateur n'a jamais à trier une liste de questions sur la méthode, et ni le council, ni ses lentilles, ni son mode n'apparaissent dans ce que tu lui écris.
 
 ---
 

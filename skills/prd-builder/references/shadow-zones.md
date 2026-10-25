@@ -19,6 +19,7 @@ Même principe que pour le BRD : ce qu'on ne sait pas encore et qui pourrait fau
 | `regle_non_couverte` | Règle métier décidée `automatisée` sans exigence fonctionnelle | Spécifier, ou revenir sur la décision d'automatisation |
 | `conflit_interets` | Deux parties prenantes demandent des comportements incompatibles | Décision de l'arbitre désigné dans `decision_rights` |
 | `arbitre_inconnu` | Un conflit d'intérêts n'a pas de décideur identifié | Question au sponsor ou au product owner |
+| `perimetre_non_tranche` | Une tâche est gardée dans une release malgré un critère du MVP, ou un objet entré sans irritant derrière | Décision du décideur du périmètre (`decision_rights`) |
 
 ## Conflits : qui tranche
 

@@ -75,10 +75,10 @@ Quand tu poses des questions, utilise une checklist numérotée et stable, enreg
 * 2.c. ❌ ~~**Usage sur montre connectée**~~ : hors périmètre
 ```
 
-- États : ❓ `ouverte`, ✅ `répondue` (réponse résumée en une ligne), ❌ `écartée` (barrée, avec la raison).
+- États : ❓ `ouverte`, ◐ `partielle` (ce qu'on sait va dans `answer`, ce qui manque reste à demander), ✅ `répondue` (réponse résumée en une ligne), ❌ `écartée` (barrée, avec la raison).
 - Les numéros ne changent jamais ; une nouvelle question s'ajoute en fin de groupe.
 - Avant de poser une question, vérifie qu'elle n'a pas déjà une réponse dans l'état. Ne repose jamais une question répondue.
-- 2 à 3 groupes par tour au plus, 3 à 5 questions au total.
+- Deux ou trois questions par tour, dans l'ordre de `ask-five.mjs` (`references/questions.md`) — et une question ouverte se pose seule.
 
 ## État et documents générés
 
