@@ -70,3 +70,31 @@ test('L07 : écran, bouton ou produit dans une exigence fonctionnelle', () => {
   assert.ok(prd('Le système doit enregistrer dans PostgreSQL.').includes('L07'));
   assert.ok(!prd('Quand un dossier est incomplet, le système doit refuser sa transmission.').includes('L07'));
 });
+
+// Deuxième dossier réel : les cinq objectifs portaient leur cible, décidée par le bureau le jour même,
+// et les quatre métriques gardaient `target: ""` avec « à fixer par le directeur » et `goal: ""` avec
+// « rattaché dès que les objectifs seront écrits ». Le PRD livré annonçait « → 0 demande perdue » au § 2
+// et « → — » au § 8 pour la même MET-01, et la vérification disait « aucun avertissement » : aucune
+// règle ne lisait `metrics`.
+test('S82 : une métrique et son objectif portent la même cible, ou rien', () => {
+  const prd = extra => ({ document: 'prd', phase: 'frame', ...extra });
+  const but = x => ({ id: 'GOAL-1', statement: 'x', kpi: 'MET-01 — perdus', target: '0', ...x });
+
+  const orpheline = codes(prd({ goals: [but()], metrics: [{ id: 'MET-01', name: 'perdus', goal: '', target: '0' }] }));
+  assert.ok(orpheline.includes('S82'), 'métrique rattachée à aucun objectif');
+
+  const vide = checkState(prd({ goals: [but()], metrics: [{ id: 'MET-01', name: 'perdus', goal: 'GOAL-1', target: '' }] }));
+  assert.ok(vide.some(f => f.rule === 'S82' && /cible vide/.test(f.message)), 'cible de la métrique vide quand l\'objectif a la sienne');
+
+  const inverse = checkState(prd({ goals: [but({ target: '' })], metrics: [{ id: 'MET-01', name: 'perdus', goal: 'GOAL-1', target: '0' }] }));
+  assert.ok(inverse.some(f => f.rule === 'S82' && /porte l'engagement/.test(f.message)), 'cible fixée côté métrique seulement');
+
+  const accordees = codes(prd({ goals: [but()], metrics: [{ id: 'MET-01', name: 'perdus', goal: 'GOAL-1', target: '0' }] }));
+  assert.ok(!accordees.includes('S82'), 'deux cibles identiques ne déclenchent rien');
+
+  // Et un KPI qui nomme une métrique inexistante est une référence morte, pas une faute de frappe.
+  const morte = checkState(prd({ goals: [but({ kpi: 'MET-09 — inconnue' })], metrics: [] }));
+  assert.ok(morte.some(f => f.rule === 'S09' && /MET-09 inexistante/.test(f.message)), 'KPI citant une métrique absente');
+  // Sans aucune métrique déclarée, un objectif qui n'en cite pas ne déclenche rien.
+  assert.ok(!codes(prd({ goals: [but({ kpi: 'part des dépôts à distance' })] })).includes('S82'));
+});

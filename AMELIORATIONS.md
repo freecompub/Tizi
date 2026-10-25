@@ -12,6 +12,14 @@ faire. Et une piste écartée reste écrite : sans ça elle revient dans six moi
 Dernière vérification de ce registre : **25 octobre 2026**, en exécutant les scripts — depuis le
 24 octobre, sur un dossier réel autant que sur les exemples.
 
+Le deuxième dossier réel est
+[`freecompub/TestTizi`, branche `prd/soutien-scolaire-langues`](https://github.com/freecompub/TestTizi/tree/prd%2Fsoutien-scolaire-langues) :
+PRD **autonome** de la même association, phase Frame, 13 sources dont neuf d'un entretien du directeur
+relayé en direct, 32 zones d'ombre, 5 objectifs validés avec leurs cibles décidées par le bureau,
+4 concepts explorés, 2 releases. Les pistes marquées « deuxième dossier réel » en viennent. C'est lui
+qui donne la deuxième mesure du drapeau `blocking` : 18 zones bloquantes sur 25 au premier dossier,
+0 sur 21 ici — même agent, même critère.
+
 Le premier dossier passé dans Tizi par quelqu'un d'autre que ses auteurs est
 [`freecompub/TestTizi`, branche `brd/cadrage-association`](https://github.com/freecompub/TestTizi/tree/brd%2Fcadrage-association) :
 cadrage d'une association de soutien scolaire, Assess clos et Discover à mi-chemin sur deux
@@ -59,6 +67,13 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
 | Le point d'étape n'attend rien : sa prochaine action n'est plus « recommandée », elle se fait — et « il confirme avant que tu reprennes » est borné à la reprise après pause, pas à un jalon de milieu de session | 25 octobre 2026 | `permission-de-travailler` |
 | « Ce qui ne se demande pas » : ni l'autorisation de travailler (« dites-moi si vous voulez que j'enchaîne »), ni une pause que l'agent propose lui-même ; la consignation et le commit ne sont la branche d'aucune question | 25 octobre 2026 | `permission-de-travailler` |
 | La valeur actuelle d'un objectif produit se mesure, sa cible se **décide** (`decision_rights`) : avoir mesuré les métriques en entretien ne donne aucune cible, et c'est là la question à poser | 25 octobre 2026 | `permission-de-travailler` |
+| `S82` : une métrique et son objectif portent la même cible, ou rien — et un KPI qui cite une métrique absente est une référence morte. Aucune règle ne lisait `metrics` : le PRD livré annonçait « → 0 demande perdue » au § 2 et « → — » au § 8 pour la même MET-01 | 25 octobre 2026 | `dossier-prd-reel` |
+| « L'utilisateur n'est sollicité qu'au triage des questions » retirée des six fichiers de phase où elle survivait, et le test réécrit sur le motif plutôt que sur la tournure | 25 octobre 2026 | `dossier-prd-reel` |
+| Une réserve de périmètre est une zone d'ombre `perimetre_non_tranche` adressée au décideur du périmètre, pas une note dans un champ libre de la release | 25 octobre 2026 | `dossier-prd-reel` |
+| Un objectif dit qui a arrêté sa cible et quand (`decided_by`, `decided_on`), et aucun champ ne garde de valeur concurrente ; une release a sa fenêtre (`window`) | 25 octobre 2026 | `dossier-prd-reel` |
+| Le point d'étape lit la checklist telle qu'elle est écrite — par groupes — et cherche les sessions à la racine de l'état, non dans le répertoire courant ; sept questions ouvertes n'étaient affichées nulle part, et « Sessions conservées : 0 » était faux | 25 octobre 2026 | `dossier-prd-reel` |
+| État `partielle` dans la checklist de questions, et un seul nombre de questions par tour (deux ou trois) au lieu de deux consignes contradictoires | 25 octobre 2026 | `dossier-prd-reel` |
+| Les guides d'entretien ont un chemin dans le PRD comme dans le BRD : `<initiative>/interviews/guide-<qui>.md`, un par voix à entendre | 25 octobre 2026 | `dossier-prd-reel` |
 
 ## Ouvert
 
@@ -183,9 +198,14 @@ intention neuve, et le travail de les instruire est à refaire.
   plus — c'est le poids du type qui ordonne encore (scores 153 · 134 · 134 · 133 · 133). Deux
   corrections possibles, pas trois : resserrer le critère (une zone ne bloque que si elle peut changer
   le périmètre ou empêcher le passage en Define), ou retirer `blocking` du score et le garder comme
-  porte de sortie de phase. Il faudrait un second dossier réel pour trancher — sur un seul, on ne sait
-  pas si 72 % de bloquantes est un défaut du critère ou l'état normal d'un cadrage sans aucune partie
-  prenante entendue.
+  porte de sortie de phase.
+
+  **Le second dossier a tranché la question de fait** (PRD autonome `soutien-scolaire-langues`,
+  25 octobre) : **0 bloquante sur 21 zones ouvertes**, contre 72 % au premier. Même agent, même critère,
+  deux extrêmes — et la phase y remplit ses conditions de sortie avec deux personas sans aucune preuve,
+  parce qu'aucune zone n'est déclarée bloquante. Le drapeau ne suit pas le risque, il suit la main qui
+  l'écrit : il n'informe ni le score d'`ask-five.mjs`, ni la porte de sortie. Reste à choisir laquelle
+  des deux corrections appliquer, et c'est une décision, plus une mesure à faire.
 
 ## Pistes non tranchées
 

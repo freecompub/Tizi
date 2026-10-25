@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync, cpSync } from 'node:fs';
 import { join } from 'node:path';
-import { node, sandbox, script, tempDir } from './helpers.mjs';
+import { node, sandbox, script, tempDir, ROOT } from './helpers.mjs';
 import { decide } from '../skills/brd-builder/scripts/choose-path.mjs';
 
 const no = { evident: false, reglementaire: false, 'intention-floue': false, 'regle-metier': false, 'contrat-donnee': false, 'plusieurs-jours': false };
@@ -114,4 +114,40 @@ test('instructions du dépôt : bloc généré, contenu humain conservé, idempo
   rmSync(join(dir, 'src/completude'), { recursive: true });
   const c = sync('--check');
   assert.equal(c.code, 1); assert.match(c.out, /introuvable : src\/completude/);
+});
+
+// Deuxième dossier réel : la checklist `questions` est écrite par groupes, et le filtre du point d'étape
+// ne lisait que le premier niveau — sept questions ouvertes n'étaient affichées nulle part. Et les
+// sessions se cherchaient dans le répertoire courant : lancé avec un chemin absolu depuis ailleurs, le
+// point d'étape annonçait « Sessions conservées : 0 » alors que l'index existait. Deux fois la même
+// faute : répondre à côté plutôt que refuser.
+test('point d\'étape : checklist groupée affichée, sessions cherchées à la racine de l\'état', () => {
+  const dir = tempDir('tizi-etape');
+  mkdirSync(join(dir, 'prd/demo'), { recursive: true });
+  mkdirSync(join(dir, '.tizi/sessions'), { recursive: true });
+  writeFileSync(join(dir, 'prd/demo/state.yaml'), [
+    'document: prd', 'initiative: { name: "Demo", slug: demo }', 'phase: frame',
+    'questions:',
+    '  - group: 1',
+    '    title: "Problème"',
+    '    items:',
+    '      - { id: 1.a, text: "Quel problème ?", state: répondue, answer: "x" }',
+    '      - { id: 1.b, text: "Pourquoi maintenant ?", state: partielle, answer: "échéance connue" }',
+    '      - { id: 1.c, text: "Combien de dossiers ?", state: ouverte, answer: "" }', '',
+  ].join('\n'));
+  writeFileSync(join(dir, '.tizi/sessions/2026-10-25-abcd1234.index.yaml'), [
+    'session: abcd1234', 'started: "2026-10-25T08:00:00.000Z"', 'ended: "2026-10-25T10:00:00.000Z"',
+    'initiatives: [prd/demo]', 'user_messages: 7',
+    'extract: .tizi/sessions/2026-10-25-abcd1234.extrait.md', '',
+  ].join('\n'));
+  writeFileSync(join(dir, '.tizi/sessions/2026-10-25-abcd1234.extrait.md'), '# Extrait\n');
+
+  // Chemin absolu, depuis un répertoire qui n'est pas celui du dossier : c'est le cas qui mentait.
+  const out = node(script('prd-builder', 'status.mjs'), [join(dir, 'prd/demo/state.yaml')], { cwd: ROOT }).out;
+  assert.match(out, /Questions ouvertes ou partielles de la checklist : 2/, 'la checklist groupée n\'est pas lue');
+  assert.match(out, /◐ 1\.b/, 'une question partielle n\'est pas distinguée');
+  assert.ok(!/1\.a/.test(out), 'une question répondue est affichée comme ouverte');
+  assert.match(out, /Sessions conservées pour prd\/demo : 1/, 'les sessions sont cherchées dans le répertoire courant');
+  assert.match(out, /pas de condensé/, 'le condensé manquant n\'est pas signalé');
+  rmSync(dir, { recursive: true });
 });

@@ -15,6 +15,14 @@ Une tranche est un MVP si les six critères tiennent :
 
 Si le critère 1 ou 3 échoue, propose de redécouper avant de spécifier.
 
+**Une tâche gardée malgré le critère 3 est une décision de périmètre, et elle a un décideur.** Au
+deuxième dossier réel, une tâche ne servait ni la valeur de bout en bout ni le test de l'hypothèse, et
+a été maintenue dans le MVP « sous réserve » parce qu'elle touchait 135 familles sur 150 — la réserve
+écrite dans un champ libre de la release, que rien ne lit et qu'aucun point d'étape n'affiche. Ce
+n'est pas une note : c'est une **zone d'ombre** `perimetre_non_tranche`, adressée au décideur du
+périmètre (`decision_rights`), qui dit la tâche, le critère qu'elle manque et ce qui plaide pour
+qu'elle reste. Tant qu'elle est ouverte, le MVP est proposé, pas arrêté.
+
 ## Découpage
 
 - Commence par la « colonne vertébrale » : la version la plus simple de chaque activité nécessaire au parcours principal.

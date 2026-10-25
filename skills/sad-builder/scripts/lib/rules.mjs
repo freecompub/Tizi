@@ -243,6 +243,7 @@ export function checkPrd(s) {
   const out = [];
   const chained = s.mode === 'chaîné';
   const goals = mapOf(s.goals), pers = mapOf(s.personas), pjs = mapOf(s.journeys), rels = mapOf(s.releases);
+  const mets = arr(s.metrics).filter(live);
   const frs = mapOf(s.functional_requirements), dds = mapOf(s.design_decisions), srcs = mapOf(s.sources);
   const brs = mapOf(arr(s.brd_ref?.requirements)), rgs = mapOf(arr(s.business_rules));
   const acs = arr(s.acceptance_criteria).filter(live);
@@ -273,6 +274,27 @@ export function checkPrd(s) {
   for (const g of arr(s.goals).filter(live)) {
     push(g, 'GOAL', g.statement);
     if (!g.kpi || !g.target) out.push({ rule: 'S01', id: g.id, message: 'objectif produit sans KPI ou sans cible' });
+    for (const id of String(g.kpi ?? '').match(/MET-\d+/g) ?? []) {
+      if (!mets.some(m => m.id === id)) out.push({ rule: 'S09', id: g.id, message: `métrique ${id} inexistante` });
+    }
+  }
+  // ── Métriques et objectifs accordés (S82) ──
+  // Deuxième dossier réel : les cinq objectifs portaient leur cible, décidée par le bureau le jour même
+  // (ZO-031 levée), et les quatre métriques gardaient `target: ""` avec le commentaire « à fixer par le
+  // directeur » et `goal: ""` avec « rattaché dès que les objectifs produit seront écrits ». Ils
+  // l'étaient. Le PRD livré annonçait donc « 4 sur 150 → 0 demande perdue » au § 2 et « → — » au § 8
+  // pour la même MET-01, et la vérification concluait « aucun avertissement » : rien ne lisait
+  // `metrics`. Un commentaire YAML ne se relit pas, et deux chiffres pour la même mesure en font un faux.
+  for (const m of mets) {
+    if (!m.goal) {
+      if (arr(s.goals).filter(live).length) out.push({ rule: 'S82', id: m.id, message: 'métrique rattachée à aucun objectif produit (`goal`) : rien ne dit ce qu\'elle sert à mesurer' });
+      continue;
+    }
+    refs(out, 'S09', m, [m.goal], goals, 'objectif');
+    const g = goals.get(m.goal);
+    if (!g) continue;
+    if (g.target && !m.target) out.push({ rule: 'S82', id: m.id, message: `cible vide alors que ${g.id} a fixé la sienne : la même mesure porte deux valeurs, et le document n'en affiche qu'une` });
+    if (!g.target && m.target) out.push({ rule: 'S82', id: m.id, message: `cible fixée alors que ${g.id} n'a pas la sienne : c'est l'objectif qui porte l'engagement, la métrique le mesure` });
   }
   for (const f of arr(s.functional_requirements).filter(live)) {
     push(f, 'FR', f.statement);
@@ -859,5 +881,5 @@ export const STRUCT_RULES = {
   S56: 'opportunité non décidée', S57: 'hypothèse risquée non testée', S58: 'itération sans revue', S59: 'release sans mesure des outcomes',
   S60: 'voie rapide non conforme', S61: 'ordre ouverture, milieu, fin', S62: 'story sans titre court',
   S63: 'exigence à source unique', S64: 'exigence sans source', S65: 'porte de synthèse', S66: 'exigence de transition incomplète', S67: 'exploration de concepts',
-  S68: 'espace réservé resté', S69: 'chiffre sans source', S70: 'fiche de contexte trop longue', S71: 'ADR sans règle', S72: 'collision entre tâches', S73: 'comportement existant à préserver', S74: 'taille et risque calculé', S75: 'attention humaine dépassée', S76: 'tâche non finie sans décision', S77: 'action de rétrospective sans suivi', S78: 'voie rapide sans épopée', S79: 'constitution', S80: 'liste de contrôle de relecture', S81: 'source sans personne entendue',
+  S68: 'espace réservé resté', S69: 'chiffre sans source', S70: 'fiche de contexte trop longue', S71: 'ADR sans règle', S72: 'collision entre tâches', S73: 'comportement existant à préserver', S74: 'taille et risque calculé', S75: 'attention humaine dépassée', S76: 'tâche non finie sans décision', S77: 'action de rétrospective sans suivi', S78: 'voie rapide sans épopée', S79: 'constitution', S80: 'liste de contrôle de relecture', S81: 'source sans personne entendue', S82: 'métrique et objectif désaccordés',
 };

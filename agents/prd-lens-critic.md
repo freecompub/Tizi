@@ -33,7 +33,7 @@ lens: <nom de la lentille>
 mode: <cadrage|specification>
 shadow_zones:
   - question: "…?"
-    type: <cas_limite|etat_erreur|comportement_ambigu|nfr_non_mesurable|objectif_non_mesurable|persona_non_fonde|exigence_sans_origine|br_non_couverte|conflit_amont|dependance_inconnue|hypothese_non_verifiee>
+    type: <cas_limite|etat_erreur|comportement_ambigu|nfr_non_mesurable|objectif_non_mesurable|persona_non_fonde|exigence_sans_origine|br_non_couverte|conflit_amont|dependance_inconnue|hypothese_non_verifiee|perimetre_non_tranche>
     target: "<identifiant, ou la case du canevas ou la section visée>"
     why: "pourquoi cette lentille le relève, en une phrase"
     ask_to: "<rôle>"

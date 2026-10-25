@@ -105,7 +105,7 @@ Signale sous forme de questions, sans verdict :
 
 ## 9. Council
 
-Après la spécification du MVP, **lance** un council en mode `specification` (`references/council.md`) : cas limites, états d'erreur, NFR oubliées, testabilité, inflation de périmètre. Le council ne se demande pas : son moment est prescrit, et la vérification qui cherche ce que tu as manqué ne peut pas dépendre de ton accord. L'utilisateur n'est sollicité qu'au triage des questions.
+Après la spécification du MVP, **lance** un council en mode `specification` (`references/council.md`) : cas limites, états d'erreur, NFR oubliées, testabilité, inflation de périmètre. Le council ne se demande pas : son moment est prescrit, et la vérification qui cherche ce que tu as manqué ne peut pas dépendre de ton accord. Ses questions deviennent des zones d'ombre et se posent **comme les autres**, classées par impact : l'utilisateur n'a jamais à trier une liste de questions sur la méthode, et ni le council, ni ses lentilles, ni son mode n'apparaissent dans ce que tu lui écris.
 
 ---
 

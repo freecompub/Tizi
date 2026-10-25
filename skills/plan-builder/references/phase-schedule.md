@@ -30,7 +30,7 @@ Suis `references/cadence.md`.
 
 ## 5. Council
 
-Avant l'engagement, et une fois l'itération ou le réapprovisionnement rempli, **lance** un council en mode `planification` (`references/council.md`) : stories trop grosses, dépendances oubliées, tâches mal affectées à des agents, mesures non planifiées, capacité irréaliste. Le council ne se demande pas : son moment est prescrit, et la vérification qui cherche ce que tu as manqué ne peut pas dépendre de ton accord. L'utilisateur n'est sollicité qu'au triage des questions.
+Avant l'engagement, et une fois l'itération ou le réapprovisionnement rempli, **lance** un council en mode `planification` (`references/council.md`) : stories trop grosses, dépendances oubliées, tâches mal affectées à des agents, mesures non planifiées, capacité irréaliste. Le council ne se demande pas : son moment est prescrit, et la vérification qui cherche ce que tu as manqué ne peut pas dépendre de ton accord. Ses questions deviennent des zones d'ombre et se posent **comme les autres**, classées par impact : l'utilisateur n'a jamais à trier une liste de questions sur la méthode, et ni le council, ni ses lentilles, ni son mode n'apparaissent dans ce que tu lui écris.
 
 C'est le dernier moment où une story trop grosse coûte encore peu : après l'engagement, elle coûte une itération.
 
