@@ -1,7 +1,7 @@
 // Chemin minimal (choose-path.mjs) et instructions du dépôt (sync-agent-instructions.mjs).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, writeFileSync, mkdtempSync, rmSync, existsSync, cpSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdtempSync, mkdirSync, rmSync, existsSync, cpSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { sandbox, node, script } from './helpers.mjs';
@@ -35,6 +35,53 @@ test('chemin enregistré : ne se rétrécit pas, s\'élargit avec historique, gu
   assert.equal(cp('green', '--par', 'Samir', ...answers({ 'contrat-donnee': true, 'plusieurs-jours': true })).code, 0);
   const g = next().find(x => x.slug === 'green');
   assert.equal(g.next.entry, 'tizi-sad'); assert.equal(g.progress.split(' ')[0], '–');
+});
+
+// Une initiative découpée n'est pas une initiative jetée. Le vocabulaire d'Assess n'avait que `jeter`
+// pour clore : sur le premier dossier réel, la mère portait `decision: jeter` avec la vérité en
+// commentaire YAML, et les deux outils de portefeuille annonçaient un abandon.
+test('initiative découpée : close sans abandon, filles nommées, point d\'étape et portefeuille', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'tizi-decoup-'));
+  const ecrire = (slug, opp) => {
+    mkdirSync(join(dir, 'brd', slug), { recursive: true });
+    writeFileSync(join(dir, 'brd', slug, 'state.yaml'), `document: brd\ninitiative: { name: "${slug}", slug: ${slug} }\nphase: close\nopportunity:\n${opp}\n`);
+  };
+  ecrire('programme', '  decision: decoupee\n  decided_by: SH-01\n  split_into: [inscription, communication]');
+
+  const next = JSON.parse(node(script('brd-builder', 'next-step.mjs'), ['.', '--json'], { cwd: dir }).out);
+  const mere = next.find(x => x.slug === 'programme');
+  assert.match(mere.next.why, /découpée en inscription, communication/, 'le point d\'étape annonce un abandon');
+  assert.doesNotMatch(mere.next.why, /jetée/);
+
+  const porte = node(script('brd-builder', 'list-opportunities.mjs'), ['.'], { cwd: dir }).out;
+  assert.match(porte, /decoupee → inscription, communication/, 'le portefeuille ne dit pas où est passé le travail');
+
+  // Un découpage qui ne nomme pas ses filles se relit comme un abandon : la règle le dit.
+  ecrire('muette', '  decision: decoupee\n  decided_by: SH-01');
+  const lint = node(script('brd-builder', 'lint.mjs'), ['brd/muette/state.yaml'], { cwd: dir }).out;
+  assert.match(lint, /S56.*sans nommer les initiatives filles/, 'découpage sans filles accepté en silence');
+  rmSync(dir, { recursive: true });
+});
+
+// La porte de synthèse se déclare à la fin de Discover et `S65` ne la contrôle qu'à l'entrée de Define :
+// le premier dossier réel avait ses cinq dimensions vides et zéro partie prenante entendue, sans qu'aucun
+// outil ne le montre. Le point d'étape l'affiche comme une distance, avec les deux comptes calculables.
+test('point d\'étape : porte de synthèse montrée en Discover, avec ce qui se compte', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'tizi-synth-'));
+  mkdirSync(join(dir, 'brd/cadrage'), { recursive: true });
+  writeFileSync(join(dir, 'brd/cadrage/state.yaml'), [
+    'document: brd', 'initiative: { name: "Cadrage", slug: cadrage }', 'phase: discover',
+    'stakeholders:', '  - { id: SH-01, status: interrogée }', '  - { id: SH-02, status: à interroger }',
+    '  - { id: SH-03, status: à interroger }',
+    'sources:', '  - { id: SRC-001, type: cadrage, stakeholders: [SH-01] }',
+    'candidate_needs:', '  - { id: BC-001, text: "x", sources: [{ ref: SRC-001 }] }',
+    '  - { id: BC-002, text: "y", sources: [{ ref: SRC-001 }] }', '',
+  ].join('\n'));
+  const out = node(script('brd-builder', 'status.mjs'), ['brd/cadrage/state.yaml'], { cwd: dir }).out;
+  assert.match(out, /Porte de synthèse avant Define : 0 dimension\(s\) sur 5/);
+  assert.match(out, /couverture\s+à déclarer — 1 partie\(s\) prenante\(s\) entendue\(s\) sur 3/);
+  assert.match(out, /robustesse\s+à déclarer — 2 besoin\(s\) candidat\(s\) sur 2 à source unique/);
+  rmSync(dir, { recursive: true });
 });
 
 test('instructions du dépôt : bloc généré, contenu humain conservé, idempotent, dérives détectées', () => {

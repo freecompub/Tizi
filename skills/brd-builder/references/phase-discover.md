@@ -172,7 +172,7 @@ Présente en quelques lignes :
 
 ## 7. Council de lentilles
 
-Déclencheur : proposé après le cadrage (mode **préparation**) et avant la fin de la phase (mode **couverture**), ou à la demande. Ne le lance qu'avec l'accord de l'utilisateur.
+Déclencheur : **prescrit** après le cadrage (mode **préparation**) et avant la fin de la phase (mode **couverture**) ; à la demande en plus de ces deux moments. Le council ne se propose pas et ne se demande pas : une vérification qui cherche ce que tu as manqué ne peut pas dépendre de ton accord, ni de la patience de l'utilisateur. Ce qui se décide, c'est le sort des questions trouvées — l'utilisateur est sollicité au triage, pas avant.
 
 Suis le protocole de `references/council.md`. Rappel essentiel : le council produit des **zones d'ombre candidates**, jamais des besoins, et ne remplace jamais un entretien.
 

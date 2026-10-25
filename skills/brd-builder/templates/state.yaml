@@ -23,9 +23,11 @@ opportunity:              # phase Assess (references/phase-assess.md)
     business_problem: ""
     business_metrics: []
     budget: ""             # ordre de grandeur : jours, semaines, mois
-  decision: en_attente     # en_attente | aller_plus_loin | jeter | a_apprendre | reportee
+  decision: en_attente     # en_attente | aller_plus_loin | jeter | decoupee | a_apprendre | reportee
   reason: ""
   to_learn: []             # si a_apprendre : - { question: "", who: "" }
+  split_into: []           # si decoupee : slugs des initiatives filles. Sans eux, « close » se relit
+                           # comme un abandon — ce qui est arrivé, avec la vérité en commentaire YAML
   decided_by: ""           # déclaré par l'utilisateur
   date: ""
 
