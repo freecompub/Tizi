@@ -56,6 +56,9 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
 | `adopt.mjs` : la commande proposée crée son dossier de rapport et garde le chemin des tests déclaré ; un `paths.production` vide est dit au lieu d'être caché ; `reports/` entre dans les lignes de gitignore générées | 25 octobre 2026 | `adoption-et-racine` |
 | Le garde-fou TDD refuse d'écrire quand `paths.production` est vide, au lieu de laisser tout passer en silence | 25 octobre 2026 | `adoption-et-racine` |
 | Un passage de council partagé entre initiatives nomme sa portée (`initiatives`) : les compteurs portent sur le passage, les questions sur l'initiative qu'elles visent | 25 octobre 2026 | `council-multi-initiatives` |
+| Le point d'étape n'attend rien : sa prochaine action n'est plus « recommandée », elle se fait — et « il confirme avant que tu reprennes » est borné à la reprise après pause, pas à un jalon de milieu de session | 25 octobre 2026 | `permission-de-travailler` |
+| « Ce qui ne se demande pas » : ni l'autorisation de travailler (« dites-moi si vous voulez que j'enchaîne »), ni une pause que l'agent propose lui-même ; la consignation et le commit ne sont la branche d'aucune question | 25 octobre 2026 | `permission-de-travailler` |
+| La valeur actuelle d'un objectif produit se mesure, sa cible se **décide** (`decision_rights`) : avoir mesuré les métriques en entretien ne donne aucune cible, et c'est là la question à poser | 25 octobre 2026 | `permission-de-travailler` |
 
 ## Ouvert
 

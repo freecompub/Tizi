@@ -74,13 +74,19 @@ Quand l'utilisateur annonce une pause (« on s'arrête », « on reprend demain 
 3. Rédige le **condensé** de la session (format ci-dessous) dans `.tizi/sessions/<date>-<session>.condense.md`, à partir de ce que vous venez de faire. Le nom de fichier suit celui de l'extrait que le hook produira : date du premier message et 8 premiers caractères de l'identifiant de session.
 4. Rappelle de faire un commit.
 
+Cette séquence part de l'**annonce de l'utilisateur**, jamais d'une proposition de l'agent :
+« voulez-vous qu'on s'arrête là ? » demande la permission de travailler, et met la trace en jeu
+pour rien. Ce qui a été recueilli se réécrit dans l'état tout de suite ; le condensé et le commit
+sont dus à la pause quelle qu'en soit la raison. Ils ne sont la branche d'aucune question
+(`references/questions.md`).
+
 ## À la reprise
 
 1. **Pause courte, même machine** : la reprise native de l'outil restaure la conversation entière — `claude --continue` ou `claude --resume` (Claude Code), `copilot --continue` ou `copilot --resume` (Copilot CLI), l'historique des sessions de chat (VS Code). C'est la reprise la plus fidèle ; les étapes suivantes restent utiles si la session avait été compactée.
 2. Sinon, lance `node <chemin-du-skill>/scripts/status.mjs <document>/<slug>/state.yaml` : point d'étape déterministe (phase, compteurs par statut, zones d'ombre, questions ouvertes, prochaine action, dernières sessions).
 3. Lis le **condensé** de la dernière session. Son absence est aussi rappelée par le hook de début de session, qui le signale pour chaque initiative concernée. Les outils cherchent le fichier sur le disque, pas le champ `condensed` de l'index : ce champ est écrit par le hook de capture, qui tourne après tout ce que l'agent a fait dans le tour — y compris le commit — et peut donc être vide alors que le condensé existe. S'il n'existe pas (session interrompue sans pause annoncée), rédige-le d'abord à partir de l'extrait, et fais-le valider à l'utilisateur.
 4. Pour un détail qui manque, **cherche** plutôt que de tout relire : `node <chemin-du-skill>/scripts/session-search.mjs "agents du soir" --initiative brd/<slug> --who user`.
-5. Présente le point d'étape à l'utilisateur : où l'on en est, ce qui restait en suspens, la prochaine action proposée. Il confirme avant que tu reprennes.
+5. Présente le point d'étape à l'utilisateur : où l'on en est, ce qui restait en suspens, la prochaine action. Il confirme avant que tu reprennes — **c'est propre à la reprise** : une session interrompue a pu laisser l'état et la mémoire en désaccord, et lui seul sait ce qui s'est passé entre-temps. En cours de session, un jalon franchi ne se fait pas confirmer : le point d'étape se lit, et la prochaine action se fait (`references/questions.md`).
 
 En cas de contradiction entre une session et l'état, **l'état l'emporte**. Signale l'écart à l'utilisateur plutôt que de le corriger toi-même.
 
