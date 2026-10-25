@@ -113,9 +113,13 @@ council_runs: []
 #  - date: ""
 #    mode: preparation     # preparation | couverture | completude
 #    lenses: [utilisateur-final, operations-support, securite-conformite, sponsor-finance, sceptique]
-#    proposed: 0           # questions renvoyées par les lentilles
-#    discarded: 0          # écartées à l'arbitrage
-#    retained: 0           # retenues par l'utilisateur
+#    proposed: 0           # questions renvoyées par les lentilles, avant fusion des doublons
+#    questions:            # celles qui ont survécu à l'arbitrage, écartées comprises : un compteur ne se relit pas
+#      - text: ""
+#        lenses: []        # lentilles qui l'ont trouvée ; plusieurs = signal de priorité
+#        outcome: retenue  # retenue | écartée | réservée (disponible pour un prochain council)
+#        reason: ""        # obligatoire si écartée ou réservée
+#        zone: ZO-xxx      # si retenue : la zone d'ombre créée
 
 # ─────────────── Phase Define ───────────────
 

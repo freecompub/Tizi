@@ -57,4 +57,4 @@ Enregistre les questions retenues comme zones d'ombre avec `origin: council:<len
 
 ### 5. Tracer le passage du council
 
-Ajoute une entrée dans `council_runs` de `state.yaml` : date, mode, lentilles utilisées, nombre de questions proposées, écartées à l'arbitrage, retenues par l'utilisateur. Ces chiffres servent à mesurer l'utilité réelle du council.
+Ajoute une entrée dans `council_runs` de `state.yaml` : date, mode, lentilles utilisées, le nombre de questions renvoyées par les lentilles, et **les questions elles-mêmes** — retenues, écartées avec leur raison, et celles mises en réserve pour un prochain council. Le compte mesure l'utilité du council ; les questions permettent de la vérifier. Trois compteurs ne se relisent pas : « 40 proposées, 39 écartées » ne dit pas si c'étaient des doublons, des solutions déguisées, ou de bonnes questions mal arbitrées, et les écartées disparaissent avec la session.

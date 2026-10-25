@@ -4,7 +4,9 @@ import assert from 'node:assert/strict';
 import { checkState, evidenceOf } from '../skills/brd-builder/scripts/lib/rules.mjs';
 
 const codes = s => checkState(s).map(f => f.rule);
-const brd = extra => ({ document: 'brd', phase: 'discover', sources: [{ id: 'SRC-1', type: 'entretien' }, { id: 'SRC-2', type: 'observation' }], candidate_needs: [{ id: 'BC-1', sources: [{ ref: 'SRC-1' }] }], ...extra });
+const brd = extra => ({ document: 'brd', phase: 'discover', stakeholders: [{ id: 'SH-1', status: 'interrogée' }],
+  sources: [{ id: 'SRC-1', type: 'entretien', stakeholders: ['SH-1'] }, { id: 'SRC-2', type: 'observation', stakeholders: ['SH-1'] }],
+  candidate_needs: [{ id: 'BC-1', sources: [{ ref: 'SRC-1' }] }], ...extra });
 
 test('classe de preuve : observé, rapporté, supposé', () => {
   const s = brd({});
@@ -22,6 +24,28 @@ test('S68 : espace réservé resté dans un élément', () => {
 test('S69 : chiffre sans source, mais pas avec une source', () => {
   assert.ok(codes(brd({ business_rules: [{ id: 'RG-1', statement: 'Relance après 5 jours' }] })).includes('S69'));
   assert.ok(!codes(brd({ business_rules: [{ id: 'RG-1', statement: 'Relance après 5 jours', sources: ['SRC-1'] }] })).includes('S69'));
+});
+// Premier dossier réel : la source unique de tout le cadrage était attribuée au directeur, que le même
+// fichier déclarait « à interroger ». Du rapporté présenté comme recueilli, et lint ne disait rien.
+test('S81 : source attribuée à une partie prenante jamais entendue, ou à personne', () => {
+  const avec = sources => codes(brd({ sources }));
+  assert.ok(avec([{ id: 'SRC-1', type: 'autre', stakeholders: ['SH-1'] }]).includes('S81') === false, 'une partie prenante interrogée ne déclenche rien');
+  assert.ok(avec([{ id: 'SRC-1', type: 'autre' }]).includes('S81'), 'source sans partie prenante : qui a parlé ?');
+  const muette = { document: 'brd', phase: 'discover', stakeholders: [{ id: 'SH-1', status: 'à interroger' }], sources: [{ id: 'SRC-1', type: 'autre', stakeholders: ['SH-1'] }] };
+  assert.ok(checkState(muette).some(f => f.rule === 'S81' && /à interroger/.test(f.message)), 'source attribuée à qui n\'a pas été entendu');
+  // Un document se lit sans entretien : personne n'a besoin d'avoir parlé.
+  assert.ok(!checkState({ ...muette, sources: [{ id: 'SRC-1', type: 'document', stakeholders: ['SH-1'] }] }).some(f => f.rule === 'S81'));
+  // Une seule partie prenante entendue parmi plusieurs suffit : la source a une bouche.
+  assert.ok(!checkState({ ...muette, stakeholders: [{ id: 'SH-1', status: 'à interroger' }, { id: 'SH-2', status: 'interrogée' }], sources: [{ id: 'SRC-1', type: 'atelier', stakeholders: ['SH-1', 'SH-2'] }] }).some(f => f.rule === 'S81'));
+});
+// Même dossier : la décision d'opportunité était enregistrée au nom pris dans la configuration Git.
+test('S56 : décideur d\'opportunité absent des parties prenantes', () => {
+  const opp = (decided_by, stakeholders) => checkState({ document: 'brd', phase: 'discover', stakeholders, opportunity: { decision: 'aller_plus_loin', decided_by } }).filter(f => f.rule === 'S56').map(f => f.message);
+  const shs = [{ id: 'SH-1', name: 'Alice', status: 'interrogée' }];
+  assert.ok(opp('ClaudeVPS', shs).some(m => /absent des parties prenantes/.test(m)));
+  assert.deepEqual(opp('SH-1', shs).filter(m => /absent/.test(m)), [], 'par identifiant');
+  assert.deepEqual(opp('Alice', shs).filter(m => /absent/.test(m)), [], 'par nom');
+  assert.deepEqual(opp('ClaudeVPS', []).filter(m => /absent/.test(m)), [], 'rien à vérifier sans carte des parties prenantes');
 });
 test('S65 : passage en Define sans porte de synthèse', () => {
   assert.ok(codes(brd({ phase: 'define' })).includes('S65'));

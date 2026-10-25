@@ -94,6 +94,12 @@ export function checkText(kind, text, { waived = [] } = {}) {
 // supposé    : aucune source
 // non résolu : une zone d'ombre ouverte porte sur l'élément ; ce n'est jamais une preuve
 export const OBSERVED_SOURCE_TYPES = ['observation', 'mesure', 'test'];
+// Types de source où personne n'est présent : un document, un ticket ou un handoff se lisent sans
+// entretien. Partout ailleurs, quelqu'un a parlé, et le dossier doit pouvoir dire qui (S81).
+export const SOURCES_SANS_PRESENCE = ['document', 'ticket', 'dt-handoff', 'code', 'configuration'];
+const NON_ENTENDU = ['à interroger', 'non disponible'];
+// Un nom de décideur désigne une partie prenante : par son identifiant, ou par son nom s'il est renseigné.
+const knownPerson = (s, shs, v) => shs.has(v) || arr(s.stakeholders).some(sh => sh.name && sh.name === v);
 export function evidenceOf(s, srcIds, ownerIds = []) {
   const srcs = new Map(arr(s.sources).map(x => [x.id, x]));
   const ids = [...new Set(arr(srcIds))];
@@ -140,6 +146,13 @@ export function checkBrd(s) {
   }
   if (s.opportunity?.decision && !['en_attente'].includes(s.opportunity.decision) && !s.opportunity.decided_by) {
     out.push({ rule: 'S56', id: 'opportunity', message: 'décision d\'opportunité sans décideur déclaré' });
+  } else if (s.opportunity?.decided_by && arr(s.stakeholders).length && !knownPerson(s, shs, s.opportunity.decided_by)) {
+    // Un décideur déclaré doit être quelqu'un que le dossier nomme. Sur le premier dossier réel, la
+    // décision d'opportunité a été enregistrée au nom pris dans la configuration Git, faute de l'avoir
+    // demandé : un nom présent, et personne derrière. `decision_rights` est déjà tenu à cette exigence
+    // (S09) ; la décision qui ouvre l'initiative, non. Rien à vérifier tant qu'aucune partie prenante
+    // n'est connue : en Assess, la carte n'existe pas encore.
+    out.push({ rule: 'S56', id: 'opportunity', message: `décideur « ${s.opportunity.decided_by} » absent des parties prenantes : la décision d'opportunité revient au sponsor, qui se nomme (SH-xx)` });
   }
   for (const o of arr(s.objectives).filter(live)) {
     push(o, 'OBJ', o.statement);
@@ -198,6 +211,22 @@ export function checkBrd(s) {
   for (const d of arr(s.decisions).filter(live)) {
     if (d.status === 'validé' && !d.decided_by) out.push({ rule: 'S17', id: d.id, message: 'décision validée sans décideur déclaré' });
     if (arr(d.options).length < 2) out.push({ rule: 'S18', id: d.id, message: 'décision présentée avec moins de deux options : le décideur n\'a pas eu de choix réel' });
+  }
+  // Une source déclarative tient par la personne qui a parlé. Sur le premier dossier réel, la source
+  // unique de tout le cadrage était typée « autre » et attribuée au directeur — dont le même fichier
+  // disait `status: à interroger`. Le dossier reposait donc sur quelqu'un qu'il déclarait ne pas avoir
+  // entendu, et la personne qui avait réellement parlé n'apparaissait dans aucune ligne. Un dossier peut
+  // tenir sur du rapporté ; il ne peut pas le présenter comme recueilli.
+  for (const src of arr(s.sources)) {
+    if (SOURCES_SANS_PRESENCE.includes(src.type)) continue;
+    const parties = arr(src.stakeholders);
+    refs(out, 'S09', src, parties, shs, 'partie prenante');
+    if (!parties.length) { out.push({ rule: 'S81', id: src.id, message: `source de type « ${src.type ?? 'non typée'} » sans partie prenante : qui a parlé ?` }); continue; }
+    const connues = parties.filter(p => shs.has(p));
+    const muettes = connues.filter(p => NON_ENTENDU.includes(shs.get(p).status));
+    if (connues.length && muettes.length === connues.length) {
+      out.push({ rule: 'S81', id: src.id, message: `source attribuée à ${muettes.join(', ')}, que l'état déclare « ${shs.get(muettes[0]).status} » : ce qui en vient est rapporté par un tiers, pas recueilli` });
+    }
   }
   for (const sh of arr(s.stakeholders)) {
     if (sh.influence === 'négative' && sh.power === 'fort' && !arr(s.risks).some(r => arr(r.related).includes(sh.id) || r.origin === sh.id)) {
@@ -827,5 +856,5 @@ export const STRUCT_RULES = {
   S56: 'opportunité non décidée', S57: 'hypothèse risquée non testée', S58: 'itération sans revue', S59: 'release sans mesure des outcomes',
   S60: 'voie rapide non conforme', S61: 'ordre ouverture, milieu, fin', S62: 'story sans titre court',
   S63: 'exigence à source unique', S64: 'exigence sans source', S65: 'porte de synthèse', S66: 'exigence de transition incomplète', S67: 'exploration de concepts',
-  S68: 'espace réservé resté', S69: 'chiffre sans source', S70: 'fiche de contexte trop longue', S71: 'ADR sans règle', S72: 'collision entre tâches', S73: 'comportement existant à préserver', S74: 'taille et risque calculé', S75: 'attention humaine dépassée', S76: 'tâche non finie sans décision', S77: 'action de rétrospective sans suivi', S78: 'voie rapide sans épopée', S79: 'constitution', S80: 'liste de contrôle de relecture',
+  S68: 'espace réservé resté', S69: 'chiffre sans source', S70: 'fiche de contexte trop longue', S71: 'ADR sans règle', S72: 'collision entre tâches', S73: 'comportement existant à préserver', S74: 'taille et risque calculé', S75: 'attention humaine dépassée', S76: 'tâche non finie sans décision', S77: 'action de rétrospective sans suivi', S78: 'voie rapide sans épopée', S79: 'constitution', S80: 'liste de contrôle de relecture', S81: 'source sans personne entendue',
 };

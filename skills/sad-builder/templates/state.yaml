@@ -209,7 +209,17 @@ shadow_zones: []
 #    related: []
 
 questions: []              # checklist persistante (voir SKILL.md)
-council_runs: []           # - { date: "", mode: exploration, lenses: [], proposed: 0, discarded: 0, retained: 0 }
+council_runs: []
+#  - date: ""
+#    mode: exploration     # exploration | conception
+#    lenses: []
+#    proposed: 0           # questions renvoyées par les lentilles, avant fusion des doublons
+#    questions:            # celles qui ont survécu à l'arbitrage, écartées comprises : un compteur ne se relit pas
+#      - text: ""
+#        lenses: []        # lentilles qui l'ont trouvée ; plusieurs = signal de priorité
+#        outcome: retenue  # retenue | écartée | réservée (disponible pour un prochain council)
+#        reason: ""        # obligatoire si écartée ou réservée
+#        zone: ZO-xxx      # si retenue : la zone d'ombre créée
 
 sad_sections:              # à rédiger | proposé | validé
   context: à rédiger

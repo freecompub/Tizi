@@ -151,6 +151,16 @@ shadow_zones: []
 #  - { id: ZO-001, type: question_story, question: "", story: US-001, ask_to: "", blocking: true, status: ouverte, resolution: "" }
 questions: []
 council_runs: []
+#  - date: ""
+#    mode: planification
+#    lenses: []
+#    proposed: 0           # questions renvoyées par les lentilles, avant fusion des doublons
+#    questions:            # celles qui ont survécu à l'arbitrage, écartées comprises : un compteur ne se relit pas
+#      - text: ""
+#        lenses: []        # lentilles qui l'ont trouvée ; plusieurs = signal de priorité
+#        outcome: retenue  # retenue | écartée | réservée (disponible pour un prochain council)
+#        reason: ""        # obligatoire si écartée ou réservée
+#        zone: ZO-xxx      # si retenue : la zone d'ombre créée
 
 plan_sections:
   stories: à rédiger

@@ -40,7 +40,7 @@ entrypoints:
       4. Le changement crée-t-il ou modifie-t-il une règle métier ?
       5. Touche-t-il un contrat d'interface, une donnée sensible, ou crée-t-il un composant ?
       6. Dépasse-t-il quelques jours de travail ?
-      Ne réponds pas à sa place : une réponse incertaine vaut « oui ». Puis lance `node {scripts}/choose-path.mjs <initiative> --par "<son nom>" --evident … --reglementaire … --intention-floue … --regle-metier … --contrat-donnee … --plusieurs-jours …`, présente le chemin et sa raison, et propose la première étape. Le chemin est une décision enregistrée : il ne se rétrécit pas ; il s'élargit avec `--elargir` quand une étape découvre ce qu'il fallait (une règle métier, un contrat).
+      Ne réponds pas à sa place : une réponse incertaine vaut « oui ». **Demande aussi qui décide du chemin**, en réponse libre, et n'accepte pas l'environnement pour réponse : ni le nom Git du dépôt, ni le nom de la session. Sur un chemin ouvert par la question réglementaire, qui décide compte, et un nom déduit se relit plus tard comme un nom déclaré. Puis lance `node {scripts}/choose-path.mjs <initiative> --par "<le nom qu'il a donné>" --evident … --reglementaire … --intention-floue … --regle-metier … --contrat-donnee … --plusieurs-jours …`, présente le chemin et sa raison, et propose la première étape. Le chemin est une décision enregistrée : il ne se rétrécit pas ; il s'élargit avec `--elargir` quand une étape découvre ce qu'il fallait (une règle métier, un contrat).
       Tu ne modifies aucun fichier toi-même : seuls les scripts enregistrent le chemin et synchronisent les instructions.
 
   - name: tizi-brd
