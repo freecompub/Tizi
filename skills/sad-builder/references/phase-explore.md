@@ -76,7 +76,7 @@ Après les moteurs et le domaine, **lance** un council en mode `exploration` (`r
 - chaque moteur validé a un scénario dont la mesure est chiffrée, ou sa zone d'ombre est assumée ;
 - chaque règle métier automatisée est rattachée à un agrégat ;
 - la vue de contexte est validée ;
-- le council en mode exploration a été passé, et ses questions triées ;
+- le council en mode exploration a été passé, et ses questions enregistrées comme zones d'ombre ;
 - aucune zone d'ombre bloquante n'est ouverte ;
 - `lint.mjs` a été lancé ; ses avertissements sont listés sans bloquer.
 

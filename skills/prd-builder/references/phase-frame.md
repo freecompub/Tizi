@@ -106,7 +106,7 @@ Après l'étape 5 ou 7, **lance** un council en mode `cadrage` (`references/coun
 - le MVP satisfait les critères de `references/mvp.md` ;
 - `decision_rights` désigne au moins un décideur pour le périmètre et les priorités ;
 - chaque hypothèse de valeur ou d'usage à risque fort est testée (avec un résultat) ou assumée avec une raison ;
-- le council en mode cadrage a été passé, et ses questions triées ;
+- le council en mode cadrage a été passé, et ses questions enregistrées comme zones d'ombre ;
 - aucune zone d'ombre bloquante n'est ouverte.
 
 Si l'utilisateur accepte, passe `phase: specify`.

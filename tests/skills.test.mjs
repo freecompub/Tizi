@@ -41,6 +41,64 @@ for (const f of COMMON_REFS) test(`référence commune identique partout : ${f}`
   assert.equal(new Set(hashes).size, 1, `${f} diverge entre skills`);
 });
 
+// Sortie du BRD au deuxième test : « Deux choses à valider » suivi de cinq validations, d'une
+// recommandation, d'une information et d'une offre — sans qu'aucune ne dise ce qu'elle attendait. Le
+// point 2 n'avait même pas de verbe. Devant un message comme ça, la réponse est « ok », et cinq
+// validations s'enregistrent sans avoir été lues.
+test('questions : une attente par tour, et le dialogue comme seul signal de demande', () => {
+  const text = readFileSync(join(SKILLS, 'brd-builder', 'references', 'questions.md'), 'utf8');
+  for (const [quoi, motif] of [
+    ['le dialogue n\'est pas désigné comme seul signal d\'une demande', /dialogue est le seul signal/],
+    ['rien n\'interdit d\'informer par une boîte de dialogue', /jamais de dialogue pour informer/],
+    ['le nombre d\'attentes par tour n\'est pas dit', /[Uu]ne attente par tour/],
+    ['une validation peut encore porter sur plusieurs affirmations', /une affirmation à la fois/],
+    ['une question sans réponse peut être rajoutée à la pile suivante', /se repose seule/],
+  ]) assert.match(text, motif, quoi);
+});
+
+// Le council a été proposé au lieu d'être lancé, puis annoncé au lieu d'être tenu, et le principe
+// candidat « proposé une fois, non demandé ». Trois fois le même réflexe : demander la permission de
+// faire une étape qui n'engage à rien. La règle nomme le motif, pas les cas.
+test('ce qui ne se demande pas : les étapes prescrites et non engageantes sont nommées', () => {
+  const text = readFileSync(join(SKILLS, 'brd-builder', 'references', 'questions.md'), 'utf8');
+  assert.match(text, /## Ce qui ne se demande pas/, 'la règle n\'existe pas');
+  assert.match(text, /council/i, 'le council n\'est pas nommé parmi les étapes qui ne se demandent pas');
+  assert.match(text, /constitution\.mjs --proposer/, 'le principe candidat n\'est pas nommé');
+  assert.match(text, /autorisation de proposer/, 'rien n\'interdit de demander l\'autorisation de proposer');
+  // Ce qui écrit hors du dossier de l'initiative, lui, se demande : la règle doit le dire aussi.
+  assert.match(text, /sync-agent-instructions\.mjs/, 'la limite de la règle n\'est pas dite');
+  // Et la consigne qui a produit le défaut doit être à l'impératif.
+  assert.match(readFileSync(join(SKILLS, 'brd-builder', 'references', 'phase-discover.md'), 'utf8'),
+    /propose-la comme \*\*principe candidat\*\*/, 'le principe candidat n\'est plus prescrit à l\'impératif');
+});
+
+// Le council en mode préparation existe pour remplir les guides d'entretien. Au deuxième test, l'agent
+// annonçait le guide d'abord et le council « ensuite » : fait dans cet ordre, il arrive après
+// l'entretien qu'il devait préparer, et une partie prenante ne se reçoit pas trois fois.
+test('council de préparation : avant les guides d\'entretien, et jamais nommé à l\'utilisateur', () => {
+  const disc = readFileSync(join(SKILLS, 'brd-builder', 'references', 'phase-discover.md'), 'utf8');
+  const guide = disc.split('## 3. Préparation d\'un entretien')[1].split(/\n## /)[0];
+  assert.match(guide, /council en mode préparation passe avant/, 'un guide peut encore se préparer avant le council');
+  for (const s of skills) {
+    const c = join(SKILLS, s, 'references', 'council.md');
+    if (!existsSync(c)) continue;
+    const text = readFileSync(c, 'utf8');
+    assert.ok(!/se \*\*trient\*\* avant de se poser/.test(text), `${s}/council.md : les questions du council se trient encore avec l'utilisateur`);
+    assert.match(text, /ne s'annonce pas/, `${s}/council.md : le council peut encore s'annoncer`);
+    assert.match(text, /jamais le council dans ce que tu écris|ne nommes jamais le council/, `${s}/council.md : rien n'interdit de nommer le council à l'utilisateur`);
+    assert.match(text, /déjà validé/, `${s}/council.md : l'exception (contradiction avec une validation) manque`);
+    assert.match(text, /blocking_guess/, `${s}/council.md : blocking_guess reste un champ sans emploi`);
+  }
+  // Et les conditions de sortie de phase ne demandent plus un tri.
+  for (const s of skills) {
+    const refs = join(SKILLS, s, 'references');
+    if (!existsSync(refs)) continue;
+    for (const r of readdirSync(refs).filter(x => x.startsWith('phase-'))) {
+      assert.ok(!/questions trié/.test(readFileSync(join(refs, r), 'utf8')), `${s}/${r} : une condition de sortie demande encore un tri des questions du council`);
+    }
+  }
+});
+
 // Un script livré dans un skill sans que rien ne dise de l'appeler est du poids mort — et pire quand une
 // règle sanctionne son absence : `review-checklist.mjs` était livré dans les sept skills, prescrit dans
 // deux, et `S80` fermait la porte de gouvernance du BRD sur des listes qu'aucune de ses phases ne disait

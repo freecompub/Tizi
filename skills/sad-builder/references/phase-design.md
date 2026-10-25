@@ -101,7 +101,7 @@ Le script produit `sad.md` (vues C4 en Mermaid, actuelles et cibles en brownfiel
 - chaque donnée a un propriétaire, une classification et une conservation ;
 - chaque opération d'interface sert au moins une FR ;
 - chaque menace a un traitement, et chaque acceptation un décideur ;
-- le council en mode conception a été passé, et ses questions triées ;
+- le council en mode conception a été passé, et ses questions enregistrées comme zones d'ombre ;
 - aucune hypothèse bloquante n'attend de spike sans zone d'ombre assumée ;
 - toutes les sections de `sad_sections` sont validées ; le SAD a été régénéré ;
 - `lint.mjs` a été lancé ; chaque avertissement restant est corrigé ou couvert par une dérogation.

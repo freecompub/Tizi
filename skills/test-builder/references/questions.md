@@ -35,12 +35,10 @@ Deux nombres, et on les confond facilement — c'est ainsi qu'un agent finit par
 Le plafond n'est jamais un quota : rien n'oblige à poser les cinq, ni à les poser d'un coup. Une seule
 question qui ouvre une vraie conversation vaut mieux que cinq qui tiennent dans un message.
 
-**Présenter une liste n'est pas poser des questions.** Le council réduit à cinq questions candidates —
-les lentilles transmettent tout ce qu'elles trouvent, et c'est l'orchestrateur qui réduit — et
-l'analyse croisée produit une table de constats. Ce sont des listes à **trier** : l'utilisateur retient,
-reformule ou rejette, et ce qu'il retient devient une zone d'ombre. Elles n'attendent pas de réponse
-sur le fond. Les réponses viennent après, par `ask-five.mjs`, deux ou trois à la fois. Confondre les
-deux actes est la façon la plus courante de noyer quelqu'un sous un formulaire.
+**Présenter une liste n'est pas poser des questions.** L'analyse croisée produit une table de constats :
+c'est une liste à **trier**, et le tri s'enregistre par son script (`cross-merge.mjs`). Elle n'attend pas
+de réponse sur le fond. Les questions, elles, viennent après, par `ask-five.mjs`, deux ou trois à la
+fois. Confondre les deux actes est la façon la plus courante de noyer quelqu'un sous un formulaire.
 
 **Une question ouverte se pose seule.** Trois questions ouvertes dans le même message reviennent à n'en
 poser qu'une : la personne répond à celle qu'elle a comprise, souvent la dernière, et les deux autres
@@ -50,6 +48,33 @@ la précision, pas la relance.
 Le fait que l'outil de l'hôte accepte quatre questions par appel ne change rien à cette règle : c'est
 une limite technique, pas une invitation. Quatre choix fermés dans un appel, oui ; quatre questions
 ouvertes, jamais.
+
+## Un tour, une attente
+
+Un message peut porter un rapport, une information et une demande. Si rien ne les distingue, la
+personne ne sait pas ce qu'on attend d'elle — et elle répond « ok », ce qui s'enregistre comme un
+accord sur tout ce que le message contenait.
+
+**Le dialogue est le seul signal d'une demande.** Ce qui attend une réponse quitte le texte et passe
+par l'outil de questions. Ce qui reste en texte n'attend rien : un point d'étape se lit, il ne se
+valide pas. Pas de dialogue, pas de décision à prendre. Et donc **jamais de dialogue pour informer** :
+un bouton « continuer » apprend à cliquer sans lire, et le jour où une vraie approbation arrive dans la
+même boîte, elle se fait cliquer pareil. La seule exception est celle qui précède : une question
+ouverte reste en texte, seule, **en dernier**, avec rien après elle.
+
+**Une attente par tour — et c'est une décision, pas une question.** Un appel peut porter quatre choix
+fermés s'ils appartiennent à la même décision : les six questions du chemin en sont une, les critères
+d'acceptation d'une même exigence aussi. Deux reformulations de deux problèmes différents sont deux
+décisions, donc deux tours. Le coût est en nombre de tours, et il est bon marché comparé à un « ok »
+qui valide cinq choses que personne n'a lues.
+
+**Une validation porte sur une affirmation à la fois.** « L'association communique par des groupes qui
+exposent les numéros, mêlent des publics différents et sont à recréer chaque année — est-ce juste ? »
+n'a pas de réponse : deux affirmations peuvent être vraies et la troisième fausse, et un « oui »
+enregistre les trois comme confirmées. Découpe, ou fais valider une phrase à la fois.
+
+**Une question restée sans réponse se repose seule.** Elle ne se rajoute pas à la pile du tour suivant :
+si elle n'a pas été vue la première fois, c'est qu'elle était accompagnée.
 
 ## Quand l'outil n'existe pas
 
@@ -76,6 +101,24 @@ l'utilisateur au motif que l'outil manque.
   la décision à la main.
 - **Aux six questions du chemin, une réponse incertaine vaut « oui ».** Le chemin ne se rétrécit pas ;
   il s'élargit (`--elargir`) quand une étape découvre ce qu'il fallait.
+
+## Ce qui ne se demande pas
+
+Une étape **prescrite** qui **n'engage à rien** se fait. La proposer ajoute un aller-retour et une
+occasion de la perdre — et c'est ce qui arrive : sur le premier dossier réel, le council a été proposé
+au lieu d'être lancé, et le principe candidat « proposé une fois, non demandé ».
+
+| Étape | Pourquoi elle n'engage à rien |
+|---|---|
+| Le **council** (`references/council.md`) | Il ne produit que des questions candidates. Ce qui se décide, c'est leur sort, jamais sa tenue |
+| Un **principe candidat** (`constitution.mjs --proposer`) | Il entre en `PC-xx`, en attente. Seul le responsable de la constitution l'accepte ou le refuse (`--decider`) |
+
+Ce qui se demande, en revanche : tout ce qui écrit dans le dépôt **hors du dossier de l'initiative**.
+Synchroniser les instructions du dépôt (`sync-agent-instructions.mjs`) en est une — elle modifie
+`AGENTS.md` et `CLAUDE.md`, et un refus est une réponse légitime.
+
+Et ne demande jamais l'autorisation de proposer. « Dis-moi si tu veux que je te le propose » fait deux
+tours là où il en faut un : propose, l'autre dispose.
 
 ## Ce que la question ne fait jamais
 

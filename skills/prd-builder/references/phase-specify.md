@@ -124,7 +124,7 @@ Le document comprend la matrice de couverture (BR → FR/NFR → AC en mode cha�
 ## Fin de la phase
 
 **Propose** le passage à Govern quand :
-- le council en mode specification a été passé, et ses questions triées ;
+- le council en mode specification a été passé, et ses questions enregistrées comme zones d'ombre ;
 - toutes les sections de `prd_sections` sont validées ;
 - chaque FR validée a une origine, au moins un AC, une release et une priorité ;
 - chaque NFR validée a une métrique, une cible et un moyen de mesure ;

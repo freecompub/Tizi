@@ -46,6 +46,10 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
 | Décision `decoupee` + `split_into` : une initiative découpée n'est plus enregistrée comme jetée, et les deux outils de portefeuille disent où est passé le travail | 25 octobre 2026 | `consignes-et-scripts-orphelins` |
 | Porte de synthèse affichée dès Discover par `status.mjs`, avec les deux dimensions qui se comptent (parties prenantes entendues, besoins à source unique) | 25 octobre 2026 | `consignes-et-scripts-orphelins` |
 | Council de la capacité 7 de Discover : il était encore « proposé […] avec l'accord de l'utilisateur », et le test ne cherchait que « propose un council » — vérification par section désormais | 25 octobre 2026 | `consignes-et-scripts-orphelins` |
+| Un tour, une attente : le dialogue est le seul signal d'une demande, jamais pour informer ; une validation porte sur une affirmation à la fois ; une question sans réponse se repose seule | 25 octobre 2026 | `consignes-de-conduite` |
+| « Ce qui ne se demande pas » : une étape prescrite et non engageante se fait (council, principe candidat), et on ne demande pas l'autorisation de proposer | 25 octobre 2026 | `consignes-de-conduite` |
+| Le council de préparation passe avant les guides d'entretien, puisqu'il existe pour les remplir | 25 octobre 2026 | `consignes-de-conduite` |
+| Le council est l'outil de l'agent : il ne s'annonce pas, ne se nomme pas à l'utilisateur, et ses questions s'enregistrent au lieu d'être triées avec lui — exception faite d'une contradiction avec ce qu'il a validé | 25 octobre 2026 | `consignes-de-conduite` |
 
 ## Ouvert
 
@@ -78,6 +82,21 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
   pour les prochains : une consigne corrigée dans une référence peut survivre ailleurs dans la même
   référence, et un test écrit sur la formulation du défaut ne trouve pas ses variantes.
 
+### Deuxième sortie de BRD (25 octobre)
+
+Un second passage, sur les mêmes deux initiatives, a montré que les correctifs de conduite tenaient
+(« qui se lance d'office », une seule prochaine action, les reformulations marquées non confirmées) et
+a fait apparaître un défaut de forme en amont des précédents : **le message ne disait pas ce qu'il
+attendait**. « Deux choses à valider » suivi de cinq validations, d'une recommandation, d'une
+information et d'une offre — et le deuxième point sans verbe, sans question. Les cinq consignes
+ci-dessus en viennent. Il restait aussi, non corrigé :
+
+- **Une reformulation de problème en une phrase de 45 mots portant quatre affirmations.** La consigne
+  demande « 2 à 3 phrases » ; ce n'est pas respecté, et c'est ce qui rend « est-ce juste ? » sans
+  réponse possible. La règle « une affirmation à la fois » le couvre côté question, pas côté rédaction.
+- **Un guide d'entretien annoncé pour deux initiatives à la fois**, alors que le chemin prescrit est
+  `brd/<slug>/interviews/guide-<SH-xx>.md` : un guide unique n'a pas d'endroit où vivre.
+
 ## À trancher
 
 - **Le plancher de Node.** `package.json` annonce `engines: >=18`, et `adopt.mjs` génère
@@ -86,6 +105,12 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
   version qui porte le reporter, ou générer une commande compatible 18. Tant que ce n'est pas tranché,
   la configuration proposée peut être inexécutable sur la version minimale annoncée (constat nº 16).
 
+- **Un quatrième statut de zone d'ombre : `sans_objet`.** Depuis que les questions du council
+  s'enregistrent sans tri, une question hors sujet se ferme en `levée` avec la raison dans les mots de
+  l'utilisateur. C'est un abus de langage : « on a trouvé la réponse » et « la question ne se posait
+  pas » ne sont pas la même chose, et les confondre rend la mesure du council illisible — on ne peut
+  plus compter combien de ses questions étaient hors sujet. Un quatrième statut serait plus honnête,
+  mais il touche le gabarit des quatre skills et toutes les règles qui lisent ce champ.
 - **Ce qui rend une zone d'ombre bloquante, en début de Discover.** Le critère existe
   (`phase-discover.md` : « on ne peut pas formuler correctement les objectifs ou les exigences sans la
   lever ») et il est vrai par construction au début de la phase, puisqu'aucun objectif n'est encore
