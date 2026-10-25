@@ -143,14 +143,21 @@ test('constitution : aucune commande exécutée sans signature valide d\'une cl�
   assert.equal(node(script('impl-builder', 'constitution.mjs'), ['.', '--controler'], { cwd: repo, env: avecCle }).code, 0, 'un énoncé récrit ne doit pas exiger une nouvelle signature');
 });
 
-test('cinq questions : bloquantes et contradictions d\'abord, cinq au plus', () => {
+// L'ordre a changé le 25 octobre, sur la mesure de deux dossiers réels : le drapeau `blocking` valait
+// 100 points sur un terme constant — 18 bloquantes sur 25 au premier dossier, 0 sur 21 au second — donc
+// il ne classait rien. C'est le coût du type qui ordonne, et une contradiction coûte plus qu'une
+// hypothèse, bloquante ou non. Le drapeau reste la porte de sortie de phase, et reste affiché.
+test('cinq questions : les plus coûteuses d\'abord, cinq au plus', () => {
   const dir = sandbox(); const p = join(dir, 'z.yaml');
   writeFileSync(p, yaml.dump({ document: 'prd', shadow_zones: [
     ...Array.from({ length: 6 }, (_, i) => ({ id: `ZO-H${i}`, type: 'hypothese_non_verifiee', question: 'h ?', status: 'ouverte' })),
     { id: 'ZO-C', type: 'contradiction', question: 'c ?', status: 'ouverte' }, { id: 'ZO-B', type: 'hypothese_non_verifiee', question: 'b ?', status: 'ouverte', blocking: true },
     { id: 'ZO-F', type: 'contradiction', question: 'f ?', status: 'résolue' }] }));
   const top = JSON.parse(node(script('prd-builder', 'ask-five.mjs'), [p, '--json'], { cwd: dir }).out);
-  assert.equal(top.length, 5); assert.deepEqual(top.slice(0, 2).map(z => z.id), ['ZO-B', 'ZO-C']); assert.ok(!top.some(z => z.id === 'ZO-F'));
+  assert.equal(top.length, 5);
+  assert.deepEqual(top.slice(0, 2).map(z => z.id), ['ZO-C', 'ZO-B'], 'une contradiction passe après une hypothèse bloquante');
+  assert.ok(top[1].reasons.includes('bloquante'), 'le drapeau bloquant n\'est plus montré');
+  assert.ok(!top.some(z => z.id === 'ZO-F'));
 
   // La sortie lisible dit que cinq est une sélection, et combien on en pose à la fois. « Pose-les »
   // faisait vider les cinq questions dans un seul tour.
@@ -183,4 +190,30 @@ test('analyse croisée : constats vérifiés, transformés en questions proposé
   assert.match(node(script('prd-builder', 'cross-merge.mjs'), ['prd/demo/state.yaml'], { cwd: dir }).out, /1 constat\(s\) retenu\(s\).*1 rejeté/);
   const prop = yaml.load(readFileSync(join(dir, 'prd/demo/analyse/proposals.yaml'), 'utf8')).shadow_zones;
   assert.equal(prop[0].type, 'contradiction'); assert.equal(prop[0].status, 'proposée'); assert.equal(prop[0].blocking, true);
+});
+
+// Le drapeau `blocking` valait 100 points sur un terme constant : 18 bloquantes sur 25 au premier
+// dossier réel, 0 sur 21 au second — dans les deux cas, il ne classait rien. Il sort du score et reste
+// la porte de sortie de phase. Et la table des poids ne parlait que le vocabulaire du BRD : sur un PRD,
+// quatorze types sur seize tombaient à 1, si bien qu'un conflit d'intérêts pesait autant qu'un attendu
+// implicite et qu'un persona sans preuve arrivait dernier.
+test('ask-five : le classement suit l\'impact du type, pas le drapeau bloquant', async () => {
+  const { rank } = await import('../skills/prd-builder/scripts/ask-five.mjs');
+  const z = (id, type, extra = {}) => ({ id, type, status: 'ouverte', ...extra });
+
+  // Une bloquante d'un type mineur ne passe plus devant un conflit d'intérêts qui ne l'est pas.
+  const ordre = rank([z('ZO-1', 'cas_limite', { blocking: true }), z('ZO-2', 'conflit_interets')]).map(x => x.id);
+  assert.deepEqual(ordre, ['ZO-2', 'ZO-1'], 'le drapeau bloquant classe encore');
+  // Mais il reste affiché comme raison : il n'a pas disparu, il a changé de rôle.
+  assert.ok(rank([z('ZO-1', 'cas_limite', { blocking: true })])[0].reasons.includes('bloquante'), 'le drapeau n\'est plus montré');
+
+  // Les types du PRD, du SAD et du plan sont pesés comme ceux du BRD.
+  const poids = t => rank([z('ZO-1', t)])[0].score;
+  assert.ok(poids('conflit_interets') > poids('persona_non_fonde'), 'un conflit d\'intérêts ne pèse pas plus qu\'un persona sans preuve');
+  assert.ok(poids('persona_non_fonde') > poids('attendu_implicite') - 10, 'un persona sans preuve est retombé au poids par défaut');
+  for (const t of ['conflit_amont', 'perimetre_non_tranche', 'objectif_non_mesurable', 'driver_non_mesurable', 'frontiere_floue', 'fr_sans_story', 'capacite_inconnue']) {
+    assert.ok(poids(t) > 10, `${t} tombe sur le poids par défaut`);
+  }
+  // Un type inconnu garde le défaut, sans faire échouer le classement.
+  assert.equal(poids('type_inedit'), 10);
 });

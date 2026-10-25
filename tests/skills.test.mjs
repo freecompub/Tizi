@@ -394,3 +394,23 @@ test('réserve de périmètre, cible décidée, guides d\'entretien : chacun a s
   assert.match(tpl, /ouverte \| partielle \| répondue \| écartée/, 'la checklist n\'a pas d\'état partiel');
   assert.match(prd('SKILL.md'), /◐ `partielle`/, 'la posture ne dit pas l\'état partiel');
 });
+
+// Le mot `blocking` fermait une condition de sortie dans quatre documents, et un seul le définissait :
+// le BRD, en une ligne vraie par construction en début de phase (18 bloquantes sur 25). Le PRD du
+// deuxième dossier réel n'en a déclaré aucune sur 21 zones ouvertes — rien ne lui disait quand le
+// mettre. Un critère qu'un document ne porte pas est un critère qu'il n'applique pas.
+test('tout document qui ferme une phase sur une bloquante dit ce qui rend une zone bloquante', () => {
+  const CRITERE = /bloquante\*\* si elle empêche l'étape suivante de \*\*commencer\*\*/;
+  let verifies = 0;
+  for (const s of skills) {
+    const refs = join(SKILLS, s, 'references');
+    if (!existsSync(refs)) continue;
+    const fichiers = readdirSync(refs);
+    const lu = f => readFileSync(join(refs, f), 'utf8');
+    if (!fichiers.filter(f => f.startsWith('phase-')).some(f => /aucune (zone d'ombre|hypothèse) bloquante/.test(lu(f)))) continue;
+    assert.ok(fichiers.some(f => CRITERE.test(lu(f))),
+      `${s} : une phase se ferme sur l'absence de bloquante, mais aucune référence ne dit quand une zone l'est`);
+    verifies += 1;
+  }
+  assert.ok(verifies >= 3, `seulement ${verifies} document(s) vérifié(s) : le motif de la condition de sortie a dû changer`);
+});

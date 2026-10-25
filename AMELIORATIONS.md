@@ -74,6 +74,9 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
 | Le point d'étape lit la checklist telle qu'elle est écrite — par groupes — et cherche les sessions à la racine de l'état, non dans le répertoire courant ; sept questions ouvertes n'étaient affichées nulle part, et « Sessions conservées : 0 » était faux | 25 octobre 2026 | `dossier-prd-reel` |
 | État `partielle` dans la checklist de questions, et un seul nombre de questions par tour (deux ou trois) au lieu de deux consignes contradictoires | 25 octobre 2026 | `dossier-prd-reel` |
 | Les guides d'entretien ont un chemin dans le PRD comme dans le BRD : `<initiative>/interviews/guide-<qui>.md`, un par voix à entendre | 25 octobre 2026 | `dossier-prd-reel` |
+| `blocking` sort du score d'`ask-five.mjs` (terme constant : 18 bloquantes sur 25 au premier dossier, 0 sur 21 au second) et reste la porte de sortie de phase, avec un critère resserré — « empêche l'étape suivante de commencer », l'étape nommée — écrit dans chaque document qui s'en sert, non plus dans le seul BRD | 25 octobre 2026 | `dossier-prd-reel` |
+| La table des poids d'`ask-five.mjs` couvre les types des quatre documents : quatorze types du PRD sur seize tombaient sur le défaut `?? 1`, si bien qu'un conflit d'intérêts pesait autant qu'un attendu implicite et qu'un persona sans preuve arrivait dernier. Sur le dossier réel, le classement passe de « 26 · 22 · 15 · 15 » à « 55 · 52 · 41 · 35 », conflits d'intérêts en tête | 25 octobre 2026 | `dossier-prd-reel` |
+| `ask-five.mjs` : le préambule de ligne de commande passe derrière la garde de `choose-path.mjs` — importer `rank`, qui est exporté pour ça, tuait le processus sur le message d'usage | 25 octobre 2026 | `dossier-prd-reel` |
 
 ## Ouvert
 
@@ -190,22 +193,6 @@ intention neuve, et le travail de les instruire est à refaire.
   pas » ne sont pas la même chose, et les confondre rend la mesure du council illisible — on ne peut
   plus compter combien de ses questions étaient hors sujet. Un quatrième statut serait plus honnête,
   mais il touche le gabarit des quatre skills et toutes les règles qui lisent ce champ.
-- **Ce qui rend une zone d'ombre bloquante, en début de Discover.** Le critère existe
-  (`phase-discover.md` : « on ne peut pas formuler correctement les objectifs ou les exigences sans la
-  lever ») et il est vrai par construction au début de la phase, puisqu'aucun objectif n'est encore
-  formulable : sur le dossier réel, **18 bloquantes sur 25** et **15 sur 19**. Conséquence mesurée dans
-  `ask-five.mjs` : le terme `blocking ? 100 : 0` est constant sur 90 % de l'ensemble, donc il n'informe
-  plus — c'est le poids du type qui ordonne encore (scores 153 · 134 · 134 · 133 · 133). Deux
-  corrections possibles, pas trois : resserrer le critère (une zone ne bloque que si elle peut changer
-  le périmètre ou empêcher le passage en Define), ou retirer `blocking` du score et le garder comme
-  porte de sortie de phase.
-
-  **Le second dossier a tranché la question de fait** (PRD autonome `soutien-scolaire-langues`,
-  25 octobre) : **0 bloquante sur 21 zones ouvertes**, contre 72 % au premier. Même agent, même critère,
-  deux extrêmes — et la phase y remplit ses conditions de sortie avec deux personas sans aucune preuve,
-  parce qu'aucune zone n'est déclarée bloquante. Le drapeau ne suit pas le risque, il suit la main qui
-  l'écrit : il n'informe ni le score d'`ask-five.mjs`, ni la porte de sortie. Reste à choisir laquelle
-  des deux corrections appliquer, et c'est une décision, plus une mesure à faire.
 
 ## Pistes non tranchées
 
