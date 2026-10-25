@@ -5,8 +5,9 @@ constats d'audit, eux, vivent dans `evals/audit/` avec leur preuve : un constat 
 observée, une piste est une intention. Les deux ne se rangent pas au même endroit.
 
 Chaque ligne dit son état : **faite** (avec sa date et sa branche), **ouverte** (vérifiée, avec sa
-preuve), **à trancher** (la question n'a pas de réponse décidée). Une piste ne devient une issue
-qu'une fois décidée — sinon l'issue ne dit pas ce qu'il faut faire.
+preuve), **écartée** (décidée contre, avec sa raison), **à trancher** (la question n'a pas de réponse
+décidée). Une piste ne devient une issue qu'une fois décidée — sinon l'issue ne dit pas ce qu'il faut
+faire. Et une piste écartée reste écrite : sans ça elle revient dans six mois comme une intention neuve.
 
 Dernière vérification de ce registre : **25 octobre 2026**, en exécutant les scripts — depuis le
 24 octobre, sur un dossier réel autant que sur les exemples.
@@ -57,10 +58,9 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
 
 ## Ouvert
 
-- **Faire passer Tizi par Tizi.** `node skills/test-builder/scripts/ci-audit.mjs .` relève **2 points
-  bloquants sur le dépôt de Tizi** : porte de PR non rejouée sur `pull_request`, preuves de release non
-  produites. Tizi échoue son propre audit de CI. C'est le constat nº 12 de l'audit du 23 octobre, et
-  celui que cet audit jugeait le plus important : ce serait le premier cas réel.
+- **`main` n'est pas protégée sur GitHub.** `ci-audit.mjs` le signale (« Branch not protected »,
+  HTTP 404 avec un jeton sans droit d'administration), et personne ne l'a fait. Celui-là ne dépend pas
+  de Tizi : quatre PR ont été fusionnées sur une branche que rien n'empêche de pousser en direct.
 - **Les 23 règles jamais exercées.** Sur les 89 règles du catalogue (`scripts/lib/rules.mjs` : 81 `S` et 8 `L`), 23 ne
   sont déclenchées par aucun test ni aucune référence figée : `L04 S01 S02 S03 S06 S10 S15 S21 S25 S26
   S33 S34 S35 S37 S38 S39 S42 S46 S47 S49 S59 S62 S64`. Une règle jamais vue passer est une règle dont
@@ -94,16 +94,9 @@ métier ?** » — il n'y a ni client, ni processus d'entreprise, ni règle qu'u
 « touche-t-il une exigence réglementaire ou la sécurité des patients ou des utilisateurs ? », à laquelle
 on répond mécaniquement non. Les six questions ont été écrites pour une application.
 
-Conséquence : on ne peut pas décider un chemin avec des questions qui n'ont pas de réponse, donc
-**« Faire passer Tizi par Tizi » est bloqué en l'état**. Deux sorties possibles, pas tranchées : une
-variante des questions pour un dépôt d'outillage (« crée ou modifie une règle de la méthode ? », « change
-un contrat entre skills ? »), ou admettre que Tizi ne s'applique pas à lui-même et l'écrire dans la
-documentation plutôt que de le laisser au registre comme une intention.
-
-L'adoption, elle, a marché et a rapporté quatre défauts, tous corrigés le jour même. Mais elle laisse
-`impl/config.yaml` et `.tizi/adoption.*` non commités : les commiter activerait le garde-fou TDD sur le
-dépôt de Tizi le jour où le plugin y est activé, et refuserait toute écriture hors d'une tâche. C'est
-une décision à prendre, pas un effet de bord à subir.
+Conséquence tirée le même jour : **« Faire passer Tizi par Tizi » est écartée** (voir la section
+Écartées). On n'a pas inventé une variante des questions pour un dépôt d'outillage : ce serait une
+seconde méthode à maintenir, pour un seul dépôt, celui des auteurs.
 
 ### Trouvé en vérifiant, pas en lisant (25 octobre)
 
@@ -130,6 +123,31 @@ ci-dessus en viennent. Il restait aussi, non corrigé :
   réponse possible. La règle « une affirmation à la fois » le couvre côté question, pas côté rédaction.
 - **Un guide d'entretien annoncé pour deux initiatives à la fois**, alors que le chemin prescrit est
   `brd/<slug>/interviews/guide-<SH-xx>.md` : un guide unique n'a pas d'endroit où vivre.
+
+## Écartées
+
+Décidées, et écartées. Elles restent écrites : sans ça, elles reviennent dans six mois comme une
+intention neuve, et le travail de les instruire est à refaire.
+
+- **Faire passer Tizi par Tizi** — écartée le **25 octobre 2026**, après une tentative. Le choix du
+  chemin bloque : deux des six questions n'ont pas de réponse sur un dépôt d'outillage. « Le changement
+  crée-t-il ou modifie-t-il une règle métier ? » suppose un client, un processus d'entreprise, une règle
+  qu'un service contrôle ; « touche-t-il une exigence réglementaire ou la sécurité des patients ou des
+  utilisateurs ? » se répond mécaniquement non. Les six questions ont été écrites pour une application,
+  et Tizi n'en est pas une.
+
+  Ce que ça entraîne, et qu'il faut lire tel quel : les **2 points bloquants** que `ci-audit.mjs` relève
+  sur ce dépôt — porte de PR non rejouée sur `pull_request`, preuves de release non produites — ne sont
+  pas « ouverts », ils sont **sans objet**. Les deux workflows cherchent une tâche (`TK-xxx`) dans le
+  titre de la PR puis l'état d'implémentation qui la porte ; sans plan ni tâches, ils sortiraient
+  immédiatement sur « porte non applicable ». `ci-audit.mjs` audite un dépôt qui **utilise** Tizi, et
+  celui-ci ne l'utilise pas.
+
+  Ce qui reste vrai malgré l'abandon : la moitié aval de la chaîne — conception, plan, implémentation,
+  vérification de release — **n'a jamais tourné sur un cas réel**, et seul `exemple/`, qui est fabriqué,
+  la couvre. Il faudra un autre dépôt pour l'exercer. L'adoption, elle, a tourné pour de vrai et a
+  rapporté quatre défauts d'`adopt.mjs`, tous corrigés le jour même ; ses fichiers ont été supprimés,
+  parce que les garder aurait activé le garde-fou TDD sur ce dépôt le jour où le plugin y serait activé.
 
 ## À trancher
 
