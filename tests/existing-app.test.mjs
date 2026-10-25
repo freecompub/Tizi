@@ -1,15 +1,14 @@
 // Application existante : adoption, comportements à préserver, tests de caractérisation.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, writeFileSync, mkdtempSync, cpSync, appendFileSync, mkdirSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { readFileSync, writeFileSync, cpSync, appendFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { sandbox, node, script, FIX } from './helpers.mjs';
+import { FIX, node, sandbox, script, tempDir } from './helpers.mjs';
 import { checkState } from '../skills/brd-builder/scripts/lib/rules.mjs';
 import yaml from '../skills/brd-builder/scripts/lib/vendor/js-yaml.mjs';
 
 test('adoption : pile détectée sans rien exécuter, carte prouvée, configuration jamais écrasée', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'tizi-adopt-'));
+  const dir = tempDir('tizi-adopt');
   cpSync(join(FIX, 'depot-existant'), dir, { recursive: true });
   const r = node(script('impl-builder', 'adopt.mjs'), ['.'], { cwd: dir });
   assert.equal(r.code, 0, r.err);
@@ -91,7 +90,7 @@ test('réalisé et prouvé : un réalisé non prouvé ferme la porte (R8), écar
 // conception et protégés par des tests de caractérisation. Lancé sur le dépôt de Tizi lui-même, il
 // proposait ses propres fixtures comme conteneurs. On les écarte — mais jamais en silence.
 test('adoption : fixtures et exemples écartés de la carte, signalés, et réintégrables', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'tizi-fx-'));
+  const dir = tempDir('tizi-fx');
   // L'application est à la racine ; une copie de la même pile vit sous tests/fixtures/ et sous examples/.
   cpSync(join(FIX, 'depot-existant'), dir, { recursive: true });
   mkdirSync(join(dir, 'tests/fixtures/ancien'), { recursive: true });

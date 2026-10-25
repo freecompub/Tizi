@@ -1,10 +1,9 @@
 // Estimation quand les agents réalisent les tâches : taille de risque, attention humaine, blocages, mesures, prévision.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, writeFileSync, mkdirSync, mkdtempSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { sandbox, node, script } from './helpers.mjs';
+import { node, sandbox, script, tempDir } from './helpers.mjs';
 import { riskSize, plannedAttention, checkState } from '../skills/brd-builder/scripts/lib/rules.mjs';
 import { usageOf } from '../skills/brd-builder/scripts/lib/sessions.mjs';
 import yaml from '../skills/brd-builder/scripts/lib/vendor/js-yaml.mjs';
@@ -25,7 +24,7 @@ test('S75 : attention humaine prévue au-delà de la capacité de l\'itération'
 });
 
 test('blocages : ouverture, refus d\'un doublon, levée avec durée', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'tizi-bl-'));
+  const dir = tempDir('tizi-bl');
   const bl = (...a) => node(script('plan-builder', 'block.mjs'), ['demo', ...a], { cwd: dir });
   assert.equal(bl('--sur', 'US-001', '--cause', 'environnement', '--note', 'simulateur indisponible', '--par', 'Samir').code, 0);
   assert.notEqual(bl('--sur', 'US-001', '--cause', 'environnement', '--note', 'idem').code, 0, 'doublon refusé');
@@ -84,7 +83,7 @@ test('prévision : reproductible, et refusée sans historique suffisant', () => 
 });
 
 test('coût de calcul : tokens lus dans une transcription Claude, « inconnu » sinon', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'tizi-tok-'));
+  const dir = tempDir('tizi-tok');
   const p = join(dir, 't.jsonl');
   writeFileSync(p, `${JSON.stringify({ type: 'assistant', message: { usage: { input_tokens: 1000, output_tokens: 200, cache_read_input_tokens: 3000 } } })}\n${JSON.stringify({ type: 'assistant', isSidechain: true, message: { usage: { input_tokens: 100, output_tokens: 50 } } })}\n`);
   assert.equal(usageOf(p).total, 4350, 'les sous-agents comptent');

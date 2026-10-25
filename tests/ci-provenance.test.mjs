@@ -1,10 +1,9 @@
 // Provenance des preuves : manifeste produit en CI, passage vérifié sur le commit candidat, condition R9, audit de la CI.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, writeFileSync, appendFileSync, mkdtempSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { readFileSync, writeFileSync, appendFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { sandbox, node, run, script, ROOT } from './helpers.mjs';
+import { ROOT, node, run, sandbox, script, tempDir } from './helpers.mjs';
 import yaml from '../skills/brd-builder/scripts/lib/vendor/js-yaml.mjs';
 
 function ciRepo() {
@@ -76,7 +75,7 @@ test('provenance désactivée : seulement avec une raison écrite', () => {
 });
 
 test('audit de la CI : workflows générés sans point bloquant ; dépôt sans CI bloqué', () => {
-  const proj = mkdtempSync(join(tmpdir(), 'tizi-audit-'));
+  const proj = tempDir('tizi-audit');
   node(join(ROOT, 'install.mjs'), ['--project', proj, '--target', 'both', '--ci']);
   writeFileSync(join(proj, 'prot.json'), JSON.stringify({ required_status_checks: { contexts: ['Tizi — porte de PR'] }, required_pull_request_reviews: {} }));
   const a = node(join(proj, '.claude/skills/test-builder/scripts/ci-audit.mjs'), ['.', '--protection-json', 'prot.json'], { cwd: proj });
@@ -86,7 +85,7 @@ test('audit de la CI : workflows générés sans point bloquant ; dépôt sans C
   assert.doesNotMatch(readFileSync(join(proj, '.github/workflows/tizi-pr-gate.yml'), 'utf8'), /run:[^\n]*\$\{\{ github\.event\.pull_request\.title/, 'le titre ne doit jamais être injecté dans une commande');
   writeFileSync(join(proj, 'prot.json'), JSON.stringify({ required_status_checks: { contexts: ['autre'] } }));
   assert.match(node(join(proj, '.claude/skills/test-builder/scripts/ci-audit.mjs'), ['.', '--protection-json', 'prot.json'], { cwd: proj }).out, /la porte de PR n'est pas une vérification exigée/);
-  const empty = mkdtempSync(join(tmpdir(), 'tizi-noci-'));
+  const empty = tempDir('tizi-noci');
   assert.equal(node(join(proj, '.claude/skills/test-builder/scripts/ci-audit.mjs'), [empty, '--protection-json', join(proj, 'prot.json')]).code, 1);
 });
 

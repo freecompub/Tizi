@@ -99,6 +99,24 @@ test('council de préparation : avant les guides d\'entretien, et jamais nommé 
   }
 });
 
+// La suite comptait 29 créations de dossier temporaire pour 8 suppressions : une centaine de mégaoctets
+// par passe, jamais reprise. En CI le conteneur est jeté et ça ne se voit pas ; en local ça s'accumule
+// jusqu'au quota disque — 2 665 dossiers abandonnés, et la suite ne pouvait plus tourner. Même défaut
+// que `.tizi/ci-audit.md` : vérifier ne doit salir ni le dépôt, ni la machine de qui vérifie.
+test('ni la suite ni les bancs ne laissent de dossier temporaire derrière eux', () => {
+  for (const f of readdirSync(join(ROOT, 'tests')).filter(x => x.endsWith('.test.mjs'))) {
+    // L'appel, pas le mot : ce fichier-ci le nomme dans son propre message d'erreur.
+    assert.ok(!/mkdtempSync\s*\(/.test(readFileSync(join(ROOT, 'tests', f), 'utf8')),
+      `tests/${f} : crée un dossier temporaire à la main — passer par tempDir() de helpers.mjs, qui le reprend à la sortie`);
+  }
+  assert.match(readFileSync(join(ROOT, 'tests', 'helpers.mjs'), 'utf8'), /process\.on\('exit'/, 'helpers.mjs ne reprend plus ses dossiers');
+  for (const f of readdirSync(join(ROOT, 'evals')).filter(x => x.endsWith('.mjs'))) {
+    const text = readFileSync(join(ROOT, 'evals', f), 'utf8');
+    if (!/mkdtempSync\s*\(/.test(text)) continue;
+    assert.match(text, /rmSync/, `evals/${f} : crée un dossier temporaire sans le reprendre`);
+  }
+});
+
 // Un script livré dans un skill sans que rien ne dise de l'appeler est du poids mort — et pire quand une
 // règle sanctionne son absence : `review-checklist.mjs` était livré dans les sept skills, prescrit dans
 // deux, et `S80` fermait la porte de gouvernance du BRD sur des listes qu'aucune de ses phases ne disait

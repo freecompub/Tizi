@@ -9,7 +9,7 @@
 // Une passe dont l'agent n'a pas pu tourner (commande absente, délai dépassé) est une ERREUR D'INTÉGRITÉ : elle n'est
 // comptée ni comme réussite ni comme échec, et le rapport le signale (principe repris des évaluations de hve-core).
 import { spawnSync } from 'node:child_process';
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, writeFileSync, statSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync, statSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
@@ -68,6 +68,12 @@ function grade(g, ws, before, skillDir) {
 const results = [];
 for (const c of cases) for (const variant of variants) for (let k = 1; k <= runs; k++) {
   const ws = mkdtempSync(join(tmpdir(), `eval-${c.id}-${variant}-`));
+  // Un dépôt par cas et par variante : laissés derrière, ils remplissent le disque de qui mesure.
+  // TIZI_GARDER_TMP=1 les conserve, pour inspecter ce qu'une variante a produit.
+  process.on('exit', () => {
+    if (process.env.TIZI_GARDER_TMP === '1') return;
+    try { rmSync(ws, { recursive: true, force: true }); } catch { /* à la sortie, il n'y a plus rien à tenter */ }
+  });
   cpSync(join(HERE, 'fixtures', c.fixture), ws, { recursive: true });
   exec('git init -q && git add -A && git -c user.email=e@e -c user.name=e commit -qm fixture', ws);
   if (variant === 'avec') exec(`node ${sh(join(ROOT, 'install.mjs'))} --project . --target ${agents[agent].install_target} --skills ${c.skills.join(',')}`, ws);
