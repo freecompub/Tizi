@@ -49,7 +49,10 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     if (!['oui', 'non'].includes(v)) fail(`Réponse manquante ou invalide pour --${k} (oui ou non) : ${q}`, 2);
     answers[k] = v === 'oui';
   }
-  if (!opt('--par')) fail('Qui décide du chemin ? --par "<nom>" (déclaré par l\'utilisateur).', 2);
+  // --par était déjà obligatoire, et ça n'a pas suffi : sur le premier dossier réel, les trois chemins
+  // ont été enregistrés au nom pris dans la configuration Git. Un champ obligatoire se remplit avec ce
+  // qui est sous la main ; il faut dire d'où vient la valeur.
+  if (!opt('--par')) fail('Qui décide du chemin ? --par "<nom>" — le nom se demande à l\'utilisateur. Ni le nom Git, ni le nom de session, ni l\'agent : sur un chemin réglementaire, qui décide compte.', 2);
   if (current && !args.includes('--elargir')) fail(`Un chemin est déjà décidé pour ${slug} (${current.path}). Pour le changer : --elargir, avec les nouvelles réponses.`);
   const d = decide(answers);
   if (current && args.includes('--elargir')) {

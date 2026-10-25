@@ -57,6 +57,22 @@ test('un council se lance, et chaque council défini a une phase qui le lance', 
   }
 });
 
+// Le premier dossier réel a enregistré « 40 proposées, 39 écartées, 1 retenue » : trois entiers, et les
+// 39 questions dans un scratchpad de session, hors dépôt. On ne peut plus savoir si le council a fait du
+// bruit ou si l'arbitrage a jeté de bonnes questions. Un council qui ne garde que des compteurs ne se relit pas.
+test('un council garde ses questions, pas seulement leur nombre', () => {
+  for (const s of skills) {
+    if (!existsSync(join(SKILLS, s, 'references', 'council.md'))) continue;
+    const tpl = readFileSync(join(SKILLS, s, 'templates', 'state.yaml'), 'utf8');
+    assert.match(tpl, /council_runs/, `${s} : council.md existe, mais le gabarit n'a pas de council_runs`);
+    assert.match(tpl, /^#\s+questions:/m, `${s} : council_runs ne garde pas les questions`);
+    assert.match(tpl, /outcome: retenue\s+# retenue \| écartée \| réservée/, `${s} : le sort de chaque question du council n'est pas dit`);
+    assert.ok(!/^#\s+(discarded|retained):/m.test(tpl), `${s} : council_runs garde encore des compteurs à la place des questions`);
+    const ref = readFileSync(join(SKILLS, s, 'references', 'council.md'), 'utf8');
+    assert.ok(ref.includes('les questions elles-mêmes'), `${s}/council.md : la trace ne demande pas les questions`);
+  }
+});
+
 // Cinq, c'est ce que ask-five.mjs retient ; deux ou trois, ce qu'on pose par tour. Un skill qui ne dit
 // que le premier nombre fait poser les cinq d'un coup, et c'est arrivé.
 test('les skills qui classent les questions disent aussi combien on en pose à la fois', () => {

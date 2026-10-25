@@ -215,7 +215,16 @@ questions: []             # checklist de questions persistante (voir SKILL.md)
 #      - { id: 1.a, text: "", state: ouverte, answer: "" }   # ouverte | répondue | écartée
 
 council_runs: []
-#  - { date: "", mode: cadrage, lenses: [], proposed: 0, discarded: 0, retained: 0 }
+#  - date: ""
+#    mode: cadrage         # cadrage | specification
+#    lenses: []
+#    proposed: 0           # questions renvoyées par les lentilles, avant fusion des doublons
+#    questions:            # celles qui ont survécu à l'arbitrage, écartées comprises : un compteur ne se relit pas
+#      - text: ""
+#        lenses: []        # lentilles qui l'ont trouvée ; plusieurs = signal de priorité
+#        outcome: retenue  # retenue | écartée | réservée (disponible pour un prochain council)
+#        reason: ""        # obligatoire si écartée ou réservée
+#        zone: ZO-xxx      # si retenue : la zone d'ombre créée
 
 prd_sections:             # à rédiger | proposé | validé
   context: à rédiger
