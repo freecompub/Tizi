@@ -51,6 +51,9 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
 | Le council de préparation passe avant les guides d'entretien, puisqu'il existe pour les remplir | 25 octobre 2026 | `consignes-de-conduite` |
 | Le council est l'outil de l'agent : il ne s'annonce pas, ne se nomme pas à l'utilisateur, et ses questions s'enregistrent au lieu d'être triées avec lui — exception faite d'une contradiction avec ce qu'il a validé | 25 octobre 2026 | `consignes-de-conduite` |
 | La suite de tests et les deux bancs de mesure ne laissent plus de dossier temporaire derrière eux (29 créations pour 8 suppressions ; le quota disque a fini par bloquer la suite) | 25 octobre 2026 | `consignes-de-conduite` |
+| `next-step.mjs` et `list-opportunities.mjs` refusent un chemin d'état au lieu de répondre « aucune initiative » avec un code 0 (`rootArg` dans `lib/common.mjs`) | 25 octobre 2026 | `adoption-et-racine` |
+| `adopt.mjs` : la commande proposée crée son dossier de rapport et garde le chemin des tests déclaré ; un `paths.production` vide est dit au lieu d'être caché ; `reports/` entre dans les lignes de gitignore générées | 25 octobre 2026 | `adoption-et-racine` |
+| Le garde-fou TDD refuse d'écrire quand `paths.production` est vide, au lieu de laisser tout passer en silence | 25 octobre 2026 | `adoption-et-racine` |
 
 ## Ouvert
 
@@ -82,6 +85,25 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
   n'était que dans le titre. Corrigé, et le test vérifie maintenant la section entière. La leçon vaut
   pour les prochains : une consigne corrigée dans une référence peut survivre ailleurs dans la même
   référence, et un test écrit sur la formulation du défaut ne trouve pas ses variantes.
+
+### Les six questions du chemin ne s'appliquent pas à un dépôt d'outillage (25 octobre)
+
+Première tentative de faire passer Tizi par Tizi, bloquée au choix du chemin. Deux des six questions
+tournent à vide sur un outil de développement : « **le changement crée-t-il ou modifie-t-il une règle
+métier ?** » — il n'y a ni client, ni processus d'entreprise, ni règle qu'un service contrôle — et
+« touche-t-il une exigence réglementaire ou la sécurité des patients ou des utilisateurs ? », à laquelle
+on répond mécaniquement non. Les six questions ont été écrites pour une application.
+
+Conséquence : on ne peut pas décider un chemin avec des questions qui n'ont pas de réponse, donc
+**« Faire passer Tizi par Tizi » est bloqué en l'état**. Deux sorties possibles, pas tranchées : une
+variante des questions pour un dépôt d'outillage (« crée ou modifie une règle de la méthode ? », « change
+un contrat entre skills ? »), ou admettre que Tizi ne s'applique pas à lui-même et l'écrire dans la
+documentation plutôt que de le laisser au registre comme une intention.
+
+L'adoption, elle, a marché et a rapporté quatre défauts, tous corrigés le jour même. Mais elle laisse
+`impl/config.yaml` et `.tizi/adoption.*` non commités : les commiter activerait le garde-fou TDD sur le
+dépôt de Tizi le jour où le plugin y est activé, et refuserait toute écriture hors d'une tâche. C'est
+une décision à prendre, pas un effet de bord à subir.
 
 ### Trouvé en vérifiant, pas en lisant (25 octobre)
 

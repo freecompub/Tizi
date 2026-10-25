@@ -1,9 +1,9 @@
 // Application existante : adoption, comportements à préserver, tests de caractérisation.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, writeFileSync, cpSync, appendFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, cpSync, appendFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { FIX, node, sandbox, script, tempDir } from './helpers.mjs';
+import { FIX, node, run, sandbox, script, tempDir } from './helpers.mjs';
 import { checkState } from '../skills/brd-builder/scripts/lib/rules.mjs';
 import yaml from '../skills/brd-builder/scripts/lib/vendor/js-yaml.mjs';
 
@@ -23,6 +23,34 @@ test('adoption : pile détectée sans rien exécuter, carte prouvée, configurat
   writeFileSync(join(dir, 'impl/config.yaml'), '# écrit à la main\n');
   assert.match(node(script('impl-builder', 'adopt.mjs'), ['.'], { cwd: dir }).out, /existe déjà : non modifié/);
   assert.equal(readFileSync(join(dir, 'impl/config.yaml'), 'utf8'), '# écrit à la main\n');
+});
+
+// Première adoption sur un vrai dépôt — celui de Tizi — et trois défauts d'un coup : la commande
+// proposée échouait sur un ENOENT faute de dossier de rapport, elle perdait le chemin des tests
+// déclaré par le projet (donc Node balayait tout le dépôt), et `paths.production` restait vide, ce qui
+// rendait le garde-fou TDD muet en silence.
+test('adoption : la commande proposée tourne telle quelle, garde le chemin des tests, et ne cache pas un périmètre vide', () => {
+  const dir = tempDir('tizi-adopt-node');
+  mkdirSync(join(dir, 'tests'), { recursive: true });
+  writeFileSync(join(dir, 'package.json'), JSON.stringify({ name: 'outil', scripts: { test: 'node --test tests/*.test.mjs' } }, null, 2));
+  writeFileSync(join(dir, 'tests/un.test.mjs'), "import { test } from 'node:test';\ntest('vrai', () => {});\n");
+  const r = node(script('impl-builder', 'adopt.mjs'), ['.'], { cwd: dir });
+  assert.equal(r.code, 0, r.err);
+  const cfg = yaml.load(readFileSync(join(dir, 'impl/config.yaml'), 'utf8'));
+  const cmd = cfg.suites.unit.command;
+  assert.match(cmd, /tests\/\*\.test\.mjs/, 'le chemin déclaré par le projet est perdu : Node balaierait tout le dépôt');
+  assert.match(cmd, /^mkdir -p reports && /, 'la commande ne crée pas son dossier de rapport : elle échoue sur un ENOENT à la main');
+  // Et elle tourne telle quelle, dans le dépôt adopté : c'est ce que .tizi/adoption.md étape 1 demande.
+  // NODE_TEST_CONTEXT est posé par le `node --test` qui exécute CE test : laissé en place, le
+  // `node --test` de la commande parlerait le protocole du parent au lieu d'écrire son rapport.
+  const lance = run('sh', ['-c', cmd], { cwd: dir, env: { NODE_TEST_CONTEXT: undefined } });
+  assert.equal(lance.code, 0, `la commande proposée échoue : ${lance.err}`);
+  assert.ok(existsSync(join(dir, 'reports/unit.xml')), 'le rapport JUnit n\'a pas été produit');
+  // Pile non reconnue : production reste vide, et ça doit être dit, pas caché.
+  assert.deepEqual(cfg.paths.production, [], 'aucune pile reconnue ici : la liste est vide, c\'est attendu');
+  const md = readFileSync(join(dir, '.tizi/adoption.md'), 'utf8');
+  assert.match(md, /aucun chemin de code de production établi/, 'un périmètre de production vide passe sous silence');
+  assert.match(md, /`paths.production` est vide/, 'les étapes suivantes ne disent pas de le renseigner');
 });
 
 test('comportements à préserver : exigés sur un produit existant, avec preuve (S73)', () => {

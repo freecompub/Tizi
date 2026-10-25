@@ -4,14 +4,15 @@
 // Usage : node next-step.mjs [racine du dépôt] [--initiative <slug>] [--json]
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { arr, loadState, table } from './lib/common.mjs';
+import { arr, loadState, rootArg, table } from './lib/common.mjs';
 import yaml from './lib/vendor/js-yaml.mjs';
 import { condenseOf, sessionsFor } from './lib/sessions.mjs';
 import { loadPath } from './choose-path.mjs';
 import { dueReviews } from './due-reviews.mjs';
 
 const args = process.argv.slice(2);
-const root = args.find(a => !a.startsWith('--') && args[args.indexOf(a) - 1] !== '--initiative') ?? '.';
+const root = rootArg(args.find(a => !a.startsWith('--') && args[args.indexOf(a) - 1] !== '--initiative'),
+  'Usage : node next-step.mjs [racine] [--initiative <slug>] [--json] — pour le dépôt courant : node next-step.mjs .');
 const only = args.includes('--initiative') ? args[args.indexOf('--initiative') + 1] : '';
 const STEPS = [
   { doc: 'brd', entry: 'tizi-brd', label: '1. BRD' }, { doc: 'prd', entry: 'tizi-prd', label: '2. PRD' },

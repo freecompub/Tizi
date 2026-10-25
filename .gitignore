@@ -6,4 +6,6 @@
 .DS_Store
 # Rapport d'audit de la CI : sortie locale, régénérée par ci-audit.mjs à chaque passage.
 /.tizi/ci-audit.md
+# Rapports de test : sortie locale, régénérée à chaque exécution des suites (impl/config.yaml).
+/reports/
 # Les dossiers .impl/ et .tizi/ de exemple/ sont des données de test : ils restent versionnés.

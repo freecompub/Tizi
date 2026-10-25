@@ -1,5 +1,5 @@
 // Utilitaires partagés par les scripts du BRD Builder.
-import { readFileSync, readdirSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { dirname, join, basename } from 'node:path';
 import yaml from './vendor/js-yaml.mjs';
@@ -27,6 +27,18 @@ export function loadState(path) {
 export function writeOut(path, content) {
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, content.replace(/\n{3,}/g, '\n\n'));
+}
+
+// Racine de dépôt attendue : refuse un chemin de fichier. La plupart des scripts prennent un chemin
+// d'état (`brd/<slug>/state.yaml`), trois prennent la racine ; l'erreur est naturelle, et elle était
+// silencieuse — « Aucune initiative dans ce dépôt », code de sortie 0, sur un dépôt qui en contenait
+// trois. Une orientation fausse est pire qu'une absence d'orientation.
+export function rootArg(value, usage) {
+  const v = value ?? '.';
+  if (/\.(ya?ml|json|md)$/i.test(v) || (existsSync(v) && statSync(v).isFile())) {
+    fail(`${v} est un fichier, et ce script attend la racine du dépôt — pas un chemin d'état. ${usage}`, 2);
+  }
+  return v;
 }
 
 export function fail(msg, code = 1) {

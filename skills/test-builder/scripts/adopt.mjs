@@ -48,6 +48,11 @@ const exists = p => existsSync(join(root, p));
 const json = p => { try { return JSON.parse(readFileSync(p, 'utf8')); } catch { return null; } };
 
 const containers = [], suites = {}, production = new Set(), tests = new Set(), contracts = new Set(), uncertain = [];
+// Node, swift et pytest n'écrivent pas leur rapport si le dossier n'existe pas : la commande échoue sur
+// un ENOENT. `ci-run-suites.mjs` crée le dossier avant de lancer, donc ça passait en CI et pas à la main
+// — alors que l'adoption dit justement de lancer chaque commande une fois à la main. Les commandes
+// tournent dans un shell (`spawnSync(..., { shell: true })`), donc le `&&` est tenu.
+const avecDossier = cmd => `mkdir -p reports && ${cmd}`;
 let n = 0, m = 0;
 const add = (name, subtype, technology, dirs, evidence) => {
   // Une même base vue par deux fichiers (Prisma et docker-compose) est un seul conteneur : on fusionne les preuves.
@@ -78,8 +83,12 @@ for (const pj of find(/(^|\/)package\.json$/)) {
   const t = pkg.scripts?.test;
   if (t && !/no test specified/.test(t)) {
     const runner = deps.vitest ? 'vitest' : deps.jest ? 'jest' : /node --test/.test(t) ? 'node' : deps.mocha ? 'mocha' : '';
-    const junit = { vitest: `npx vitest run --reporter=junit --outputFile=reports/unit.xml`, jest: `npx jest --ci --reporters=default --reporters=jest-junit  # nécessite jest-junit ; rapport dans junit.xml (JEST_JUNIT_OUTPUT_FILE=reports/unit.xml)`, node: `node --test --test-reporter=junit --test-reporter-destination=reports/unit.xml`, mocha: `npx mocha --reporter mocha-junit-reporter --reporter-options mochaFile=reports/unit.xml` }[runner];
-    suites[`unit${base === '.' ? '' : `-${basename(base)}`}`] = { command: base === '.' ? (junit ?? t) : `cd ${base} && ${junit ?? t}`, report: `${prefix}reports/unit.xml`, detected_from: `${rel(pj)} : scripts.test = « ${t} »` };
+    // Ce que le projet passe déjà à `node --test` : sans ces arguments, Node balaie tout le dépôt et
+    // ramasse les exemples et les fixtures. La commande déclarée fait autorité, on n'ajoute que le
+    // rapport. Constaté sur le dépôt de Tizi, où `tests/*.test.mjs` était perdu.
+    const argsNode = (/node\s+--test\s+(.+)$/.exec(t.trim())?.[1] ?? '').trim();
+    const junit = { vitest: `npx vitest run --reporter=junit --outputFile=reports/unit.xml`, jest: `npx jest --ci --reporters=default --reporters=jest-junit  # nécessite jest-junit ; rapport dans junit.xml (JEST_JUNIT_OUTPUT_FILE=reports/unit.xml)`, node: `node --test --test-reporter=junit --test-reporter-destination=reports/unit.xml${argsNode ? ` ${argsNode}` : ''}`, mocha: `npx mocha --reporter mocha-junit-reporter --reporter-options mochaFile=reports/unit.xml` }[runner];
+    suites[`unit${base === '.' ? '' : `-${basename(base)}`}`] = { command: base === '.' ? avecDossier(junit ?? t) : `cd ${base} && ${avecDossier(junit ?? t)}`, report: `${prefix}reports/unit.xml`, detected_from: `${rel(pj)} : scripts.test = « ${t} »` };
     if (!junit) uncertain.push(`${rel(pj)} : lanceur de tests non reconnu ; adapter la commande pour produire un rapport JUnit dans ${prefix}reports/unit.xml`);
     if (deps['@stryker-mutator/core']) suites.mutation = { command: `${base === '.' ? '' : `cd ${base} && `}npx stryker run --incremental`, report: `${prefix}reports/mutation/mutation.json`, threshold: 70 };
   }
@@ -102,7 +111,7 @@ for (const xp of projects) {
   tests.add('**/*Tests/**');
   const scheme = schemes[0] ?? name;
   suites[`unit-ios${projects.length > 1 ? `-${name}` : ''}`] = {
-    command: `xcodebuild test -project ${rel(xp)} -scheme ${scheme} -destination 'platform=iOS Simulator,name=iPhone 16' -resultBundlePath reports/${name}.xcresult && xcresultparser -o junit reports/${name}.xcresult > reports/unit-ios.xml`,
+    command: `mkdir -p reports && xcodebuild test -project ${rel(xp)} -scheme ${scheme} -destination 'platform=iOS Simulator,name=iPhone 16' -resultBundlePath reports/${name}.xcresult && xcresultparser -o junit reports/${name}.xcresult > reports/unit-ios.xml`,
     report: 'reports/unit-ios.xml', detected_from: `${rel(xp)}${schemes.length ? ` (schémas : ${schemes.join(', ')})` : ' (aucun schéma partagé trouvé)'}`,
   };
   uncertain.push(`iOS : vérifier le schéma (${scheme}), le simulateur, et l'outil de conversion du résultat en JUnit (xcresultparser, ou trainer) sur la machine qui lance les tests`);
@@ -112,13 +121,13 @@ for (const sp of find(/(^|\/)Package\.swift$/)) {
   const dir = rel(dirname(sp)) || '.';
   if (projects.some(x => rel(dirname(x)) === dir)) continue;
   add(`Paquet Swift ${basename(dirname(sp))}`, 'library', 'Swift Package', [`${dir === '.' ? '' : `${dir}/`}Sources/**`], [rel(sp)]);
-  suites[`unit-swift`] = { command: `${dir === '.' ? '' : `cd ${dir} && `}swift test --xunit-output reports/unit-swift.xml`, report: `${dir === '.' ? '' : `${dir}/`}reports/unit-swift.xml`, detected_from: rel(sp) };
+  suites[`unit-swift`] = { command: `${dir === '.' ? '' : `cd ${dir} && `}${avecDossier('swift test --xunit-output reports/unit-swift.xml')}`, report: `${dir === '.' ? '' : `${dir}/`}reports/unit-swift.xml`, detected_from: rel(sp) };
   tests.add(`${dir === '.' ? '' : `${dir}/`}Tests/**`);
 }
 // ── Python ──
 for (const pp of find(/(^|\/)pyproject\.toml$/)) {
   const text = readFileSync(pp, 'utf8'); const dir = rel(dirname(pp)) || '.';
-  if (/pytest/.test(text)) { suites['unit-python'] = { command: `${dir === '.' ? '' : `cd ${dir} && `}pytest --junitxml=reports/unit-python.xml`, report: `${dir === '.' ? '' : `${dir}/`}reports/unit-python.xml`, detected_from: rel(pp) }; tests.add(`${dir === '.' ? '' : `${dir}/`}tests/**`); }
+  if (/pytest/.test(text)) { suites['unit-python'] = { command: `${dir === '.' ? '' : `cd ${dir} && `}${avecDossier('pytest --junitxml=reports/unit-python.xml')}`, report: `${dir === '.' ? '' : `${dir}/`}reports/unit-python.xml`, detected_from: rel(pp) }; tests.add(`${dir === '.' ? '' : `${dir}/`}tests/**`); }
 }
 // ── Données et infrastructure ──
 for (const p of find(/(^|\/)prisma\/schema\.prisma$/)) { const prov = (readFileSync(p, 'utf8').match(/provider\s*=\s*"(\w+)"/g) ?? []).map(x => x.match(/"(\w+)"/)[1]).filter(x => x !== 'prisma-client-js'); add('Base de données', 'datastore', prov.join(', ') || 'non établie', [], [`${rel(p)}${prov.length ? ` : provider ${prov.join(', ')}` : ''}`]); }
@@ -133,6 +142,10 @@ for (const { path, seg } of [...new Map(ecartes.map(e => [e.path, e])).values()]
   uncertain.push(`${path} écarté : le dossier « ${seg} » désigne d'ordinaire du matériel de test ou un exemple, pas l'application. Si c'est bien un composant à préserver, relance avec --inclure ${path.split('/').slice(0, -1).join('/') || '.'}`);
 }
 if (!containers.length) uncertain.push('aucun conteneur établi : pile non reconnue ; décrire l\'existant avec la conception (sad-builder, mode brownfield)');
+// Un `paths.production` vide ne se voit pas : le garde-fou TDD classe alors chaque fichier comme « ni
+// test, ni contrat, ni production » et laisse passer toutes les écritures. Constaté sur le dépôt de Tizi,
+// dont la pile n'est reconnue par rien — zéro dépendance, pas de framework.
+if (!production.size) uncertain.push('aucun chemin de code de production établi : tant que `paths.production` est vide dans impl/config.yaml, le garde-fou TDD ne peut rien classer, donc rien protéger. À renseigner à la main avant de prendre une première tâche — le garde-fou refuse d\'écrire tant que c\'est vide.');
 if (!Object.keys(suites).length) uncertain.push('aucune commande de test trouvée : la renseigner à la main dans impl/config.yaml');
 uncertain.push('les échanges entre conteneurs (qui appelle qui) ne sont pas déduits : la conception les établit à partir du code, en mode brownfield');
 
@@ -154,6 +167,7 @@ const md = [`# Adoption de Tizi — ${today()}`, '', 'Ce que le dépôt montre, 
   '## Incertain', '', ...uncertain.map(u => `- ${u}`), '',
   '## Étapes suivantes', '',
   `1. Relire ${wroteCfg ? '`impl/config.yaml`, proposé par ce script' : '`impl/config.yaml` : il existait déjà, il n\'a pas été modifié (comparer avec `.tizi/adoption.yaml`, ou relancer avec --force)'}, et lancer une fois chaque commande de test à la main.`,
+  ...(production.size ? [] : ['   - **`paths.production` est vide** : le garde-fou TDD ne sait pas ce qu\'il protège, et il refuse d\'écrire tant que c\'est le cas. À renseigner avant de prendre une première tâche.']),
   '2. Pour le premier changement, choisir son chemin avec `/tizi` (Claude Code) ou l\'agent `tizi` (Copilot).',
   '3. Quand ce changement passe par la conception, reprendre `.tizi/adoption.yaml` comme existant à vérifier : on n\'inventorie que ce qui borde le changement.',
   '4. Après la première conception figée, synchroniser les instructions du dépôt (`sync-agent-instructions.mjs`).', ''];

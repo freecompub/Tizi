@@ -28,6 +28,23 @@ test('garde-fou TDD : mêmes verdicts quel que soit l\'outil', () => {
   }
 });
 
+// `adopt.mjs` laisse `paths.production` vide quand il ne reconnaît pas la pile — c'est arrivé sur le
+// dépôt de Tizi lui-même. Le garde-fou classait alors chaque fichier comme « ni test, ni contrat, ni
+// production » et laissait tout passer, en silence. Un garde-fou qui ne peut rien classer doit le dire.
+test('garde-fou TDD : sans périmètre de production, il refuse au lieu de laisser passer', () => {
+  const repo = join(sandbox(), 'repo');
+  const cfgPath = join(repo, 'impl/config.yaml');
+  const avant = readFileSync(cfgPath, 'utf8');
+  writeFileSync(cfgPath, avant.replace('production: ["src/**"]', 'production: []'));
+  const r = guard(repo, { tool_name: 'create_file', tool_input: { filePath: 'test/unit/b.test.js' } });
+  assert.equal(r.code, 2, 'un périmètre de production vide laisse encore passer');
+  assert.match(r.err, /aucun chemin de code de production/);
+  assert.match(r.err, /derogation\.mjs/, 'le message ne dit pas comment écrire malgré tout');
+  // Ce qui est toujours autorisé le reste : le garde-fou ne bloque pas l'état de la tâche.
+  assert.equal(guard(repo, { tool_name: 'create_file', tool_input: { filePath: 'impl/demo/state.yaml' } }).code, 0);
+  writeFileSync(cfgPath, avant);
+});
+
 test('capture de session : transcriptions Claude Code et Copilot', () => {
   const dir = tempDir('tizi-sess');
   const cap = (payload, env) => node(script('brd-builder', 'session-capture.mjs'), [], { cwd: dir, input: JSON.stringify({ cwd: dir, ...payload }), env });
@@ -140,7 +157,10 @@ for (const target of ['claude', 'copilot', 'both']) test(`installation : cible $
   if (target !== 'claude') assert.ok(existsSync(join(proj, '.github/hooks/tizi.json')) && existsSync(join(proj, '.github/agents/finding-verifier.agent.md')));
   node(join(ROOT, 'install.mjs'), ['--project', proj, '--target', target]);
   if (target !== 'copilot') for (const l of Object.values(JSON.parse(readFileSync(join(proj, '.claude/settings.json'), 'utf8')).hooks)) assert.equal(l.length, 1, 'entrée de hook dupliquée');
-  assert.equal(readFileSync(join(proj, '.gitignore'), 'utf8').split('\n').filter(l => l === '.impl/').length, 1);
+  const ignore = readFileSync(join(proj, '.gitignore'), 'utf8').split('\n');
+  assert.equal(ignore.filter(l => l === '.impl/').length, 1);
+  // Les rapports de test sont une sortie locale régénérée : lancer les suites ne doit pas salir l'arbre.
+  assert.ok(ignore.includes('reports/'), 'reports/ n\'est pas ignoré : lancer les tests laisse un fichier non suivi');
 });
 
 test('portes de PR et de release ouvertes sur l\'exemple', () => {
