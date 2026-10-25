@@ -201,7 +201,8 @@ shadow_zones: []
 #    origin: ""
 #    ask_to: ""
 #    action: ""            # spike | mesure | lecture_code | question | decision | atelier
-#    blocking: false
+#    blocking: false      # true seulement si l'étape suivante ne peut pas COMMENCER : nomme-la,
+#                         # et dis ce qui s'y ferait de faux (references/shadow-zones.md)
 #    parties: []           # conflit d'intérêts
 #    arbiter: ""           # conflit d'intérêts : décideur issu de decision_rights, jamais partie au conflit
 #    status: ouverte       # ouverte | levée | assumée

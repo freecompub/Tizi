@@ -42,7 +42,9 @@ Seul le sous-type `interets` appelle une décision. Les autres se lèvent par un
 
 Pour chaque zone d'ombre, renseigne dans `state.yaml` : le type, une formulation sous forme de question, son origine, **qui** peut la lever (une partie prenante réelle `SH-xx` ou un rôle), l'action proposée, et si elle est bloquante.
 
-Une zone d'ombre est **bloquante** si on ne peut pas formuler correctement les objectifs ou les exigences sans la lever.
+Une zone d'ombre est **bloquante** si elle empêche l'étape suivante de **commencer** — pas si elle la rend moins sûre. Le test est concret : nomme l'étape, et dis ce qui s'y ferait de faux si on la menait sans l'avoir levée. Si tu ne peux pas le dire, elle n'est pas bloquante : elle est importante, et son type suffit à la faire remonter, puisque `ask-five.mjs` classe par ce que la zone coûte.
+
+Le critère a été resserré après deux dossiers réels. « On ne peut pas formuler correctement les objectifs sans la lever » est vrai par construction au début d'une phase : **18 bloquantes sur 25**. Sur le dossier suivant, où aucune consigne ne définissait le mot, **0 sur 21**. Un drapeau qui vaut tout ou rien ne classe rien — il est donc sorti du score, et ne sert plus qu'à une chose, sérieuse : **une bloquante ouverte interdit la sortie de phase**.
 
 Une zone d'ombre se termine de deux façons :
 - `levée` : une réponse sourcée existe (indique la source) ;

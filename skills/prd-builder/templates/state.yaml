@@ -207,7 +207,8 @@ shadow_zones: []
 #    origin: ""
 #    ask_to: ""
 #    action: ""
-#    blocking: false
+#    blocking: false      # true seulement si l'étape suivante ne peut pas COMMENCER : nomme-la,
+#                         # et dis ce qui s'y ferait de faux (references/shadow-zones.md)
 #    status: ouverte       # ouverte | levée | assumée
 #    resolution: ""
 #    related: []

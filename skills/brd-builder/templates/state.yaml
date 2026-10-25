@@ -109,7 +109,8 @@ shadow_zones: []
 #    origin: cadrage       # cadrage | SRC-xxx | atelier | point-etape | council:<lentille>
 #    ask_to: SH-01         # SH-xx ou rôle à identifier
 #    action: entretien     # entretien | document | atelier | decision | question-utilisateur
-#    blocking: false
+#    blocking: false      # true seulement si l'étape suivante ne peut pas COMMENCER : nomme-la,
+#                         # et dis ce qui s'y ferait de faux (references/phase-discover.md)
 #    status: ouverte       # ouverte | levée | assumée
 #    resolution: ""        # levée : réponse + source (SRC-xxx, emplacement) ou décision (DD-xx) ; assumée : raison
 #    related: []           # H-xxx, BC-xxx, SRC-xxx liés
