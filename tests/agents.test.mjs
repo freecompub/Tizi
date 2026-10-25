@@ -2,10 +2,9 @@
 // installation, revue de code, portes de PR et de release.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, existsSync, cpSync, mkdtempSync, mkdirSync, writeFileSync, readdirSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { readFileSync, existsSync, cpSync, mkdirSync, writeFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { sandbox, node, run, script, FIX, ROOT } from './helpers.mjs';
+import { FIX, ROOT, node, run, sandbox, script, tempDir } from './helpers.mjs';
 
 const guard = (repo, payload) => node(script('impl-builder', 'tdd-guard.mjs'), [], { cwd: repo, input: JSON.stringify({ cwd: repo, ...payload }) });
 test('garde-fou TDD : mêmes verdicts quel que soit l\'outil', () => {
@@ -30,14 +29,14 @@ test('garde-fou TDD : mêmes verdicts quel que soit l\'outil', () => {
 });
 
 test('capture de session : transcriptions Claude Code et Copilot', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'tizi-sess-'));
+  const dir = tempDir('tizi-sess');
   const cap = (payload, env) => node(script('brd-builder', 'session-capture.mjs'), [], { cwd: dir, input: JSON.stringify({ cwd: dir, ...payload }), env });
   // Le faux jeton est fabriqué à l'exécution : un fichier versionné qui en contiendrait un serait bloqué par la protection contre les secrets de GitHub.
   const fakeToken = ['gh', 'p_', 'abcdefghijklmnopqrstuvwxyz0123456789'].join('');
   const transcript = join(dir, 'claude-transcript.jsonl');
   writeFileSync(transcript, readFileSync(join(FIX, 'claude-transcript.jsonl'), 'utf8').replace('__JETON_FACTICE__', fakeToken));
   assert.equal(cap({ session_id: 'aaaaaaaa-1', transcript_path: transcript, hook_event_name: 'Stop' }).code, 0);
-  const home = mkdtempSync(join(tmpdir(), 'copilot-'));
+  const home = tempDir('copilot');
   mkdirSync(join(home, 'session-state', 'bbbbbbbb-2'), { recursive: true });
   cpSync(join(FIX, 'copilot-events.jsonl'), join(home, 'session-state', 'bbbbbbbb-2', 'events.jsonl'));
   assert.equal(cap({ hook_event_name: 'SessionEnd', session_id: 'bbbbbbbb-2' }, { COPILOT_HOME: home }).code, 0, 'fin de session Copilot sans chemin');
@@ -95,7 +94,7 @@ test('capture de session : transcriptions Claude Code et Copilot', () => {
 // perdre la réponse.
 test('extrait de session : troncature annoncée, enveloppes écartées, réponse non nommée conservée', async () => {
   const { readTranscript, buildExtract } = await import('../skills/brd-builder/scripts/lib/sessions.mjs');
-  const dir = mkdtempSync(join(tmpdir(), 'tizi-extrait-'));
+  const dir = tempDir('tizi-extrait');
   const t = join(dir, 's.jsonl');
   const longue = `Fin de la phase Discover sur brd/demo.\n\n${'Un paragraphe de contexte qui tient dans la ligne. '.repeat(90)}\nDernier mot coupable`;
   writeFileSync(t, [
@@ -122,7 +121,7 @@ test('extrait de session : troncature annoncée, enveloppes écartées, réponse
 // demandaient à la session suivante de rédiger un condensé qui existait déjà.
 test('condensé : cherché sur le disque, le champ d\'index n\'est qu\'un cache', async () => {
   const { condenseOf } = await import('../skills/brd-builder/scripts/lib/sessions.mjs');
-  const dir = mkdtempSync(join(tmpdir(), 'tizi-cond-'));
+  const dir = tempDir('tizi-cond');
   mkdirSync(join(dir, '.tizi/sessions'), { recursive: true });
   const entree = { session: 'abcd1234', started: '2026-11-03T08:00:00.000Z', condensed: '' };
   assert.equal(condenseOf(entree, dir), '', 'rien sur le disque, rien à annoncer');
@@ -133,7 +132,7 @@ test('condensé : cherché sur le disque, le champ d\'index n\'est qu\'un cache'
 });
 
 for (const target of ['claude', 'copilot', 'both']) test(`installation : cible ${target}, idempotente`, () => {
-  const proj = mkdtempSync(join(tmpdir(), `tizi-inst-${target}-`));
+  const proj = tempDir(`tizi-inst-${target}`);
   assert.equal(node(join(ROOT, 'install.mjs'), ['--project', proj, '--target', target]).code, 0);
   const skillsDir = target === 'copilot' ? '.github/skills' : '.claude/skills';
   assert.ok(existsSync(join(proj, skillsDir, 'brd-builder', 'SKILL.md')));
@@ -179,7 +178,7 @@ test('revue de code : vérification adversariale, confiance retirée, revue pér
 // développeur : deux personnes travaillant le même jour obtenaient un conflit Git sur un fichier que
 // personne ne modifie à la main. Un fichier par session : il n'y a plus rien à fusionner.
 test('index des sessions : un fichier par session, aucun écrivain partagé', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'tizi-idx-'));
+  const dir = tempDir('tizi-idx');
   const cap = (id, at) => {
     const t = join(dir, `${id}.jsonl`);
     writeFileSync(t, `${JSON.stringify({ type: 'user', message: { content: 'On reprend plan/demo.' }, timestamp: at })}\n`);

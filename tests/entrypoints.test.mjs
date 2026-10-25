@@ -1,10 +1,9 @@
 // Points d'entrée : commandes Claude Code et agents Copilot générés depuis entrypoints/entrypoints.yaml.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync, existsSync, mkdtempSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { node, sandbox, script, ROOT } from './helpers.mjs';
+import { ROOT, node, sandbox, script, tempDir } from './helpers.mjs';
 import yaml from '../skills/brd-builder/scripts/lib/vendor/js-yaml.mjs';
 
 const front = f => yaml.load(readFileSync(f, 'utf8').split(/^---$/m)[1]);
@@ -72,7 +71,7 @@ test('choix fermés : l\'outil de questions est demandé, et accordé', () => {
 });
 
 for (const target of ['claude', 'copilot', 'both']) test(`génération des points d'entrée : cible ${target}`, () => {
-  const proj = mkdtempSync(join(tmpdir(), `tizi-ep-${target}-`));
+  const proj = tempDir(`tizi-ep-${target}`);
   assert.equal(node(join(ROOT, 'install.mjs'), ['--project', proj, '--target', target]).code, 0);
   const skillsDir = target === 'copilot' ? '.github/skills' : '.claude/skills';
   if (target !== 'copilot') {
@@ -122,7 +121,7 @@ test('étape suivante calculée sur l\'exemple', () => {
 // script commun ajouté à six skills sur sept casserait --skills <le septième> en silence.
 for (const seul of ['backlog-executor', 'brd-builder', 'impl-builder', 'plan-builder', 'prd-builder', 'sad-builder', 'test-builder'])
   test(`installation partielle : --skills ${seul} produit des points d'entrée utilisables`, () => {
-    const proj = mkdtempSync(join(tmpdir(), `tizi-part-${seul}-`));
+    const proj = tempDir(`tizi-part-${seul}`);
     const r = node(join(ROOT, 'install.mjs'), ['--project', proj, '--target', 'claude', '--skills', seul]);
     assert.equal(r.code, 0, r.err);
 

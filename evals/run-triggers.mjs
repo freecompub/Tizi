@@ -7,7 +7,7 @@
 // Usage : node evals/run-triggers.mjs --agent claude|copilot [--runs 3] [--seuil 0.5] [--agent-cmd "<commande>"] [--dry-run]
 // Une passe où l'agent n'a pas tourné est une erreur d'intégrité : elle ne compte ni pour ni contre une requête.
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, writeFileSync, readdirSync, existsSync, mkdirSync } from 'node:fs';
+import { mkdtempSync, readFileSync, writeFileSync, readdirSync, existsSync, mkdirSync, rmSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
@@ -33,6 +33,13 @@ for (const g of groups.values()) g.sort((a, b) => bucket(a) - bucket(b)).forEach
 
 // Dépôt de travail : tous les skills installés, chacun avec son marqueur en tête de corps.
 const ws = mkdtempSync(join(tmpdir(), 'tizi-triggers-'));
+// Le banc laissait son dépôt de travail derrière lui à chaque passe. En simulation on le garde — c'est
+// l'objet du --dry-run, qui en affiche le chemin — et TIZI_GARDER_TMP=1 le garde aussi, pour inspecter
+// ce qu'une mesure a produit. Sinon il est repris : une mesure ne doit pas salir la machine.
+process.on('exit', () => {
+  if (args.includes('--dry-run') || process.env.TIZI_GARDER_TMP === '1') return;
+  try { rmSync(ws, { recursive: true, force: true }); } catch { /* à la sortie, il n'y a plus rien à tenter */ }
+});
 spawnSync('git init -q', { cwd: ws, shell: true });
 spawnSync(`node ${sh(join(ROOT, 'install.mjs'))} --project . --target ${agents[agent].install_target}`, { cwd: ws, shell: true });
 const skillsDir = join(ws, agents[agent].install_target === 'copilot' ? '.github/skills' : '.claude/skills');

@@ -1,10 +1,9 @@
 // Sprint review : déclenchement par la date, document en deux parties, décisions vérifiées, rappels.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, writeFileSync, mkdtempSync, mkdirSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { sandbox, node, script, ROOT } from './helpers.mjs';
+import { ROOT, node, sandbox, script, tempDir } from './helpers.mjs';
 import { checkState } from '../skills/brd-builder/scripts/lib/rules.mjs';
 import yaml from '../skills/brd-builder/scripts/lib/vendor/js-yaml.mjs';
 
@@ -64,7 +63,7 @@ test('CI : prépare la sprint review due et l\'issue (simulation)', () => {
 });
 
 test('installation --ci : workflow planifié aux droits minimaux, hook de début de session', () => {
-  const proj = mkdtempSync(join(tmpdir(), 'tizi-ci-'));
+  const proj = tempDir('tizi-ci');
   assert.equal(node(join(ROOT, 'install.mjs'), ['--project', proj, '--target', 'both', '--ci']).code, 0);
   const wf = yaml.load(readFileSync(join(proj, '.github/workflows/tizi-sprint-review.yml'), 'utf8'));
   assert.deepEqual(wf.permissions, { contents: 'read', issues: 'write' });

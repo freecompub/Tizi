@@ -7,10 +7,9 @@
 // clone suffise à installer le plugin — donc il faut vérifier qu'ils n'ont pas dérivé de leur source.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync, existsSync, mkdtempSync, cpSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { readFileSync, readdirSync, existsSync, cpSync } from 'node:fs';
 import { join } from 'node:path';
-import { node, ROOT } from './helpers.mjs';
+import { ROOT, node, tempDir } from './helpers.mjs';
 import yaml from '../skills/brd-builder/scripts/lib/vendor/js-yaml.mjs';
 
 const entrypoints = yaml.load(readFileSync(join(ROOT, 'entrypoints/entrypoints.yaml'), 'utf8')).entrypoints;
@@ -119,7 +118,7 @@ test('plugin : les hooks de chaque outil pointent dans le plugin, par sa variabl
 // Le plus important : les artefacts commités sont ceux que la source produit. Sans ce test, le plugin
 // dériverait en silence dès qu'un point d'entrée ou un sous-agent change.
 test('plugin : les artefacts commités sont ceux que install.mjs régénère', () => {
-  const tmp = mkdtempSync(join(tmpdir(), 'tizi-plugin-'));
+  const tmp = tempDir('tizi-plugin');
   for (const d of ['skills', 'entrypoints']) cpSync(join(ROOT, d), join(tmp, d), { recursive: true });
   cpSync(join(ROOT, 'package.json'), join(tmp, 'package.json'));
   const r = node(join(ROOT, 'install.mjs'), ['--project', tmp, '--target', 'plugin']);

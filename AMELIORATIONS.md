@@ -50,6 +50,7 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
 | « Ce qui ne se demande pas » : une étape prescrite et non engageante se fait (council, principe candidat), et on ne demande pas l'autorisation de proposer | 25 octobre 2026 | `consignes-de-conduite` |
 | Le council de préparation passe avant les guides d'entretien, puisqu'il existe pour les remplir | 25 octobre 2026 | `consignes-de-conduite` |
 | Le council est l'outil de l'agent : il ne s'annonce pas, ne se nomme pas à l'utilisateur, et ses questions s'enregistrent au lieu d'être triées avec lui — exception faite d'une contradiction avec ce qu'il a validé | 25 octobre 2026 | `consignes-de-conduite` |
+| La suite de tests et les deux bancs de mesure ne laissent plus de dossier temporaire derrière eux (29 créations pour 8 suppressions ; le quota disque a fini par bloquer la suite) | 25 octobre 2026 | `consignes-de-conduite` |
 
 ## Ouvert
 
@@ -81,6 +82,17 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
   n'était que dans le titre. Corrigé, et le test vérifie maintenant la section entière. La leçon vaut
   pour les prochains : une consigne corrigée dans une référence peut survivre ailleurs dans la même
   référence, et un test écrit sur la formulation du défaut ne trouve pas ses variantes.
+
+### Trouvé en vérifiant, pas en lisant (25 octobre)
+
+La suite de tests créait **29 dossiers temporaires pour 8 suppressions**, et les deux bancs de mesure
+(`evals/run-triggers.mjs`, `evals/run-ablation.mjs`) n'en reprenaient aucun. Une centaine de mégaoctets
+par passe, jamais rendus. En CI le conteneur est jeté et ça ne se voit pas ; en local ça s'accumule — au
+bout d'une trentaine de passes, **2 665 dossiers abandonnés** et un quota disque épuisé qui empêchait la
+suite de tourner. C'est le même défaut que `.tizi/ci-audit.md`, corrigé le 24 octobre : vérifier ne doit
+salir ni le dépôt, ni la machine de qui vérifie. Fermé par un `tempDir()` unique dans
+`tests/helpers.mjs`, une reprise à la sortie du processus, une échappatoire nommée
+(`TIZI_GARDER_TMP=1`) et un test qui refuse tout `mkdtempSync` direct.
 
 ### Deuxième sortie de BRD (25 octobre)
 

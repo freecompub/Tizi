@@ -1,10 +1,9 @@
 // Chemin minimal (choose-path.mjs) et instructions du dépôt (sync-agent-instructions.mjs).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, writeFileSync, mkdtempSync, mkdirSync, rmSync, existsSync, cpSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync, cpSync } from 'node:fs';
 import { join } from 'node:path';
-import { sandbox, node, script } from './helpers.mjs';
+import { node, sandbox, script, tempDir } from './helpers.mjs';
 import { decide } from '../skills/brd-builder/scripts/choose-path.mjs';
 
 const no = { evident: false, reglementaire: false, 'intention-floue': false, 'regle-metier': false, 'contrat-donnee': false, 'plusieurs-jours': false };
@@ -41,7 +40,7 @@ test('chemin enregistré : ne se rétrécit pas, s\'élargit avec historique, gu
 // pour clore : sur le premier dossier réel, la mère portait `decision: jeter` avec la vérité en
 // commentaire YAML, et les deux outils de portefeuille annonçaient un abandon.
 test('initiative découpée : close sans abandon, filles nommées, point d\'étape et portefeuille', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'tizi-decoup-'));
+  const dir = tempDir('tizi-decoup');
   const ecrire = (slug, opp) => {
     mkdirSync(join(dir, 'brd', slug), { recursive: true });
     writeFileSync(join(dir, 'brd', slug, 'state.yaml'), `document: brd\ninitiative: { name: "${slug}", slug: ${slug} }\nphase: close\nopportunity:\n${opp}\n`);
@@ -67,7 +66,7 @@ test('initiative découpée : close sans abandon, filles nommées, point d\'éta
 // le premier dossier réel avait ses cinq dimensions vides et zéro partie prenante entendue, sans qu'aucun
 // outil ne le montre. Le point d'étape l'affiche comme une distance, avec les deux comptes calculables.
 test('point d\'étape : porte de synthèse montrée en Discover, avec ce qui se compte', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'tizi-synth-'));
+  const dir = tempDir('tizi-synth');
   mkdirSync(join(dir, 'brd/cadrage'), { recursive: true });
   writeFileSync(join(dir, 'brd/cadrage/state.yaml'), [
     'document: brd', 'initiative: { name: "Cadrage", slug: cadrage }', 'phase: discover',
@@ -85,7 +84,7 @@ test('point d\'étape : porte de synthèse montrée en Discover, avec ce qui se 
 });
 
 test('instructions du dépôt : bloc généré, contenu humain conservé, idempotent, dérives détectées', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'tizi-instr-'));
+  const dir = tempDir('tizi-instr');
   const ex = sandbox();
   cpSync(join(ex, 'sad'), join(dir, 'sad'), { recursive: true }); cpSync(join(ex, 'repo/impl'), join(dir, 'impl'), { recursive: true }); cpSync(join(ex, 'repo/src'), join(dir, 'src'), { recursive: true });
   writeFileSync(join(dir, 'AGENTS.md'), '# Projet\n\nNote humaine.\n');
