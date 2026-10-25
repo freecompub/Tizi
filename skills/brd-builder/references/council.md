@@ -59,6 +59,27 @@ Une question qui n'a pas d'objet se ferme **en répondant** : `levée`, avec la 
 
 En mode `preparation`, intègre-les aux guides d'entretien concernés : c'est ce pour quoi le council a tourné à ce moment-là.
 
+## Un passage peut couvrir plusieurs initiatives
+
+À deux conditions : qu'elles partagent une **dépendance** ou un périmètre commun — c'est là que se
+logent les angles morts qu'aucun dossier ne voit seul — et que la **portée soit nommée**.
+
+Un passage partagé s'écrit à l'identique dans chaque initiative couverte, avec `initiatives` qui les
+nomme toutes. Sans ce champ, le même passage se relit comme un passage par dossier : sur le premier
+dossier réel, un council unique sur deux initiatives a inscrit « 40 proposées, 39 écartées » dans
+**chacune** — le dépôt en déclarait 80 pour 40 produites, et le second dossier affichait « 0 retenue sur
+40 », ce qui se lit « le council n'a rien trouvé pour moi » alors qu'il n'a jamais tourné pour lui seul.
+La vérité était en commentaire YAML, que rien ne lit.
+
+Deux règles qui vont avec :
+
+- **`proposed` est le compte du passage**, pas celui de l'initiative : il est identique dans chaque
+  fichier, et `initiatives` dit sur combien de dossiers il porte. Une somme sur le portefeuille
+  dédoublonne sur (date, mode, portée).
+- **Les questions, elles, s'attribuent** : chaque fichier ne garde que celles dont le `target` porte sur
+  cette initiative. C'est à ça que sert `target`, et c'est ce qui fait que les questions s'additionnent
+  correctement là où les compteurs ne le peuvent pas.
+
 ### 5. Tracer le passage du council
 
-Ajoute une entrée dans `council_runs` de `state.yaml` : date, mode, lentilles utilisées, le nombre de questions renvoyées par les lentilles, et **les questions elles-mêmes** — retenues, écartées avec leur raison, et celles mises en réserve pour un prochain council. Le compte mesure l'utilité du council ; les questions permettent de la vérifier. Trois compteurs ne se relisent pas : « 40 proposées, 39 écartées » ne dit pas si c'étaient des doublons, des solutions déguisées, ou de bonnes questions mal arbitrées, et les écartées disparaissent avec la session.
+Ajoute une entrée dans `council_runs` de `state.yaml` : date, mode, lentilles utilisées, la **portée** (`initiatives`, si le passage en couvre plusieurs), le nombre de questions renvoyées par les lentilles, et **les questions qui visent cette initiative** — retenues, écartées avec leur raison, et celles mises en réserve pour un prochain council. Le compte mesure l'utilité du council ; les questions permettent de la vérifier. Trois compteurs ne se relisent pas : « 40 proposées, 39 écartées » ne dit pas si c'étaient des doublons, des solutions déguisées, ou de bonnes questions mal arbitrées, et les écartées disparaissent avec la session.

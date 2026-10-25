@@ -55,6 +55,7 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
 | `next-step.mjs` et `list-opportunities.mjs` refusent un chemin d'état au lieu de répondre « aucune initiative » avec un code 0 (`rootArg` dans `lib/common.mjs`) | 25 octobre 2026 | `adoption-et-racine` |
 | `adopt.mjs` : la commande proposée crée son dossier de rapport et garde le chemin des tests déclaré ; un `paths.production` vide est dit au lieu d'être caché ; `reports/` entre dans les lignes de gitignore générées | 25 octobre 2026 | `adoption-et-racine` |
 | Le garde-fou TDD refuse d'écrire quand `paths.production` est vide, au lieu de laisser tout passer en silence | 25 octobre 2026 | `adoption-et-racine` |
+| Un passage de council partagé entre initiatives nomme sa portée (`initiatives`) : les compteurs portent sur le passage, les questions sur l'initiative qu'elles visent | 25 octobre 2026 | `council-multi-initiatives` |
 
 ## Ouvert
 
@@ -123,6 +124,14 @@ ci-dessus en viennent. Il restait aussi, non corrigé :
   réponse possible. La règle « une affirmation à la fois » le couvre côté question, pas côté rédaction.
 - **Un guide d'entretien annoncé pour deux initiatives à la fois**, alors que le chemin prescrit est
   `brd/<slug>/interviews/guide-<SH-xx>.md` : un guide unique n'a pas d'endroit où vivre.
+
+- **Personne ne lit `council_runs`.** Vérifié : la seule mention de ce bloc dans tous les scripts est une
+  liste d'exclusion (`rules.mjs`, détection d'espaces réservés). Les compteurs ont été écrits « pour
+  mesurer si le council valait le coup », et aucun outil ne les agrège — ni par initiative, ni sur le
+  portefeuille. Le double comptage, corrigé le 25 octobre, ne faussait donc aucun chiffre produit par une
+  machine : il trompait un lecteur. Reste à décider si cette mesure doit exister pour de vrai (un script
+  qui dit, sur un portefeuille, combien de questions un council rapporte par passage) ou si les
+  compteurs doivent disparaître, puisque les questions sont désormais gardées une par une.
 
 ## Écartées
 
