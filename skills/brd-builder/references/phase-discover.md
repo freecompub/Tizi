@@ -67,7 +67,7 @@ Règles :
 - Si une réponse décrit une solution, applique la remontée au besoin.
 - Si l'utilisateur ne sait pas, enregistre une zone d'ombre du type correspondant et passe au thème suivant.
 
-**Sortie** : `problem`, `success_signals`, `scope`, `constraints`, une première liste de `stakeholders`, une première carte `decision_rights` et les premières zones d'ombre dans `state.yaml`. Fais confirmer la carte des droits de décision par le sponsor (`confirmed_by`) ; tant qu'elle ne l'est pas, elle reste une hypothèse. Termine par une reformulation du problème en 2 à 3 phrases et demande si elle est juste. Lance ensuite un council en mode **préparation** (capacité 7). Le council ne se demande pas : son moment est prescrit, et la vérification qui cherche ce que tu as manqué ne peut pas dépendre de ton accord. L'utilisateur n'est sollicité qu'au triage des questions.
+**Sortie** : `problem`, `success_signals`, `scope`, `constraints`, une première liste de `stakeholders`, une première carte `decision_rights` et les premières zones d'ombre dans `state.yaml`. Fais confirmer la carte des droits de décision par le sponsor (`confirmed_by`) ; tant qu'elle ne l'est pas, elle reste une hypothèse. Termine par une reformulation du problème en 2 à 3 phrases et demande si elle est juste. Quand la reformulation est confirmée, **le cadrage n'est pas fini** : lance un council en mode **préparation** (capacité 7) avant de préparer le moindre entretien. Le council est ton outil, pas une étape du dossier : il ne se demande pas, et il ne s'annonce pas non plus. Ses questions arrivent à l'utilisateur comme les autres zones d'ombre, sans que tu nommes ni le council, ni les lentilles, ni le mode.
 
 ---
 
@@ -100,6 +100,8 @@ Déclencheur : après le cadrage, ou à la demande.
 ## 3. Préparation d'un entretien
 
 Déclencheur : « prépare l'entretien avec… » ou partie prenante au statut `à interroger`.
+
+**Le council en mode préparation passe avant.** Son objet est précisément de trouver les questions à mettre dans les guides : fait après, il arrive quand l'entretien est passé, et une partie prenante ne se reçoit pas trois fois. Si le council de préparation n'a pas tourné pour cette initiative (`council_runs`), lance-le d'abord.
 
 Produis `brd/<slug>/interviews/guide-<SH-xx>.md` avec :
 
@@ -172,7 +174,13 @@ Présente en quelques lignes :
 
 ## 7. Council de lentilles
 
-Déclencheur : **prescrit** après le cadrage (mode **préparation**) et avant la fin de la phase (mode **couverture**) ; à la demande en plus de ces deux moments. Le council ne se propose pas et ne se demande pas : une vérification qui cherche ce que tu as manqué ne peut pas dépendre de ton accord, ni de la patience de l'utilisateur. Ce qui se décide, c'est le sort des questions trouvées — l'utilisateur est sollicité au triage, pas avant.
+Déclencheur : **prescrit** après le cadrage (mode **préparation**) et avant la fin de la phase (mode **couverture**). Deux moments, deux lancements, sans rien à demander.
+
+**C'est ton outil, pas une étape du dossier.** Le council sert à te faire voir ce que tu n'as pas envisagé : il ne se propose pas, et il ne s'annonce pas. L'utilisateur n'a pas à savoir quand tu y fais appel, ni combien de lentilles ont tourné, ni dans quel mode. Les mots « council », « lentille » et « mode » n'apparaissent pas dans ce que tu lui écris — ils vivent dans l'état (`council_runs`, `origin: council:<lentille>`).
+
+Ses questions deviennent des zones d'ombre, et se posent **comme les autres**, mêlées à elles et classées par impact par `ask-five.mjs`. L'utilisateur répond à des questions sur son métier ; il n'a jamais à trier une liste de questions sur la méthode.
+
+**Une exception, et une seule** : quand une question du council met en cause quelque chose que l'utilisateur a **déjà validé** — un signal de succès, une reformulation confirmée, une décision enregistrée —, dis-le explicitement. Tu ne retires pas sa validation sur la foi d'une lentille, et tu ne la laisses pas debout en silence : tu lui montres la contradiction et c'est lui qui tranche. Là, ce n'est plus le mécanisme qui remonte, c'est la conséquence.
 
 Suis le protocole de `references/council.md`. Rappel essentiel : le council produit des **zones d'ombre candidates**, jamais des besoins, et ne remplace jamais un entretien.
 
@@ -230,7 +238,7 @@ Quand ces conditions te semblent réunies, **propose** le passage à Define, san
 - aucune contradiction `interets` n'est ouverte sans arbitre ;
 - pour chaque processus touché, la question des attendus implicites a été posée (zone `attendu_implicite` levée, assumée, ou sans objet) ;
 - les besoins candidats sont sourcés ;
-- un council en mode couverture a été passé, et ses questions triées ;
+- un council en mode couverture a été passé, et ses questions enregistrées comme zones d'ombre ;
 - la **porte de synthèse** est passée : avec l'utilisateur, juge chacune des cinq dimensions (`synthesis_check`) — **fidélité** (la synthèse reflète les sources, pas des suppositions), **couverture** (toutes les parties prenantes concernées sont représentées, y compris les silencieuses), **robustesse** (chaque besoin retenu repose sur plusieurs sources ; `lint.mjs` signale les besoins à source unique), **actionnabilité** (le problème est assez net pour guider la suite), **alignement** (les participants se reconnaîtraient dans la synthèse). Une dimension faible se corrige (retour aux sources, entretien complémentaire) ou s'assume avec une raison. Idée reprise de la validation de synthèse en cinq dimensions du design thinking de hve-core ;
 - `lint.mjs` a été lancé sur l'état ; les avertissements restants sont listés à l'utilisateur, sans bloquer.
 

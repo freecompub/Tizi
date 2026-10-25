@@ -4,7 +4,7 @@
 
 ## Règles non négociables
 
-0. Le council **se lance**, il ne se propose pas. Son moment est prescrit par la phase : une vérification qui cherche ce que l'agent a manqué ne peut pas dépendre de l'accord de cet agent, ni de la patience de l'utilisateur. Ce qui se décide, c'est le sort des questions trouvées, pas la tenue du council.
+0. Le council **se lance**, il ne se propose pas. Son moment est prescrit par la phase : une vérification qui cherche ce que l'agent a manqué ne peut pas dépendre de l'accord de cet agent, ni de la patience de l'utilisateur. Ce qui se décide, c'est le sort des questions trouvées, pas la tenue du council. Le council est l'outil de l'agent, pas une étape du dossier : il ne s'annonce pas davantage qu'il ne se demande.
 1. Une lentille est un **point de vue d'analyse**, pas une personne. Elle ne parle jamais au nom d'une partie prenante réelle.
 2. Le council produit uniquement des **zones d'ombre candidates**, sous forme de questions. Jamais de besoin candidat (`BC`), jamais de réponse à sa propre question.
 3. Un résultat du council ne lève aucune zone d'ombre et ne change jamais le statut d'une partie prenante. Seule une source réelle le peut.
@@ -47,13 +47,17 @@ Tu es l'arbitre. Sur l'ensemble des résultats :
 4. **Priorise** : bloquantes d'abord, puis par nombre de lentilles d'origine.
 5. **Réduis à cinq questions au maximum.** Les lentilles te transmettent tout ce qu'elles ont trouvé, sans hiérarchiser entre elles : réduire est ton travail d'orchestrateur, pas le leur. Indique combien ont été écartées et pourquoi, en une ligne ; ce qui est écarté sans être traité reste disponible pour un prochain council.
 
-### 4. Faire choisir l'utilisateur
+### 4. Enregistrer, puis poser comme les autres
 
-Présente les questions regroupées par type, avec pour chacune : la lentille d'origine, qui peut y répondre, l'action proposée.
+Les questions retenues à l'arbitrage **deviennent des zones d'ombre**, sans passer par un tri avec l'utilisateur : `origin: council:<lentille>`, `target` reporté dans `related`. Elles se posent ensuite **comme les autres**, mêlées à elles et classées par impact par `ask-five.mjs`.
 
-Ces cinq questions se **trient** avant de se poser : l'utilisateur retient, reformule ou rejette, et ce qu'il retient devient une zone d'ombre. Les réponses viennent ensuite, deux ou trois à la fois. **Rien n'oblige à poser les cinq d'un coup**, ni même à les présenter en un bloc : cinq est un plafond de sélection, pas un lot à envoyer. Si l'une mérite une conversation à elle seule, prends-la seule et garde les autres pour la suite — elles sont enregistrées, elles ne se perdent pas. Cinq questions posées d'un coup, c'est un formulaire : on obtient des réponses courtes aux faciles, et rien aux autres.
+`blocking_guess` renvoyé par la lentille est une **indication**, pas la valeur : une zone née du council n'est `blocking: true` que si tu peux dire pourquoi. Sinon elle est ouverte et non bloquante — un council qui fermerait la porte de sortie de phase à chaque passage la rendrait inatteignable.
 
-Enregistre les questions retenues comme zones d'ombre avec `origin: council:<lentille>`, et reporte leur `target` dans `related` : la zone garde ce qu'elle met en cause. En mode `preparation`, propose de les intégrer aux guides d'entretien concernés.
+Une question qui n'a pas d'objet se ferme **en répondant** : `levée`, avec la raison dans les mots de l'utilisateur. Un geste au lieu de deux, et le rejet est tracé.
+
+**Tu ne nommes jamais le council dans ce que tu écris à l'utilisateur** : ni « council », ni « lentille », ni le mode. C'est ton outil. Il en voit les questions, pas la machine. Une seule exception : quand une question met en cause quelque chose qu'il a **déjà validé**, montre-lui la contradiction — tu ne retires pas sa validation sur la foi d'une lentille, et tu ne la laisses pas debout en silence.
+
+En mode `preparation`, intègre-les aux guides d'entretien concernés : c'est ce pour quoi le council a tourné à ce moment-là.
 
 ### 5. Tracer le passage du council
 

@@ -36,4 +36,4 @@ C'est le dernier moment où une story trop grosse coûte encore peu : après l'e
 
 ## Fin de la phase
 
-**Propose** le passage à Govern quand l'itération ou le réapprovisionnement est rempli de tâches validées, ordonnées, estimées et affectées, sans cycle ni dépassement de capacité, que le council en mode planification a été passé et ses questions triées, et que `lint.mjs` a été lancé. Si l'utilisateur accepte, passe `phase: govern`.
+**Propose** le passage à Govern quand l'itération ou le réapprovisionnement est rempli de tâches validées, ordonnées, estimées et affectées, sans cycle ni dépassement de capacité, que le council en mode planification a été passé et ses questions enregistrées, et que `lint.mjs` a été lancé. Si l'utilisateur accepte, passe `phase: govern`.
