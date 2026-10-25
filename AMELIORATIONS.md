@@ -38,6 +38,8 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
 | S81 : source attribuée à une partie prenante jamais entendue, ou à personne — premier dossier réel | 25 octobre 2026 | `correctifs-premier-test` |
 | S56 : décideur d'opportunité absent des parties prenantes ; le nom se demande, l'environnement n'est pas une réponse — premier dossier réel | 25 octobre 2026 | `correctifs-premier-test` |
 | `council_runs` garde les questions du council (retenues, écartées avec leur raison, réservées), pas seulement leur nombre — premier dossier réel | 25 octobre 2026 | `correctifs-premier-test` |
+| Extrait de session : réponse rattachée à sa question, écritures au shell visibles, enveloppes de l'hôte écartées, troncature annoncée, questions en texte libre nettoyées et datées de leur tour | 25 octobre 2026 | `correctifs-premier-test` |
+| Condensé cherché sur le disque et non dans le champ d'index, que le hook écrit après le commit du tour | 25 octobre 2026 | `correctifs-premier-test` |
 
 ## Ouvert
 
@@ -70,23 +72,6 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
   distance à parcourir. Sur le dossier réel, les cinq dimensions sont vides après une heure et demie de
   cadrage, et rien ne le dit. `status.mjs` pourrait les afficher en Discover, et calculer `couverture`
   (7 parties prenantes, 0 entendue).
-- **L'extrait de session, cinq défauts.** Code du 24 octobre, exercé pour la première fois :
-  la réponse enregistrée est le texte de service de l'hôte en anglais avec la question répétée dedans
-  (`sessions.mjs`, `reponses.get` prend le `tool_result` brut — or ce résultat nomme chaque question
-  avec sa réponse, donc le parser réglerait aussi le rattachement par question) ; « Fichiers modifiés :
-  _Aucun._ » alors que huit fichiers ont été créés, parce que `isWriteTool` ne voit pas les écritures
-  faites au shell ; trois `<task-notification>` comptés comme messages de l'utilisateur et recopiés
-  mot pour mot, chemins `/tmp` et compteurs de jetons compris (`user_messages: 13` pour 10 réels) ;
-  la dernière réponse coupée en plein mot à 3 000 caractères sans marque ; les questions en texte libre
-  extraites avec leur markdown, en fragments, en doublons, et sans attribution de tour — donc sans
-  montrer que plusieurs questions ouvertes ont été posées ensemble, ce qui est arrivé et a fait
-  disparaître trois fois le coût de l'inaction.
-- **L'index de session pointe à côté du condensé.** `condensed: ''` alors que le fichier existe :
-  `session-capture.mjs` teste l'existence du fichier, et le hook tourne sur `Stop`, donc après le
-  commit du tour. Dès que l'agent écrit le condensé et commite dans le même tour, l'index commité est
-  périmé d'un cran, et `status.mjs`, `next-step.mjs` et `session-start.mjs` disent tous les trois à la
-  session suivante de rédiger un condensé qui existe. Correctif pressenti : tester le fichier plutôt
-  que le champ, et faire du champ un cache.
 - **Il manque un mot au vocabulaire d'Assess : « découpée ».** `phase-assess.md` prescrit le découpage
   d'un programme en plusieurs opportunités, et n'offre que `aller_plus_loin | jeter | a_apprendre |
   reportee` pour l'enregistrer. Sur le dossier réel, l'initiative mère porte `decision: jeter` avec la
@@ -98,6 +83,10 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
   une porte sans qu'aucune de ses phases ne dise d'ouvrir le dossier. Même famille que le council du
   plan, trouvé le 24 octobre. Et le domaine `donnees-sante` existe : le dossier réel collecte
   vaccinations et allergies de mineurs.
+- **Les écritures au shell restent partiellement invisibles.** L'extrait lit maintenant la redirection
+  et `tee`, et dit combien de commandes de shell ont été lancées. Un `sed -i`, un script qui écrit, un
+  éditeur en ligne de commande : la cible n'est pas devinable sans interpréter le shell, et on ne
+  l'interprète pas. Le compte dit où regarder, il ne dit pas quoi.
 - **`sources.type` n'a pas de valeur pour l'échange de cadrage avec le demandeur.** La source la plus
   fréquente en pratique — la conversation qui ouvre l'initiative — est typée `autre`, avec un
   commentaire pour dire ce qu'elle est. Sur le dossier réel, c'est la source unique de tout le cadrage.

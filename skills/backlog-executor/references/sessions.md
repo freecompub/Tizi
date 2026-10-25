@@ -6,7 +6,7 @@ Un fichier d'état dit où l'on en est, pas comment on y est arrivé. Pour repre
 |---|---|---|---|
 | État | `<document>/<slug>/state.yaml` | Ce qui est vrai maintenant : la référence | L'agent, après chaque échange validé |
 | Condensé | `.tizi/sessions/<date>-<session>.condense.md` | Le fil de la discussion | L'agent, à la pause ou à la reprise |
-| Extrait | `.tizi/sessions/<date>-<session>.extrait.md` | Vos messages mot pour mot, les questions posées — celles écrites comme celles passées par l'outil de questions de l'hôte, avec leurs réponses proposées et la réponse reçue —, les fichiers et les identifiants touchés | Le hook, automatiquement |
+| Extrait | `.tizi/sessions/<date>-<session>.extrait.md` | Vos messages mot pour mot, les questions posées — celles de l'outil de questions avec leurs réponses proposées et la réponse de chacune, celles écrites en texte libre avec le numéro du tour —, les fichiers et les identifiants touchés | Le hook, automatiquement |
 | Transcription | `.tizi/sessions/<date>-<session>.jsonl` | L'échange complet, consultable par recherche | Le hook, automatiquement |
 | Entrée d'index | `.tizi/sessions/<date>-<session>.index.yaml` | Dates, initiatives touchées, tâche, tokens, chemins des trois fichiers ci-dessus | Le hook, automatiquement |
 
@@ -51,6 +51,18 @@ un fichier que personne ne modifie à la main. Chaque session écrit donc désor
 dans son propre fichier ; les scripts lisent l'ensemble du dossier. Un `index.yaml` historique reste
 lu s'il existe, et n'est plus jamais réécrit : rien à migrer.
 
+**Ce que l'extrait ne peut pas savoir.** Il est produit depuis la transcription, sans interprétation,
+et deux choses y échappent. Les **écritures faites au shell** : seules la redirection et `tee` y
+désignent un fichier ; un `sed -i`, un script ou un éditeur lancé en ligne de commande n'est pas
+traçable, et l'extrait dit alors combien de commandes ont été lancées plutôt que de conclure qu'il n'y
+a rien eu. Et les **questions dont l'hôte ne nomme pas la réponse** : Claude Code renvoie chaque
+question avec sa réponse, donc chacune est rattachée à la sienne ; là où l'hôte ne le fait pas, la
+réponse est gardée au niveau de l'appel, telle qu'elle est arrivée.
+
+Les questions en texte libre portent le **numéro du tour** qui les a posées. Deux questions sur le même
+tour se voient donc d'un coup d'œil, et l'extrait les compte en bas de section : une question ouverte
+se pose seule (`references/questions.md`), et trois dans un message reviennent à n'en poser qu'une.
+
 **Données sensibles.** Les transcriptions contiennent ce qui a été dit en séance, y compris des notes d'entretien. Décidez en équipe de ce qui est versionné. Par défaut, ajoutez `.tizi/sessions/*.jsonl` au `.gitignore` et versionnez les extraits et les condensés ; versionnez aussi les transcriptions si la reprise doit pouvoir se faire depuis une autre machine ou par une autre personne.
 
 ## Avant une pause
@@ -66,7 +78,7 @@ Quand l'utilisateur annonce une pause (« on s'arrête », « on reprend demain 
 
 1. **Pause courte, même machine** : la reprise native de l'outil restaure la conversation entière — `claude --continue` ou `claude --resume` (Claude Code), `copilot --continue` ou `copilot --resume` (Copilot CLI), l'historique des sessions de chat (VS Code). C'est la reprise la plus fidèle ; les étapes suivantes restent utiles si la session avait été compactée.
 2. Sinon, lance `node <chemin-du-skill>/scripts/status.mjs <document>/<slug>/state.yaml` : point d'étape déterministe (phase, compteurs par statut, zones d'ombre, questions ouvertes, prochaine action, dernières sessions).
-3. Lis le **condensé** de la dernière session. Son absence est aussi rappelée par le hook de début de session, qui le signale pour chaque initiative concernée. S'il n'existe pas (session interrompue sans pause annoncée), rédige-le d'abord à partir de l'extrait, et fais-le valider à l'utilisateur.
+3. Lis le **condensé** de la dernière session. Son absence est aussi rappelée par le hook de début de session, qui le signale pour chaque initiative concernée. Les outils cherchent le fichier sur le disque, pas le champ `condensed` de l'index : ce champ est écrit par le hook de capture, qui tourne après tout ce que l'agent a fait dans le tour — y compris le commit — et peut donc être vide alors que le condensé existe. S'il n'existe pas (session interrompue sans pause annoncée), rédige-le d'abord à partir de l'extrait, et fais-le valider à l'utilisateur.
 4. Pour un détail qui manque, **cherche** plutôt que de tout relire : `node <chemin-du-skill>/scripts/session-search.mjs "agents du soir" --initiative brd/<slug> --who user`.
 5. Présente le point d'étape à l'utilisateur : où l'on en est, ce qui restait en suspens, la prochaine action proposée. Il confirme avant que tu reprennes.
 

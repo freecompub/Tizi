@@ -1,9 +1,8 @@
 #!/usr/bin/env node
 // Point d'étape déterministe d'une initiative, à partir de son état et de l'index des sessions — sans interprétation.
 // Usage : node status.mjs <chemin/state.yaml>
-import { existsSync } from 'node:fs';
 import { arr, loadState, fail } from './lib/common.mjs';
-import { sessionsFor } from './lib/sessions.mjs';
+import { condenseOf, sessionsFor } from './lib/sessions.mjs';
 
 const statePath = process.argv[2];
 if (!statePath) fail('Usage : node status.mjs <state.yaml>', 2);
@@ -33,6 +32,6 @@ if (qs.length) { out.push('', `Questions ouvertes de la checklist : ${qs.length}
 if (s.session?.next_action) out.push('', `Prochaine action notée : ${s.session.next_action}`);
 const sess = sessionsFor(initiative);
 out.push('', `Sessions conservées pour ${initiative} : ${sess.length}`);
-for (const x of sess.slice(-3)) out.push(`  - ${String(x.ended).slice(0, 16).replace('T', ' ')} · ${x.user_messages} message(s) · extrait : ${x.extract}${x.condensed && existsSync(x.condensed) ? ` · condensé : ${x.condensed}` : ' · pas de condensé'}`);
-if (sess.length && !(sess.at(-1).condensed && existsSync(sess.at(-1).condensed))) out.push('', 'La dernière session n\'a pas de condensé : le rédiger à partir de son extrait avant de reprendre.');
+for (const x of sess.slice(-3)) { const c = condenseOf(x); out.push(`  - ${String(x.ended).slice(0, 16).replace('T', ' ')} · ${x.user_messages} message(s) · extrait : ${x.extract}${c ? ` · condensé : ${c}` : ' · pas de condensé'}`); }
+if (sess.length && !condenseOf(sess.at(-1))) out.push('', 'La dernière session n\'a pas de condensé : le rédiger à partir de son extrait avant de reprendre.');
 console.log(out.join('\n'));

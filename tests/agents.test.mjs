@@ -53,9 +53,30 @@ test('capture de session : transcriptions Claude Code et Copilot', () => {
   const claude = extracts.find(e => e.includes('agents du soir'));
   assert.match(claude, /règle écrite, ou une habitude/, 'question posée par l\'outil perdue');
   assert.match(claude, /propositions : Règle écrite · Habitude/, 'réponses proposées perdues');
-  assert.match(claude, /\*\*Réponses\*\* : Habitude/, 'réponse reçue perdue');
-  // Un appel porte plusieurs questions et ne renvoie qu'un résultat : la réponse appartient à l'appel.
-  assert.equal(claude.match(/\*\*Réponses?\*\* : Habitude/g).length, 1, 'la réponse est recopiée sur chaque question');
+  // Un appel porte jusqu'à quatre questions et ne renvoie qu'un résultat — mais ce résultat nomme
+  // chaque question avec sa réponse. Recopier le résultat brut donnait une « réponse » qui était une
+  // phrase de service en anglais contenant la question déjà écrite au-dessus, et la réponse de la
+  // deuxième question n'était lisible nulle part.
+  assert.match(claude, /habitude de l'équipe du soir \?.*\n\s+\*\*Réponse\*\* : Habitude$/m, 'réponse non rattachée à sa question');
+  assert.match(claude, /ne sont pas d'accord \?.*\n\s+\*\*Réponse\*\* : Le responsable qualité$/m, 'la deuxième réponse de l\'appel est perdue');
+  assert.doesNotMatch(claude, /Your questions have been answered/, 'phrase de service de l\'hôte recopiée telle quelle');
+
+  // Les écritures faites au shell ne passent par aucun outil d'écriture : sur le premier dossier réel,
+  // huit fichiers avaient été créés et l'extrait affichait « Fichiers modifiés : _Aucun._ ».
+  const fichiers = claude.split('## Fichiers modifiés')[1].split('##')[0];
+  assert.match(fichiers, /guide-SH-03\.md/, 'écriture par redirection perdue');
+  assert.match(fichiers, /commande\(s\) de shell lancée\(s\)/, 'écritures non traçables du shell passées sous silence');
+  assert.doesNotMatch(fichiers, /_Aucun\._/);
+
+  // Une notification de tâche arrive par le canal « utilisateur » : ce n'est pas une parole.
+  assert.doesNotMatch(claude, /task-notification/, 'enveloppe de l\'hôte comptée comme parole');
+
+  // Les questions en texte libre portent leur tour, sans leur markdown, et un tour qui en porte
+  // plusieurs est signalé : une question ouverte se pose seule.
+  const libres = claude.split('### En texte libre')[1].split('##')[0];
+  assert.match(libres, /- \(tour \d+\) Et pour finir : qu'est-ce qui change/, 'markdown non retiré, ou tour non attribué');
+  assert.match(libres, /- \(tour \d+\) Et qui s'en aperçoit le premier \?/, 'citation non nettoyée');
+  assert.match(claude, /tour\(s\) portent plus d'une question en texte libre/, 'questions ouvertes groupées non signalées');
   // Côté Copilot, aucun événement ne relie un résultat à son appel : la question est conservée, sa
   // réponse ne l'est pas. Mieux vaut une question sans réponse qu'une réponse sans question.
   const copilot = extracts.find(e => e.includes('US-002'));
@@ -66,6 +87,49 @@ test('capture de session : transcriptions Claude Code et Copilot', () => {
   const suspens = claude.split('## Questions en suspens')[1] ?? '';
   assert.doesNotMatch(suspens, /règle écrite, ou une habitude/, 'question répondue laissée en suspens');
   assert.doesNotMatch(extracts.join('\n'), /\(sous-agent|à ignorer\)/, 'message de sous-agent repris dans un extrait');
+});
+
+// Trois détails de l'extrait, vus sur le premier dossier réel : une dernière réponse coupée en plein
+// mot (« **cette se ») sans rien dire de ce qui manquait, un rappel système compté comme parole, et un
+// résultat de l'outil de questions que l'hôte ne nomme pas — où mieux vaut garder la phrase brute que
+// perdre la réponse.
+test('extrait de session : troncature annoncée, enveloppes écartées, réponse non nommée conservée', async () => {
+  const { readTranscript, buildExtract } = await import('../skills/brd-builder/scripts/lib/sessions.mjs');
+  const dir = mkdtempSync(join(tmpdir(), 'tizi-extrait-'));
+  const t = join(dir, 's.jsonl');
+  const longue = `Fin de la phase Discover sur brd/demo.\n\n${'Un paragraphe de contexte qui tient dans la ligne. '.repeat(90)}\nDernier mot coupable`;
+  writeFileSync(t, [
+    { type: 'user', timestamp: '2026-11-02T08:00:00Z', message: { role: 'user', content: 'On reprend brd/demo.' } },
+    { type: 'user', timestamp: '2026-11-02T08:00:01Z', message: { role: 'user', content: '<system-reminder>\nCeci est un rappel, pas une parole.\n</system-reminder>' } },
+    { type: 'assistant', timestamp: '2026-11-02T08:01:00Z', message: { role: 'assistant', content: [{ type: 'tool_use', id: 'z1', name: 'AskUserQuestion', input: { questions: [{ question: 'On fige la version ?', options: [{ label: 'Oui' }, { label: 'Pas encore' }] }] } }] } },
+    { type: 'user', timestamp: '2026-11-02T08:02:00Z', message: { role: 'user', content: [{ type: 'tool_result', tool_use_id: 'z1', content: 'Pas encore' }] } },
+    { type: 'assistant', timestamp: '2026-11-02T08:03:00Z', message: { role: 'assistant', content: [{ type: 'text', text: longue }] } },
+  ].map(e => JSON.stringify(e)).join('\n'));
+
+  const md = buildExtract(readTranscript(t), { date: '2026-11-02', session: 'zzzz', initiatives: ['brd/demo'], event: 'Stop' });
+  assert.match(md, /1 message\(s\) de l'utilisateur/, 'le rappel système est compté comme parole');
+  assert.doesNotMatch(md, /pas une parole/, 'le rappel système est recopié mot pour mot');
+  const derniere = md.split("## Dernière réponse de l'assistant")[1].split('## Questions en suspens')[0];
+  assert.match(derniere, /caractère\(s\) de plus dans la transcription/, 'troncature silencieuse');
+  assert.doesNotMatch(derniere, /Un paragraphe de contexte qui tient dans la lig$/m, 'coupe en plein mot');
+  // L'hôte n'a pas nommé la question dans son résultat : la réponse est gardée au niveau de l'appel.
+  assert.match(md, /\*\*Réponse\*\* : Pas encore/, 'réponse non nommée par l\'hôte perdue');
+});
+
+// Le champ `condensed` de l'index est écrit par `session-capture.mjs`, qui tourne sur `Stop`, donc
+// après tout ce que l'agent a fait dans le tour — y compris le commit. Sur le premier dossier réel, le
+// condensé était écrit et commité, et l'index commité disait encore `condensed: ''` : trois outils
+// demandaient à la session suivante de rédiger un condensé qui existait déjà.
+test('condensé : cherché sur le disque, le champ d\'index n\'est qu\'un cache', async () => {
+  const { condenseOf } = await import('../skills/brd-builder/scripts/lib/sessions.mjs');
+  const dir = mkdtempSync(join(tmpdir(), 'tizi-cond-'));
+  mkdirSync(join(dir, '.tizi/sessions'), { recursive: true });
+  const entree = { session: 'abcd1234', started: '2026-11-03T08:00:00.000Z', condensed: '' };
+  assert.equal(condenseOf(entree, dir), '', 'rien sur le disque, rien à annoncer');
+  writeFileSync(join(dir, '.tizi/sessions/2026-11-03-abcd1234.condense.md'), '# Condensé\n');
+  assert.equal(condenseOf(entree, dir), '.tizi/sessions/2026-11-03-abcd1234.condense.md', 'condensé sur le disque ignoré parce que l\'index est périmé');
+  // Un champ renseigné reste prioritaire, et un champ qui pointe vers un fichier absent ne vaut rien.
+  assert.equal(condenseOf({ ...entree, condensed: '.tizi/sessions/ailleurs.md' }, dir), '.tizi/sessions/2026-11-03-abcd1234.condense.md');
 });
 
 for (const target of ['claude', 'copilot', 'both']) test(`installation : cible ${target}, idempotente`, () => {

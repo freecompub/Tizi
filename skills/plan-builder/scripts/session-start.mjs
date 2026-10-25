@@ -10,7 +10,7 @@ import { normalizeHookInput } from './lib/agent-io.mjs';
 import yaml from './lib/vendor/js-yaml.mjs';
 import { dueReviews } from './due-reviews.mjs';
 import { loadBlocks, hoursBetween } from './block.mjs';
-import { loadIndex } from './lib/sessions.mjs';
+import { condenseOf, loadIndex } from './lib/sessions.mjs';
 
 let raw = {};
 try { raw = JSON.parse(readFileSync(0, 'utf8') || '{}'); } catch { raw = {}; }
@@ -32,7 +32,7 @@ try {
     if (!vue || String(x.ended) > String(vue.ended)) dernieres.set(ini, x);
   }
   for (const [ini, x] of dernieres) {
-    if (x.condensed && existsSync(join(root, x.condensed))) continue;
+    if (condenseOf(x, root)) continue;
     lines.push(`- Dernière session de ${ini} sans condensé (${String(x.ended).slice(0, 16).replace('T', ' ')}) : le rédiger depuis ${x.extract || 'son extrait'} avant de reprendre.`);
   }
 
