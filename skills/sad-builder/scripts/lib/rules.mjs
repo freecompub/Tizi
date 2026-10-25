@@ -154,6 +154,9 @@ export function checkBrd(s) {
     // n'est connue : en Assess, la carte n'existe pas encore.
     out.push({ rule: 'S56', id: 'opportunity', message: `décideur « ${s.opportunity.decided_by} » absent des parties prenantes : la décision d'opportunité revient au sponsor, qui se nomme (SH-xx)` });
   }
+  if (s.opportunity?.decision === 'decoupee' && !arr(s.opportunity.split_into).length) {
+    out.push({ rule: 'S56', id: 'opportunity', message: 'opportunité découpée sans nommer les initiatives filles (split_into) : close se relit alors comme un abandon' });
+  }
   for (const o of arr(s.objectives).filter(live)) {
     push(o, 'OBJ', o.statement);
     if (!o.indicator || !o.target) out.push({ rule: 'S01', id: o.id, message: 'objectif sans indicateur ou sans cible' });

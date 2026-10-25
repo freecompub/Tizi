@@ -43,6 +43,9 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
 | Type de source `cadrage` : l'échange qui ouvre l'initiative, au nom de qui a parlé | 25 octobre 2026 | `consignes-et-scripts-orphelins` |
 | Plafond des lentilles dit en plafond et non en cible ; chaque question du council désigne l'élément visé (`target`), et l'arbitrage s'en sert pour fusionner | 25 octobre 2026 | `consignes-et-scripts-orphelins` |
 | 23 copies de scripts sans appelant retirées, listes de relecture prescrites dans le BRD, et un test qui refuse désormais un script livré sans phase qui l'appelle | 25 octobre 2026 | `consignes-et-scripts-orphelins` |
+| Décision `decoupee` + `split_into` : une initiative découpée n'est plus enregistrée comme jetée, et les deux outils de portefeuille disent où est passé le travail | 25 octobre 2026 | `consignes-et-scripts-orphelins` |
+| Porte de synthèse affichée dès Discover par `status.mjs`, avec les deux dimensions qui se comptent (parties prenantes entendues, besoins à source unique) | 25 octobre 2026 | `consignes-et-scripts-orphelins` |
+| Council de la capacité 7 de Discover : il était encore « proposé […] avec l'accord de l'utilisateur », et le test ne cherchait que « propose un council » — vérification par section désormais | 25 octobre 2026 | `consignes-et-scripts-orphelins` |
 
 ## Ouvert
 
@@ -62,22 +65,18 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
 
 ### Premier dossier réel — ce qui reste
 
-- **La porte de synthèse n'est jamais montrée avant qu'il soit trop tard.** `synthesis_check` existe
-  dans l'état (fidélité, couverture, robustesse, actionnabilité, alignement) et c'est exactement
-  l'indicateur « prêt pour la définition » qui manque en Discover. Mais `S65` ne la regarde que dans
-  `['define', 'govern']` (`rules.mjs`) : la porte est contrôlée à l'arrivée, jamais affichée comme
-  distance à parcourir. Sur le dossier réel, les cinq dimensions sont vides après une heure et demie de
-  cadrage, et rien ne le dit. `status.mjs` pourrait les afficher en Discover, et calculer `couverture`
-  (7 parties prenantes, 0 entendue).
-- **Il manque un mot au vocabulaire d'Assess : « découpée ».** `phase-assess.md` prescrit le découpage
-  d'un programme en plusieurs opportunités, et n'offre que `aller_plus_loin | jeter | a_apprendre |
-  reportee` pour l'enregistrer. Sur le dossier réel, l'initiative mère porte `decision: jeter` avec la
-  vérité en commentaire YAML ; `next-step` affiche « opportunité jetée », `list-opportunities` affiche
-  « jeter ». La vérité machine du dépôt dit qu'on a abandonné. Manque `decoupee` + `split_into`.
 - **Les écritures au shell restent partiellement invisibles.** L'extrait lit maintenant la redirection
   et `tee`, et dit combien de commandes de shell ont été lancées. Un `sed -i`, un script qui écrit, un
   éditeur en ligne de commande : la cible n'est pas devinable sans interpréter le shell, et on ne
   l'interprète pas. Le compte dit où regarder, il ne dit pas quoi.
+
+- **Un correctif de consigne a besoin d'un test qui cherche au bon endroit.** Le council de la capacité 7
+  de Discover disait encore « proposé après le cadrage […] Ne le lance qu'avec l'accord de l'utilisateur »
+  trois jours après le correctif « le council se lance, il ne se propose pas » — parce que le test ne
+  cherchait que la suite de mots « propose un council », et que dans cette section le mot « council »
+  n'était que dans le titre. Corrigé, et le test vérifie maintenant la section entière. La leçon vaut
+  pour les prochains : une consigne corrigée dans une référence peut survivre ailleurs dans la même
+  référence, et un test écrit sur la formulation du défaut ne trouve pas ses variantes.
 
 ## À trancher
 

@@ -10,7 +10,7 @@ Il y a toujours plus d'idées que de temps pour les construire. Une idée qui en
 
 ## Taille d'une opportunité
 
-Une initiative du SDLC correspond à **une opportunité** de taille raisonnable : un nouveau produit, mais plus souvent une fonctionnalité ou une amélioration d'un produit existant. Si l'idée est un programme entier, propose de la découper en plusieurs opportunités, chacune suivant sa propre chaîne BRD → PRD → conception → plan. Une chaîne courte, qui livre et apprend, vaut mieux qu'une longue séquence de documents pour tout un produit.
+Une initiative du SDLC correspond à **une opportunité** de taille raisonnable : un nouveau produit, mais plus souvent une fonctionnalité ou une amélioration d'un produit existant. Si l'idée est un programme entier, propose de la découper en plusieurs opportunités, chacune suivant sa propre chaîne BRD → PRD → conception → plan. Le découpage est une décision (`decoupee`), pas un abandon : l'initiative mère se clôt en nommant ses filles. Une chaîne courte, qui livre et apprend, vaut mieux qu'une longue séquence de documents pour tout un produit.
 
 ## D'abord : la demande est-elle figée ou fluide ?
 
@@ -58,6 +58,7 @@ Propose une décision avec sa raison, puis fais-la rendre par la personne habili
 |---|---|---|
 | `aller_plus_loin` | Le problème mérite une découverte | Passer en Discover. Ce n'est pas un engagement à construire |
 | `jeter` | Pas assez d'espoir d'outcome, ou hors stratégie | Clore l'initiative (`phase: close`). Associer ceux qui portaient l'idée à la conversation |
+| `decoupee` | L'idée est un programme, pas une opportunité | Clore l'initiative (`phase: close`), nommer les filles dans `split_into`, et reprendre chaque besoin candidat dans l'une d'elles **avec son identifiant d'origine**. Rien n'est abandonné, et c'est pourquoi ce n'est pas `jeter` : les outils liraient un abandon |
 | `a_apprendre` | Information insuffisante pour décider | Lister ce qu'il faut apprendre (`to_learn`) et qui s'en charge ; revenir ensuite |
 | `reportee` | Pertinente, mais pas maintenant | Reste dans le portefeuille des opportunités |
 

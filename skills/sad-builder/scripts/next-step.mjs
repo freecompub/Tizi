@@ -43,7 +43,16 @@ function assess(slug) {
   // (PRD autonome, conception seule en brownfield, plan repris d'ailleurs).
   const last = [...STEPS].reverse().find(s => st[s.doc])?.doc;
   const after = { brd: ['tizi-prd', 'BRD figé : démarrer le PRD'], prd: ['tizi-sad', 'PRD figé : démarrer la conception'], sad: ['tizi-plan', 'conception figée : démarrer la planification'] };
-  if (st.brd?.phase === 'close') next = go(null, 'opportunité jetée : initiative close');
+  // Une initiative close n'a pas forcément été jetée : elle peut avoir été découpée, et dans ce cas le
+  // travail continue dans ses filles. Le premier dossier réel portait `decision: jeter` avec la vérité
+  // en commentaire YAML, faute d'un mot pour le dire — et le point d'étape annonçait un abandon.
+  if (st.brd?.phase === 'close') {
+    const o = st.brd.opportunity ?? {};
+    const filles = arr(o.split_into);
+    next = o.decision === 'decoupee'
+      ? go(null, `opportunité découpée${filles.length ? ` en ${filles.join(', ')}` : ''} : celle-ci est close, le travail continue dans ses filles`)
+      : go(null, 'opportunité jetée : initiative close');
+  }
   else if (!last) next = go('tizi-brd', 'aucun document : commencer par l\'évaluation de l\'opportunité (ou un PRD autonome)');
   else if (['brd', 'prd', 'sad'].includes(last)) {
     const step = STEPS.find(x => x.doc === last);

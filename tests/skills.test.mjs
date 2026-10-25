@@ -72,7 +72,20 @@ test('un council se lance, et chaque council défini a une phase qui le lance', 
     const phases = readdirSync(join(SKILLS, s, 'references')).filter(f => f.startsWith('phase-'));
     const textes = phases.map(f => readFileSync(join(SKILLS, s, 'references', f), 'utf8'));
     for (const [i, t] of textes.entries()) {
+      // Ligne par ligne : « proposé après le cadrage […] Ne le lance qu'avec l'accord de l'utilisateur »
+      // ne contient pas « propose un council », et avait survécu au correctif du 24 octobre.
       assert.ok(!/propose[rz]?\s+(ensuite\s+)?un council/i.test(t), `${s}/${phases[i]} : le council y est proposé au lieu d'être lancé`);
+      // Et dans la SECTION consacrée au council : c'est là que vivait la phrase qui a survécu au
+      // correctif du 24 octobre — « Déclencheur : proposé après le cadrage […] Ne le lance qu'avec
+      // l'accord de l'utilisateur ». Le mot « council » n'y était que dans le titre, donc aucune
+      // recherche par ligne ou par phrase ne pouvait l'attraper.
+      for (const section of t.split(/^#+ /m).filter(x => /^[^\n]*council/i.test(x))) {
+        // Une phrase qui dit que le council NE se propose PAS est le contraire d'un manquement.
+        const affirmatif = section.replace(/ne\s+(?:se\s+|l[ae]\s+|l'|le\s+)?propos\w+\s+(?:pas|jamais)/gi, '');
+        const titre = section.split('\n')[0].trim();
+        assert.doesNotMatch(affirmatif, /propos(e|er|ez|é|ée)\b/i, `${s}/${phases[i]} § ${titre} : le council y est proposé au lieu d'être lancé`);
+        assert.doesNotMatch(section, /accord de l'utilisateur|si l'utilisateur (le |l')?(veut|demande|accepte)/i, `${s}/${phases[i]} § ${titre} : le council y dépend de l'accord de l'utilisateur`);
+      }
     }
     assert.ok(textes.some(t => /\*\*lance\*\*\s+un council|lance\s+(ensuite\s+)?un council/i.test(t)),
       `${s} : council.md existe, mais aucune phase ne le lance`);
