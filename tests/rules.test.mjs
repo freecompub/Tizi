@@ -25,6 +25,17 @@ test('S69 : chiffre sans source, mais pas avec une source', () => {
   assert.ok(codes(brd({ business_rules: [{ id: 'RG-1', statement: 'Relance après 5 jours' }] })).includes('S69'));
   assert.ok(!codes(brd({ business_rules: [{ id: 'RG-1', statement: 'Relance après 5 jours', sources: ['SRC-1'] }] })).includes('S69'));
 });
+// Le type `cadrage` nommait enfin la source la plus fréquente : l'échange qui ouvre l'initiative. Elle
+// est déclarative, donc `rapporté`, et quelqu'un y a parlé — donc S81 s'y applique.
+test('source de cadrage : déclarative, et quelqu\'un y a parlé', () => {
+  const base = { document: 'brd', phase: 'discover', stakeholders: [{ id: 'SH-1', status: 'interrogée' }] };
+  const s = { ...base, sources: [{ id: 'SRC-1', type: 'cadrage', stakeholders: ['SH-1'] }] };
+  assert.equal(evidenceOf(s, ['SRC-1']).class, 'rapporté', 'un échange de cadrage n\'est pas une observation');
+  assert.ok(!checkState(s).some(f => f.rule === 'S81'), 'la personne qui a parlé est nommée et entendue');
+  const muet = { ...s, stakeholders: [{ id: 'SH-1', status: 'à interroger' }] };
+  assert.ok(checkState(muet).some(f => f.rule === 'S81'), 'cadrage attribué à qui n\'a pas été entendu');
+});
+
 // Premier dossier réel : la source unique de tout le cadrage était attribuée au directeur, que le même
 // fichier déclarait « à interroger ». Du rapporté présenté comme recueilli, et lint ne disait rien.
 test('S81 : source attribuée à une partie prenante jamais entendue, ou à personne', () => {

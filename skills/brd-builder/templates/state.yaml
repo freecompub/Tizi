@@ -71,7 +71,10 @@ decision_rights: []      # qui tranche quoi, établi au cadrage et validé par l
 
 sources: []
 #  - id: SRC-001
-#    type: entretien       # entretien | observation | mesure | test | document | atelier | ticket | revue | dt-handoff | autre
+#    type: entretien       # cadrage | entretien | observation | mesure | test | document | atelier | ticket | revue | dt-handoff | autre
+#                          # cadrage : l'échange qui ouvre l'initiative, avec qui porte la demande. Déclaratif,
+#                          # et souvent rapporté au nom d'un tiers : la partie prenante nommée doit être
+#                          # celle qui a parlé, pas celle dont on rapporte les besoins (S81)
 #                          # observation, mesure et test donnent une preuve « observée » ; les autres une preuve « rapportée »
 #    date: ""
 #    stakeholders: [SH-01]

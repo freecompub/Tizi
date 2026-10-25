@@ -41,7 +41,7 @@ Lentilles par défaut : celles de `references/lenses.md`. L'utilisateur peut en 
 ### 3. Arbitrer
 
 Tu es l'arbitre. Sur l'ensemble des résultats :
-1. **Fusionne** les doublons (même question vue par plusieurs lentilles : garde-la une fois, note toutes les lentilles d'origine — c'est un signal de priorité).
+1. **Fusionne** les doublons (même question vue par plusieurs lentilles : garde-la une fois, note toutes les lentilles d'origine — c'est un signal de priorité). Chaque lentille rend le `target` de ses questions — l'élément visé — : c'est par lui que deux formulations différentes du même trou se reconnaissent, et une question qui ne désigne rien est à renvoyer plutôt qu'à deviner.
 2. **Écarte** ce qui est déjà couvert par une source ou une zone d'ombre existante, ce qui est une solution ou un besoin déguisé en question, et ce qui sort du périmètre confirmé.
 3. **Classe** chaque question restante dans un type de la typologie (`phase-discover.md`, section 0).
 4. **Priorise** : bloquantes d'abord, puis par nombre de lentilles d'origine.
@@ -53,7 +53,7 @@ Présente les questions regroupées par type, avec pour chacune : la lentille d'
 
 Ces cinq questions se **trient** avant de se poser : l'utilisateur retient, reformule ou rejette, et ce qu'il retient devient une zone d'ombre. Les réponses viennent ensuite, deux ou trois à la fois. **Rien n'oblige à poser les cinq d'un coup**, ni même à les présenter en un bloc : cinq est un plafond de sélection, pas un lot à envoyer. Si l'une mérite une conversation à elle seule, prends-la seule et garde les autres pour la suite — elles sont enregistrées, elles ne se perdent pas. Cinq questions posées d'un coup, c'est un formulaire : on obtient des réponses courtes aux faciles, et rien aux autres.
 
-Enregistre les questions retenues comme zones d'ombre avec `origin: council:<lentille>`. En mode `preparation`, propose de les intégrer aux guides d'entretien concernés.
+Enregistre les questions retenues comme zones d'ombre avec `origin: council:<lentille>`, et reporte leur `target` dans `related` : la zone garde ce qu'elle met en cause. En mode `preparation`, propose de les intégrer aux guides d'entretien concernés.
 
 ### 5. Tracer le passage du council
 

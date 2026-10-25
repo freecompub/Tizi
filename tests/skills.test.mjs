@@ -41,6 +41,28 @@ for (const f of COMMON_REFS) test(`référence commune identique partout : ${f}`
   assert.equal(new Set(hashes).size, 1, `${f} diverge entre skills`);
 });
 
+// Un script livré dans un skill sans que rien ne dise de l'appeler est du poids mort — et pire quand une
+// règle sanctionne son absence : `review-checklist.mjs` était livré dans les sept skills, prescrit dans
+// deux, et `S80` fermait la porte de gouvernance du BRD sur des listes qu'aucune de ses phases ne disait
+// de produire. `block.mjs` et les deux scripts d'analyse croisée étaient dans le même cas, cinq copies
+// chacun. Même famille que le council du plan, qui avait un moment prescrit et aucun appelant.
+test('aucun script livré sans appelant', () => {
+  const communs = [join(ROOT, 'entrypoints', 'entrypoints.yaml'), join(ROOT, 'install.mjs'),
+    join(ROOT, 'hooks', 'hooks.json'), join(ROOT, 'com.github.copilot', 'hooks', 'hooks.json')]
+    .filter(existsSync).map(p => readFileSync(p, 'utf8'));
+  const flux = join(ROOT, '.github', 'workflows');
+  if (existsSync(flux)) for (const w of readdirSync(flux)) communs.push(readFileSync(join(flux, w), 'utf8'));
+  for (const s of skills) {
+    const refs = join(SKILLS, s, 'references');
+    const dits = [readFileSync(join(SKILLS, s, 'SKILL.md'), 'utf8'),
+      ...(existsSync(refs) ? readdirSync(refs).map(r => readFileSync(join(refs, r), 'utf8')) : []), ...communs];
+    for (const n of readdirSync(join(SKILLS, s, 'scripts')).filter(x => x.endsWith('.mjs'))) {
+      assert.ok(dits.some(x => x.includes(n)),
+        `${s}/scripts/${n} : aucun appelant — ni phase, ni SKILL.md, ni point d'entrée, ni hook, ni CI`);
+    }
+  }
+});
+
 // Un council cherche ce que l'agent a manqué : le faire dépendre de son accord, ou de la patience de
 // l'utilisateur, revient à rendre optionnelle la seule vérification adversariale de l'étape. Et un
 // council défini sans phase pour le lancer n'existe pas : plan-builder en avait un dans ce cas.
@@ -70,6 +92,29 @@ test('un council garde ses questions, pas seulement leur nombre', () => {
     assert.ok(!/^#\s+(discarded|retained):/m.test(tpl), `${s} : council_runs garde encore des compteurs à la place des questions`);
     const ref = readFileSync(join(SKILLS, s, 'references', 'council.md'), 'utf8');
     assert.ok(ref.includes('les questions elles-mêmes'), `${s}/council.md : la trace ne demande pas les questions`);
+  }
+});
+
+// Au premier council réel, cinq lentilles ont rendu exactement 40 questions — 5 × 8, le plafond saturé
+// par toutes — dont une seule a survécu au triage. Le plafond s'était lu comme un quota, le même mot
+// qu'on avait corrigé côté orchestrateur. Et la lentille du BRD ne demandait pas l'élément visé, donc
+// l'arbitrage ne pouvait fusionner un doublon qu'en relisant tout le dossier.
+test('agents de lentille : plafond qui n\'est pas une cible, et élément visé exigé', () => {
+  const fichiers = skills.flatMap(s => (existsSync(join(SKILLS, s, 'agents')) ? readdirSync(join(SKILLS, s, 'agents')) : [])
+    .filter(f => f.endsWith('-lens-critic.md')).map(f => [s, join(SKILLS, s, 'agents', f)]));
+  assert.equal(fichiers.length, 4, 'quatre skills ont un council, donc quatre lentilles');
+  for (const [s, p] of fichiers) {
+    const text = readFileSync(p, 'utf8');
+    assert.ok(text.includes("n'est pas une cible"), `${s} : le plafond de questions se lit comme un quota`);
+    assert.ok(/zéro est une réponse valide/i.test(text), `${s} : zéro question n'est pas dit valide`);
+    assert.ok(text.includes("Réduire à cinq est le travail de l'orchestrateur"), `${s} : la lentille pourrait hiérarchiser à la place de l'orchestrateur`);
+    assert.match(text, /^\s+target: "/m, `${s} : la lentille ne rend pas l'élément visé`);
+  }
+  // Et l'arbitrage s'en sert : sinon le champ est rempli pour rien.
+  for (const s of skills) {
+    const c = join(SKILLS, s, 'references', 'council.md');
+    if (!existsSync(c)) continue;
+    assert.match(readFileSync(c, 'utf8'), /`target`/, `${s}/council.md : l'arbitrage ne se sert pas de l'élément visé`);
   }
 });
 
