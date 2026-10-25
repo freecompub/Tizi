@@ -3,7 +3,7 @@
   "name": "tizi",
   "displayName": "Tizi",
   "description": "Un SDLC agentique, du besoin à la preuve : BRD, PRD, conception, plan, implémentation sous garde-fou TDD, vérification de release avec preuves.",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "author": {
     "name": "Samir Alili"
   },
