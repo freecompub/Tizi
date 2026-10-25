@@ -118,8 +118,13 @@ council_runs: []
 #  - date: ""
 #    mode: preparation     # preparation | couverture | completude
 #    lenses: [utilisateur-final, operations-support, securite-conformite, sponsor-finance, sceptique]
-#    proposed: 0           # questions renvoyées par les lentilles, avant fusion des doublons
-#    questions:            # celles qui ont survécu à l'arbitrage, écartées comprises : un compteur ne se relit pas
+#    initiatives: []       # les initiatives couvertes par CE passage, si elles sont plusieurs ; vide = celle-ci
+#                          # seule. Un passage partagé s'écrit à l'identique dans chacune : sans ce champ,
+#                          # « 40 proposées » se lit comme 40 pour ce dossier-là, et une somme sur le
+#                          # portefeuille les compte autant de fois qu'il y a d'initiatives. C'est arrivé.
+#    proposed: 0           # questions renvoyées par les lentilles pour TOUT le passage, avant fusion des doublons
+#    questions:            # celles qui ont survécu à l'arbitrage, écartées comprises : un compteur ne se relit pas.
+#                          # Dans CE fichier, seulement celles dont le `target` porte sur cette initiative.
 #      - text: ""
 #        lenses: []        # lentilles qui l'ont trouvée ; plusieurs = signal de priorité
 #        outcome: retenue  # retenue | écartée | réservée (disponible pour un prochain council)

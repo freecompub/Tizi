@@ -180,7 +180,28 @@ test('un council garde ses questions, pas seulement leur nombre', () => {
     assert.match(tpl, /outcome: retenue\s+# retenue \| écartée \| réservée/, `${s} : le sort de chaque question du council n'est pas dit`);
     assert.ok(!/^#\s+(discarded|retained):/m.test(tpl), `${s} : council_runs garde encore des compteurs à la place des questions`);
     const ref = readFileSync(join(SKILLS, s, 'references', 'council.md'), 'utf8');
-    assert.ok(ref.includes('les questions elles-mêmes'), `${s}/council.md : la trace ne demande pas les questions`);
+    // Le motif, pas la formulation : « les questions elles-mêmes » et « les questions qui visent cette
+    // initiative » disent la même exigence, et la seconde est arrivée avec les passages partagés.
+    assert.match(ref, /les questions (elles-mêmes|qui visent)/, `${s}/council.md : la trace ne demande pas les questions`);
+  }
+});
+
+// Un council unique sur deux initiatives a inscrit « 40 proposées, 39 écartées » dans chacune : le dépôt
+// en déclarait 80 pour 40 produites, et le second dossier affichait « 0 retenue sur 40 » — ce qui se lit
+// « le council n'a rien trouvé pour moi » alors qu'il n'a jamais tourné pour lui seul. La vérité était en
+// commentaire YAML, que rien ne lit — comme le `decision: jeter` de l'initiative découpée.
+test('un passage de council partagé nomme sa portée', () => {
+  for (const s of skills) {
+    const c = join(SKILLS, s, 'references', 'council.md');
+    if (!existsSync(c)) continue;
+    const ref = readFileSync(c, 'utf8');
+    assert.match(ref, /passage peut couvrir plusieurs initiatives/, `${s}/council.md : un council partagé n'est pas prévu`);
+    assert.match(ref, /portée soit nommée|\*\*portée\*\*/, `${s}/council.md : la portée d'un passage partagé n'est pas exigée`);
+    const tpl = readFileSync(join(SKILLS, s, 'templates', 'state.yaml'), 'utf8');
+    assert.match(tpl, /^#\s+initiatives: \[\]/m, `${s} : council_runs ne peut pas dire quelles initiatives un passage couvre`);
+    // Les compteurs portent sur le passage, les questions sur l'initiative : sans ça, l'un des deux ment.
+    assert.match(tpl, /pour TOUT le passage/, `${s} : rien ne dit que proposed est le compte du passage, pas celui du dossier`);
+    assert.match(tpl, /porte sur cette initiative/, `${s} : rien ne dit que chaque fichier ne garde que les questions qui le visent`);
   }
 });
 
