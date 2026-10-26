@@ -107,6 +107,35 @@ test('S81 vaut aussi pour le PRD : une source dit qui a parlé', () => {
   assert.ok(codes(prd({ sources: [src({ stakeholders: ['SH-09'] })] })).includes('S09'), 'référence morte vers SH-09');
 });
 
+// `phase-specify.md` dit « choisis le motif et renseigne `pattern` », et rien ne le vérifiait : ni que
+// la valeur est l'un des cinq, ni qu'elle s'accorde avec l'énoncé. Trouvé par le garde-fou des ordres
+// sans lecteur. La règle cherche la trace de la forme déclarée, pas le style — exiger le « alors » du
+// tableau EARS signalait une phrase correcte de l'exemple, et un constat qui tombe sur du juste abîme
+// le catalogue.
+test('S85 : le motif EARS déclaré se retrouve dans l\'énoncé', () => {
+  const fr = x => checkState({ document: 'prd', phase: 'specify', functional_requirements: [{ id: 'FR-001', ...x }] });
+  const c = x => fr(x).filter(f => f.rule === 'S85').map(f => f.message);
+
+  assert.match(c({ statement: 'Le système doit lister les dossiers' })[0] ?? '', /sans motif EARS/, 'motif absent');
+  assert.match(c({ pattern: 'reaction', statement: 'Le système doit lister' })[0] ?? '', /inconnu/, 'motif hors des cinq');
+  assert.match(c({ pattern: 'event', statement: 'Le système doit lister les dossiers' })[0] ?? '', /ne porte pas « Quand »/, 'event sans son marqueur');
+  assert.match(c({ pattern: 'state', statement: 'Quand l\'agent ouvre un dossier, le système doit…' })[0] ?? '', /ne porte pas « Tant que »/, 'motif et énoncé désaccordés');
+  assert.match(c({ pattern: 'ubiquitous', statement: 'Si le dossier est incomplet, le système doit refuser' })[0] ?? '', /un invariant n'a pas de condition/, 'invariant conditionnel');
+
+  for (const x of [
+    { pattern: 'event', statement: 'Quand un agent dépose une pièce, le système doit l\'horodater' },
+    { pattern: 'state', statement: 'Tant que le dossier est en brouillon, le système doit permettre sa modification' },
+    { pattern: 'unwanted', statement: 'Si un agent transmet un dossier sans justificatif, le système doit refuser la transmission' },
+    { pattern: 'optional', statement: 'Là où la signature électronique est activée, le système doit proposer la signature' },
+    { pattern: 'ubiquitous', statement: 'Le système doit conserver chaque dossier dix ans' },
+  ]) assert.deepEqual(c(x), [], `${x.pattern} conforme : ${x.statement}`);
+
+  // Les motifs se combinent (`ears.md`) : un énoncé qui porte deux formes satisfait celle qu'il déclare.
+  assert.deepEqual(c({ pattern: 'state', statement: 'Tant que le dossier est en brouillon, quand l\'agent ajoute une pièce, le système doit la lier' }), []);
+  // Une exigence abandonnée ne se contrôle plus.
+  assert.deepEqual(fr({ status: 'abandonné', statement: 'Le système doit…' }).filter(f => f.rule === 'S85'), []);
+});
+
 // Deux champs que `phase-discover.md` et `elicitation-patterns.md` ordonnent de remplir, et que rien ne
 // lisait — trouvés par le garde-fou des ordres sans lecteur, dans `skills.test.mjs`.
 test('S83 : des besoins recueillis sans qu\'aucun utilisateur direct ait parlé', () => {

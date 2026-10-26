@@ -32,10 +32,11 @@ settings:
     allow_skipped: []            # jobs dont l'absence est acceptée
     reason: ""                   # obligatoire si required: false
 
-environments: []           # - { name: "", url: "", data: "" }
+environments: []           # catalogue : chaque mesure de NFR dit sur lequel elle a été prise
+#  - { id: ENV-01, name: "", url: "", data: "" }   # `data` : le jeu de données, sans lequel un p95 ne se compare pas
 
 nfr_results: []            # mesures des vérifications de NFR prévues à l'étape tests
-#  - { id: NR-01, nfr: NFR-001, measured: "p95 = 1,4 s", target: "p95 < 2 s", pass: true, evidence: reports/perf.html, date: "" }
+#  - { id: NR-01, nfr: NFR-001, measured: "p95 = 1,4 s", target: "p95 < 2 s", pass: true, environment: ENV-01, evidence: reports/perf.html, date: "" }
 
 exploratory: []            # sessions de tests exploratoires (references/exploratory-testing.md)
 #  - id: XS-01

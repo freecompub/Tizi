@@ -100,6 +100,21 @@ export const SOURCES_SANS_PRESENCE = ['document', 'ticket', 'dt-handoff', 'code'
 const NON_ENTENDU = ['à interroger', 'non disponible'];
 // Un retour à la source fait : la personne a relu la synthèse, et l'a confirmée ou corrigée.
 const FEEDBACK_FAIT = ['confirmé', 'corrigé', 'sans objet'];
+// Les cinq motifs EARS (`references/ears.md`) et le marqueur que chacun impose à l'énoncé. La règle
+// cherche la trace de la forme déclarée, pas le style : `unwanted` ne réclame que la condition, pas le
+// « alors » que la référence met dans son tableau. Exigé, il signalait « Si un agent transmet un dossier
+// sans justificatif, le système doit refuser… » — une phrase sans ambiguïté — et un constat qui tombe
+// sur du correct abîme le catalogue entier. `ubiquitous` est l'invariant : il ne porte aucun marqueur,
+// et en porter un signale un motif mal déclaré.
+const EARS = {
+  ubiquitous: [],
+  event: [{ mot: 'Quand', re: /\bquand\b/i }],
+  state: [{ mot: 'Tant que', re: /\btant que\b/i }],
+  unwanted: [{ mot: 'Si', re: /\bsi\b/i }],
+  // Pas de `\b` final : il est défini sur l'ASCII, et après le « ù » de « où » il n'y a pas de frontière
+  // de mot — le marqueur ne se reconnaissait jamais.
+  optional: [{ mot: 'Là où', re: /\bl[àa]\s+o[ùu]/i }],
+};
 // Un nom de décideur désigne une partie prenante : par son identifiant, ou par son nom s'il est renseigné.
 const knownPerson = (s, shs, v) => shs.has(v) || arr(s.stakeholders).some(sh => sh.name && sh.name === v);
 export function evidenceOf(s, srcIds, ownerIds = []) {
@@ -328,6 +343,21 @@ export function checkPrd(s) {
   }
   for (const f of arr(s.functional_requirements).filter(live)) {
     push(f, 'FR', f.statement);
+    // `phase-specify.md` dit « choisis le motif et renseigne `pattern` », et rien ne le vérifiait : ni
+    // que la valeur est l'un des cinq, ni qu'elle s'accorde avec l'énoncé. Un `pattern: event` sur une
+    // phrase sans « Quand » passait sans bruit, et EARS n'a d'intérêt que si la forme est tenue.
+    const motif = String(f.pattern ?? '').trim();
+    const enonce = String(f.statement ?? '');
+    if (!motif) out.push({ rule: 'S85', id: f.id, message: `exigence sans motif EARS (\`pattern\`) : ${Object.keys(EARS).join(', ')} (\`references/ears.md\`)` });
+    else if (!(motif in EARS)) out.push({ rule: 'S85', id: f.id, message: `motif « ${motif} » inconnu : ${Object.keys(EARS).join(', ')}` });
+    else if (enonce) {
+      const absents = EARS[motif].filter(m => !m.re.test(enonce)).map(m => `« ${m.mot} »`);
+      if (absents.length) out.push({ rule: 'S85', id: f.id, message: `motif « ${motif} » déclaré, mais l'énoncé ne porte pas ${absents.join(' ni ')} : l'un des deux est faux` });
+      if (motif === 'ubiquitous') {
+        const intrus = Object.entries(EARS).filter(([k, ms]) => k !== 'ubiquitous' && ms[0].re.test(enonce)).map(([k]) => k);
+        if (intrus.length) out.push({ rule: 'S85', id: f.id, message: `déclarée invariante, mais l'énoncé porte la forme ${intrus.map(k => `« ${k} »`).join(' et ')} : un invariant n'a pas de condition` });
+      }
+    }
     const hasOrigin = arr(f.brd_requirements).length || f.origin;
     if (!hasOrigin) out.push({ rule: 'S06', id: f.id, message: 'exigence sans origine (BR, source ou décision produit)' });
     const own = acs.filter(a => a.fr === f.id);
@@ -949,5 +979,5 @@ export const STRUCT_RULES = {
   S56: 'opportunité non décidée', S57: 'hypothèse risquée non testée', S58: 'itération sans revue', S59: 'release sans mesure des outcomes',
   S60: 'voie rapide non conforme', S61: 'ordre ouverture, milieu, fin', S62: 'story sans titre court',
   S63: 'exigence à source unique', S64: 'exigence sans source', S65: 'porte de synthèse', S66: 'exigence de transition incomplète', S67: 'exploration de concepts',
-  S68: 'espace réservé resté', S69: 'chiffre sans source', S70: 'fiche de contexte trop longue', S71: 'ADR sans règle', S72: 'collision entre tâches', S73: 'comportement existant à préserver', S74: 'taille et risque calculé', S75: 'attention humaine dépassée', S76: 'tâche non finie sans décision', S77: 'action de rétrospective sans suivi', S78: 'voie rapide sans épopée', S79: 'constitution', S80: 'liste de contrôle de relecture', S81: 'source sans personne entendue', S82: 'métrique et objectif désaccordés', S83: 'aucun utilisateur direct entendu', S84: 'exigence jamais relue par la source',
+  S68: 'espace réservé resté', S69: 'chiffre sans source', S70: 'fiche de contexte trop longue', S71: 'ADR sans règle', S72: 'collision entre tâches', S73: 'comportement existant à préserver', S74: 'taille et risque calculé', S75: 'attention humaine dépassée', S76: 'tâche non finie sans décision', S77: 'action de rétrospective sans suivi', S78: 'voie rapide sans épopée', S79: 'constitution', S80: 'liste de contrôle de relecture', S81: 'source sans personne entendue', S82: 'métrique et objectif désaccordés', S83: 'aucun utilisateur direct entendu', S84: 'exigence jamais relue par la source', S85: 'motif EARS absent ou désaccordé',
 };

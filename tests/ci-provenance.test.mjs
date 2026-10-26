@@ -19,9 +19,12 @@ function ciRepo() {
   assert.equal(node(script('test-builder', 'ci-run-suites.mjs'), ['--sans-lancer'], { cwd: repo, env: { GITHUB_SHA: head, GITHUB_EVENT_NAME: 'push', GITHUB_RUN_ID: '42', GITHUB_WORKFLOW: 'Tizi — preuves' } }).code, 0);
   const sp = join(repo, 'qa/demo/state.yaml'); const s = yaml.load(readFileSync(sp, 'utf8'));
   s.candidate_commit = head; s.settings.ci = { required: true };
+  // Une mesure de NFR doit dire sur quoi elle a été prise : le catalogue d'environnements est renseigné
+  // en Prepare, et `record-nfr.mjs` refuse une mesure qui ne le désigne pas.
+  s.environments = [{ id: 'ENV-01', name: 'préproduction', url: 'https://preprod.example', data: 'jeu de recette 2026-10' }];
   writeFileSync(sp, yaml.dump(s));
   // La mesure de performance, prise hors CI, est enregistrée avec le commit candidat et l'empreinte de son rapport.
-  assert.equal(node(script('test-builder', 'record-nfr.mjs'), ['qa/demo/state.yaml', '--nr', 'NR-01', '--mesure', 'p95 = 1,4 s', '--cible', 'p95 < 2 s', '--conforme', 'oui', '--rapport', 'reports/perf.html', '--commit', head, '--par', 'Samir'], { cwd: repo }).code, 0);
+  assert.equal(node(script('test-builder', 'record-nfr.mjs'), ['qa/demo/state.yaml', '--nr', 'NR-01', '--mesure', 'p95 = 1,4 s', '--cible', 'p95 < 2 s', '--conforme', 'oui', '--rapport', 'reports/perf.html', '--commit', head, '--par', 'Samir', '--environnement', 'ENV-01'], { cwd: repo }).code, 0);
   const runs = event => JSON.stringify([{ databaseId: 42, headSha: head, status: 'completed', conclusion: 'success', event, workflowName: 'Tizi — preuves', url: 'https://github.com/x/y/actions/runs/42', createdAt: '2026-10-21T10:00:00Z' }]);
   writeFileSync(join(repo, 'runs.json'), runs('push'));
   writeFileSync(join(repo, 'runs-pr.json'), runs('pull_request'));
@@ -92,7 +95,7 @@ test('audit de la CI : workflows générés sans point bloquant ; dépôt sans C
 test('mesure de NFR hors CI : probante seulement sur le commit candidat, avec un rapport inchangé', () => {
   const { repo, head } = ciRepo();
   fetch(repo, 'runs.json', '--appliquer');
-  const nfr = (...a) => node(script('test-builder', 'record-nfr.mjs'), ['qa/demo/state.yaml', '--nr', 'NR-01', '--mesure', 'p95 = 1,4 s', '--cible', 'p95 < 2 s', '--conforme', 'oui', '--rapport', 'reports/perf.html', '--par', 'Samir', ...a], { cwd: repo });
+  const nfr = (...a) => node(script('test-builder', 'record-nfr.mjs'), ['qa/demo/state.yaml', '--nr', 'NR-01', '--mesure', 'p95 = 1,4 s', '--cible', 'p95 < 2 s', '--conforme', 'oui', '--rapport', 'reports/perf.html', '--par', 'Samir', '--environnement', 'ENV-01', ...a], { cwd: repo });
   writeFileSync(join(repo, 'reports/perf.html'), '<html>charge</html>');
   assert.equal(nfr('--commit', 'aaaaaaa').code, 0);
   assert.match(gate(repo), /✗ R9 .*mesure NR-01 prise sur aaaaaaa, pas sur la version candidate/);

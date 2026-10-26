@@ -39,6 +39,8 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
 | Un décideur du PRD se nomme : `decided_by` et `decision_rights` vérifiés contre le registre, au lieu du seul champ non vide | 26 octobre 2026 | `parties-prenantes-du-prd` |
 | S15 et S16 au PRD : un conflit d'intérêts nomme ses parties et son arbitre, qui n'est pas partie au conflit | 26 octobre 2026 | `parties-prenantes-du-prd` |
 | Garde-fou de la cause commune : un champ qu'une référence ordonne de remplir est lu par un script (22 champs gardés), plus `S83` et `S84` qu'il a trouvés | 26 octobre 2026 | `parties-prenantes-du-prd` |
+| `S85` : le motif EARS déclaré se retrouve dans l'énoncé, et un invariant n'a pas de condition | 26 octobre 2026 | `parties-prenantes-du-prd` |
+| `environments` a un lecteur : `record-nfr.mjs` refuse une mesure de NFR qui ne dit pas sur quel environnement elle a été prise | 26 octobre 2026 | `parties-prenantes-du-prd` |
 | Garde-fou TDD : mode hors tâche tracé (`derogation.mjs`), borné dans le temps | 23 octobre 2026 | `audit/correctifs-2026-10-23` |
 | Tâche fusionnée libérée à la fusion, message qui dit quoi faire | 23 octobre 2026 | `audit/correctifs-2026-10-23` |
 | Index des sessions : un fichier par session, aucun écrivain partagé | 23 octobre 2026 | `audit/correctifs-2026-10-23` |
@@ -217,11 +219,6 @@ Chacune deviendra une issue à part une fois décidée.
       recueillis sans qu'aucun utilisateur direct ait parlé, `end_user`) et `S84` (exigence validée sur
       des sources que personne n'a relues, `feedback`). Reste la dérogation nommée, qui est une décision
       et pas un contrôle
-- [ ] Les cinq motifs EARS : aucune règle ne vérifie `pattern`, ni l'accord entre le motif déclaré et la
-      forme de l'énoncé. Dérogation nommée dans `tests/skills.test.mjs` (`ORDRES_SANS_LECTEUR`)
-- [ ] `environments` du test-builder n'est lu par aucun script, et la consigne qui l'ordonne nomme aussi
-      `settings.reports`, qui n'existe pas dans le modèle : `adopt.mjs` pose le rapport sur chaque suite.
-      Dérogation nommée dans `tests/skills.test.mjs`
 - [ ] Hook qui protège les listes de contrôle de relecture contre l'écriture par un agent (S80 vérifie
       aujourd'hui après coup ; un hook refuserait avant)
 - [x] Lancer l'audit indépendant (`evals/audit/tizi-auditor.md`) en contexte vierge et le comparer à
