@@ -36,9 +36,21 @@ problem:                  # repris du BRD (chaîné) ou établi en Frame (autono
   statement: ""
   confirmed: false
 
+stakeholders: []          # qui a parlé, et en quelle qualité — chaîné : repris du handoff ; autonome : le tour de table de Frame
+#  - id: SH-01
+#    name: ""
+#    role: ""              # sa FONCTION, telle qu'elle se présente : un fait qu'on demande
+#    represents: ""        # si elle parle au nom d'un groupe ou d'un absent : lequel. C'est une QUALITÉ,
+#                          # que tu déduis et fais corriger — un représentant ne remplace pas les vrais
+#                          # utilisateurs, et laisse ouverte une zone `persona_non_fonde` sur eux
+#    status: à interroger  # à interroger | interrogée | non disponible
+
 sources: []               # preuves produit (entretiens, tests utilisateurs, analytics, études, décisions)
-#  - { id: SRC-001, type: entretien, date: "", who: "", path: "", feedback: à envoyer }   # type : cadrage | entretien | observation | test | analytics | étude | décision
+#  - { id: SRC-001, type: entretien, date: "", stakeholders: [SH-01], path: "", feedback: à envoyer }   # type : cadrage | entretien | observation | test | analytics | étude | décision
 #                          # cadrage : l'échange qui ouvre l'initiative — le brief, les notes, l'idée. Déclaratif.
+#                          # `stakeholders` dit QUI A PARLÉ, jamais celui dont on rapporte les besoins :
+#                          # une réunion à trois répondants donne trois sources, et S81 refuse une source
+#                          # attribuée à quelqu'un que l'état déclare « à interroger ».
 
 # ─────────────── Frame ───────────────
 vision: ""                # 2 à 4 phrases
