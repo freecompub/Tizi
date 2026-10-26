@@ -37,6 +37,7 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
 | Tour de table remonté au premier contact (Assess, pas le cadrage de Discover), et un lot de questions ne transporte pas de question ouverte | 26 octobre 2026 | `tour-de-table-en-assess` |
 | Registre de parties prenantes du PRD : le handoff transmet le statut, le tour de table le remplit, et S81 vaut pour les deux documents | 26 octobre 2026 | `parties-prenantes-du-prd` |
 | Un décideur du PRD se nomme : `decided_by` et `decision_rights` vérifiés contre le registre, au lieu du seul champ non vide | 26 octobre 2026 | `parties-prenantes-du-prd` |
+| S15 et S16 au PRD : un conflit d'intérêts nomme ses parties et son arbitre, qui n'est pas partie au conflit | 26 octobre 2026 | `parties-prenantes-du-prd` |
 | Garde-fou TDD : mode hors tâche tracé (`derogation.mjs`), borné dans le temps | 23 octobre 2026 | `audit/correctifs-2026-10-23` |
 | Tâche fusionnée libérée à la fusion, message qui dit quoi faire | 23 octobre 2026 | `audit/correctifs-2026-10-23` |
 | Index des sessions : un fichier par session, aucun écrivain partagé | 23 octobre 2026 | `audit/correctifs-2026-10-23` |
