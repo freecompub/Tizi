@@ -460,10 +460,27 @@ test('un champ qu\'une référence ordonne de remplir est lu par un script', () 
     }
     return out;
   };
+  // `lib/rules.mjs` est copié à l'identique dans quatre skills : lire tout son contenu faisait passer
+  // pour lu, dans le PRD, un champ que seul `checkBrd` touche. Le `feedback` du PRD a été vert à tort
+  // le temps d'un commit. Les fonctions de contrôle des AUTRES documents sont donc retirées du texte
+  // cherché — un faux vert est pire que pas de garde-fou.
+  const CONTROLE = { 'brd-builder': 'checkBrd', 'prd-builder': 'checkPrd', 'sad-builder': 'checkSad', 'plan-builder': 'checkPlan' };
+  const sansLesVoisins = (src, skill) => {
+    let garde = src;
+    for (const fn of Object.values(CONTROLE).filter(x => x !== CONTROLE[skill])) {
+      const i = garde.indexOf(`export function ${fn}(s`);
+      if (i < 0) continue;
+      const j = garde.indexOf('\nexport function ', i + 10);
+      garde = garde.slice(0, i) + (j < 0 ? '' : garde.slice(j));
+    }
+    return garde;
+  };
   const muets = [];
   let ordonnes = 0;
   for (const s of skills) {
-    const scripts = mjs(join(SKILLS, s, 'scripts')).map(f => readFileSync(f, 'utf8')).join('\n');
+    const scripts = mjs(join(SKILLS, s, 'scripts'))
+      .map(f => (f.endsWith(join('lib', 'rules.mjs')) ? sansLesVoisins(readFileSync(f, 'utf8'), s) : readFileSync(f, 'utf8')))
+      .join('\n');
     const refs = join(SKILLS, s, 'references');
     const vus = new Map();
     for (const f of existsSync(refs) ? readdirSync(refs) : []) {

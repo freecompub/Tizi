@@ -145,6 +145,17 @@ test('S84 : une exigence validée sur des sources que personne n\'a relues', () 
   const nue = { ...brd('à envoyer'), candidate_needs: [{ id: 'BC-001', statement: 'x', sources: [] }] };
   assert.ok(!codes(nue).includes('S84'));
   assert.ok(codes(nue).includes('S64'));
+
+  // La même consigne vaut pour le PRD, dont `elicitation-patterns.md` est le même fichier. S84 n'y
+  // existait pas, et le garde-fou l'a laissé passer parce qu'il lisait `rules.mjs` en entier.
+  const prd = fb => ({
+    document: 'prd', phase: 'specify',
+    sources: [{ id: 'SRC-001', type: 'entretien', stakeholders: ['SH-01'], feedback: fb }],
+    stakeholders: [{ id: 'SH-01', name: 'x', role: 'r', status: 'interrogée' }],
+    functional_requirements: [{ id: 'FR-001', statement: 'Le système doit lister les dossiers', origin: 'SRC-001' }],
+  });
+  assert.ok(checkState(prd('à envoyer')).some(f => f.rule === 'S84' && /jamais relue/.test(f.message)), 'FR tirée d\'une source non relue');
+  assert.ok(!codes(prd('confirmé')).includes('S84'), 'source relue et confirmée');
 });
 
 // `prd-builder/references/shadow-zones.md` prescrit « Renseigne `parties` et `arbiter` (…, jamais partie
