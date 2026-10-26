@@ -38,6 +38,7 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
 | Registre de parties prenantes du PRD : le handoff transmet le statut, le tour de table le remplit, et S81 vaut pour les deux documents | 26 octobre 2026 | `parties-prenantes-du-prd` |
 | Un décideur du PRD se nomme : `decided_by` et `decision_rights` vérifiés contre le registre, au lieu du seul champ non vide | 26 octobre 2026 | `parties-prenantes-du-prd` |
 | S15 et S16 au PRD : un conflit d'intérêts nomme ses parties et son arbitre, qui n'est pas partie au conflit | 26 octobre 2026 | `parties-prenantes-du-prd` |
+| Garde-fou de la cause commune : un champ qu'une référence ordonne de remplir est lu par un script (22 champs gardés), plus `S83` et `S84` qu'il a trouvés | 26 octobre 2026 | `parties-prenantes-du-prd` |
 | Garde-fou TDD : mode hors tâche tracé (`derogation.mjs`), borné dans le temps | 23 octobre 2026 | `audit/correctifs-2026-10-23` |
 | Tâche fusionnée libérée à la fusion, message qui dit quoi faire | 23 octobre 2026 | `audit/correctifs-2026-10-23` |
 | Index des sessions : un fichier par session, aucun écrivain partagé | 23 octobre 2026 | `audit/correctifs-2026-10-23` |
@@ -211,9 +212,16 @@ Chacune deviendra une issue à part une fois décidée.
 - [ ] Grille de qualité ISO 29148 pour le BRD et le PRD (phase 2 du contrôle formel : le catalogue
       existant passe en mode bloquant, la grille s'y ajoute, et un autre modèle que le rédacteur
       l'applique)
-- [ ] Parties prenantes : dérogation nommée pour une partie prenante à impliquer jamais entendue ;
-      exigence sans source confirmée signalée — la moitié basse est faite par `S81` (source attribuée à
-      qui n'a pas été entendu) ; reste la dérogation nommée, qui est une décision, pas un contrôle
+- [ ] Parties prenantes : dérogation nommée pour une partie prenante à impliquer jamais entendue. Le
+      reste de l'item est fait — `S81` (source attribuée à qui n'a pas été entendu), `S83` (des besoins
+      recueillis sans qu'aucun utilisateur direct ait parlé, `end_user`) et `S84` (exigence validée sur
+      des sources que personne n'a relues, `feedback`). Reste la dérogation nommée, qui est une décision
+      et pas un contrôle
+- [ ] Les cinq motifs EARS : aucune règle ne vérifie `pattern`, ni l'accord entre le motif déclaré et la
+      forme de l'énoncé. Dérogation nommée dans `tests/skills.test.mjs` (`ORDRES_SANS_LECTEUR`)
+- [ ] `environments` du test-builder n'est lu par aucun script, et la consigne qui l'ordonne nomme aussi
+      `settings.reports`, qui n'existe pas dans le modèle : `adopt.mjs` pose le rapport sur chaque suite.
+      Dérogation nommée dans `tests/skills.test.mjs`
 - [ ] Hook qui protège les listes de contrôle de relecture contre l'écriture par un agent (S80 vérifie
       aujourd'hui après coup ; un hook refuserait avant)
 - [x] Lancer l'audit indépendant (`evals/audit/tizi-auditor.md`) en contexte vierge et le comparer à

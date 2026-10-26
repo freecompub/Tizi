@@ -440,6 +440,50 @@ test('plusieurs répondants : une réponse chacun, et le silence n\'est pas un a
   assert.match(discover, /^Les noms et fonctions recueillis au cadrage/m, 'le tour de table ne nourrit pas la cartographie');
 });
 
+// La cause commune de quatre défauts trouvés sur les dossiers réels : une référence ORDONNE de remplir
+// un champ, et aucun script ne le lit jamais. `metrics` était rendu sans qu'aucune règle le vérifie,
+// `stakeholders` sortait du handoff sans lecteur, `parties` et `arbiter` étaient prescrits sans contrôle.
+// Le garde-fou cherche le motif le plus net — « Renseigne `x` » — parce qu'il est rare et délibéré :
+// 22 champs ordonnés dans les sept skills, de quoi tenir sans bruit. Un champ qu'on ordonne de remplir
+// et que personne ne relit est une case où l'agent écrira n'importe quoi sans jamais être contredit.
+// Chaque dérogation porte sa raison : c'est une dette nommée, pas un silence.
+const ORDRES_SANS_LECTEUR = {
+  'prd-builder/pattern': 'aucune règle ne vérifie les cinq motifs EARS ni l\'accord entre `pattern` et la forme de l\'énoncé ; à trancher (26 octobre 2026)',
+  'test-builder/environments': '`environments` n\'est lu par rien, et la même consigne nomme `settings.reports` qui n\'existe pas dans le modèle — adopt.mjs pose le rapport sur chaque suite ; à trancher (26 octobre 2026)',
+};
+test('un champ qu\'une référence ordonne de remplir est lu par un script', () => {
+  const mjs = dir => {
+    const out = [];
+    for (const e of existsSync(dir) ? readdirSync(dir, { withFileTypes: true }) : []) {
+      if (e.isDirectory()) out.push(...mjs(join(dir, e.name)));
+      else if (e.name.endsWith('.mjs')) out.push(join(dir, e.name));
+    }
+    return out;
+  };
+  const muets = [];
+  let ordonnes = 0;
+  for (const s of skills) {
+    const scripts = mjs(join(SKILLS, s, 'scripts')).map(f => readFileSync(f, 'utf8')).join('\n');
+    const refs = join(SKILLS, s, 'references');
+    const vus = new Map();
+    for (const f of existsSync(refs) ? readdirSync(refs) : []) {
+      for (const phrase of readFileSync(join(refs, f), 'utf8').matchAll(/\b[Rr]enseigne(?:r|z)?\b([^.;!?\n]*)/g)) {
+        for (const champ of (phrase[1].match(/`([a-z_][a-z0-9_]*)`/g) ?? []).map(x => x.slice(1, -1))) {
+          if (!vus.has(champ)) vus.set(champ, f);
+        }
+      }
+    }
+    ordonnes += vus.size;
+    for (const [champ, f] of vus) {
+      if (new RegExp(`\\b${champ}\\b`).test(scripts)) continue;
+      if (ORDRES_SANS_LECTEUR[`${s}/${champ}`]) continue;
+      muets.push(`${s} : \`${champ}\` ordonné dans ${f}, lu par aucun script`);
+    }
+  }
+  assert.ok(ordonnes >= 20, `le motif « Renseigne \`x\` » ne trouve plus que ${ordonnes} champs : la formulation a changé, le garde-fou ne garde plus rien`);
+  assert.deepEqual(muets, [], `\n${muets.join('\n')}`);
+});
+
 // Le tour de table du PRD recueillait des noms et des fonctions qui n'avaient nulle part où aller : pas
 // de registre dans le template, `build-handoff.mjs` qui exportait des parties prenantes que rien
 // n'ingérait, et S81 enfermé dans `checkBrd`. Sur le deuxième dossier réel, treize sources portaient leur

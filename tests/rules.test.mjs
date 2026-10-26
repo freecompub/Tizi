@@ -107,6 +107,46 @@ test('S81 vaut aussi pour le PRD : une source dit qui a parlé', () => {
   assert.ok(codes(prd({ sources: [src({ stakeholders: ['SH-09'] })] })).includes('S09'), 'référence morte vers SH-09');
 });
 
+// Deux champs que `phase-discover.md` et `elicitation-patterns.md` ordonnent de remplir, et que rien ne
+// lisait — trouvés par le garde-fou des ordres sans lecteur, dans `skills.test.mjs`.
+test('S83 : des besoins recueillis sans qu\'aucun utilisateur direct ait parlé', () => {
+  const sh = (id, x) => ({ id, name: id, role: 'r', status: 'interrogée', ...x });
+  const brd = shs => ({ document: 'brd', phase: 'discover', stakeholders: shs, candidate_needs: [{ id: 'BC-001', statement: 'pouvoir suivre un dossier' }] });
+
+  const relais = checkState(brd([sh('SH-01', { represents: 'les agents' })]));
+  assert.ok(relais.some(f => f.rule === 'S83' && /représentants/.test(f.message)), 'tout passe par un représentant');
+
+  const terrain = codes(brd([sh('SH-01', { represents: 'les agents' }), sh('SH-02', { end_user: true })]));
+  assert.ok(!terrain.includes('S83'), 'un utilisateur direct a été entendu');
+
+  // Un utilisateur direct encore à interroger ne compte pas : c'est justement la dette.
+  assert.ok(codes(brd([sh('SH-01'), sh('SH-02', { end_user: true, status: 'à interroger' })])).includes('S83'));
+  // Et avant tout recueil, la règle ne dit rien.
+  assert.ok(!codes({ document: 'brd', phase: 'discover', stakeholders: [sh('SH-01')] }).includes('S83'));
+});
+
+test('S84 : une exigence validée sur des sources que personne n\'a relues', () => {
+  const brd = fb => ({
+    document: 'brd', phase: 'define',
+    sources: [{ id: 'SRC-001', type: 'entretien', stakeholders: ['SH-01'], feedback: fb }],
+    stakeholders: [{ id: 'SH-01', name: 'x', role: 'r', status: 'interrogée', end_user: true }],
+    candidate_needs: [{ id: 'BC-001', statement: 'pouvoir suivre un dossier', sources: ['SRC-001'] }],
+    business_requirements: [{ id: 'BR-001', statement: 'Le service doit pouvoir suivre un dossier', status: 'validé', priority: 'must', from_needs: ['BC-001'] }],
+  });
+
+  const jamais = checkState(brd('à envoyer'));
+  assert.ok(jamais.some(f => f.rule === 'S84' && /jamais été vérifié/.test(f.message)), 'retour à la source jamais fait');
+  const envoye = codes(brd('envoyé'));
+  assert.ok(envoye.includes('S84'), 'envoyé n\'est pas relu : la personne n\'a pas encore répondu');
+  for (const fb of ['confirmé', 'corrigé', 'sans objet']) {
+    assert.ok(!codes(brd(fb)).includes('S84'), `${fb} clôt le retour à la source`);
+  }
+  // Sans source du tout, c'est S64 qui parle, pas S84 : une seule voix par défaut.
+  const nue = { ...brd('à envoyer'), candidate_needs: [{ id: 'BC-001', statement: 'x', sources: [] }] };
+  assert.ok(!codes(nue).includes('S84'));
+  assert.ok(codes(nue).includes('S64'));
+});
+
 // `prd-builder/references/shadow-zones.md` prescrit « Renseigne `parties` et `arbiter` (…, jamais partie
 // au conflit) » et rien ne le vérifiait : S15 et S16 n'existaient que dans `checkBrd`, où le conflit est
 // une `contradiction` de sous-type `interets` et non un type à lui seul.
