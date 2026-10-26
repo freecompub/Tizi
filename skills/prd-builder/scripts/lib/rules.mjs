@@ -98,6 +98,8 @@ export const OBSERVED_SOURCE_TYPES = ['observation', 'mesure', 'test'];
 // entretien. Partout ailleurs, quelqu'un a parlé, et le dossier doit pouvoir dire qui (S81).
 export const SOURCES_SANS_PRESENCE = ['document', 'ticket', 'dt-handoff', 'code', 'configuration'];
 const NON_ENTENDU = ['à interroger', 'non disponible'];
+// Un retour à la source fait : la personne a relu la synthèse, et l'a confirmée ou corrigée.
+const FEEDBACK_FAIT = ['confirmé', 'corrigé', 'sans objet'];
 // Un nom de décideur désigne une partie prenante : par son identifiant, ou par son nom s'il est renseigné.
 const knownPerson = (s, shs, v) => shs.has(v) || arr(s.stakeholders).some(sh => sh.name && sh.name === v);
 export function evidenceOf(s, srcIds, ownerIds = []) {
@@ -202,6 +204,24 @@ export function checkBrd(s) {
     const ev = evidenceOf(s, brSources(s, b), [b.id, ...arr(b.from_needs)]);
     if (ev.sources === 1) out.push({ rule: 'S63', id: b.id, message: 'exigence fondée sur une seule source : un motif isolé n\'est pas encore un besoin établi' });
     if (ev.class === 'supposé') out.push({ rule: 'S64', id: b.id, message: 'exigence validée sans aucune source : c\'est une hypothèse' });
+    // `elicitation-patterns.md` section 6 ordonne de renseigner `feedback` sur la source et dit la suite :
+    // « un besoin candidat issu d'une source non confirmée peut être utilisé, mais signale-le au moment
+    // de le transformer en exigence ». Rien ne le signalait — le champ existait, personne ne le lisait,
+    // et le retour à la source pouvait n'avoir jamais eu lieu sans que le dossier s'en aperçoive.
+    const ids = brSources(s, b);
+    if (ids.length && !ids.some(id => FEEDBACK_FAIT.includes(srcs.get(id)?.feedback))) {
+      out.push({ rule: 'S84', id: b.id, message: 'exigence validée sur des sources dont aucune n\'a été relue par la personne interrogée (`feedback`) : ce qui a été compris n\'a jamais été vérifié auprès d\'elle' });
+    }
+  }
+  // `phase-discover.md` ordonne « Renseigne `end_user` et `represents` » et explique pourquoi : les
+  // besoins opérationnels se recueillent au plus près du terrain. `represents` était rendu, `end_user`
+  // n'était lu par rien. Un dossier peut donc collecter des besoins sans qu'aucun utilisateur réel ait
+  // parlé — le cas du référent qui répond pour ses agents, vu sur les deux dossiers réels.
+  if (arr(s.stakeholders).length && arr(s.candidate_needs).filter(live).length) {
+    const entendus = arr(s.stakeholders).filter(sh => sh.status === 'interrogée');
+    if (entendus.length && !entendus.some(sh => sh.end_user)) {
+      out.push({ rule: 'S83', id: 'stakeholders', message: 'des besoins recueillis, et aucun utilisateur direct entendu (`end_user`) : tout passe par des représentants' });
+    }
   }
   if (['define', 'govern'].includes(s.phase)) {
     const sc = s.synthesis_check;
@@ -919,5 +939,5 @@ export const STRUCT_RULES = {
   S56: 'opportunité non décidée', S57: 'hypothèse risquée non testée', S58: 'itération sans revue', S59: 'release sans mesure des outcomes',
   S60: 'voie rapide non conforme', S61: 'ordre ouverture, milieu, fin', S62: 'story sans titre court',
   S63: 'exigence à source unique', S64: 'exigence sans source', S65: 'porte de synthèse', S66: 'exigence de transition incomplète', S67: 'exploration de concepts',
-  S68: 'espace réservé resté', S69: 'chiffre sans source', S70: 'fiche de contexte trop longue', S71: 'ADR sans règle', S72: 'collision entre tâches', S73: 'comportement existant à préserver', S74: 'taille et risque calculé', S75: 'attention humaine dépassée', S76: 'tâche non finie sans décision', S77: 'action de rétrospective sans suivi', S78: 'voie rapide sans épopée', S79: 'constitution', S80: 'liste de contrôle de relecture', S81: 'source sans personne entendue', S82: 'métrique et objectif désaccordés',
+  S68: 'espace réservé resté', S69: 'chiffre sans source', S70: 'fiche de contexte trop longue', S71: 'ADR sans règle', S72: 'collision entre tâches', S73: 'comportement existant à préserver', S74: 'taille et risque calculé', S75: 'attention humaine dépassée', S76: 'tâche non finie sans décision', S77: 'action de rétrospective sans suivi', S78: 'voie rapide sans épopée', S79: 'constitution', S80: 'liste de contrôle de relecture', S81: 'source sans personne entendue', S82: 'métrique et objectif désaccordés', S83: 'aucun utilisateur direct entendu', S84: 'exigence jamais relue par la source',
 };
