@@ -341,7 +341,17 @@ export function checkPrd(s) {
     if (chained) refs(out, 'S09', f, f.brd_requirements, brs, 'exigence du BRD');
     refs(out, 'S09', f, f.business_rules, rgs, 'règle métier');
     if (f.origin && /^DD-/.test(f.origin)) refs(out, 'S09', f, [f.origin], dds, 'décision');
-    if (f.origin && /^SRC-/.test(f.origin)) refs(out, 'S09', f, [f.origin], srcs, 'source');
+    if (f.origin && /^SRC-/.test(f.origin)) {
+      refs(out, 'S09', f, [f.origin], srcs, 'source');
+      // Même consigne que pour le BRD (`elicitation-patterns.md` section 6, commune aux deux skills) :
+      // `feedback` dit si la personne interrogée a relu la synthèse. Le champ existe dans le modèle du
+      // PRD depuis toujours, et `S84` ne vivait que dans `checkBrd` — invisible au garde-fou, qui lisait
+      // `rules.mjs` en entier alors qu'il est copié dans quatre skills.
+      const src = srcs.get(f.origin);
+      if (src && !FEEDBACK_FAIT.includes(src.feedback)) {
+        out.push({ rule: 'S84', id: f.id, message: `exigence tirée de ${f.origin}, que la personne interrogée n'a jamais relue (\`feedback\`) : ce qui a été compris n'a pas été vérifié auprès d'elle` });
+      }
+    }
     deadRefs(out, f, f.goals, goals);
   }
   for (const a of acs) {
