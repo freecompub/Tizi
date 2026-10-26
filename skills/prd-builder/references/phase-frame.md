@@ -12,9 +12,9 @@
 3. Copie aussi `business_rules` (avec `automation: à_décider`), `decision_rights` et `transition_requirements` depuis le handoff. Rattache chaque exigence de transition à une release (`release`) : la formation et la reprise de données accompagnent la release qui change la façon de travailler. Les contraintes d'environnement du BRD orientent les NFR de contexte d'usage (`references/nfr-taxonomy.md`). Les règles restent sous l'autorité du BRD : seul le champ `automation` se décide dans le PRD.
 4. Présente ce qui conditionne le produit : exigences Must, contraintes, hypothèses à vérifier, risques, zones d'ombre assumées, réserves d'approbation. Chaque point non résolu qui pèse sur le produit devient une zone d'ombre `conflit_amont` ou `hypothese_non_verifiee`.
 
-**Mode autonome** — mini-cadrage métier, par lots de questions :
+**Mode autonome** — mini-cadrage métier, par lots de questions. **Commence par demander qui te répond et en quelle qualité** — en son nom, au nom d'un groupe, en relayant un absent, ou à plusieurs dans la même pièce : une réponse par répondant, sauf s'ils sont d'accord (section 1 bis de `references/elicitation-patterns.md`). La question est due même quand une seule personne répond. Puis :
 1. Le problème, pour qui, et pourquoi maintenant.
-2. Ce qui prouve le problème : enregistre chaque élément comme source `SRC-xxx` (entretien, ticket, donnée, retour client, décision).
+2. Ce qui prouve le problème : enregistre chaque élément comme source `SRC-xxx` (entretien, ticket, donnée, retour client, décision). Une réunion à plusieurs répondants donne une source par voix entendue, chacune avec son `who`.
 3. Les résultats attendus (ils deviendront les objectifs produit).
 4. Ce qui est clairement hors du sujet.
 5. Qui tranche en cas de désaccord sur le périmètre, sur les priorités, et sur le comportement attendu du produit : renseigne `decision_rights` et fais-le confirmer par le sponsor ou le product owner.

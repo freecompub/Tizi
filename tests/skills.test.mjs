@@ -395,6 +395,34 @@ test('réserve de périmètre, cible décidée, guides d\'entretien : chacun a s
   assert.match(prd('SKILL.md'), /◐ `partielle`/, 'la posture ne dit pas l\'état partiel');
 });
 
+// Le recueil se fait souvent en réunion avec le métier, et la personne qui relaie rend des réponses
+// déjà agrégées : « environ 100 par semaine » quand le chef a dit 100 et un agent 150. Le défaut est
+// donc le pluriel — une réponse par répondant, sauf accord — et la fusion un acte conditionnel. Le test
+// vise le MOTIF, pas une formulation : la règle, sa borne (répondant, pas présent), la sortie du
+// formulaire fermé, et l'accord par silence qui n'en est pas un.
+test('plusieurs répondants : une réponse chacun, et le silence n\'est pas un accord', () => {
+  const copies = ['brd-builder', 'prd-builder'].map(s => readFileSync(join(SKILLS, s, 'references', 'elicitation-patterns.md'), 'utf8'));
+  assert.equal(new Set(copies.map(t => createHash('md5').update(t).digest('hex'))).size, 1,
+    'elicitation-patterns.md diverge entre le BRD et le PRD');
+
+  const [elic] = copies;
+  assert.match(elic, /une réponse par répondant[^.]{0,40}sauf s'ils sont d'accord/i, 'la règle du pluriel par défaut n\'est pas écrite');
+  assert.match(elic, /par personne qui a répondu/i, 'rien ne borne « par répondant » aux répondants de la question');
+  assert.match(elic, /ne sont pas d'accord/, 'le choix multiple n\'a pas sa sortie de formulaire');
+  assert.match(elic, /sortie du formulaire/, 'cocher le désaccord est présenté comme un résultat, pas comme un déclencheur');
+  assert.match(elic, /silence n'est pas un accord/i, 'un accord obtenu par non-contradiction passe pour un accord');
+  assert.match(elic, /une (seule )?personne répond/i, 'la question de la qualité n\'est pas due en tête-à-tête');
+  assert.match(elic, /la cadence ne change pas/i, 'rien ne dit que le lotissement des questions ne bouge pas en réunion');
+
+  // Une prescription que rien n'invoque est du poids mort : les deux premières phases l'appellent.
+  assert.match(readFileSync(join(SKILLS, 'brd-builder', 'references', 'phase-discover.md'), 'utf8'),
+    /en quelle qualité[\s\S]{0,400}1 bis/, 'le cadrage du BRD ne demande pas en quelle qualité on lui répond');
+  assert.match(readFileSync(join(SKILLS, 'prd-builder', 'references', 'phase-frame.md'), 'utf8'),
+    /en quelle qualité[\s\S]{0,400}1 bis/, 'le mini-cadrage du PRD ne demande pas en quelle qualité on lui répond');
+  assert.match(readFileSync(join(SKILLS, 'brd-builder', 'references', 'phase-discover.md'), 'utf8'),
+    /une par voix entendue/, 'une réunion à plusieurs répondants reste une seule source');
+});
+
 // Le mot `blocking` fermait une condition de sortie dans quatre documents, et un seul le définissait :
 // le BRD, en une ligne vraie par construction en début de phase (18 bloquantes sur 25). Le PRD du
 // deuxième dossier réel n'en a déclaré aucune sur 21 zones ouvertes — rien ne lui disait quand le
