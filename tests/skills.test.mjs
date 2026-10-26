@@ -447,10 +447,10 @@ test('plusieurs répondants : une réponse chacun, et le silence n\'est pas un a
 // 22 champs ordonnés dans les sept skills, de quoi tenir sans bruit. Un champ qu'on ordonne de remplir
 // et que personne ne relit est une case où l'agent écrira n'importe quoi sans jamais être contredit.
 // Chaque dérogation porte sa raison : c'est une dette nommée, pas un silence.
-const ORDRES_SANS_LECTEUR = {
-  'prd-builder/pattern': 'aucune règle ne vérifie les cinq motifs EARS ni l\'accord entre `pattern` et la forme de l\'énoncé ; à trancher (26 octobre 2026)',
-  'test-builder/environments': '`environments` n\'est lu par rien, et la même consigne nomme `settings.reports` qui n\'existe pas dans le modèle — adopt.mjs pose le rapport sur chaque suite ; à trancher (26 octobre 2026)',
-};
+// Vide, et c'est le but : les deux dérogations ouvertes le 26 octobre 2026 ont été levées le jour même —
+// `pattern` par `S85`, `environments` par `record-nfr.mjs`, qui refuse une mesure qui ne dit pas où elle
+// a été prise. Toute entrée ici doit porter sa raison et une ligne dans `## À trancher`.
+const ORDRES_SANS_LECTEUR = {};
 test('un champ qu\'une référence ordonne de remplir est lu par un script', () => {
   const mjs = dir => {
     const out = [];
