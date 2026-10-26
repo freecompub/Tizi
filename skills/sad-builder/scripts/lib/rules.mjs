@@ -341,6 +341,23 @@ export function checkPrd(s) {
   for (const d of arr(s.design_decisions).filter(live)) {
     if (d.status === 'validé' && !d.decided_by) out.push({ rule: 'S17', id: d.id, message: 'décision validée sans décideur déclaré' });
   }
+  // `S17` ne vérifiait que le champ non vide. Sur le deuxième dossier réel, cela donnait
+  // `decided_by: "le directeur (relayé par un membre du bureau)"` — une phrase, pas une personne — et
+  // `decision_rights` tenait « directeur + bureau (priorisation conjointe) » comme décideur. Le PRD a
+  // maintenant un registre : un décideur s'y nomme, par son identifiant ou par son nom. Le contrôle ne
+  // s'arme qu'une fois le registre renseigné, faute de quoi il redirait l'absence que `S81` dit déjà.
+  if (arr(s.stakeholders).length) {
+    for (const d of arr(s.decision_rights)) {
+      for (const qui of [d.decider, d.escalation].filter(Boolean)) {
+        if (!knownPerson(s, shs, qui)) out.push({ rule: 'S09', id: `decision_rights:${d.domain}`, message: `partie prenante « ${qui} » absente du registre : le décideur d'un domaine se nomme (SH-xx ou son nom)` });
+      }
+    }
+    const nomme = (x, champ, qui) => {
+      if (qui && !knownPerson(s, shs, qui)) out.push({ rule: 'S17', id: x.id, message: `${champ} « ${qui} » absent du registre des parties prenantes : il se nomme, et se prend dans decision_rights` });
+    };
+    for (const g of arr(s.goals).filter(live)) nomme(g, 'décideur de la cible', g.decided_by);
+    for (const d of arr(s.design_decisions).filter(live)) nomme(d, 'décideur', d.decided_by);
+  }
   return out;
 }
 
