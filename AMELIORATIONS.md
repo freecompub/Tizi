@@ -34,6 +34,7 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
 | Piste | Date | Où |
 |---|---|---|
 | Plusieurs répondants dans la même pièce : qualité demandée au cadrage, une réponse par répondant sauf accord, le silence n'en est pas un | 26 octobre 2026 | `entretien-en-reunion` |
+| Tour de table remonté au premier contact (Assess, pas le cadrage de Discover), et un lot de questions ne transporte pas de question ouverte | 26 octobre 2026 | `tour-de-table-en-assess` |
 | Garde-fou TDD : mode hors tâche tracé (`derogation.mjs`), borné dans le temps | 23 octobre 2026 | `audit/correctifs-2026-10-23` |
 | Tâche fusionnée libérée à la fusion, message qui dit quoi faire | 23 octobre 2026 | `audit/correctifs-2026-10-23` |
 | Index des sessions : un fichier par session, aucun écrivain partagé | 23 octobre 2026 | `audit/correctifs-2026-10-23` |
