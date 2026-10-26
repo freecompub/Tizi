@@ -12,6 +12,16 @@ Il y a toujours plus d'idées que de temps pour les construire. Une idée qui en
 
 Une initiative du SDLC correspond à **une opportunité** de taille raisonnable : un nouveau produit, mais plus souvent une fonctionnalité ou une amélioration d'un produit existant. Si l'idée est un programme entier, propose de la découper en plusieurs opportunités, chacune suivant sa propre chaîne BRD → PRD → conception → plan. Le découpage est une décision (`decoupee`), pas un abandon : l'initiative mère se clôt en nommant ses filles. Une chaîne courte, qui livre et apprend, vaut mieux qu'une longue séquence de documents pour tout un produit.
 
+## Qui te répond
+
+Avant les questions du canevas, demande qui te répond et qui est avec lui, et pour chacun son **nom et sa fonction** — deux faits, dans le premier échange, à côté du sujet et pas devant lui. La question est due même quand une seule personne répond : c'est elle qui permet d'attribuer `SRC-001` (voir « La première source » plus bas), et une demande portée au nom d'un absent ne s'enregistre pas au nom de l'absent.
+
+Tu demandes des **faits** — nom, fonction — et tu **déduis** la qualité de chacun pour la faire corriger : en son nom, au nom d'un groupe, ou en relayant quelqu'un d'absent. Ne fais pas classer ses collègues par l'utilisateur. Une réponse incomplète suffit pour avancer, et la liste se complète à mesure que les gens parlent : ne bloque rien dessus.
+
+La suite est dans la section 1 bis de `references/elicitation-patterns.md` — une réponse par répondant sauf s'ils sont d'accord, le silence qui n'est pas un accord, et la réunion à trois répondants qui donne trois sources.
+
+---
+
 ## D'abord : la demande est-elle figée ou fluide ?
 
 Note la demande initiale **mot pour mot** (`opportunity.request.verbatim`), puis classe-la avec l'utilisateur (approche reprise du design thinking de hve-core, méthode 1) :
@@ -24,6 +34,8 @@ En cas de doute, traite-la comme figée et cherche le problème qui la motive. U
 ## La conversation : le canevas d'opportunité
 
 Remplis `opportunity.canvas` avec l'utilisateur, par lots de 2 à 3 questions. Ce n'est pas un formulaire : une réponse inconnue s'écrit comme hypothèse, et on avance.
+
+**Un lot ne transporte pas de question ouverte.** Les lots sont faits pour les cases factuelles — qui a le problème, comment ils font aujourd'hui, quel ordre de grandeur de budget. Une question qui demande un **récit** (« raconte-moi ce qui se passe quand… », « qu'est-ce qui ne va pas aujourd'hui ») part seule, suivie du silence : deux récits dans le même message n'en obtiennent qu'un, et le second repart en une phrase sans que personne le remarque (`references/questions.md`). Deux problèmes distincts dans la demande font donc deux tours, pas un lot.
 
 | # | Case | Question |
 |---|---|---|
@@ -44,7 +56,9 @@ Note les **plus grandes hypothèses** dans `hypotheses` (`H-xxx`) : ce qui, si c
 ## La première source
 
 L'échange qui ouvre l'initiative est une source : enregistre-le en `SRC-001`, type `cadrage`, au nom de
-**la personne avec qui tu parles** — pas de celle dont elle rapporte les besoins. C'est fréquent qu'un
+**la personne avec qui tu parles** — pas de celle dont elle rapporte les besoins. C'est le tour de table
+(« Qui te répond » plus haut) qui donne ce nom ; s'ils étaient plusieurs à répondre, c'est une source par
+voix entendue, pas une seule pour l'échange. C'est fréquent qu'un
 demandeur porte la demande d'un sponsor qu'il n'est pas : dans ce cas le demandeur est une partie
 prenante à part entière, le sponsor reste `à interroger`, et tout ce qui vient de là est **rapporté**,
 jamais observé. `lint.mjs` le signale (S81) si la source est attribuée à quelqu'un que l'état déclare

@@ -421,17 +421,45 @@ test('plusieurs répondants : une réponse chacun, et le silence n\'est pas un a
   assert.match(elic, /contient déjà sa divergence/i, 'une réponse qui porte son propre désaccord passe inaperçue');
   assert.match(elic, /la cadence ne change pas/i, 'rien ne dit que le lotissement des questions ne bouge pas en réunion');
 
-  // Une prescription que rien n'invoque est du poids mort : les deux premières phases l'appellent.
+  // Une prescription que rien n'invoque est du poids mort, et elle doit s'invoquer au PREMIER contact :
+  // le tour de table était dans le cadrage de Discover, une phase trop tard. Le premier tour du BRD est
+  // Assess, qui attribue déjà `SRC-001` « au nom de la personne avec qui tu parles » sans jamais
+  // demander qui elle est. Le PRD n'a pas d'Assess : son premier contact est le cadrage autonome.
   // Deux assertions séparées plutôt qu'une regex positionnelle — la première a cassé au premier
   // durcissement de la consigne, alors que l'acte et l'appel étaient tous deux bien là.
+  const assess = readFileSync(join(SKILLS, 'brd-builder', 'references', 'phase-assess.md'), 'utf8');
   const discover = readFileSync(join(SKILLS, 'brd-builder', 'references', 'phase-discover.md'), 'utf8');
   const frame = readFileSync(join(SKILLS, 'prd-builder', 'references', 'phase-frame.md'), 'utf8');
-  for (const [nom, texte] of [['cadrage du BRD', discover], ['mini-cadrage du PRD', frame]]) {
-    assert.match(texte, /nom et fonction/i, `le ${nom} ne demande pas nom et fonction`);
+  for (const [nom, texte] of [['Assess du BRD', assess], ['cadrage autonome du PRD', frame]]) {
+    assert.match(texte, /nom et (sa )?fonction/i, `le ${nom} ne demande pas nom et fonction`);
     assert.match(texte, /1 bis/, `le ${nom} n'appelle pas la section du pluriel par défaut`);
   }
+  assert.match(assess, /une source par\s+voix entendue/, 'Assess enregistre une seule source pour une réunion à plusieurs');
+  assert.match(discover, /phase-assess\.md/, 'le cadrage de Discover ne dit pas où le tour de table a eu lieu');
   assert.match(discover, /une par voix entendue/, 'une réunion à plusieurs répondants reste une seule source');
   assert.match(discover, /^Les noms et fonctions recueillis au cadrage/m, 'le tour de table ne nourrit pas la cartographie');
+});
+
+// Observé sur un dossier réel : l'agent a posé en un message le nom de l'initiative, « raconte-moi ce
+// qui se passe quand une famille s'inscrit » et « qu'est-ce qui coince avec WhatsApp ». Deux récits dans
+// le même tour, exactement ce que `questions.md` interdit en annonçant la suite — « la personne répond à
+// celle qu'elle a comprise, souvent la dernière ». La contrainte était partout SAUF dans le fichier de
+// phase que l'agent avait sous les yeux, et qui autorisait des lots sans rien qualifier. Le test cherche
+// donc les endroits qui lotissent des QUESTIONS (pas des éléments ni des tâches) et exige la clause.
+test('un lot de questions ne transporte pas de question ouverte', () => {
+  const sites = [];
+  for (const s of skills) {
+    const dir = join(SKILLS, s, 'references');
+    for (const f of existsSync(dir) ? readdirSync(dir) : []) {
+      const texte = readFileSync(join(dir, f), 'utf8');
+      if (/par lots de [^.\n]{0,24}questions/.test(texte)) sites.push([`${s}/references/${f}`, texte]);
+    }
+  }
+  assert.ok(sites.length >= 3, `trop peu de sites trouvés : ${sites.map(([f]) => f).join(', ')}`);
+  for (const [f, texte] of sites) {
+    assert.match(texte, /un lot ne transporte pas de question ouverte/i,
+      `${f} lotit des questions sans dire qu'une question ouverte part seule`);
+  }
 });
 
 // Le mot `blocking` fermait une condition de sortie dans quatre documents, et un seul le définissait :

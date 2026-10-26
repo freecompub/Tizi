@@ -56,9 +56,9 @@ Une zone d'ombre se termine de deux façons :
 
 À faire en premier en Discover. Pars du canevas d'opportunité rempli en Assess : ne repose pas ce qui y est déjà répondu.
 
-**Avec le premier thème, demande qui te répond et qui est avec lui — nom et fonction pour chacun.** La réponse conditionne la façon d'enregistrer tout ce qui suit : une réponse par répondant, sauf s'ils sont d'accord (section 1 bis de `references/elicitation-patterns.md`). Elle est due même quand une seule personne répond, et chaque nom recueilli entre dans la cartographie (capacité 2), où c'est toi qui déduis la qualité — en son nom, pour un groupe, en relayant un absent.
+**Qui te répond a été demandé en Assess** — nom et fonction de chaque personne présente (`references/phase-assess.md`). Chaque nom recueilli là entre ici dans la cartographie (capacité 2), où c'est toi qui déduis la qualité : en son nom, pour un groupe, en relayant un absent. Redemande-le seulement si le cadrage reprend après une pause, ou si rien dans l'état ne dit qui a répondu : la salle a pu changer sans que rien ne le dise. La règle d'enregistrement ne bouge pas — une réponse par répondant, sauf s'ils sont d'accord (section 1 bis de `references/elicitation-patterns.md`).
 
-Couvre ensuite ces thèmes, par lots de 2 à 3 questions, dans cet ordre :
+Couvre ensuite ces thèmes, par lots de 2 à 3 questions, dans cet ordre — mais **un lot ne transporte pas de question ouverte** : un thème qui demande un récit part seul, suivi du silence (`references/questions.md`).
 
 1. **Initiative** : son nom ; pourquoi maintenant (quel déclencheur) ?
 2. **Problème** : que se passe-t-il aujourd'hui ? Quels symptômes ? Quel impact (temps, coût, risque, qualité) ? Depuis quand ?
