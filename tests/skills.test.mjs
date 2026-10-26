@@ -412,15 +412,26 @@ test('plusieurs répondants : une réponse chacun, et le silence n\'est pas un a
   assert.match(elic, /sortie du formulaire/, 'cocher le désaccord est présenté comme un résultat, pas comme un déclencheur');
   assert.match(elic, /silence n'est pas un accord/i, 'un accord obtenu par non-contradiction passe pour un accord');
   assert.match(elic, /une (seule )?personne répond/i, 'la question de la qualité n\'est pas due en tête-à-tête');
+  // Demander un décompte vaut mieux que guetter « on pense que » : « je suis avec l'équipe » répond à
+  // « qui est là ? » et pas à « qui, et quelle fonction ? ». Et la fonction est un fait qu'on demande,
+  // la qualité une inférence qu'on propose — l'utilisateur ne classe pas ses collègues.
+  assert.match(elic, /nom et (sa )?fonction/i, 'le tour de table ne demande pas nom et fonction');
+  assert.match(elic, /déduis la qualité/i, 'la qualité est demandée au lieu d\'être déduite et soumise');
+  assert.match(elic, /n'en fais pas un formulaire/i, 'rien n\'interdit de bloquer sur un tour de table complet');
+  assert.match(elic, /contient déjà sa divergence/i, 'une réponse qui porte son propre désaccord passe inaperçue');
   assert.match(elic, /la cadence ne change pas/i, 'rien ne dit que le lotissement des questions ne bouge pas en réunion');
 
   // Une prescription que rien n'invoque est du poids mort : les deux premières phases l'appellent.
-  assert.match(readFileSync(join(SKILLS, 'brd-builder', 'references', 'phase-discover.md'), 'utf8'),
-    /en quelle qualité[\s\S]{0,400}1 bis/, 'le cadrage du BRD ne demande pas en quelle qualité on lui répond');
-  assert.match(readFileSync(join(SKILLS, 'prd-builder', 'references', 'phase-frame.md'), 'utf8'),
-    /en quelle qualité[\s\S]{0,400}1 bis/, 'le mini-cadrage du PRD ne demande pas en quelle qualité on lui répond');
-  assert.match(readFileSync(join(SKILLS, 'brd-builder', 'references', 'phase-discover.md'), 'utf8'),
-    /une par voix entendue/, 'une réunion à plusieurs répondants reste une seule source');
+  // Deux assertions séparées plutôt qu'une regex positionnelle — la première a cassé au premier
+  // durcissement de la consigne, alors que l'acte et l'appel étaient tous deux bien là.
+  const discover = readFileSync(join(SKILLS, 'brd-builder', 'references', 'phase-discover.md'), 'utf8');
+  const frame = readFileSync(join(SKILLS, 'prd-builder', 'references', 'phase-frame.md'), 'utf8');
+  for (const [nom, texte] of [['cadrage du BRD', discover], ['mini-cadrage du PRD', frame]]) {
+    assert.match(texte, /nom et fonction/i, `le ${nom} ne demande pas nom et fonction`);
+    assert.match(texte, /1 bis/, `le ${nom} n'appelle pas la section du pluriel par défaut`);
+  }
+  assert.match(discover, /une par voix entendue/, 'une réunion à plusieurs répondants reste une seule source');
+  assert.match(discover, /^Les noms et fonctions recueillis au cadrage/m, 'le tour de table ne nourrit pas la cartographie');
 });
 
 // Le mot `blocking` fermait une condition de sortie dans quatre documents, et un seul le définissait :

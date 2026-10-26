@@ -144,7 +144,7 @@ la moitié utile du 5 (l'attribution ; la rétention du 5 reste autonome et urge
    - nous avons un angle mort entre le guide produit et les notes revenues : rien ne se passe, et si l'entretien tourne mal, on l'apprend à l'analyse de source, quand la personne ne se reçoit plus une troisième fois ;
    - leur point le plus transposable : les **dynamiques difficiles** (interviewé qui propose des solutions, qui parle à la place d'un autre profil, qui reste sur l'abstrait) ont chez eux des stratégies de récupération nommées. Nos « pièges à éviter » les listent sans dire quoi faire quand le piège s'est refermé.
    - À analyser : une capacité « reprendre un entretien en cours ou préparer la séance suivante » — ou une section de récupération dans le guide, ce qui serait moins ambitieux et ne demanderait aucune présence.
-5. **Paliers d'autorité et confidentialité du Meeting Analyst.** Nos sources n'ont pas de palier ; `S81` traite l'attribution, pas l'autorité. Et nous n'avons aucune règle de rétention ni d'anonymisation sur les transcriptions, alors que le dossier d'une initiative vit **dans le dépôt**, donc dans l'historique git — chez eux les fichiers de travail sont hors suivi et supprimés après le passage. À analyser en priorité sur ce dernier point : un verbatim nominatif commité l'est pour toujours.
+5. **Paliers d'autorité et confidentialité du Meeting Analyst.** Nos sources n'ont pas de palier ; `S81` traite l'attribution, pas l'autorité. Et nous n'avons aucune règle de rétention ni d'anonymisation sur les transcriptions, alors que le dossier d'une initiative vit **dans le dépôt**, donc dans l'historique git — chez eux les fichiers de travail sont hors suivi et supprimés après le passage. À analyser en priorité sur ce dernier point : un verbatim nominatif commité l'est pour toujours. **Et le tour de table du candidat 7 en fait un second endroit** : noms et fonctions des personnes présentes, dans `state.yaml`, donc dans l'historique git. Le BRD le faisait déjà par `stakeholders`, mais nous n'avons toujours aucune règle de rétention ni d'anonymisation.
 6. **Le palier « Unresolved n'est pas une classe de preuve ».** Chez nous une question ouverte signale une exigence non résolue ; chez eux, un élément non résolu **ne compte jamais comme soutien** d'une conclusion. À vérifier : est-ce que `lint.mjs` l'applique vraiment, ou seulement le signale ?
 
 7. **Déclarer la pièce, et faire l'entretien en direct.** — *écrit sur la branche `entretien-en-reunion` :
@@ -165,6 +165,22 @@ la moitié utile du 5 (l'attribution ; la rétention du 5 reste autonome et urge
      comme une salle de huit. Aujourd'hui Tizi demande qui subit le problème, jamais en quelle qualité on
      lui répond — c'est le trou. Le deuxième dossier réel le montre : la qualité (« relayé en direct par
      un membre du bureau ») était consignée en texte libre dans `who`, après coup.
+   - **Un tour de table, pas une question molle** — durci par l'utilisateur le 26 octobre 2026 : demander
+     **nom et fonction** de chaque personne présente, et non « qui te répond et pour qui ». La différence
+     est de nature : « je suis avec l'équipe » répond à la question molle, pas à celle-là. Une liste se
+     compte, se compare à la cartographie, et rattache chaque réponse à un nom — la première produit de la
+     prose, la seconde de la donnée. Deux conséquences :
+     - **la détection se résout par construction.** Plus besoin de guetter « on pense que », « Marie dit
+       que », l'acteur absent de la section 2 : la question a établi une liste, et « on » n'est plus une
+       réponse recevable. Il ne reste utile qu'un signal, celui que le tour de table ne couvre pas — la
+       réponse qui **contient déjà sa divergence** (« 100, enfin plutôt 150 selon Paul »).
+     - **un nom et une fonction sont une partie prenante** : le tour de table est le début de la
+       cartographie, plus tôt et mieux sourcé que « qui subit le problème ? », et il rend l'absence visible
+       (quatre personnes, aucune qui fait le travail dont on parle).
+     Trois contraintes : demander les **faits** (nom, fonction) et **déduire** la qualité pour la faire
+     corriger, jamais faire classer ses collègues par l'utilisateur ; accepter une liste incomplète et ne
+     rien bloquer dessus, parce qu'en réunion réelle elle arrive en morceaux ; et voir que les noms entrent
+     dans git pour toujours (candidat 5, qui cesse d'être théorique).
    - **La configuration ne change pas pendant la session** — tranché par l'utilisateur le 26 octobre 2026 :
      elle ne se redemande qu'**à la reprise après une pause**, ou quand trop de temps a passé. Donc aucun
      signal à détecter en cours de route, et la question se raccroche à l'étape de reprise qui existe déjà
