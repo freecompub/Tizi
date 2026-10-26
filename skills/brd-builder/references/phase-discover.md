@@ -56,7 +56,7 @@ Une zone d'ombre se termine de deux façons :
 
 À faire en premier en Discover. Pars du canevas d'opportunité rempli en Assess : ne repose pas ce qui y est déjà répondu.
 
-**Avant le premier thème, demande qui te répond et en quelle qualité** — en son nom, au nom d'un groupe, en relayant un absent, ou à plusieurs dans la même pièce. La réponse conditionne la façon d'enregistrer tout ce qui suit : une réponse par répondant, sauf s'ils sont d'accord (section 1 bis de `references/elicitation-patterns.md`). Elle est due même quand une seule personne répond.
+**Avec le premier thème, demande qui te répond et qui est avec lui — nom et fonction pour chacun.** La réponse conditionne la façon d'enregistrer tout ce qui suit : une réponse par répondant, sauf s'ils sont d'accord (section 1 bis de `references/elicitation-patterns.md`). Elle est due même quand une seule personne répond, et chaque nom recueilli entre dans la cartographie (capacité 2), où c'est toi qui déduis la qualité — en son nom, pour un groupe, en relayant un absent.
 
 Couvre ensuite ces thèmes, par lots de 2 à 3 questions, dans cet ordre :
 
@@ -80,6 +80,8 @@ Règles :
 ## 2. Cartographie des parties prenantes
 
 Déclencheur : après le cadrage, ou à la demande.
+
+Les noms et fonctions recueillis au cadrage (section 1 bis de `references/elicitation-patterns.md`) entrent ici : ce sont des gens réels, d'une meilleure source que « qui subit le problème ? ». Qui était dans la pièce sans faire le travail dont on parle le dit aussi — et c'est le point 6 qui en tire la zone d'ombre.
 
 1. Pour chaque partie prenante, propose trois appréciations, que l'utilisateur corrige :
    - **impact** (`fort` | `faible`) : à quel point le changement touche son travail ou son pouvoir ;

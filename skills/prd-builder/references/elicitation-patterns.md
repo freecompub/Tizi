@@ -20,7 +20,15 @@ Classe chaque extrait dans l'une de ces catégories avant d'en tirer un besoin c
 
 ## 1 bis. Quand plusieurs personnes répondent
 
-**En quelle qualité.** Avant les questions de fond, demande qui te répond et **pour qui** : son rôle, et s'il parle en son nom, au nom d'un groupe, ou en relayant quelqu'un d'absent. La question est due même quand une seule personne répond — un chef de service seul dans son bureau parle pour des agents qui n'ont rien dit, et c'est de là que naît la zone sur la voix non entendue (`partie_prenante_non_entendue` dans le BRD, `persona_non_fonde` dans un PRD autonome). Si plusieurs personnes sont là, note qui, et en quelle qualité chacun.
+**Qui est là : nom et fonction.** Dans le premier échange — à côté du sujet, pas devant lui — demande qui te répond et qui est avec lui, et pour chacun son **nom et sa fonction**. Deux faits, faciles à donner. La question est due même quand une seule personne répond : sa propre fonction compte, et un chef de service seul dans son bureau parle pour des agents qui n'ont rien dit.
+
+Demander un décompte vaut mieux que guetter des indices. « Je suis avec l'équipe » répond à « qui est là ? » mais pas à « qui, et quelle fonction ? » — et « on pense que » n'est plus une réponse recevable dès lors que la question a établi une liste.
+
+**Demande des faits, déduis la qualité.** « Chef de service » est une fonction ; « parle pour des agents absents » est une inférence, et c'est à toi de la **proposer** pour que l'utilisateur la corrige, comme les appréciations de la cartographie. Ne demande pas à l'utilisateur de classer ses collègues.
+
+Un nom et une fonction, **c'est une partie prenante** : le tour de table n'est pas une étape de plus, c'est le début de la cartographie, arrivé plus tôt et d'une meilleure source que « qui subit le problème ? ». Il rend aussi l'absence visible — quatre personnes dans la pièce et aucune qui fait le travail dont on parle, et la zone sur la voix non entendue s'ouvre au premier tour, avec une preuve (`partie_prenante_non_entendue` dans le BRD, `persona_non_fonde` dans un PRD autonome).
+
+**N'en fais pas un formulaire.** Une question, une fois, qui accepte une réponse incomplète : en réunion réelle la liste arrive mal et en morceaux, et les noms se complètent à mesure que les gens parlent. Ne bloque rien sur un tour de table complet.
 
 Cette configuration ne se redemande pas en cours de session. **À la reprise après une pause**, ou quand beaucoup de temps a passé, redemande qui est là : la salle a pu changer sans que rien ne le dise.
 
@@ -28,6 +36,8 @@ Cette configuration ne se redemande pas en cours de session. **À la reprise apr
 
 - **réponse libre** : recueille la réponse de chacun de ceux qui ont répondu. Fusionner est un acte, pas le défaut : il demande que les réponses coïncident ;
 - **choix multiples** : ajoute une réponse « les intervenants ne sont pas d'accord ». La cocher n'est pas un résultat, c'est la **sortie du formulaire** : elle déclenche le recueil par répondant, comme en réponse libre. Une case cochée seule dirait qu'il y a désaccord sans dire entre qui ni sur quoi.
+
+**Un signal à ne pas laisser passer** : une réponse qui contient déjà sa divergence — « 100, enfin plutôt 150 selon Paul », « ça dépend à qui tu demandes ». Le tour de table peut avoir été fait proprement, celle-là reste un désaccord déclaré sans attribution : demande qui a dit quoi.
 
 « Par répondant » veut dire **par personne qui a répondu à cette question**, pas par personne présente : dans une salle de huit, deux ou trois répondent à une question donnée. Chaque voix entendue donne sa propre source, avec son `who` — une réunion à trois répondants n'est pas une source, c'en est trois (`S81` : la partie prenante d'une source est celle qui a parlé).
 
