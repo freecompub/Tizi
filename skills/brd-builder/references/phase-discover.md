@@ -54,7 +54,11 @@ Une zone d'ombre se termine de deux façons :
 
 ## 1. Cadrage
 
-À faire en premier en Discover. Pars du canevas d'opportunité rempli en Assess : ne repose pas ce qui y est déjà répondu. Couvre ces thèmes, par lots de 2 à 3 questions, dans cet ordre :
+À faire en premier en Discover. Pars du canevas d'opportunité rempli en Assess : ne repose pas ce qui y est déjà répondu.
+
+**Avant le premier thème, demande qui te répond et en quelle qualité** — en son nom, au nom d'un groupe, en relayant un absent, ou à plusieurs dans la même pièce. La réponse conditionne la façon d'enregistrer tout ce qui suit : une réponse par répondant, sauf s'ils sont d'accord (section 1 bis de `references/elicitation-patterns.md`). Elle est due même quand une seule personne répond.
+
+Couvre ensuite ces thèmes, par lots de 2 à 3 questions, dans cet ordre :
 
 1. **Initiative** : son nom ; pourquoi maintenant (quel déclencheur) ?
 2. **Problème** : que se passe-t-il aujourd'hui ? Quels symptômes ? Quel impact (temps, coût, risque, qualité) ? Depuis quand ?
@@ -127,7 +131,7 @@ Indique en fin de guide, pour l'intervieweur seulement, la correspondance questi
 
 Déclencheur : l'utilisateur fournit un contenu ou un fichier.
 
-1. Enregistre la source : attribue un `SRC-xxx`, son type, sa date, la partie prenante concernée. Demande les informations manquantes. La partie prenante d'une source est **celle qui a parlé**, pas celle dont on rapporte les besoins : quand le demandeur parle au nom du directeur, la source est à son nom, et le directeur reste `à interroger` (`lint.mjs`, S81). Si le demandeur n'est pas encore dans la cartographie, ajoute-le : c'est une partie prenante, et souvent la seule entendue au départ.
+1. Enregistre la source : attribue un `SRC-xxx`, son type, sa date, la partie prenante concernée. Demande les informations manquantes. La partie prenante d'une source est **celle qui a parlé**, pas celle dont on rapporte les besoins : quand le demandeur parle au nom du directeur, la source est à son nom, et le directeur reste `à interroger` (`lint.mjs`, S81). Si le demandeur n'est pas encore dans la cartographie, ajoute-le : c'est une partie prenante, et souvent la seule entendue au départ. Quand la source vient d'une réunion ou d'un atelier où plusieurs personnes ont répondu, ce n'est pas une source mais **une par voix entendue**, chacune avec son `who` (section 1 bis de `references/elicitation-patterns.md`).
 2. Extrais, en citant à chaque fois l'emplacement exact (ligne, horodatage ou paragraphe) :
    - les **irritants** (ce qui ne va pas aujourd'hui) ;
    - les **besoins candidats**, formulés côté métier (« pouvoir… », « éviter que… ») ;
@@ -154,7 +158,7 @@ Ne reformule jamais un verbatim au point d'en changer le sens. En cas de doute s
 - le déroulé « Big Picture » : événements en vrac, mise en ordre chronologique, acteurs et systèmes, points de friction (hotspots), opportunités ;
 - le matériel et la durée (2 à 3 h par défaut).
 
-**Après l'atelier** — l'utilisateur fournit une photo décrite, un export ou des notes. Traite-le comme une source (capacité 4), plus :
+**Après l'atelier** — l'utilisateur fournit une photo décrite, un export ou des notes. Traite-le comme une source (capacité 4) — donc une source par voix entendue, pas une seule pour l'atelier —, plus :
 - reconstitue le **processus actuel** comme une suite d'événements au passé (« commande reçue », « dossier validé »), enregistrée dans `current_process` ;
 - transforme chaque **hotspot** en zone d'ombre ou en besoin candidat ;
 - enregistre les **règles métier** apparues comme `RG-xxx` au statut `proposé`, avec l'atelier pour source.

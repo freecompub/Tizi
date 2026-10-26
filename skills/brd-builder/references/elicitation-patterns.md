@@ -18,6 +18,29 @@ Classe chaque extrait dans l'une de ces catégories avant d'en tirer un besoin c
 
 ---
 
+## 1 bis. Quand plusieurs personnes répondent
+
+**En quelle qualité.** Avant les questions de fond, demande qui te répond et **pour qui** : son rôle, et s'il parle en son nom, au nom d'un groupe, ou en relayant quelqu'un d'absent. La question est due même quand une seule personne répond — un chef de service seul dans son bureau parle pour des agents qui n'ont rien dit, et c'est de là que naît la zone sur la voix non entendue (`partie_prenante_non_entendue` dans le BRD, `persona_non_fonde` dans un PRD autonome). Si plusieurs personnes sont là, note qui, et en quelle qualité chacun.
+
+Cette configuration ne se redemande pas en cours de session. **À la reprise après une pause**, ou quand beaucoup de temps a passé, redemande qui est là : la salle a pu changer sans que rien ne le dise.
+
+**Une réponse par répondant, sauf s'ils sont d'accord.** C'est la règle, et elle vaut pour les deux formes de question :
+
+- **réponse libre** : recueille la réponse de chacun de ceux qui ont répondu. Fusionner est un acte, pas le défaut : il demande que les réponses coïncident ;
+- **choix multiples** : ajoute une réponse « les intervenants ne sont pas d'accord ». La cocher n'est pas un résultat, c'est la **sortie du formulaire** : elle déclenche le recueil par répondant, comme en réponse libre. Une case cochée seule dirait qu'il y a désaccord sans dire entre qui ni sur quoi.
+
+« Par répondant » veut dire **par personne qui a répondu à cette question**, pas par personne présente : dans une salle de huit, deux ou trois répondent à une question donnée. Chaque voix entendue donne sa propre source, avec son `who` — une réunion à trois répondants n'est pas une source, c'en est trois (`S81` : la partie prenante d'une source est celle qui a parlé).
+
+Pourquoi le pluriel est le défaut : interrogée à travers quelqu'un qui relaie, une salle rend des réponses déjà agrégées — « environ 100 dossiers par semaine » quand le chef a dit 100, un agent 150 à la rentrée, et que le désaccord disparaît sans laisser de trace. Le direct devient alors **pire** que des notes écrites, où le 150 serait encore lisible. Avec le pluriel par défaut, oublier la règle laisse trop de réponses, jamais une seule lissée.
+
+**Le silence n'est pas un accord.** Quand les réponses sont fusionnées, dis **comment** l'accord a été établi : chacun a répondu la même chose, ou personne n'a contredit. Le second est du silence — et dans une salle où le chef de service vient de parler, le silence de ses agents est la chose la plus prévisible qui soit. Un accord obtenu par non-contradiction, dans une pièce où la hiérarchie est présente, laisse **ouverte** la zone sur la voix non entendue.
+
+**Ce qu'une divergence devient**, selon le catalogue du document : dans le BRD, une `contradiction` avec sa liste de `parties` et son `subtype` — `factuelle` quand les faits s'opposent (personne ne décide, on cherche une preuve), `interets` quand les envies s'opposent (celle-là seule appelle un arbitre). Dans le PRD, `conflit_interets` pour des comportements incompatibles, et `hypothese_non_verifiee` quand deux chiffres s'opposent sans qu'aucun ne soit sourcé.
+
+**La cadence ne change pas.** Deux ou trois questions à la fois, une question ouverte seule : c'est *plus* vrai dans une salle que dans un chat. Un bloc de questions transforme la réunion en formulaire, et ce qui se passe entre deux questions est la matière — c'est là que quelqu'un dit « non, plutôt 150 ». Et ne ferme pas une question pour avoir droit à la case du désaccord : la question d'élicitation reste ouverte et seule (`references/questions.md`), une question fermée rend sa propre hypothèse. La règle du choix multiple sert là où le fermé existe déjà — la checklist, une décision soumise à la salle.
+
+---
+
 ## 2. Trois filtres pour lire des notes ou une transcription
 
 Applique-les à chaque source analysée. Chaque occurrence devient soit une **relance** pour le prochain échange avec la même personne, soit une **zone d'ombre** si la réponse ne peut venir que d'ailleurs.
