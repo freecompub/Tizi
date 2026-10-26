@@ -341,6 +341,17 @@ export function checkPrd(s) {
   for (const d of arr(s.design_decisions).filter(live)) {
     if (d.status === 'validé' && !d.decided_by) out.push({ rule: 'S17', id: d.id, message: 'décision validée sans décideur déclaré' });
   }
+  // `prd-builder/references/shadow-zones.md` prescrit « Renseigne `parties` et `arbiter` (le décideur du
+  // domaine dans `decision_rights`, jamais partie au conflit) » — et rien ne le vérifiait : `S15` et
+  // `S16` n'existaient que dans `checkBrd`, où le conflit est une `contradiction` de sous-type
+  // `interets` et non un type à lui seul. Sans `parties`, `S16` est d'ailleurs inatteignable : l'arbitre
+  // ne peut pas être trouvé partie à un conflit dont les parties ne sont pas dites.
+  for (const z of arr(s.shadow_zones).filter(z => z.status === 'ouverte' && z.type === 'conflit_interets')) {
+    if (!arr(z.parties).length) out.push({ rule: 'S15', id: z.id, message: 'conflit d\'intérêts sans parties nommées : on ne sait pas qui veut l\'inverse de qui' });
+    if (!z.arbiter) out.push({ rule: 'S15', id: z.id, message: 'conflit d\'intérêts sans arbitre : consulter decision_rights ou créer une zone arbitre_inconnu' });
+    else if (arr(z.parties).includes(z.arbiter)) out.push({ rule: 'S16', id: z.id, message: `l'arbitre ${z.arbiter} est partie au conflit` });
+    else if (arr(s.stakeholders).length && !knownPerson(s, shs, z.arbiter)) out.push({ rule: 'S09', id: z.id, message: `arbitre « ${z.arbiter} » absent du registre des parties prenantes` });
+  }
   // `S17` ne vérifiait que le champ non vide. Sur le deuxième dossier réel, cela donnait
   // `decided_by: "le directeur (relayé par un membre du bureau)"` — une phrase, pas une personne — et
   // `decision_rights` tenait « directeur + bureau (priorisation conjointe) » comme décideur. Le PRD a

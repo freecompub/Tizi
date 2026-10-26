@@ -107,6 +107,33 @@ test('S81 vaut aussi pour le PRD : une source dit qui a parlé', () => {
   assert.ok(codes(prd({ sources: [src({ stakeholders: ['SH-09'] })] })).includes('S09'), 'référence morte vers SH-09');
 });
 
+// `prd-builder/references/shadow-zones.md` prescrit « Renseigne `parties` et `arbiter` (…, jamais partie
+// au conflit) » et rien ne le vérifiait : S15 et S16 n'existaient que dans `checkBrd`, où le conflit est
+// une `contradiction` de sous-type `interets` et non un type à lui seul.
+test('un conflit d\'intérêts du PRD nomme ses parties et son arbitre', () => {
+  const reg = [{ id: 'SH-01', name: 'le directeur', role: 'directeur', status: 'interrogée' }];
+  const zone = x => ({ document: 'prd', phase: 'frame', stakeholders: reg, shadow_zones: [{ id: 'ZO-01', type: 'conflit_interets', status: 'ouverte', ...x }] });
+
+  const muette = checkState(zone({ arbiter: 'SH-01' }));
+  assert.ok(muette.some(f => f.rule === 'S15' && /sans parties nommées/.test(f.message)), 'conflit sans parties');
+
+  const sansArbitre = checkState(zone({ parties: ['SH-01', 'SH-02'] }));
+  assert.ok(sansArbitre.some(f => f.rule === 'S15' && /sans arbitre/.test(f.message)), 'conflit sans arbitre');
+
+  const juge = checkState(zone({ parties: ['SH-01', 'SH-02'], arbiter: 'SH-01' }));
+  assert.ok(juge.some(f => f.rule === 'S16'), 'arbitre partie au conflit');
+
+  const inconnu = checkState(zone({ parties: ['SH-02', 'SH-03'], arbiter: 'le bureau' }));
+  assert.ok(inconnu.some(f => f.rule === 'S09' && /arbitre/.test(f.message)), 'arbitre absent du registre');
+
+  const propre = codes(zone({ parties: ['SH-02', 'SH-03'], arbiter: 'le directeur' }));
+  for (const r of ['S15', 'S16']) assert.ok(!propre.includes(r), `${r} ne devrait pas se déclencher`);
+
+  // Une zone levée ne se contrôle plus, et un autre type n'est pas concerné.
+  assert.ok(!codes(zone({ status: 'levée' })).includes('S15'));
+  assert.ok(!codes(zone({ type: 'cas_limite' })).includes('S15'));
+});
+
 // `S17` ne vérifiait que le champ non vide, et le PRD n'avait pas de registre où chercher la personne :
 // sur le deuxième dossier réel, `decided_by: "le directeur (relayé par un membre du bureau)"` passait —
 // une phrase, pas une personne — et `decision_rights` tenait « directeur + bureau (priorisation
