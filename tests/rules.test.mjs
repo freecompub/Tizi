@@ -107,6 +107,33 @@ test('S81 vaut aussi pour le PRD : une source dit qui a parlé', () => {
   assert.ok(codes(prd({ sources: [src({ stakeholders: ['SH-09'] })] })).includes('S09'), 'référence morte vers SH-09');
 });
 
+// `S17` ne vérifiait que le champ non vide, et le PRD n'avait pas de registre où chercher la personne :
+// sur le deuxième dossier réel, `decided_by: "le directeur (relayé par un membre du bureau)"` passait —
+// une phrase, pas une personne — et `decision_rights` tenait « directeur + bureau (priorisation
+// conjointe) » comme décideur d'un domaine, ce qui n'est pas un droit de décision mais un arbitrage
+// non rendu.
+test('un décideur du PRD se nomme, par identifiant ou par son nom', () => {
+  const reg = [{ id: 'SH-01', name: 'un membre du bureau', role: 'membre du bureau', status: 'interrogée' }];
+  const prd = extra => ({ document: 'prd', phase: 'frame', stakeholders: reg, ...extra });
+
+  const phrase = checkState(prd({ design_decisions: [{ id: 'DD-01', status: 'validé', decided_by: 'le directeur (relayé par un membre du bureau)' }] }));
+  assert.ok(phrase.some(f => f.rule === 'S17' && /absent du registre/.test(f.message)), 'décideur qui est une phrase');
+
+  const cible = checkState(prd({ goals: [{ id: 'GOAL-1', statement: 'x', kpi: 'taux', target: '0', decided_by: 'le bureau' }] }));
+  assert.ok(cible.some(f => f.rule === 'S17' && /décideur de la cible/.test(f.message)), 'cible arrêtée par un inconnu');
+
+  const domaine = checkState(prd({ decision_rights: [{ domain: 'priorites', decider: 'directeur + bureau (priorisation conjointe)' }] }));
+  assert.ok(domaine.some(f => f.rule === 'S09' && /absente du registre/.test(f.message)), 'domaine confié à un décideur inconnu');
+
+  // Le nom suffit : l'identifiant n'est pas exigé, et le registre reconnaît les deux.
+  for (const qui of ['SH-01', 'un membre du bureau']) {
+    const ok = codes(prd({ design_decisions: [{ id: 'DD-01', status: 'validé', decided_by: qui }] }));
+    assert.ok(!ok.includes('S17'), `${qui} est dans le registre`);
+  }
+  // Et sans registre, le contrôle ne s'arme pas : c'est `S81` qui dit l'absence, une fois.
+  assert.ok(!codes({ document: 'prd', phase: 'frame', design_decisions: [{ id: 'DD-01', status: 'validé', decided_by: 'le directeur' }] }).includes('S17'));
+});
+
 test('S82 : une métrique et son objectif portent la même cible, ou rien', () => {
   const prd = extra => ({ document: 'prd', phase: 'frame', ...extra });
   const but = x => ({ id: 'GOAL-1', statement: 'x', kpi: 'MET-01 — perdus', target: '0', ...x });
