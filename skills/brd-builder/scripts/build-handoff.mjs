@@ -36,7 +36,9 @@ const handoff = {
   risks: validated(s.risks).map(({ id, text, likelihood, impact, response }) => ({ id, text, likelihood, impact, response })),
   assumed_shadow_zones: arr(s.shadow_zones).filter(z => z.status === 'assumée').map(({ id, question, resolution }) => ({ id, question, reason: resolution })),
   approval_reserves: arr(s.governance?.approvals).filter(a => a.decision === 'approuvé_avec_réserves').map(a => ({ by: a.stakeholder, reserves: arr(a.reserves) })),
-  stakeholders: arr(s.stakeholders).map(({ id, name, role }) => ({ id, name, role })),
+  // `status` et `represents` traversent : sans eux le PRD reçoit des noms sans savoir qui a été entendu,
+  // et S81 n'a rien à lire en aval (voir `rules.mjs`, checkSources).
+  stakeholders: arr(s.stakeholders).map(({ id, name, role, represents, status }) => ({ id, name, role, represents: represents ?? '', status: status ?? '' })),
   glossary: arr(s.glossary),
 };
 

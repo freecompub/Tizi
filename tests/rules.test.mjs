@@ -76,6 +76,37 @@ test('L07 : écran, bouton ou produit dans une exigence fonctionnelle', () => {
 // « rattaché dès que les objectifs seront écrits ». Le PRD livré annonçait « → 0 demande perdue » au § 2
 // et « → — » au § 8 pour la même MET-01, et la vérification disait « aucun avertissement » : aucune
 // règle ne lisait `metrics`.
+// Le deuxième dossier réel : neuf sources du PRD portant « le directeur de l'association (propos
+// relayés en direct par un membre du bureau) » dans un champ `who` libre que rien ne lisait, et le
+// document les présentait comme recueillies. S81 existait, mais dans `checkBrd` seul, parce que le PRD
+// n'avait pas de registre de parties prenantes. Il en a un, et la règle vaut pour les deux documents.
+test('S81 vaut aussi pour le PRD : une source dit qui a parlé', () => {
+  const prd = extra => ({ document: 'prd', phase: 'frame', ...extra });
+  const src = x => ({ id: 'SRC-001', type: 'entretien', date: '2026-10-26', ...x });
+
+  const muette = checkState(prd({ sources: [src({ stakeholders: [] })] }));
+  assert.ok(muette.some(f => f.rule === 'S81' && /qui a parlé/.test(f.message)), 'source sans personne entendue');
+
+  // Le cas exact du dossier : la source est attribuée à celui dont on rapporte les propos.
+  const rapportee = checkState(prd({
+    stakeholders: [{ id: 'SH-01', name: 'le directeur', role: 'directeur', status: 'à interroger' }],
+    sources: [src({ stakeholders: ['SH-01'] })],
+  }));
+  assert.ok(rapportee.some(f => f.rule === 'S81' && /rapporté par un tiers/.test(f.message)),
+    'source au nom de quelqu\'un que l\'état déclare « à interroger »');
+
+  const recueillie = codes(prd({
+    stakeholders: [{ id: 'SH-02', name: 'un membre du bureau', role: 'membre du bureau', represents: 'le directeur', status: 'interrogée' }],
+    sources: [src({ stakeholders: ['SH-02'] })],
+  }));
+  assert.ok(!recueillie.includes('S81'), 'source au nom de celui qui a parlé');
+
+  // Un document, un ticket : personne n'a parlé, et la règle ne s'applique pas.
+  assert.ok(!codes(prd({ sources: [src({ type: 'document', stakeholders: [] })] })).includes('S81'));
+  // Et une partie prenante citée mais absente du registre reste une référence morte.
+  assert.ok(codes(prd({ sources: [src({ stakeholders: ['SH-09'] })] })).includes('S09'), 'référence morte vers SH-09');
+});
+
 test('S82 : une métrique et son objectif portent la même cible, ou rien', () => {
   const prd = extra => ({ document: 'prd', phase: 'frame', ...extra });
   const but = x => ({ id: 'GOAL-1', statement: 'x', kpi: 'MET-01 — perdus', target: '0', ...x });

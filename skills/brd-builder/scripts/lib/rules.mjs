@@ -135,6 +135,29 @@ function deadRefs(out, owner, list, coll) {
 
 const mapOf = coll => new Map(arr(coll).map(x => [x.id, x]));
 
+// Une source déclarative tient par la personne qui a parlé. Sur le premier dossier réel, la source
+// unique de tout le cadrage était typée « autre » et attribuée au directeur — dont le même fichier
+// disait `status: à interroger`. Le dossier reposait donc sur quelqu'un qu'il déclarait ne pas avoir
+// entendu, et la personne qui avait réellement parlé n'apparaissait dans aucune ligne. Un dossier peut
+// tenir sur du rapporté ; il ne peut pas le présenter comme recueilli.
+// Le contrôle vivait dans `checkBrd` seul, parce que le PRD n'avait pas de registre de parties
+// prenantes : sur le deuxième dossier réel, ses neuf sources portaient « le directeur de l'association
+// (propos relayés en direct par un membre du bureau) » dans un champ libre que rien ne lisait, et le
+// document présentait tout cela comme recueilli. Le PRD a maintenant son registre, et la règle suit.
+const checkSources = (s, out, shs) => {
+  for (const src of arr(s.sources)) {
+    if (SOURCES_SANS_PRESENCE.includes(src.type)) continue;
+    const parties = arr(src.stakeholders);
+    refs(out, 'S09', src, parties, shs, 'partie prenante');
+    if (!parties.length) { out.push({ rule: 'S81', id: src.id, message: `source de type « ${src.type ?? 'non typée'} » sans partie prenante : qui a parlé ?` }); continue; }
+    const connues = parties.filter(p => shs.has(p));
+    const muettes = connues.filter(p => NON_ENTENDU.includes(shs.get(p).status));
+    if (connues.length && muettes.length === connues.length) {
+      out.push({ rule: 'S81', id: src.id, message: `source attribuée à ${muettes.join(', ')}, que l'état déclare « ${shs.get(muettes[0]).status} » : ce qui en vient est rapporté par un tiers, pas recueilli` });
+    }
+  }
+};
+
 export function checkBrd(s) {
   const out = [];
   const objs = mapOf(s.objectives), brs = mapOf(s.business_requirements), bcs = mapOf(s.candidate_needs);
@@ -215,22 +238,7 @@ export function checkBrd(s) {
     if (d.status === 'validé' && !d.decided_by) out.push({ rule: 'S17', id: d.id, message: 'décision validée sans décideur déclaré' });
     if (arr(d.options).length < 2) out.push({ rule: 'S18', id: d.id, message: 'décision présentée avec moins de deux options : le décideur n\'a pas eu de choix réel' });
   }
-  // Une source déclarative tient par la personne qui a parlé. Sur le premier dossier réel, la source
-  // unique de tout le cadrage était typée « autre » et attribuée au directeur — dont le même fichier
-  // disait `status: à interroger`. Le dossier reposait donc sur quelqu'un qu'il déclarait ne pas avoir
-  // entendu, et la personne qui avait réellement parlé n'apparaissait dans aucune ligne. Un dossier peut
-  // tenir sur du rapporté ; il ne peut pas le présenter comme recueilli.
-  for (const src of arr(s.sources)) {
-    if (SOURCES_SANS_PRESENCE.includes(src.type)) continue;
-    const parties = arr(src.stakeholders);
-    refs(out, 'S09', src, parties, shs, 'partie prenante');
-    if (!parties.length) { out.push({ rule: 'S81', id: src.id, message: `source de type « ${src.type ?? 'non typée'} » sans partie prenante : qui a parlé ?` }); continue; }
-    const connues = parties.filter(p => shs.has(p));
-    const muettes = connues.filter(p => NON_ENTENDU.includes(shs.get(p).status));
-    if (connues.length && muettes.length === connues.length) {
-      out.push({ rule: 'S81', id: src.id, message: `source attribuée à ${muettes.join(', ')}, que l'état déclare « ${shs.get(muettes[0]).status} » : ce qui en vient est rapporté par un tiers, pas recueilli` });
-    }
-  }
+  checkSources(s, out, shs);
   for (const sh of arr(s.stakeholders)) {
     if (sh.influence === 'négative' && sh.power === 'fort' && !arr(s.risks).some(r => arr(r.related).includes(sh.id) || r.origin === sh.id)) {
       out.push({ rule: 'S19', id: sh.id, message: 'partie prenante à fort pouvoir et influence négative sans risque associé' });
@@ -246,7 +254,9 @@ export function checkPrd(s) {
   const mets = arr(s.metrics).filter(live);
   const frs = mapOf(s.functional_requirements), dds = mapOf(s.design_decisions), srcs = mapOf(s.sources);
   const brs = mapOf(arr(s.brd_ref?.requirements)), rgs = mapOf(arr(s.business_rules));
+  const shs = mapOf(s.stakeholders);
   const acs = arr(s.acceptance_criteria).filter(live);
+  checkSources(s, out, shs);
   const push = (x, kind, text) => checkText(kind, text, { waived: waivedOf(x) }).forEach(f => out.push({ ...f, id: x.id }));
 
   if (['specify', 'govern'].includes(s.phase)) {

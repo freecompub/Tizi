@@ -440,6 +440,29 @@ test('plusieurs répondants : une réponse chacun, et le silence n\'est pas un a
   assert.match(discover, /^Les noms et fonctions recueillis au cadrage/m, 'le tour de table ne nourrit pas la cartographie');
 });
 
+// Le tour de table du PRD recueillait des noms et des fonctions qui n'avaient nulle part où aller : pas
+// de registre dans le template, `build-handoff.mjs` qui exportait des parties prenantes que rien
+// n'ingérait, et S81 enfermé dans `checkBrd`. Sur le deuxième dossier réel, treize sources portaient leur
+// attribution dans un champ `who` libre que ni règle ni rendu ne lisait.
+test('le PRD a un registre de parties prenantes, et la chaîne le remplit', () => {
+  const tpl = readFileSync(join(SKILLS, 'prd-builder', 'templates', 'state.yaml'), 'utf8');
+  assert.match(tpl, /^stakeholders: \[\]/m, 'le PRD n\'a pas de registre de parties prenantes');
+  assert.match(tpl, /status: à interroger\s+# à interroger \| interrogée/, 'le registre ne dit pas qui a été entendu');
+  assert.match(tpl, /represents: ""/, 'le registre ne porte pas la qualité de celui qui parle pour un autre');
+  assert.match(tpl, /stakeholders: \[SH-01\]/, 'une source du PRD ne nomme pas qui a parlé');
+  assert.doesNotMatch(tpl, /SRC-001[^}]*who:/, 'une source garde un champ libre concurrent de `stakeholders`');
+
+  // Le handoff portait id, name et role : le PRD recevait des noms sans savoir qui avait été entendu,
+  // donc S81 n'avait rien à lire en aval.
+  assert.match(readFileSync(join(SKILLS, 'brd-builder', 'scripts', 'build-handoff.mjs'), 'utf8'),
+    /stakeholders: arr\(s\.stakeholders\)[^\n]*status/, 'le handoff ne transmet pas le statut des parties prenantes');
+
+  const frame = readFileSync(join(SKILLS, 'prd-builder', 'references', 'phase-frame.md'), 'utf8');
+  assert.match(frame, /et \*\*`stakeholders`\*\* depuis le handoff/, 'le mode chaîné n\'ingère pas le registre');
+  assert.match(frame, /Chaque personne entre dans `stakeholders`/, 'le tour de table ne remplit pas le registre');
+  assert.match(frame, /S81/, 'rien ne dit au cadrage autonome ce que la règle refuse');
+});
+
 // Observé sur un dossier réel : l'agent a posé en un message le nom de l'initiative, « raconte-moi ce
 // qui se passe quand une famille s'inscrit » et « qu'est-ce qui coince avec WhatsApp ». Deux récits dans
 // le même tour, exactement ce que `questions.md` interdit en annonçant la suite — « la personne répond à
