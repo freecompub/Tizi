@@ -427,6 +427,15 @@ test('plusieurs répondants : une réponse chacun, et le silence n\'est pas un a
   // produisait. « À côté du sujet » veut dire à côté de la matière, pas à côté d'une autre question.
   assert.match(elic, /seule question de cet échange/i, 'rien n\'interdit d\'accoler le tour de table à une autre question');
   assert.match(elic, /tour suivant/i, 'le récit n\'est pas renvoyé au tour d\'après');
+  // Le même défaut s'est reproduit EN MILIEU de session sur un dossier réel : une question
+  // d'attribution posée à côté d'une question ouverte s'est perdue, et deux sources sont restées
+  // attribuées par défaut à la mauvaise personne. Courte et factuelle, elle paraît accolable comme le
+  // tour de table — d'où la règle générale, qui ne vaut pas que pour le premier échange.
+  assert.match(elic, /question d'attribution se pose seule/i, 'une question d\'attribution reste accolable à une question de fond');
+  assert.match(elic, /préfixer chaque réponse du prénom/i, 'rien ne propose la convention qui rend l\'attribution gratuite');
+  // Et la licence « déduis la qualité » avait été étendue à l'identité du locuteur, par le vocabulaire
+  // (« une vraie base de données » lu comme un parler de développeur — c'était l'enseignant).
+  assert.match(elic, /qualité se déduit, l'identité se demande/i, 'rien ne borne la déduction à la qualité');
 
   // Une prescription que rien n'invoque est du poids mort, et elle doit s'invoquer au PREMIER contact :
   // le tour de table était dans le cadrage de Discover, une phase trop tard. Le premier tour du BRD est
