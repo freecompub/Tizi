@@ -697,3 +697,31 @@ test('on n\'écrit pas de guide d\'entretien pour quelqu\'un qui est dans l\'éc
       `le modèle du ${doc} n'a pas où dire qui était présent`);
   }
 });
+
+// La doc de méthode n'était relue par rien, et elle a dérivé : elle annonçait quatre issues possibles
+// à l'évaluation d'une opportunité quand le modèle en porte six, et `decoupee` manquait — un lecteur
+// ne pouvait pas savoir qu'un découpage existe, alors que les deux dossiers réels l'ont utilisé.
+// Le garde lit l'énumération dans le GABARIT, pas dans la prose : ajouter une valeur force à toucher
+// la table ci-dessous, donc à écrire la phrase qui va avec. Il ne vérifie rien d'autre de la doc —
+// une cohérence générale entre la prose et les skills ne se teste pas par des chaînes de caractères.
+const DECISION_EN_FRANCAIS = {
+  en_attente: 'en attente', aller_plus_loin: 'aller plus loin', jeter: 'jeter',
+  decoupee: 'découper', a_apprendre: 'apprendre d’abord', reportee: 'reporter',
+};
+test('la doc nomme toutes les issues de l\'évaluation d\'une opportunité', () => {
+  const tpl = readFileSync(join(SKILLS, 'brd-builder', 'templates', 'state.yaml'), 'utf8');
+  const ligne = tpl.match(/^ {2}decision: en_attente *# *(.+)$/m);
+  assert.ok(ligne, 'l\'énumération des décisions d\'opportunité n\'est plus lisible dans le gabarit');
+  const valeurs = ligne[1].split('|').map(x => x.trim()).filter(Boolean);
+  assert.ok(valeurs.length >= 5, `énumération trop courte : ${valeurs.join(', ')}`);
+
+  const doc = readFileSync(join(ROOT, 'documentation', 'Tizi - un SDLC agentique.md'), 'utf8');
+  const assess = doc.slice(doc.indexOf('### Phase Assess'), doc.indexOf('### Emprunts au design thinking'));
+  assert.ok(assess.length > 400, 'la section Assess de la doc n\'a pas été trouvée');
+  for (const v of valeurs) {
+    const mot = DECISION_EN_FRANCAIS[v];
+    assert.ok(mot, `la décision « ${v} » n'a pas sa formulation dans DECISION_EN_FRANCAIS : ajoute-la, et écris-la dans la doc`);
+    if (v === 'en_attente') continue;        // l'état initial ne se raconte pas comme une issue
+    assert.ok(assess.includes(mot), `la doc ne nomme pas l'issue « ${mot} » (${v}) dans sa section Assess`);
+  }
+});
