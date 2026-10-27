@@ -53,7 +53,7 @@ scope:
 current_process: []      # reconstitué en Discover (atelier, entretiens)
 #  - { event: "Dossier reçu", actor: "", source: SRC-xxx }
 
-constraints: []          # - { type: legale|contractuelle|organisationnelle|budgetaire|environnement|autre, text: "", source: SRC-xxx, implication: "" }
+constraints: []          # - { type: legale|contractuelle|organisationnelle|budgetaire|environnement|autre:<libellé>, text: "", source: SRC-xxx, implication: "" }
                           #   environnement : conditions réelles d'usage (bruit, lumière, mains occupées ou gantées, déplacement, connexion, interruptions, temps disponible)
 
 stakeholders: []
@@ -74,7 +74,7 @@ stakeholders: []
 #                          # nomme en `ask_to`, jamais sur le seul changement de statut
 
 decision_rights: []      # qui tranche quoi, établi au cadrage et validé par le sponsor
-#  - domain: perimetre     # perimetre | objectifs | priorites | processus:<nom> | regles:<domaine> | donnees_securite | autre:<libellé>
+#  - domain: perimetre     # perimetre | objectifs | priorites | donnees_securite | processus:<nom> | regles:<domaine> | autre:<libellé>
 #    decider: SH-01
 #    escalation: SH-00     # recours si le décideur ne tranche pas ; le sponsor en dernier ressort
 #    confirmed_by: SH-00   # qui a confirmé cette attribution
@@ -82,7 +82,8 @@ decision_rights: []      # qui tranche quoi, établi au cadrage et validé par l
 
 sources: []
 #  - id: SRC-001
-#    type: entretien       # cadrage | entretien | observation | mesure | test | document | atelier | ticket | revue | dt-handoff | autre
+#    type: entretien       # cadrage | entretien | observation | mesure | test | document | atelier | ticket | revue | dt-handoff | décision | autre:<libellé>
+#                          # décision : un choix de l'utilisateur, pas un recueil — il ne vaut pas une voix entendue (S83)
 #                          # cadrage : l'échange qui ouvre l'initiative, avec qui porte la demande. Déclaratif,
 #                          # et souvent rapporté au nom d'un tiers : la partie prenante nommée doit être
 #                          # celle qui a parlé, pas celle dont on rapporte les besoins (S81)
@@ -251,7 +252,7 @@ synthesis_check:           # porte de synthèse avant Define (fin de Discover), 
 
 transition_requirements: []  # exigences de transition : ce qu'il faut pour passer de l'existant à la cible (BABOK)
 #  - id: TR-01
-#    kind: formation       # formation | conduite_du_changement | reprise_de_donnees | coexistence | communication | support | autre
+#    kind: formation       # formation | conduite_du_changement | reprise_de_donnees | coexistence | communication | support | autre:<libellé>
 #    text: ""
 #    stakeholders: [SH-02] # qui est concerné
 #    done_when: ""         # critère d'achèvement observable

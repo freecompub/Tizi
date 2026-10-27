@@ -146,7 +146,7 @@ data_entities: []
 
 interfaces: []
 #  - id: API-01
-#    kind: openapi         # openapi | asyncapi | autre
+#    kind: openapi         # openapi | asyncapi | autre:<libellé>
 #    name: ""
 #    provider: CT-02
 #    consumers: [CT-01]
