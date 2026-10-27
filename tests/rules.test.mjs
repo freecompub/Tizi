@@ -140,18 +140,32 @@ test('S85 : le motif EARS déclaré se retrouve dans l\'énoncé', () => {
 // lisait — trouvés par le garde-fou des ordres sans lecteur, dans `skills.test.mjs`.
 test('S83 : des besoins recueillis sans qu\'aucun utilisateur direct ait parlé', () => {
   const sh = (id, x) => ({ id, name: id, role: 'r', status: 'interrogée', ...x });
-  const brd = shs => ({ document: 'brd', phase: 'discover', stakeholders: shs, candidate_needs: [{ id: 'BC-001', statement: 'pouvoir suivre un dossier' }] });
+  const brd = (shs, srcs) => ({ document: 'brd', phase: 'discover', stakeholders: shs, sources: srcs,
+    candidate_needs: [{ id: 'BC-001', statement: 'pouvoir suivre un dossier' }] });
+  const vu = (id, type) => ({ id: 'SRC-001', type, stakeholders: [id] });
 
-  const relais = checkState(brd([sh('SH-01', { represents: 'les agents' })]));
+  const relais = checkState(brd([sh('SH-01', { represents: 'les agents' })], [vu('SH-01', 'entretien')]));
   assert.ok(relais.some(f => f.rule === 'S83' && /représentants/.test(f.message)), 'tout passe par un représentant');
 
-  const terrain = codes(brd([sh('SH-01', { represents: 'les agents' }), sh('SH-02', { end_user: true })]));
-  assert.ok(!terrain.includes('S83'), 'un utilisateur direct a été entendu');
+  const terrain = codes(brd([sh('SH-01', { represents: 'les agents' }), sh('SH-02', { end_user: true })], [vu('SH-02', 'entretien')]));
+  assert.ok(!terrain.includes('S83'), 'un utilisateur direct a été interrogé');
 
   // Un utilisateur direct encore à interroger ne compte pas : c'est justement la dette.
-  assert.ok(codes(brd([sh('SH-01'), sh('SH-02', { end_user: true, status: 'à interroger' })])).includes('S83'));
+  assert.ok(codes(brd([sh('SH-01'), sh('SH-02', { end_user: true, status: 'à interroger' })], [vu('SH-01', 'entretien')])).includes('S83'));
   // Et avant tout recueil, la règle ne dit rien.
   assert.ok(!codes({ document: 'brd', phase: 'discover', stakeholders: [sh('SH-01')] }).includes('S83'));
+
+  // `interrogée` écrasait deux états : entendue une fois, et interrogée sur son travail. Sur le premier
+  // dossier réel, les DIX sources étaient de type `cadrage` — l'échange qui ouvre l'initiative — et la
+  // règle se taisait parce qu'un parent y avait parlé : le parent demandeur, et développeur. Le dossier
+  // ouvrait au même moment une zone demandant ce que disent les parents qui ne sont ni l'un ni l'autre.
+  const cadrage = checkState(brd([sh('SH-02', { end_user: true })], [vu('SH-02', 'cadrage')]));
+  const trouve = cadrage.find(f => f.rule === 'S83');
+  assert.ok(trouve, 'présent au cadrage passe pour interrogé');
+  assert.match(trouve.message, /présent au cadrage mais jamais interrogé \(SH-02\)/);
+  // Une seule source d'entretien suffit à lever : la règle veut une voix recueillie, pas un quota.
+  assert.ok(!codes(brd([sh('SH-02', { end_user: true })],
+    [vu('SH-02', 'cadrage'), { id: 'SRC-002', type: 'observation', stakeholders: ['SH-02'] }])).includes('S83'));
 });
 
 test('S84 : une exigence validée sur des sources que personne n\'a relues', () => {

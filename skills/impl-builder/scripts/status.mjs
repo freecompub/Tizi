@@ -28,8 +28,11 @@ const out = [`Point d'étape — ${s.initiative?.name ?? initiative} (${doc}) �
 for (const c of COLLECTIONS) {
   const items = arr(s[c]);
   if (!items.length) continue;
+  // Les sources n'ont pas de statut de cycle de vie, et leur TYPE est ce qu'on veut voir : dix sources
+  // toutes de type `cadrage` disent que le dossier n'est jamais sorti de la pièce du premier échange.
+  const cle = c === 'sources' ? 'type' : 'status';
   const by = {};
-  for (const x of items) by[x.status ?? '—'] = (by[x.status ?? '—'] ?? 0) + 1;
+  for (const x of items) by[x[cle] ?? '—'] = (by[x[cle] ?? '—'] ?? 0) + 1;
   // Une collection sans statut — les sources en ont un de relecture, pas de cycle de vie — rendait
   // « sources : 10 — 10 — » : juste, illisible, donc recompté à la main. Le total suffit alors.
   const detail = by['—'] === items.length ? '' : ` — ${Object.entries(by).map(([k, n]) => `${n} ${k}`).join(', ')}`;
