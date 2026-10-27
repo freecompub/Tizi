@@ -156,6 +156,19 @@ const checkEnum = (out, id, champ, v) => {
 const DOMAINES_DUS = ['perimetre', 'objectifs', 'priorites'];
 // Un nom de décideur désigne une partie prenante : par son identifiant, ou par son nom s'il est renseigné.
 const knownPerson = (s, shs, v) => shs.has(v) || arr(s.stakeholders).some(sh => sh.name && sh.name === v);
+// `S81` refuse depuis longtemps une SOURCE attribuée à quelqu'un que l'état déclare « à interroger » :
+// ce qui en vient est rapporté par un tiers, pas recueilli. Personne n'avait transposé aux DÉCISIONS.
+// Le deuxième dossier réel le montre : le directeur était présent au cadrage et n'a pas parlé, son
+// autorité est décrite par un parent — et trois décisions d'opportunité ont été rendues en son nom.
+// Rien à ajouter au modèle pour le voir : les trois faits sont dans leurs champs, chacun juste. Il
+// manquait le croisement de deux d'entre eux.
+const personne = (s, shs, v) => shs.get(v) ?? arr(s.stakeholders).find(x => x.name && x.name === v);
+const rendueParAbsent = (out, s, shs, id, qui, quoi) => {
+  const sh = qui && personne(s, shs, qui);
+  if (sh && NON_ENTENDU.includes(sh.status)) {
+    out.push({ rule: 'S90', id, message: `${quoi} au nom de ${sh.name || sh.id}, que l'état déclare « ${sh.status} » : elle est rapportée par un tiers, pas rendue` });
+  }
+};
 export function evidenceOf(s, srcIds, ownerIds = []) {
   const srcs = new Map(arr(s.sources).map(x => [x.id, x]));
   const ids = [...new Set(arr(srcIds))];
@@ -249,6 +262,7 @@ export function checkBrd(s) {
     // n'est connue : en Assess, la carte n'existe pas encore.
     out.push({ rule: 'S56', id: 'opportunity', message: `décideur « ${s.opportunity.decided_by} » absent des parties prenantes : la décision d'opportunité revient au sponsor, qui se nomme (SH-xx)` });
   }
+  rendueParAbsent(out, s, shs, 'opportunity', s.opportunity?.decided_by, 'décision d\'opportunité rendue');
   if (s.opportunity?.decision === 'decoupee' && !arr(s.opportunity.split_into).length) {
     out.push({ rule: 'S56', id: 'opportunity', message: 'opportunité découpée sans nommer les initiatives filles (split_into) : close se relit alors comme un abandon' });
   }
@@ -367,6 +381,7 @@ export function checkBrd(s) {
     else if (d.confirmed_by === d.decider) out.push({ rule: 'S89', id, message: `« ${d.domain} » confirmé par son propre décideur : s'attribuer le droit de trancher n'est pas une confirmation, elle revient au sponsor` });
     else if (!d.confirmed_by) out.push({ rule: 'S89', id, message: `« ${d.domain} » attribué sans confirmation (confirmed_by) : l'attribution se valide par le sponsor, pas par celui qui en bénéficie` });
     if (d.escalation && d.escalation === d.decider) out.push({ rule: 'S89', id, message: `recours identique au décideur sur « ${d.domain} » : un recours vers soi-même n'en est pas un` });
+    rendueParAbsent(out, s, shs, id, d.decider, `attribution du droit de trancher « ${d.domain} »`);
   }
   if (['discover', 'define', 'govern'].includes(s.phase)) {
     const doms = new Set(arr(s.decision_rights).map(d => d.domain));
@@ -379,6 +394,7 @@ export function checkBrd(s) {
   for (const d of arr(s.decisions).filter(live)) {
     if (d.status === 'validé' && !d.decided_by) out.push({ rule: 'S17', id: d.id, message: 'décision validée sans décideur déclaré' });
     if (arr(d.options).length < 2) out.push({ rule: 'S18', id: d.id, message: 'décision présentée avec moins de deux options : le décideur n\'a pas eu de choix réel' });
+    rendueParAbsent(out, s, shs, d.id, d.decided_by, 'décision rendue');
   }
   checkSources(s, out, shs);
   for (const sh of arr(s.stakeholders)) {
@@ -535,6 +551,9 @@ export function checkPrd(s) {
     };
     for (const g of arr(s.goals).filter(live)) nomme(g, 'décideur de la cible', g.decided_by);
     for (const d of arr(s.design_decisions).filter(live)) nomme(d, 'décideur', d.decided_by);
+    for (const d of arr(s.decision_rights)) rendueParAbsent(out, s, shs, `decision_rights:${d.domain}`, d.decider, `attribution du droit de trancher « ${d.domain} »`);
+    for (const g of arr(s.goals).filter(live)) rendueParAbsent(out, s, shs, g.id, g.decided_by, 'cible arrêtée');
+    for (const d of arr(s.design_decisions).filter(live)) rendueParAbsent(out, s, shs, d.id, d.decided_by, 'décision de conception rendue');
   }
   return out;
 }
@@ -1087,5 +1106,5 @@ export const STRUCT_RULES = {
   S56: 'opportunité non décidée', S57: 'hypothèse risquée non testée', S58: 'itération sans revue', S59: 'release sans mesure des outcomes',
   S60: 'voie rapide non conforme', S61: 'ordre ouverture, milieu, fin', S62: 'story sans titre court',
   S63: 'exigence à source unique', S64: 'exigence sans source', S65: 'porte de synthèse', S66: 'exigence de transition incomplète', S67: 'exploration de concepts',
-  S68: 'espace réservé resté', S69: 'chiffre sans source', S70: 'fiche de contexte trop longue', S71: 'ADR sans règle', S72: 'collision entre tâches', S73: 'comportement existant à préserver', S74: 'taille et risque calculé', S75: 'attention humaine dépassée', S76: 'tâche non finie sans décision', S77: 'action de rétrospective sans suivi', S78: 'voie rapide sans épopée', S79: 'constitution', S80: 'liste de contrôle de relecture', S81: 'source sans personne entendue', S82: 'métrique et objectif désaccordés', S83: 'aucun utilisateur direct entendu', S84: 'exigence jamais relue par la source', S85: 'motif EARS absent ou désaccordé', S86: 'provenance d\'initiative incomplète ou hors énumération', S87: 'présent sans avoir parlé', S88: 'valeur hors énumération ou « autre » sans libellé', S89: 'droit de décision sans décideur ou confirmé par lui-même',
+  S68: 'espace réservé resté', S69: 'chiffre sans source', S70: 'fiche de contexte trop longue', S71: 'ADR sans règle', S72: 'collision entre tâches', S73: 'comportement existant à préserver', S74: 'taille et risque calculé', S75: 'attention humaine dépassée', S76: 'tâche non finie sans décision', S77: 'action de rétrospective sans suivi', S78: 'voie rapide sans épopée', S79: 'constitution', S80: 'liste de contrôle de relecture', S81: 'source sans personne entendue', S82: 'métrique et objectif désaccordés', S83: 'aucun utilisateur direct entendu', S84: 'exigence jamais relue par la source', S85: 'motif EARS absent ou désaccordé', S86: 'provenance d\'initiative incomplète ou hors énumération', S87: 'présent sans avoir parlé', S88: 'valeur hors énumération ou « autre » sans libellé', S89: 'droit de décision sans décideur ou confirmé par lui-même', S90: 'décision rendue au nom de quelqu\'un qu\'on n\'a pas entendu',
 };
