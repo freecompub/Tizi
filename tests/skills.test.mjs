@@ -420,6 +420,13 @@ test('plusieurs répondants : une réponse chacun, et le silence n\'est pas un a
   assert.match(elic, /n'en fais pas un formulaire/i, 'rien n\'interdit de bloquer sur un tour de table complet');
   assert.match(elic, /contient déjà sa divergence/i, 'une réponse qui porte son propre désaccord passe inaperçue');
   assert.match(elic, /la cadence ne change pas/i, 'rien ne dit que le lotissement des questions ne bouge pas en réunion');
+  // Le tour de table accolé à la première question de fond, trouvé sur un BRD réel le 27 octobre 2026 :
+  // « à côté du sujet, pas devant lui » se lisait « à côté d'une QUESTION sur le sujet », et en Assess
+  // cette question est toujours un récit — une demande figée, le document ordonne de la remonter au
+  // problème. La collision était donc systématique et pas accidentelle : tout premier échange la
+  // produisait. « À côté du sujet » veut dire à côté de la matière, pas à côté d'une autre question.
+  assert.match(elic, /seule question de cet échange/i, 'rien n\'interdit d\'accoler le tour de table à une autre question');
+  assert.match(elic, /tour suivant/i, 'le récit n\'est pas renvoyé au tour d\'après');
 
   // Une prescription que rien n'invoque est du poids mort, et elle doit s'invoquer au PREMIER contact :
   // le tour de table était dans le cadrage de Discover, une phase trop tard. Le premier tour du BRD est
@@ -435,6 +442,9 @@ test('plusieurs répondants : une réponse chacun, et le silence n\'est pas un a
     assert.match(texte, /1 bis/, `le ${nom} n'appelle pas la section du pluriel par défaut`);
   }
   assert.match(assess, /une source par\s+voix entendue/, 'Assess enregistre une seule source pour une réunion à plusieurs');
+  assert.match(assess, /seule question de ce premier échange/i, 'Assess laisse son premier échange porter le tour de table ET un récit');
+  // Le cadrage autonome du PRD n'avait pas le défaut : le tour de table y précède les thèmes numérotés.
+  assert.match(frame, /Commence par demander qui te répond/, 'le cadrage autonome du PRD ne place plus le tour de table avant ses thèmes');
   assert.match(discover, /phase-assess\.md/, 'le cadrage de Discover ne dit pas où le tour de table a eu lieu');
   assert.match(discover, /une par voix entendue/, 'une réunion à plusieurs répondants reste une seule source');
   assert.match(discover, /^Les noms et fonctions recueillis au cadrage/m, 'le tour de table ne nourrit pas la cartographie');

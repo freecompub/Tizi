@@ -14,7 +14,9 @@ Une initiative du SDLC correspond à **une opportunité** de taille raisonnable 
 
 ## Qui te répond
 
-Avant les questions du canevas, demande qui te répond et qui est avec lui, et pour chacun son **nom et sa fonction** — deux faits, dans le premier échange, à côté du sujet et pas devant lui. La question est due même quand une seule personne répond : c'est elle qui permet d'attribuer `SRC-001` (voir « La première source » plus bas), et une demande portée au nom d'un absent ne s'enregistre pas au nom de l'absent.
+Avant les questions du canevas, demande qui te répond et qui est avec lui, et pour chacun son **nom et sa fonction** — deux faits, dans le premier échange. La question est due même quand une seule personne répond : c'est elle qui permet d'attribuer `SRC-001` (voir « La première source » plus bas), et une demande portée au nom d'un absent ne s'enregistre pas au nom de l'absent.
+
+**C'est la seule question de ce premier échange** : il porte la demande reformulée — le verbatim, et comment tu l'as classée, pour qu'elle se corrige — et le tour de table, rien d'autre. Le récit qui remonte de la demande au problème part au **tour suivant**, seul, suivi du silence. Accoler les deux fait deux demandes dans un message, et c'est le récit qui en souffre : on répond à la question qu'on a comprise, et la plus riche de la phase revient en une phrase (`references/questions.md`).
 
 Tu demandes des **faits** — nom, fonction — et tu **déduis** la qualité de chacun pour la faire corriger : en son nom, au nom d'un groupe, ou en relayant quelqu'un d'absent. Ne fais pas classer ses collègues par l'utilisateur. Une réponse incomplète suffit pour avancer, et la liste se complète à mesure que les gens parlent : ne bloque rien dessus.
 
