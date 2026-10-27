@@ -149,6 +149,11 @@ const checkEnum = (out, id, champ, v) => {
   else if (!libelle) out.push({ rule: 'S88', id, message: `${champ} « ${tete} » sans libellé : un genre qu'on ne nomme pas passe pour renseigné` });
   else if (tete === 'autre') out.push({ rule: 'S88', id, message: `${champ} « ${libelle} » hors énumération, et nommé : candidat à devenir une valeur` });
 };
+// La fin de Discover exige un décideur « au moins pour le périmètre, les objectifs et les priorités »,
+// confirmé par le sponsor — et rien ne le vérifiait. Sur le premier dossier réel : `priorites` sans
+// décideur, et les deux autres confirmées par leur propre titulaire, le directeur s'attribuant le droit
+// de trancher. La réserve était écrite en commentaire YAML (« reste à confirmer par le bureau »).
+const DOMAINES_DUS = ['perimetre', 'objectifs', 'priorites'];
 // Un nom de décideur désigne une partie prenante : par son identifiant, ou par son nom s'il est renseigné.
 const knownPerson = (s, shs, v) => shs.has(v) || arr(s.stakeholders).some(sh => sh.name && sh.name === v);
 export function evidenceOf(s, srcIds, ownerIds = []) {
@@ -355,8 +360,19 @@ export function checkBrd(s) {
     }
   }
   for (const d of arr(s.decision_rights)) {
-    checkEnum(out, `decision_rights:${d.domain}`, 'domaine de décision', d.domain);
-    refs(out, 'S09', { id: `decision_rights:${d.domain}` }, [d.decider, d.escalation].filter(Boolean), shs, 'partie prenante');
+    const id = `decision_rights:${d.domain}`;
+    checkEnum(out, id, 'domaine de décision', d.domain);
+    refs(out, 'S09', { id }, [d.decider, d.escalation].filter(Boolean), shs, 'partie prenante');
+    if (!d.decider) out.push({ rule: 'S89', id, message: `domaine « ${d.domain} » déclaré sans décideur` });
+    else if (d.confirmed_by === d.decider) out.push({ rule: 'S89', id, message: `« ${d.domain} » confirmé par son propre décideur : s'attribuer le droit de trancher n'est pas une confirmation, elle revient au sponsor` });
+    else if (!d.confirmed_by) out.push({ rule: 'S89', id, message: `« ${d.domain} » attribué sans confirmation (confirmed_by) : l'attribution se valide par le sponsor, pas par celui qui en bénéficie` });
+    if (d.escalation && d.escalation === d.decider) out.push({ rule: 'S89', id, message: `recours identique au décideur sur « ${d.domain} » : un recours vers soi-même n'en est pas un` });
+  }
+  if (['discover', 'define', 'govern'].includes(s.phase)) {
+    const doms = new Set(arr(s.decision_rights).map(d => d.domain));
+    for (const dom of DOMAINES_DUS.filter(x => !doms.has(x))) {
+      out.push({ rule: 'S89', id: `decision_rights:${dom}`, message: `personne ne tranche « ${dom} » : la fin de Discover en demande un décideur au moins pour le périmètre, les objectifs et les priorités` });
+    }
   }
   // Les contraintes n'étaient bouclées par aucune règle du BRD : leur type n'était lu nulle part.
   for (const c of arr(s.constraints)) checkEnum(out, c.id ?? 'constraints', 'type de contrainte', c.type);
@@ -1071,5 +1087,5 @@ export const STRUCT_RULES = {
   S56: 'opportunité non décidée', S57: 'hypothèse risquée non testée', S58: 'itération sans revue', S59: 'release sans mesure des outcomes',
   S60: 'voie rapide non conforme', S61: 'ordre ouverture, milieu, fin', S62: 'story sans titre court',
   S63: 'exigence à source unique', S64: 'exigence sans source', S65: 'porte de synthèse', S66: 'exigence de transition incomplète', S67: 'exploration de concepts',
-  S68: 'espace réservé resté', S69: 'chiffre sans source', S70: 'fiche de contexte trop longue', S71: 'ADR sans règle', S72: 'collision entre tâches', S73: 'comportement existant à préserver', S74: 'taille et risque calculé', S75: 'attention humaine dépassée', S76: 'tâche non finie sans décision', S77: 'action de rétrospective sans suivi', S78: 'voie rapide sans épopée', S79: 'constitution', S80: 'liste de contrôle de relecture', S81: 'source sans personne entendue', S82: 'métrique et objectif désaccordés', S83: 'aucun utilisateur direct entendu', S84: 'exigence jamais relue par la source', S85: 'motif EARS absent ou désaccordé', S86: 'provenance d\'initiative incomplète ou hors énumération', S87: 'présent sans avoir parlé', S88: 'valeur hors énumération ou « autre » sans libellé',
+  S68: 'espace réservé resté', S69: 'chiffre sans source', S70: 'fiche de contexte trop longue', S71: 'ADR sans règle', S72: 'collision entre tâches', S73: 'comportement existant à préserver', S74: 'taille et risque calculé', S75: 'attention humaine dépassée', S76: 'tâche non finie sans décision', S77: 'action de rétrospective sans suivi', S78: 'voie rapide sans épopée', S79: 'constitution', S80: 'liste de contrôle de relecture', S81: 'source sans personne entendue', S82: 'métrique et objectif désaccordés', S83: 'aucun utilisateur direct entendu', S84: 'exigence jamais relue par la source', S85: 'motif EARS absent ou désaccordé', S86: 'provenance d\'initiative incomplète ou hors énumération', S87: 'présent sans avoir parlé', S88: 'valeur hors énumération ou « autre » sans libellé', S89: 'droit de décision sans décideur ou confirmé par lui-même',
 };
