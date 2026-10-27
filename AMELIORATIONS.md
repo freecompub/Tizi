@@ -33,6 +33,7 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
 
 | Piste | Date | Où |
 |---|---|---|
+| L'entretien se fait en direct avec qui est présent : pas de guide pour quelqu'un dans l'échange, `present` distingue qui était là de qui a parlé, et S87 voit les silencieux | 27 octobre 2026 | `entretien-en-direct` |
 | « interrogée » disait deux choses : S83 exige une voix recueillie et pas seulement présente au cadrage, et la zone se ferme sur les zones ouvertes, pas sur le statut | 27 octobre 2026 | `entendue-ou-presente` |
 | Un décompte présenté à l'utilisateur sort d'un script : `status.mjs` compte sources, parties prenantes et hypothèses, et la pause présente son point d'étape | 27 octobre 2026 | `chiffres-du-point-detape` |
 | Une initiative née d'une autre déclare sa provenance (`derived_from`), le besoin poussé ailleurs dit où (`moved_to`), et le portefeuille recoupe les deux sens | 27 octobre 2026 | `origine-des-initiatives` |

@@ -32,6 +32,10 @@ Demander un décompte vaut mieux que guetter des indices. « Je suis avec l'équ
 
 Un nom et une fonction, **c'est une partie prenante** : le tour de table n'est pas une étape de plus, c'est le début de la cartographie, arrivé plus tôt et d'une meilleure source que « qui subit le problème ? ». Il rend aussi l'absence visible — quatre personnes dans la pièce et aucune qui fait le travail dont on parle, et la zone sur la voix non entendue s'ouvre au premier tour, avec une preuve (`partie_prenante_non_entendue` dans le BRD, `persona_non_fonde` dans un PRD autonome).
 
+**Qui est là se fait interroger maintenant.** Le tour de table ne sert pas qu'à attribuer : il dit aussi qui n'a **pas** besoin d'un guide d'entretien. Une personne présente répond dans le fil aux questions qui la concernent, une par une — au lieu qu'on prépare un fichier, qu'on le remette à un humain, qu'on attende le retour de ses notes et qu'on les analyse. Le guide est pour l'**absent** : celui que personne n'a sous la main, ou l'organe collégial qu'il faut réunir. En produire un pour quelqu'un qui est là reporte des réponses disponibles et confie l'entretien à quelqu'un d'autre que toi.
+
+**Note qui était présent, pas seulement qui a parlé.** La source porte les deux : `stakeholders`, les voix entendues ; `present`, ceux qui étaient là. C'est leur différence qui est le sujet — un présent qui n'apparaît comme locuteur d'aucune source n'a pas été entendu, et sa zone reste ouverte quoi qu'il ait eu l'air d'approuver.
+
 **N'en fais pas un formulaire.** Une question, une fois, qui accepte une réponse incomplète : en réunion réelle la liste arrive mal et en morceaux, et les noms se complètent à mesure que les gens parlent. Ne bloque rien sur un tour de table complet.
 
 Cette configuration ne se redemande pas en cours de session. **À la reprise après une pause**, ou quand beaucoup de temps a passé, redemande qui est là : la salle a pu changer sans que rien ne le dise.

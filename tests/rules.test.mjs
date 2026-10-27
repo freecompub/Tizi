@@ -305,3 +305,32 @@ test('S86 : un besoin repris par une autre initiative est hors_périmètre chez 
   assert.ok(!codes(bc({ status: 'hors_périmètre', reason: 'repris ailleurs' })).includes('S86'));
   assert.match(msg(bc({ status: 'proposé' }), 'S86'), /de statut proposé/);
 });
+
+// Le tour de table apprend qui est là ; rien n'en tirait de conséquence. Au premier dossier réel le
+// fait vivait en commentaire YAML — « Dédé et Tom étaient présents et n'ont pas parlé » — donc
+// illisible, et deux guides d'entretien ont été produits pour des gens qui étaient dans l'échange.
+// `present` dit qui était là, `stakeholders` qui a parlé : c'est leur différence qui est le sujet.
+test('S87 : présent dans une source, locuteur d\'aucune', () => {
+  const sh = (id, x) => ({ id, name: id, role: 'r', status: 'interrogée', ...x });
+  const brd = (shs, srcs) => ({ document: 'brd', phase: 'discover', stakeholders: shs, sources: srcs });
+  const vus = [sh('SH-01'), sh('SH-02'), sh('SH-03', { status: 'à interroger' })];
+
+  // Présent ET locuteur ailleurs : rien. C'est le cas de Dédé et Tom, qui ont fini par parler.
+  assert.ok(!codes(brd(vus, [
+    { id: 'SRC-001', type: 'cadrage', stakeholders: ['SH-01'], present: ['SH-01', 'SH-02'] },
+    { id: 'SRC-002', type: 'entretien', stakeholders: ['SH-02'] },
+  ])).includes('S87'), 'un présent qui a parlé ailleurs est entendu');
+
+  const muet = checkState(brd(vus, [{ id: 'SRC-001', type: 'cadrage', stakeholders: ['SH-01'], present: ['SH-01', 'SH-02'] }]));
+  const f = muet.find(x => x.rule === 'S87');
+  assert.ok(f, 'un présent qui n\'a jamais parlé passe pour entendu');
+  assert.equal(f.id, 'SH-02');
+  assert.match(f.message, /silence n'est pas un accord/);
+
+  // Déjà dit par le statut : `à interroger` porte l'information, et S81 traite l'attribution.
+  assert.ok(!checkState(brd(vus, [{ id: 'SRC-001', type: 'cadrage', stakeholders: ['SH-01'], present: ['SH-03'] }]))
+    .some(x => x.rule === 'S87' && x.id === 'SH-03'), 'le statut le disait déjà');
+
+  // Un présent inconnu du registre est une référence morte, comme un locuteur inconnu.
+  assert.ok(codes(brd(vus, [{ id: 'SRC-001', type: 'cadrage', stakeholders: ['SH-01'], present: ['SH-99'] }])).includes('S09'));
+});
