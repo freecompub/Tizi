@@ -20,7 +20,9 @@ Classe chaque extrait dans l'une de ces catégories avant d'en tirer un besoin c
 
 ## 1 bis. Quand plusieurs personnes répondent
 
-**Qui est là : nom et fonction.** Dans le premier échange — à côté du sujet, pas devant lui — demande qui te répond et qui est avec lui, et pour chacun son **nom et sa fonction**. Deux faits, faciles à donner. La question est due même quand une seule personne répond : sa propre fonction compte, et un chef de service seul dans son bureau parle pour des agents qui n'ont rien dit.
+**Qui est là : nom et fonction.** Dans le premier échange, demande qui te répond et qui est avec lui, et pour chacun son **nom et sa fonction**. Deux faits, faciles à donner. La question est due même quand une seule personne répond : sa propre fonction compte, et un chef de service seul dans son bureau parle pour des agents qui n'ont rien dit.
+
+**C'est la seule question de cet échange.** « À côté du sujet, pas devant lui » veut dire à côté de la **matière** — ce que tu as compris de la demande, ce que tu en as enregistré, comment tu l'as classée — et non à côté d'une autre question. Accoler le tour de table à la première question de fond en fait deux demandes dans un message, et cette première question de fond est presque toujours un récit : il revient maigre, ou il ne revient pas (`references/questions.md`, « une question ouverte se pose seule »). Le récit part au **tour suivant**, seul, suivi du silence. Un aller-retour de plus coûte moins cher que le récit qu'on perd.
 
 Demander un décompte vaut mieux que guetter des indices. « Je suis avec l'équipe » répond à « qui est là ? » mais pas à « qui, et quelle fonction ? » — et « on pense que » n'est plus une réponse recevable dès lors que la question a établi une liste.
 
