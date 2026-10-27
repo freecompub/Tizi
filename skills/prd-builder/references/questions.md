@@ -30,20 +30,33 @@ Deux nombres, et on les confond facilement — c'est ainsi qu'un agent finit par
 | Nombre | Ce qu'il compte |
 |---|---|
 | **cinq** | Ce que `ask-five.mjs` **retient** : les zones d'ombre ouvertes les plus déterminantes, classées par impact. Une sélection, pas un message |
-| **deux ou trois** | Ce qu'on **pose** par tour, dans l'ordre de la sélection, avant d'attendre les réponses et de les réécrire dans l'état |
+| **une** | Ce qu'on **pose** par tour : une question, le silence, la réponse réécrite dans l'état — puis la suivante |
 
-Le plafond n'est jamais un quota : rien n'oblige à poser les cinq, ni à les poser d'un coup. Une seule
-question qui ouvre une vraie conversation vaut mieux que cinq qui tiennent dans un message.
+Le plafond n'est jamais un quota : rien n'oblige à poser les cinq. Une seule question qui ouvre une
+vraie conversation vaut mieux que cinq qui tiennent dans un message.
+
+**Une question, c'est un point d'interrogation.** « Combien d'enfants sont inscrits, et pour combien de
+familles ? Combien de groupes tournent dans l'année ? » n'est pas une question : c'en est trois, dans
+deux phrases, dans une puce. Le décompte porte sur ce qu'on demande, jamais sur la mise en page — trois
+nombres réclamés dans une puce restent trois questions, et le troisième revient approximatif ou pas du
+tout. Sur le premier dossier réel, un tour annoncé « trois questions courtes » en portait cinq.
 
 **Présenter une liste n'est pas poser des questions.** L'analyse croisée produit une table de constats :
 c'est une liste à **trier**, et le tri s'enregistre par son script (`cross-merge.mjs`). Elle n'attend pas
-de réponse sur le fond. Les questions, elles, viennent après, par `ask-five.mjs`, deux ou trois à la
-fois. Confondre les deux actes est la façon la plus courante de noyer quelqu'un sous un formulaire.
+de réponse sur le fond. Les questions, elles, viennent après, par `ask-five.mjs`, une à la fois.
+Confondre les deux actes est la façon la plus courante de noyer quelqu'un sous un formulaire.
 
-**Une question ouverte se pose seule.** Trois questions ouvertes dans le même message reviennent à n'en
-poser qu'une : la personne répond à celle qu'elle a comprise, souvent la dernière, et les deux autres
-disparaissent sans que personne le remarque. Après la question, le silence — c'est lui qui fait venir
-la précision, pas la relance.
+**Une question à la fois.** Pas deux, même factuelles, même courtes. Deux questions dans le même
+message reviennent à n'en poser qu'une : la personne répond à celle qu'elle a comprise, souvent la
+dernière, et l'autre disparaît sans que personne le remarque. Après la question, le silence — c'est lui
+qui fait venir la précision, pas la relance.
+
+Et ce qui se perd n'est pas que la question : c'est la **relance**. Une réponse vague à la première
+question se rattrape — « tu dis « beaucoup », ça fait combien ? ». La même réponse vague à la deuxième
+d'un lot ne se rattrape jamais : le tour est passé, les deux réponses sont enregistrées ensemble, et
+celle qui était molle le reste. C'est pourquoi chaque réponse se réécrit dans l'état avant la suivante.
+La seule exception est le choix fermé d'une même décision, plus bas — jamais une élicitation, jamais un
+arbitrage, jamais une case de canevas.
 
 Le fait que l'outil de l'hôte accepte quatre questions par appel ne change rien à cette règle : c'est
 une limite technique, pas une invitation. Quatre choix fermés dans un appel, oui ; quatre questions

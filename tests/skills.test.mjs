@@ -549,19 +549,35 @@ test('le PRD a un registre de parties prenantes, et la chaîne le remplit', () =
 // celle qu'elle a comprise, souvent la dernière ». La contrainte était partout SAUF dans le fichier de
 // phase que l'agent avait sous les yeux, et qui autorisait des lots sans rien qualifier. Le test cherche
 // donc les endroits qui lotissent des QUESTIONS (pas des éléments ni des tâches) et exige la clause.
-test('un lot de questions ne transporte pas de question ouverte', () => {
-  const sites = [];
+// Les lots de 2 à 3 questions ont été retirés : une question à la fois, partout. Deux étapes avant,
+// la règle ne valait que pour les questions OUVERTES, un lot de factuelles restant permis — et le
+// dossier réel a montré ce que ça donne : un tour annoncé « trois questions courtes » en portait cinq,
+// parce que « 2 à 3 questions » ne disait pas ce qu'est une question. Le décompte porte donc sur ce
+// qu'on demande, pas sur la mise en page : trois nombres dans une puce sont trois questions.
+test('une question à la fois, et plus aucun lot de questions', () => {
+  const refs = [];
   for (const s of skills) {
     const dir = join(SKILLS, s, 'references');
     for (const f of existsSync(dir) ? readdirSync(dir) : []) {
-      const texte = readFileSync(join(dir, f), 'utf8');
-      if (/par lots de [^.\n]{0,24}questions/.test(texte)) sites.push([`${s}/references/${f}`, texte]);
+      refs.push([`${s}/references/${f}`, readFileSync(join(dir, f), 'utf8')]);
     }
   }
-  assert.ok(sites.length >= 3, `trop peu de sites trouvés : ${sites.map(([f]) => f).join(', ')}`);
-  for (const [f, texte] of sites) {
-    assert.match(texte, /un lot ne transporte pas de question ouverte/i,
-      `${f} lotit des questions sans dire qu'une question ouverte part seule`);
+  for (const [f, texte] of refs) {
+    assert.doesNotMatch(texte, /par lots de \d|lot ne transporte/i, `${f} lotit encore des questions`);
+    assert.doesNotMatch(texte, /deux ou trois (questions )?à la fois/i, `${f} pose encore deux ou trois questions par tour`);
+  }
+
+  const q = refs.find(([f]) => f === 'brd-builder/references/questions.md')[1];
+  assert.match(q, /\*\*Une question à la fois\.\*\*/, 'la règle du tour unique n\'est pas écrite');
+  assert.match(q, /une question, c'est un point d'interrogation/i, 'rien ne dit ce qu\'est UNE question');
+  assert.match(q, /ce qu'on demande, jamais sur la mise en page/i, 'le décompte peut encore se faire sur les puces');
+  assert.match(q, /c'est la \*\*relance\*\*/, 'rien ne dit ce qu\'un lot fait perdre : la relance');
+
+  // Les trois endroits qui lotissaient appellent la règle commune.
+  for (const f of ['brd-builder/references/phase-assess.md', 'brd-builder/references/phase-discover.md',
+                   'prd-builder/references/phase-frame.md']) {
+    const texte = refs.find(([x]) => x === f)[1];
+    assert.match(texte, /une question à la fois/i, `${f} ne dit plus comment poser ses questions`);
   }
 });
 
