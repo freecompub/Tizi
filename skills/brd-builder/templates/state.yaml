@@ -4,6 +4,12 @@ initiative:
   name: ""
   slug: ""
   trigger: ""            # pourquoi maintenant
+  derived_from: {}       # d'où elle vient, quand elle ne naît pas d'une demande mais d'une autre
+                         # initiative. Renseigne `derived_from` à la création : `split_into` ne dit la
+                         # filiation que vers le bas, et seulement depuis une mère close
+  #  initiative: ""      # slug de l'initiative d'origine
+  #  reason: decoupage   # decoupage | sortie_perimetre | autre:<libellé>
+  #  decision: ""        # la décision qui l'a produite, chez la mère : DD-xx, ou sa décision d'opportunité
 phase: assess            # assess | discover | define | govern | close (opportunité jetée)
 created: ""              # AAAA-MM-JJ
 updated: ""
@@ -89,6 +95,9 @@ candidate_needs: []
 #    sources: [{ ref: SRC-001, location: "l.42" }]
 #    status: proposé       # proposé | confirmé | intégré | abandonné | hors_périmètre
 #    reason: ""            # obligatoire si abandonné ou hors_périmètre
+#    moved_to: ""          # si hors_périmètre parce qu'une AUTRE initiative le reprend : son slug. Le
+#                          # besoin y garde son identifiant. Sans ce champ, « rien ne disparaît en
+#                          # silence » tient dans une phrase de `reason` que personne ne relit
 #    notes: ""             # solutions évoquées, nuances
 
 hypotheses: []

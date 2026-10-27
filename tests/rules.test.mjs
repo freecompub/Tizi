@@ -263,3 +263,31 @@ test('S82 : une métrique et son objectif portent la même cible, ou rien', () =
   // Sans aucune métrique déclarée, un objectif qui n'en cite pas ne déclenche rien.
   assert.ok(!codes(prd({ goals: [but({ kpi: 'part des dépôts à distance' })] })).includes('S82'));
 });
+
+// `split_into` ne dit la filiation que vers le bas, depuis une mère close : une sortie de périmètre
+// arrive pendant que la mère vit et continue. Sur le premier dossier réel, la fille portait son
+// origine dans `trigger` — « Sorti du périmètre d'X par DD-02 » : vrai, daté, illisible par un script.
+// `autre:<libellé>` reste ouvert parce qu'une énumération fermée ne produit pas un trou mais une valeur
+// fausse (le `decision: jeter` du premier dossier, avec la vérité en commentaire YAML) — mais il est
+// signalé, et son message dit qu'il est candidat à devenir une valeur.
+const msg = (s, r) => checkState(s).filter(f => f.rule === r).map(f => f.message).join(' | ');
+test('S86 : la provenance d\'une initiative est complète, ou hors énumération et nommée', () => {
+  const de = x => brd({ initiative: { name: 'f', slug: 'f', derived_from: x } });
+  assert.ok(!codes(de(undefined)).includes('S86'), 'une initiative née d\'une demande n\'a rien à déclarer');
+  assert.ok(!codes(de({ initiative: 'mere', reason: 'decoupage', decision: 'DD-02' })).includes('S86'));
+  assert.ok(!codes(de({ initiative: 'mere', reason: 'sortie_perimetre', decision: 'DD-02' })).includes('S86'));
+  assert.match(msg(de({ reason: 'decoupage', decision: 'DD-02' }), 'S86'), /ne désigne personne/);
+  assert.match(msg(de({ initiative: 'mere', decision: 'DD-02' }), 'S86'), /sans raison/);
+  assert.match(msg(de({ initiative: 'mere', reason: 'decoupage' }), 'S86'), /sans la décision/);
+  assert.match(msg(de({ initiative: 'mere', reason: 'fusion', decision: 'DD-02' }), 'S86'), /hors énumération :/);
+  assert.match(msg(de({ initiative: 'mere', reason: 'autre:', decision: 'DD-02' }), 'S86'), /sans libellé/);
+  // Nommé : accepté, signalé, et compté comme une dette — sinon `autre` s'accumule et rien n'est promu.
+  const nomme = msg(de({ initiative: 'mere', reason: 'autre: fusion de deux dossiers', decision: 'DD-02' }), 'S86');
+  assert.match(nomme, /fusion de deux dossiers/);
+  assert.match(nomme, /candidate à devenir une valeur/);
+});
+test('S86 : un besoin repris par une autre initiative est hors_périmètre chez elle', () => {
+  const bc = x => brd({ candidate_needs: [{ id: 'BC-9', text: 'x', moved_to: 'ailleurs', ...x }] });
+  assert.ok(!codes(bc({ status: 'hors_périmètre', reason: 'repris ailleurs' })).includes('S86'));
+  assert.match(msg(bc({ status: 'proposé' }), 'S86'), /de statut proposé/);
+});

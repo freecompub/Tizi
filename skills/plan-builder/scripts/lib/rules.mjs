@@ -106,6 +106,9 @@ const FEEDBACK_FAIT = ['confirmé', 'corrigé', 'sans objet'];
 // sans justificatif, le système doit refuser… » — une phrase sans ambiguïté — et un constat qui tombe
 // sur du correct abîme le catalogue entier. `ubiquitous` est l'invariant : il ne porte aucun marqueur,
 // et en porter un signale un motif mal déclaré.
+// Les deux naissances d'initiative observées. `autre:<libellé>` reste ouvert : voir S86.
+const PROVENANCE = ['decoupage', 'sortie_perimetre'];
+
 const EARS = {
   ubiquitous: [],
   event: [{ mot: 'Quand', re: /\bquand\b/i }],
@@ -197,11 +200,38 @@ export function checkBrd(s) {
   if (s.opportunity?.decision === 'decoupee' && !arr(s.opportunity.split_into).length) {
     out.push({ rule: 'S56', id: 'opportunity', message: 'opportunité découpée sans nommer les initiatives filles (split_into) : close se relit alors comme un abandon' });
   }
+  // Une initiative peut naître d'une autre, et `split_into` ne le dit que vers le bas, depuis une mère
+  // `decoupee`. Une sortie de périmètre arrive pendant que la mère VIT et continue : sur le premier
+  // dossier réel, la fille portait son origine dans `trigger` — « Sorti du périmètre d'X par DD-02 » —
+  // vraie, datée, et illisible par tout script. Le portefeuille la montrait alors comme une idée neuve.
+  const df = s.initiative?.derived_from ?? {};
+  if (df.initiative || df.reason || df.decision) {
+    if (!df.initiative) out.push({ rule: 'S86', id: 'initiative', message: 'provenance sans initiative d\'origine (derived_from.initiative) : elle ne désigne personne' });
+    if (!df.decision) out.push({ rule: 'S86', id: 'initiative', message: 'provenance sans la décision qui l\'a produite (derived_from.decision) : DD-xx chez la mère, ou sa décision d\'opportunité' });
+    if (!df.reason) out.push({ rule: 'S86', id: 'initiative', message: `provenance sans raison (derived_from.reason) : ${PROVENANCE.join(' | ')} | autre:<libellé>` });
+    else if (!PROVENANCE.includes(df.reason)) {
+      // L'énumération fermée ne produit pas un trou, elle produit une valeur fausse : le premier dossier
+      // réel portait `decision: jeter` avec la vérité en commentaire YAML, faute d'un mot pour dire
+      // « découpée ». `autre:<libellé>` est donc ouvert — mais nommé, signalé, et compté comme une dette :
+      // chaque occurrence est une candidate à devenir une valeur. Les cinq autres énumérations du gabarit
+      // qui finissent par `autre` ne sont lues par personne, et personne n'y a jamais rien promu.
+      const libelle = String(df.reason).startsWith('autre:') ? String(df.reason).slice(6).trim() : null;
+      if (libelle === null) out.push({ rule: 'S86', id: 'initiative', message: `raison de provenance « ${df.reason} » hors énumération : ${PROVENANCE.join(' | ')} | autre:<libellé>` });
+      else if (!libelle) out.push({ rule: 'S86', id: 'initiative', message: '« autre » sans libellé : dire qu\'il y a une provenance sans dire laquelle passe pour rempli' });
+      else out.push({ rule: 'S86', id: 'initiative', message: `provenance « ${libelle} » hors énumération, et nommée : candidate à devenir une valeur de derived_from.reason` });
+    }
+  }
   for (const o of arr(s.objectives).filter(live)) {
     push(o, 'OBJ', o.statement);
     if (!o.indicator || !o.target) out.push({ rule: 'S01', id: o.id, message: 'objectif sans indicateur ou sans cible' });
   }
   for (const n of arr(s.candidate_needs).filter(live)) push(n, 'BC', n.text);
+  // L'autre moitié de la filiation : la mère VIVANTE qui pousse un besoin dans une nouvelle initiative.
+  // `split_into` ne couvre que la mère close ; ici le besoin sort par une décision de périmètre et la
+  // mère continue. Sur le dossier réel, la reprise était écrite dans `reason` — en prose.
+  for (const n of arr(s.candidate_needs).filter(n => n.moved_to)) {
+    if (n.status !== 'hors_périmètre') out.push({ rule: 'S86', id: n.id, message: `repris par « ${n.moved_to} » mais de statut ${n.status ?? 'absent'} : un besoin qui part est hors_périmètre ici` });
+  }
   for (const b of arr(s.business_requirements).filter(live)) {
     push(b, 'BR', b.statement);
     arr(b.acceptance).forEach(a => checkText('AC', a, { waived: waivedOf(b) }).forEach(f => out.push({ ...f, id: b.id, message: `critère : ${f.message}` })));
@@ -979,5 +1009,5 @@ export const STRUCT_RULES = {
   S56: 'opportunité non décidée', S57: 'hypothèse risquée non testée', S58: 'itération sans revue', S59: 'release sans mesure des outcomes',
   S60: 'voie rapide non conforme', S61: 'ordre ouverture, milieu, fin', S62: 'story sans titre court',
   S63: 'exigence à source unique', S64: 'exigence sans source', S65: 'porte de synthèse', S66: 'exigence de transition incomplète', S67: 'exploration de concepts',
-  S68: 'espace réservé resté', S69: 'chiffre sans source', S70: 'fiche de contexte trop longue', S71: 'ADR sans règle', S72: 'collision entre tâches', S73: 'comportement existant à préserver', S74: 'taille et risque calculé', S75: 'attention humaine dépassée', S76: 'tâche non finie sans décision', S77: 'action de rétrospective sans suivi', S78: 'voie rapide sans épopée', S79: 'constitution', S80: 'liste de contrôle de relecture', S81: 'source sans personne entendue', S82: 'métrique et objectif désaccordés', S83: 'aucun utilisateur direct entendu', S84: 'exigence jamais relue par la source', S85: 'motif EARS absent ou désaccordé',
+  S68: 'espace réservé resté', S69: 'chiffre sans source', S70: 'fiche de contexte trop longue', S71: 'ADR sans règle', S72: 'collision entre tâches', S73: 'comportement existant à préserver', S74: 'taille et risque calculé', S75: 'attention humaine dépassée', S76: 'tâche non finie sans décision', S77: 'action de rétrospective sans suivi', S78: 'voie rapide sans épopée', S79: 'constitution', S80: 'liste de contrôle de relecture', S81: 'source sans personne entendue', S82: 'métrique et objectif désaccordés', S83: 'aucun utilisateur direct entendu', S84: 'exigence jamais relue par la source', S85: 'motif EARS absent ou désaccordé', S86: 'provenance d\'initiative incomplète ou hors énumération',
 };

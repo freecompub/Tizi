@@ -74,7 +74,7 @@ Propose une décision avec sa raison, puis fais-la rendre par la personne habili
 |---|---|---|
 | `aller_plus_loin` | Le problème mérite une découverte | Passer en Discover. Ce n'est pas un engagement à construire |
 | `jeter` | Pas assez d'espoir d'outcome, ou hors stratégie | Clore l'initiative (`phase: close`). Associer ceux qui portaient l'idée à la conversation |
-| `decoupee` | L'idée est un programme, pas une opportunité | Clore l'initiative (`phase: close`), nommer les filles dans `split_into`, et reprendre chaque besoin candidat dans l'une d'elles **avec son identifiant d'origine**. Rien n'est abandonné, et c'est pourquoi ce n'est pas `jeter` : les outils liraient un abandon |
+| `decoupee` | L'idée est un programme, pas une opportunité | Clore l'initiative (`phase: close`), nommer les filles dans `split_into`, et reprendre chaque besoin candidat dans l'une d'elles **avec son identifiant d'origine**. Chaque fille renseigne `derived_from` — la mère, la raison `decoupage`, la décision qui l'a produite — sans quoi la filiation ne se lit que vers le bas, et depuis un dossier clos. Rien n'est abandonné, et c'est pourquoi ce n'est pas `jeter` : les outils liraient un abandon |
 | `a_apprendre` | Information insuffisante pour décider | Lister ce qu'il faut apprendre (`to_learn`) et qui s'en charge ; revenir ensuite |
 | `reportee` | Pertinente, mais pas maintenant | Reste dans le portefeuille des opportunités |
 
