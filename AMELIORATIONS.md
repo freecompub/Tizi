@@ -33,6 +33,7 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
 
 | Piste | Date | Où |
 |---|---|---|
+| Une décision rendue au nom de quelqu'un que l'état déclare `à interroger` est rapportée, pas rendue (S90) — le raisonnement de S81 sur les sources, transposé aux décisions | 27 octobre 2026 | `decision-au-nom-dun-absent` |
 | Une question à la fois, partout : les lots de 2 à 3 questions sont retirés, et une question se compte sur ce qu'elle demande — trois nombres dans une puce font trois questions | 27 octobre 2026 | `une-question-a-la-fois` |
 | Un droit de décision a un décideur, et ce n'est pas lui qui le confirme (S89) : la fin de Discover l'exigeait par écrit, rien ne le vérifiait | 27 octobre 2026 | `les-cinq-autre` |
 | Les cinq énumérations qui finissaient par `autre` sont lues (S88, libellé exigé), et `décision` devient une valeur des sources du BRD : `autre` y éteignait S83 | 27 octobre 2026 | `les-cinq-autre` |

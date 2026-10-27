@@ -394,3 +394,40 @@ test('S89 : un droit de décision a un décideur, et ce n\'est pas lui qui le co
   assert.deepEqual(dr([], 'assess'), [], 'Assess réclame déjà les droits de décision');
   assert.equal(dr([], 'discover').length, 3, 'les trois domaines dus ne sont pas tous réclamés');
 });
+
+// `S81` refuse depuis longtemps une SOURCE attribuée à quelqu'un que l'état déclare « à interroger » :
+// ce qui en vient est rapporté, pas recueilli. Personne n'avait transposé aux DÉCISIONS. Le deuxième
+// dossier réel le montre : le directeur était présent au cadrage et n'a pas parlé, son autorité est
+// décrite par un parent, et trois décisions d'opportunité ont été rendues en son nom — neuf constats
+// sur les trois dossiers. Rien n'a été ajouté au modèle pour le voir : les faits étaient dans leurs
+// champs, chacun juste, et il manquait le croisement de deux d'entre eux.
+test('S90 : une décision rendue au nom de quelqu\'un qu\'on n\'a pas entendu', () => {
+  const sh = (id, name, status) => ({ id, name, role: 'r', status });
+  const brd = (status, extra) => ({ document: 'brd', phase: 'discover',
+    stakeholders: [sh('SH-01', 'Samir', 'interrogée'), sh('SH-02', 'Dédé', status)], ...extra });
+  const s90 = s => checkState(s).filter(f => f.rule === 'S90').map(f => f.message);
+
+  const absent = brd('à interroger', { opportunity: { decision: 'decoupee', split_into: ['x'], decided_by: 'SH-02' } });
+  assert.match(s90(absent).join(' | '), /décision d'opportunité rendue au nom de Dédé/);
+  assert.match(s90(absent).join(' | '), /rapportée par un tiers, pas rendue/);
+  assert.equal(s90(brd('interrogée', { opportunity: { decision: 'decoupee', split_into: ['x'], decided_by: 'SH-02' } })).length, 0,
+    'une décision rendue par quelqu\'un qu\'on a entendu');
+  // `non disponible` dit la même chose que `à interroger` : la personne n'a pas parlé.
+  assert.equal(s90(brd('non disponible', { opportunity: { decision: 'jeter', decided_by: 'SH-02' } })).length, 1);
+
+  // Par son nom autant que par son identifiant : `decided_by` accepte les deux (knownPerson).
+  assert.equal(s90(brd('à interroger', { opportunity: { decision: 'jeter', decided_by: 'Dédé' } })).length, 1, 'nommée en clair');
+
+  // Les trois autres porteurs de décision du BRD.
+  assert.match(s90(brd('à interroger', { decision_rights: [{ domain: 'perimetre', decider: 'SH-02', confirmed_by: 'SH-01' }] })).join(' | '),
+    /droit de trancher « perimetre » au nom de Dédé/);
+  assert.match(s90(brd('à interroger', { decisions: [{ id: 'DD-01', status: 'validé', decided_by: 'SH-02', options: [1, 2] }] })).join(' | '),
+    /décision rendue au nom de Dédé/);
+
+  // Et le PRD, aux trois endroits où il porte des décisions.
+  const prd = extra => ({ document: 'prd', phase: 'specify', mode: 'autonome',
+    stakeholders: [sh('SH-02', 'Dédé', 'à interroger')], ...extra });
+  assert.match(s90(prd({ goals: [{ id: 'OBJ-1', decided_by: 'SH-02' }] })).join(' | '), /cible arrêtée au nom de Dédé/);
+  assert.match(s90(prd({ design_decisions: [{ id: 'DD-1', decided_by: 'SH-02' }] })).join(' | '), /décision de conception rendue au nom de Dédé/);
+  assert.match(s90(prd({ decision_rights: [{ domain: 'objectifs', decider: 'SH-02' }] })).join(' | '), /droit de trancher « objectifs »/);
+});
