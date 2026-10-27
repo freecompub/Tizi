@@ -28,6 +28,8 @@ Demander un décompte vaut mieux que guetter des indices. « Je suis avec l'équ
 
 **Demande des faits, déduis la qualité.** « Chef de service » est une fonction ; « parle pour des agents absents » est une inférence, et c'est à toi de la **proposer** pour que l'utilisateur la corrige, comme les appréciations de la cartographie. Ne demande pas à l'utilisateur de classer ses collègues.
 
+**La qualité se déduit, l'identité se demande.** La licence s'arrête là : rien n'autorise à déduire *qui a parlé*. Un vocabulaire n'est pas une signature — « une vraie base de données » peut venir du développeur présent comme de l'enseignant qui tient le fichier, et la déduction qui paraît la plus sûre est celle qui coûte le plus cher à défaire : elle est écrite dans une source, et tout ce qui s'appuie sur cette source en hérite. Sans réponse, la source reste **sans voix** et la question s'ouvre en zone d'ombre : un trou nommé se répare, une attribution fausse se propage.
+
 Un nom et une fonction, **c'est une partie prenante** : le tour de table n'est pas une étape de plus, c'est le début de la cartographie, arrivé plus tôt et d'une meilleure source que « qui subit le problème ? ». Il rend aussi l'absence visible — quatre personnes dans la pièce et aucune qui fait le travail dont on parle, et la zone sur la voix non entendue s'ouvre au premier tour, avec une preuve (`partie_prenante_non_entendue` dans le BRD, `persona_non_fonde` dans un PRD autonome).
 
 **N'en fais pas un formulaire.** Une question, une fois, qui accepte une réponse incomplète : en réunion réelle la liste arrive mal et en morceaux, et les noms se complètent à mesure que les gens parlent. Ne bloque rien sur un tour de table complet.
@@ -40,6 +42,10 @@ Cette configuration ne se redemande pas en cours de session. **À la reprise apr
 - **choix multiples** : ajoute une réponse « les intervenants ne sont pas d'accord ». La cocher n'est pas un résultat, c'est la **sortie du formulaire** : elle déclenche le recueil par répondant, comme en réponse libre. Une case cochée seule dirait qu'il y a désaccord sans dire entre qui ni sur quoi.
 
 **Un signal à ne pas laisser passer** : une réponse qui contient déjà sa divergence — « 100, enfin plutôt 150 selon Paul », « ça dépend à qui tu demandes ». Le tour de table peut avoir été fait proprement, celle-là reste un désaccord déclaré sans attribution : demande qui a dit quoi.
+
+**Une question d'attribution se pose seule**, comme une question ouverte. Elle est courte et factuelle, donc elle paraît accolable — c'est le piège : posée à côté d'une question de fond, c'est **elle** qui se perd, parce qu'on répond à ce qui porte la matière. Et son coût est différé, pas annulé : la réponse de fond est enregistrée, avec l'attribution par défaut qu'on n'a pas pu corriger.
+
+**Le plus simple reste de ne pas avoir à la poser** : propose à la salle de préfixer chaque réponse du prénom de qui parle. Une convention établie une fois vaut mieux qu'une question d'attribution par tour — elle rend l'attribution gratuite au lieu de la rendre coûteuse, et c'est une demande que personne n'a de raison de refuser.
 
 « Par répondant » veut dire **par personne qui a répondu à cette question**, pas par personne présente : dans une salle de huit, deux ou trois répondent à une question donnée. Chaque voix entendue donne sa propre source, avec son `who` — une réunion à trois répondants n'est pas une source, c'en est trois (`S81` : la partie prenante d'une source est celle qui a parlé).
 
