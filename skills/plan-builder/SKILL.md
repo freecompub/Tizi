@@ -51,7 +51,7 @@ Références transverses : `references/development-strategy.md`, `references/fas
 
 ## Reprise après une pause
 
-Les sessions sont conservées automatiquement (`references/sessions.md`) : un hook copie la transcription et en tire un extrait déterministe. Quand l'utilisateur annonce une pause, fais valider le lot en cours, note la prochaine action dans `session.next_action` et rédige le condensé de la session. À la reprise (sauf reprise native de l'outil : `claude --continue`, `copilot --continue`), lance `scripts/status.mjs` sur l'état, lis le condensé de la dernière session (rédige-le d'abord depuis l'extrait s'il manque), cherche les détails avec `scripts/session-search.mjs`, puis présente le point d'étape avant de reprendre. L'état l'emporte sur toute session.
+Les sessions sont conservées automatiquement (`references/sessions.md`) : un hook copie la transcription et en tire un extrait déterministe. Quand l'utilisateur annonce une pause, fais valider le lot en cours, note la prochaine action dans `session.next_action`, rédige le condensé de la session et présente le point d'étape de `scripts/status.mjs` en terminant par cette prochaine action. À la reprise (sauf reprise native de l'outil : `claude --continue`, `copilot --continue`), lance `scripts/status.mjs` sur l'état, lis le condensé de la dernière session (rédige-le d'abord depuis l'extrait s'il manque), cherche les détails avec `scripts/session-search.mjs`, puis présente le point d'étape avant de reprendre. L'état l'emporte sur toute session.
 
 ## Blocages
 

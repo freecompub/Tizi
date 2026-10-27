@@ -76,6 +76,15 @@ enregistre les trois comme confirmées. Découpe, ou fais valider une phrase à 
 **Une question restée sans réponse se repose seule.** Elle ne se rajoute pas à la pile du tour suivant :
 si elle n'a pas été vue la première fois, c'est qu'elle était accompagnée.
 
+**Un chiffre présenté à l'utilisateur sort d'un script.** Le rapport que porte un message compte des
+choses — tant de besoins candidats, tant de zones ouvertes, tant de sources — et les compter de
+mémoire les invente. Sur le premier dossier réel, le point d'étape de fin de session annonçait 15
+besoins candidats pour 11, 11 sources pour 10, 6 hypothèses pour 5 : chaque fois **le dernier
+identifiant lu comme un décompte**. C'est faux dès qu'un identifiant peut manquer, et il peut — un
+besoin repris par une autre initiative garde le sien, et sa place reste vide ici. `status.mjs` compte
+les entrées, par statut, sans interprétation. Un décompte de mémoire est d'autant plus dangereux qu'il
+est plausible : personne ne recompte un chiffre qui ressemble au bon.
+
 ## Quand l'outil n'existe pas
 
 En mode non interactif (`claude -p`, agent cloud) ou dans un éditeur qui ne l'expose pas, la règle ne
