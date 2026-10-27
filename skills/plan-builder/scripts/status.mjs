@@ -13,9 +13,13 @@ const initiative = statePath.replace(/\/state\.yaml$/, '').split('/').slice(-2).
 // absolu depuis ailleurs, le point d'étape annonçait « Sessions conservées : 0 » alors que l'index
 // existait. Il mentait au lieu de refuser.
 const racine = statePath.replace(/\/state\.yaml$/, '').split('/').slice(0, -2).join('/') || '.';
+// Le dossier porte aussi des sources, des parties prenantes et des hypothèses, et le point d'étape ne
+// les comptait pas : à la fin de la première session réelle, l'agent les a comptées de mémoire et a
+// annoncé 11 sources pour 10, 6 hypothèses pour 5 — le dernier identifiant lu comme un décompte. Un
+// script qui ne compte pas tout fait recompter le reste à la main.
 const COLLECTIONS = {
-  brd: ['candidate_needs', 'objectives', 'business_requirements', 'business_rules', 'decisions', 'risks'],
-  prd: ['goals', 'personas', 'journeys', 'functional_requirements', 'acceptance_criteria', 'nfrs', 'design_decisions', 'hypotheses'],
+  brd: ['stakeholders', 'sources', 'candidate_needs', 'hypotheses', 'objectives', 'business_requirements', 'business_rules', 'decisions', 'risks'],
+  prd: ['stakeholders', 'sources', 'goals', 'personas', 'journeys', 'functional_requirements', 'acceptance_criteria', 'nfrs', 'design_decisions', 'hypotheses'],
   sad: ['drivers', 'contexts', 'elements', 'relations', 'decisions', 'nfr_responses', 'data_entities', 'interfaces', 'threats'],
   plan: ['stories', 'examples', 'tasks', 'iterations'],
   impl: ['tasks'], test: ['exploratory', 'nfr_results', 'waivers'],
@@ -26,7 +30,10 @@ for (const c of COLLECTIONS) {
   if (!items.length) continue;
   const by = {};
   for (const x of items) by[x.status ?? '—'] = (by[x.status ?? '—'] ?? 0) + 1;
-  out.push(`${c} : ${items.length} — ${Object.entries(by).map(([k, n]) => `${n} ${k}`).join(', ')}`);
+  // Une collection sans statut — les sources en ont un de relecture, pas de cycle de vie — rendait
+  // « sources : 10 — 10 — » : juste, illisible, donc recompté à la main. Le total suffit alors.
+  const detail = by['—'] === items.length ? '' : ` — ${Object.entries(by).map(([k, n]) => `${n} ${k}`).join(', ')}`;
+  out.push(`${c} : ${items.length}${detail}`);
 }
 const zo = arr(s.shadow_zones).filter(z => z.status === 'ouverte').sort((a, b) => (b.blocking ? 1 : 0) - (a.blocking ? 1 : 0));
 out.push('', `Zones d'ombre ouvertes : ${zo.length}${zo.filter(z => z.blocking).length ? ` (dont ${zo.filter(z => z.blocking).length} bloquante(s))` : ''}`);

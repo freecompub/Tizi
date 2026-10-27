@@ -18,7 +18,7 @@ Discover explorait ; Define structure et fait décider. Tu poses moins de questi
 ## Démarrage
 
 1. Vérifie que `phase: define` dans `state.yaml`.
-2. Fais un point d'entrée court : nombre de besoins candidats confirmés, zones d'ombre assumées, hypothèses ouvertes.
+2. Fais un point d'entrée court **depuis `scripts/status.mjs`** : il compte les besoins candidats par statut, les hypothèses, les zones d'ombre ouvertes et les questions restées sans réponse. Les décomptes viennent de lui, jamais de la mémoire (`references/questions.md`).
 3. Propose de suivre l'ordre des étapes ci-dessous. L'utilisateur peut en changer ; respecte seulement les dépendances (pas d'exigences sans objectifs validés, pas de priorisation sans exigences).
 
 ---

@@ -616,3 +616,31 @@ test('une initiative née d\'une autre le déclare, et le portefeuille recoupe l
   assert.match(out, /nomme « fille » comme fille, qui ne la déclare pas/, 'la fille qui ne déclare pas sa mère passe inaperçue');
   assert.match(out, /BC-7 déclaré repris par « fille », qui ne le porte pas/, '« rien ne disparaît en silence » reste une phrase');
 });
+
+// Le premier point d'étape de fin de session écrit à la main annonçait quatre chiffres faux sur six,
+// tous inflatés : 15 besoins candidats pour 11, 11 sources pour 10, 6 hypothèses pour 5 — chaque fois
+// le DERNIER IDENTIFIANT lu comme un décompte. C'est faux dès qu'un identifiant peut manquer, et c'est
+// notre propre doctrine qui les troue : un besoin repris par une autre initiative garde le sien.
+// `status.mjs` comptait juste, mais il ne comptait ni les sources ni les hypothèses du BRD, et rien ne
+// le lançait à la pause — il n'était prescrit qu'à la reprise.
+test('un décompte vient d\'un script, et la pause présente le point d\'étape', () => {
+  const q = readFileSync(join(SKILLS, 'brd-builder', 'references', 'questions.md'), 'utf8');
+  assert.match(q, /chiffre présenté à l'utilisateur sort d'un script/i, 'rien n\'interdit de compter de mémoire');
+  const sess = readFileSync(join(SKILLS, 'brd-builder', 'references', 'sessions.md'), 'utf8');
+  const pause = sess.slice(sess.indexOf('## Avant une pause'), sess.indexOf('## À la reprise'));
+  assert.ok(pause.length > 200, 'la section « Avant une pause » n\'a pas été trouvée');
+  assert.match(pause, /status\.mjs/, 'la pause ne lance pas le point d\'étape déterministe');
+  assert.match(pause, /next_action` en dernière ligne/, 'la prochaine action notée n\'est pas celle que l\'utilisateur emporte');
+  for (const s of skills) {
+    assert.match(readFileSync(join(SKILLS, s, 'SKILL.md'), 'utf8'), /rédige le condensé de la session et présente le point d'étape/,
+      `${s} : la pause de SKILL.md ne présente pas le point d'étape`);
+  }
+  // Un script qui ne compte pas tout fait recompter le reste à la main : ce qui manquait est ce qui a
+  // été faux. L'entrée de Define ordonnait d'ailleurs ces mêmes décomptes sans nommer de script.
+  const st = readFileSync(join(SKILLS, 'brd-builder', 'scripts', 'status.mjs'), 'utf8');
+  for (const c of ['stakeholders', 'sources', 'hypotheses']) {
+    assert.match(st, new RegExp(`brd: \\[[^\\]]*'${c}'`), `le point d'étape du BRD ne compte pas ${c}`);
+  }
+  assert.match(readFileSync(join(SKILLS, 'brd-builder', 'references', 'phase-define.md'), 'utf8'),
+    /point d'entrée court \*\*depuis `scripts\/status\.mjs`\*\*/, 'l\'entrée de Define ordonne des décomptes sans nommer de script');
+});

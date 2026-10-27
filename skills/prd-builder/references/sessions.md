@@ -72,7 +72,8 @@ Quand l'utilisateur annonce une pause (« on s'arrête », « on reprend demain 
 1. Propose de **valider ou d'abandonner le lot en cours** : un lot proposé mais non validé n'existe que dans la conversation.
 2. Note la **prochaine action** dans `session.next_action` de l'état.
 3. Rédige le **condensé** de la session (format ci-dessous) dans `.tizi/sessions/<date>-<session>.condense.md`, à partir de ce que vous venez de faire. Le nom de fichier suit celui de l'extrait que le hook produira : date du premier message et 8 premiers caractères de l'identifiant de session.
-4. Rappelle de faire un commit.
+4. Lance `node <chemin-du-skill>/scripts/status.mjs <document>/<slug>/state.yaml` et **présente son point d'étape**, puis énonce `session.next_action` en dernière ligne. Les décomptes viennent du script, jamais de la mémoire (`references/questions.md`) : le premier point d'étape de fin de session écrit à la main annonçait quatre chiffres faux sur six. Et ce que tu viens de noter comme prochaine action est précisément ce que l'utilisateur doit emporter — sur ce même dossier, la seule échéance datée et irrécupérable était absente du message, remplacée par un menu de suites possibles. À la pause il n'y a pas de choix à soumettre : symétrique de la reprise, qui présente déjà ce point d'étape.
+5. Rappelle de faire un commit.
 
 Cette séquence part de l'**annonce de l'utilisateur**, jamais d'une proposition de l'agent :
 « voulez-vous qu'on s'arrête là ? » demande la permission de travailler, et met la trace en jeu
