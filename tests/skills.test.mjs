@@ -1,10 +1,10 @@
 // Conformité des skills à la spécification Agent Skills et identité des fichiers communs.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readdirSync, readFileSync, existsSync } from 'node:fs';
+import { readdirSync, readFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { join } from 'node:path';
-import { SKILLS, ROOT, run } from './helpers.mjs';
+import { SKILLS, ROOT, run, node, script, tempDir } from './helpers.mjs';
 import yaml from '../skills/brd-builder/scripts/lib/vendor/js-yaml.mjs';
 
 const skills = readdirSync(SKILLS).filter(d => existsSync(join(SKILLS, d, 'SKILL.md')));
@@ -583,4 +583,36 @@ test('tout document qui ferme une phase sur une bloquante dit ce qui rend une zo
     verifies += 1;
   }
   assert.ok(verifies >= 3, `seulement ${verifies} document(s) vérifié(s) : le motif de la condition de sortie a dû changer`);
+});
+
+// La filiation des initiatives se disait dans un seul sens : `split_into`, sur la mère, et seulement
+// quand elle est `decoupee`. Une sortie de périmètre arrive pendant que la mère VIT et continue — sur
+// le premier dossier réel, la fille portait son origine dans `trigger`, en prose, et le portefeuille
+// la montrait comme une idée neuve, indiscernable d'une demande qu'on vient de taper.
+test('une initiative née d\'une autre le déclare, et le portefeuille recoupe les deux sens', () => {
+  const tpl = readFileSync(join(SKILLS, 'brd-builder', 'templates', 'state.yaml'), 'utf8');
+  assert.match(tpl, /^  derived_from: \{\}/m, 'le gabarit n\'a pas de champ de provenance');
+  assert.match(tpl, /decoupage \| sortie_perimetre \| autre:<libellé>/, 'l\'énumération de la provenance n\'est pas écrite, ou n\'est pas ouverte');
+  assert.match(tpl, /^#    moved_to: ""/m, 'un besoin poussé dans une autre initiative n\'a pas où le dire');
+
+  const assess = readFileSync(join(SKILLS, 'brd-builder', 'references', 'phase-assess.md'), 'utf8');
+  const define = readFileSync(join(SKILLS, 'brd-builder', 'references', 'phase-define.md'), 'utf8');
+  assert.match(assess, /renseigne `derived_from`/, 'le découpage ne fait pas déclarer la provenance aux filles');
+  assert.match(define, /renseigne `moved_to`/, 'la sortie de périmètre ne dit pas où le besoin est repris');
+  assert.match(define, /`S09`/, 'rien ne rappelle d\'emporter les parties prenantes que les sources citent');
+
+  // Le recoupement des deux sens ne peut se faire que là où toutes les initiatives sont lues.
+  const dir = tempDir('tizi-filiation');
+  const ecrire = (slug, s) => {
+    mkdirSync(join(dir, 'brd', slug), { recursive: true });
+    writeFileSync(join(dir, 'brd', slug, 'state.yaml'), yaml.dump({ document: 'brd', phase: 'assess', ...s }));
+  };
+  ecrire('mere', { initiative: { name: 'Mère', slug: 'mere' }, opportunity: { decision: 'decoupee', split_into: ['fille', 'fantome'] },
+    candidate_needs: [{ id: 'BC-7', text: 'x', status: 'hors_périmètre', reason: 'part ailleurs', moved_to: 'fille' }] });
+  ecrire('fille', { initiative: { name: 'Fille', slug: 'fille' }, opportunity: { decision: 'en_attente' } });
+  const out = node(script('brd-builder', 'list-opportunities.mjs'), [dir]).out;
+  assert.match(out, /Venue de/, 'le portefeuille ne montre pas la provenance');
+  assert.match(out, /« fantome », qui n'est pas dans brd\//, 'une fille nommée mais absente passe inaperçue');
+  assert.match(out, /nomme « fille » comme fille, qui ne la déclare pas/, 'la fille qui ne déclare pas sa mère passe inaperçue');
+  assert.match(out, /BC-7 déclaré repris par « fille », qui ne le porte pas/, '« rien ne disparaît en silence » reste une phrase');
 });
