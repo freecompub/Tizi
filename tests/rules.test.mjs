@@ -371,3 +371,26 @@ test('S87 : présent dans une source, locuteur d\'aucune', () => {
   // Un présent inconnu du registre est une référence morte, comme un locuteur inconnu.
   assert.ok(codes(brd(vus, [{ id: 'SRC-001', type: 'cadrage', stakeholders: ['SH-01'], present: ['SH-99'] }])).includes('S09'));
 });
+
+// La fin de Discover exige un décideur « au moins pour le périmètre, les objectifs et les priorités »,
+// confirmé par le sponsor, et rien ne le vérifiait. Le premier dossier réel portait les trois défauts,
+// tous connus de l'agent : `priorites` sans décideur, et périmètre et objectifs confirmés par leur
+// propre titulaire — avec la réserve en commentaire YAML et une zone d'ombre, mais aucune règle.
+test('S89 : un droit de décision a un décideur, et ce n\'est pas lui qui le confirme', () => {
+  const dr = (rights, phase = 'discover') => checkState({ document: 'brd', phase, decision_rights: rights })
+    .filter(f => f.rule === 'S89').map(f => f.message);
+  const complet = ['perimetre', 'objectifs', 'priorites'].map(domain => ({ domain, decider: 'SH-01', confirmed_by: 'SH-09' }));
+
+  assert.deepEqual(dr(complet), [], 'trois domaines attribués et confirmés par un tiers');
+  assert.match(dr(complet.filter(d => d.domain !== 'priorites')).join(' | '), /personne ne tranche « priorites »/);
+  assert.match(dr([{ domain: 'perimetre', decider: 'SH-01', confirmed_by: 'SH-01' }]).join(' | '),
+    /confirmé par son propre décideur/);
+  assert.match(dr([{ domain: 'perimetre', decider: 'SH-01' }]).join(' | '), /sans confirmation/);
+  assert.match(dr([{ domain: 'perimetre', decider: 'SH-01', confirmed_by: 'SH-09', escalation: 'SH-01' }]).join(' | '),
+    /recours vers soi-même/);
+  assert.match(dr([{ domain: 'perimetre', confirmed_by: 'SH-09' }]).join(' | '), /déclaré sans décideur/);
+
+  // En Assess la carte n'existe pas encore : les domaines dus ne sont pas réclamés.
+  assert.deepEqual(dr([], 'assess'), [], 'Assess réclame déjà les droits de décision');
+  assert.equal(dr([], 'discover').length, 3, 'les trois domaines dus ne sont pas tous réclamés');
+});
