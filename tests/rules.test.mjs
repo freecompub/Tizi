@@ -166,6 +166,43 @@ test('S83 : des besoins recueillis sans qu\'aucun utilisateur direct ait parlé'
   // Une seule source d'entretien suffit à lever : la règle veut une voix recueillie, pas un quota.
   assert.ok(!codes(brd([sh('SH-02', { end_user: true })],
     [vu('SH-02', 'cadrage'), { id: 'SRC-002', type: 'observation', stakeholders: ['SH-02'] }])).includes('S83'));
+
+  // La liste était d'abord écrite en négatif — tout sauf `cadrage` — et comptait donc pour une voix
+  // entendue un document, un ticket, et `autre`, que `phase-define.md` prescrivait justement pour une
+  // décision de l'utilisateur : une exigence introduite par l'utilisateur éteignait la règle.
+  for (const type of ['document', 'ticket', 'revue', 'dt-handoff', 'décision', 'autre']) {
+    assert.ok(codes(brd([sh('SH-02', { end_user: true })], [vu('SH-02', type)])).includes('S83'),
+      `une source de type ${type} vaut une voix recueillie`);
+  }
+  for (const type of ['entretien', 'observation', 'atelier', 'test']) {
+    assert.ok(!codes(brd([sh('SH-02', { end_user: true })], [vu('SH-02', type)])).includes('S83'),
+      `une source de type ${type} ne vaut pas une voix recueillie`);
+  }
+});
+
+// Cinq énumérations du gabarit finissaient par `autre` et aucune n'était lue — `ingest-dt-handoff.mjs`
+// en écrivait même une en repli, et `phase-define.md` prescrivait `type: autre` pour une décision de
+// l'utilisateur. Aucune n'était utilisée dans les dossiers réels : c'est un garde, pas un correctif —
+// sauf pour les sources, où `autre` servait déjà et éteignait S83.
+test('S88 : une valeur hors énumération, et « autre » sans libellé', () => {
+  const brd = x => ({ document: 'brd', phase: 'discover', ...x });
+  const dom = d => checkState(brd({ decision_rights: [{ domain: d, decider: 'SH-01' }] })).filter(f => f.rule === 'S88');
+
+  const seul = (d, quoi) => { const f = dom(d); assert.equal(f.length, 1, `attendu un S88 — ${quoi} : « ${d} »`); return f[0].message; };
+  assert.equal(dom('perimetre').length, 0, 'une valeur de l\'énumération passe');
+  assert.equal(dom('processus:inscription').length, 0, 'un préfixe avec son libellé passe');
+  assert.match(seul('fusion', 'valeur inconnue'), /hors énumération :/);
+  assert.match(seul('processus:', 'préfixe sans libellé'), /sans libellé/);
+  assert.match(seul('autre:', 'autre sans libellé'), /sans libellé/);
+  const nomme = seul('autre: arbitrage budgétaire', 'autre nommé, compté comme dette');
+  assert.match(nomme, /arbitrage budgétaire/);
+  assert.match(nomme, /candidat à devenir une valeur/);
+
+  // Les quatre autres énumérations, chacune à son emplacement.
+  assert.ok(checkState(brd({ constraints: [{ id: 'CT-1', type: 'autre', text: 'x' }] })).some(f => f.rule === 'S88'), 'type de contrainte');
+  assert.ok(checkState(brd({ sources: [{ id: 'SRC-1', type: 'autre', stakeholders: ['SH-01'] }] })).some(f => f.rule === 'S88'), 'type de source');
+  assert.ok(checkState(brd({ transition_requirements: [{ id: 'TR-1', kind: 'autre', stakeholders: ['SH-01'], done_when: 'x' }] })).some(f => f.rule === 'S88'), 'type de transition');
+  assert.ok(checkState({ document: 'sad', phase: 'design', interfaces: [{ id: 'API-1', kind: 'autre' }] }).some(f => f.rule === 'S88'), 'type d\'interface');
 });
 
 test('S84 : une exigence validée sur des sources que personne n\'a relues', () => {
