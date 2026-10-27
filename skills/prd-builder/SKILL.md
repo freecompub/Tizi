@@ -78,7 +78,7 @@ Quand tu poses des questions, utilise une checklist numérotée et stable, enreg
 - États : ❓ `ouverte`, ◐ `partielle` (ce qu'on sait va dans `answer`, ce qui manque reste à demander), ✅ `répondue` (réponse résumée en une ligne), ❌ `écartée` (barrée, avec la raison).
 - Les numéros ne changent jamais ; une nouvelle question s'ajoute en fin de groupe.
 - Avant de poser une question, vérifie qu'elle n'a pas déjà une réponse dans l'état. Ne repose jamais une question répondue.
-- Deux ou trois questions par tour, dans l'ordre de `ask-five.mjs` (`references/questions.md`) — et une question ouverte se pose seule.
+- Une question par tour, dans l'ordre de `ask-five.mjs` (`references/questions.md`) : trois nombres réclamés dans la même puce restent trois questions.
 
 ## État et documents générés
 

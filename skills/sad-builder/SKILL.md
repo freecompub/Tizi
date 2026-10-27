@@ -62,7 +62,7 @@ Les sessions sont conservées automatiquement (`references/sessions.md`) : un ho
 
 ## Questions persistantes
 
-Même discipline que le PRD : une checklist numérotée et stable dans `questions` de `state.yaml`, états ❓ ouverte, ◐ partielle (ce qu'on sait dans `answer`, ce qui manque à demander), ✅ répondue, ❌ écartée ; jamais une question déjà répondue ; deux ou trois questions par tour (`references/questions.md`).
+Même discipline que le PRD : une checklist numérotée et stable dans `questions` de `state.yaml`, états ❓ ouverte, ◐ partielle (ce qu'on sait dans `answer`, ce qui manque à demander), ✅ répondue, ❌ écartée ; jamais une question déjà répondue ; une question par tour (`references/questions.md`).
 
 ## État et documents générés
 

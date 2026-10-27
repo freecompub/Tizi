@@ -59,7 +59,7 @@ Pourquoi le pluriel est le défaut : interrogée à travers quelqu'un qui relaie
 
 **Ce qu'une divergence devient**, selon le catalogue du document : dans le BRD, une `contradiction` avec sa liste de `parties` et son `subtype` — `factuelle` quand les faits s'opposent (personne ne décide, on cherche une preuve), `interets` quand les envies s'opposent (celle-là seule appelle un arbitre). Dans le PRD, `conflit_interets` pour des comportements incompatibles, et `hypothese_non_verifiee` quand deux chiffres s'opposent sans qu'aucun ne soit sourcé.
 
-**La cadence ne change pas.** Deux ou trois questions à la fois, une question ouverte seule : c'est *plus* vrai dans une salle que dans un chat. Un bloc de questions transforme la réunion en formulaire, et ce qui se passe entre deux questions est la matière — c'est là que quelqu'un dit « non, plutôt 150 ». Et ne ferme pas une question pour avoir droit à la case du désaccord : la question d'élicitation reste ouverte et seule (`references/questions.md`), une question fermée rend sa propre hypothèse. La règle du choix multiple sert là où le fermé existe déjà — la checklist, une décision soumise à la salle.
+**La cadence ne change pas.** Une question à la fois : c'est *plus* vrai dans une salle que dans un chat. Un bloc de questions transforme la réunion en formulaire, et ce qui se passe entre deux questions est la matière — c'est là que quelqu'un dit « non, plutôt 150 ». Et ne ferme pas une question pour avoir droit à la case du désaccord : la question d'élicitation reste ouverte et seule (`references/questions.md`), une question fermée rend sa propre hypothèse. La règle du choix multiple sert là où le fermé existe déjà — la checklist, une décision soumise à la salle.
 
 ---
 
