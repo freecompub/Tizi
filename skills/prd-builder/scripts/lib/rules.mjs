@@ -170,16 +170,31 @@ const mapOf = coll => new Map(arr(coll).map(x => [x.id, x]));
 // (propos relayés en direct par un membre du bureau) » dans un champ libre que rien ne lisait, et le
 // document présentait tout cela comme recueilli. Le PRD a maintenant son registre, et la règle suit.
 const checkSources = (s, out, shs) => {
+  // `present` dit qui était là, `stakeholders` qui a parlé. La différence est le sujet : un présent qui
+  // n'est locuteur d'aucune source n'a pas été entendu, et son silence n'est pas un accord — surtout
+  // dans une pièce où son chef vient de répondre. Au premier dossier réel, le fait était consigné en
+  // commentaire YAML (« Dédé et Tom étaient présents et n'ont pas parlé »), donc illisible.
+  const presents = new Set(), locuteurs = new Set();
+  for (const src of arr(s.sources)) {
+    for (const p of arr(src.present)) presents.add(p);
+    for (const p of arr(src.stakeholders)) locuteurs.add(p);
+  }
   for (const src of arr(s.sources)) {
     if (SOURCES_SANS_PRESENCE.includes(src.type)) continue;
     const parties = arr(src.stakeholders);
-    refs(out, 'S09', src, parties, shs, 'partie prenante');
+    refs(out, 'S09', src, [...parties, ...arr(src.present)], shs, 'partie prenante');
     if (!parties.length) { out.push({ rule: 'S81', id: src.id, message: `source de type « ${src.type ?? 'non typée'} » sans partie prenante : qui a parlé ?` }); continue; }
     const connues = parties.filter(p => shs.has(p));
     const muettes = connues.filter(p => NON_ENTENDU.includes(shs.get(p).status));
     if (connues.length && muettes.length === connues.length) {
       out.push({ rule: 'S81', id: src.id, message: `source attribuée à ${muettes.join(', ')}, que l'état déclare « ${shs.get(muettes[0]).status} » : ce qui en vient est rapporté par un tiers, pas recueilli` });
     }
+  }
+  for (const p of presents) {
+    if (locuteurs.has(p)) continue;
+    const qui = shs.get(p);
+    if (qui && NON_ENTENDU.includes(qui.status)) continue;   // déjà dit par le statut, et S81 s'en charge
+    out.push({ rule: 'S87', id: p, message: `présent${qui?.name ? ` (${qui.name})` : ''} mais locuteur d'aucune source : être dans la pièce n'est pas avoir parlé, et le silence n'est pas un accord` });
   }
 };
 
@@ -1024,5 +1039,5 @@ export const STRUCT_RULES = {
   S56: 'opportunité non décidée', S57: 'hypothèse risquée non testée', S58: 'itération sans revue', S59: 'release sans mesure des outcomes',
   S60: 'voie rapide non conforme', S61: 'ordre ouverture, milieu, fin', S62: 'story sans titre court',
   S63: 'exigence à source unique', S64: 'exigence sans source', S65: 'porte de synthèse', S66: 'exigence de transition incomplète', S67: 'exploration de concepts',
-  S68: 'espace réservé resté', S69: 'chiffre sans source', S70: 'fiche de contexte trop longue', S71: 'ADR sans règle', S72: 'collision entre tâches', S73: 'comportement existant à préserver', S74: 'taille et risque calculé', S75: 'attention humaine dépassée', S76: 'tâche non finie sans décision', S77: 'action de rétrospective sans suivi', S78: 'voie rapide sans épopée', S79: 'constitution', S80: 'liste de contrôle de relecture', S81: 'source sans personne entendue', S82: 'métrique et objectif désaccordés', S83: 'aucun utilisateur direct entendu', S84: 'exigence jamais relue par la source', S85: 'motif EARS absent ou désaccordé', S86: 'provenance d\'initiative incomplète ou hors énumération',
+  S68: 'espace réservé resté', S69: 'chiffre sans source', S70: 'fiche de contexte trop longue', S71: 'ADR sans règle', S72: 'collision entre tâches', S73: 'comportement existant à préserver', S74: 'taille et risque calculé', S75: 'attention humaine dépassée', S76: 'tâche non finie sans décision', S77: 'action de rétrospective sans suivi', S78: 'voie rapide sans épopée', S79: 'constitution', S80: 'liste de contrôle de relecture', S81: 'source sans personne entendue', S82: 'métrique et objectif désaccordés', S83: 'aucun utilisateur direct entendu', S84: 'exigence jamais relue par la source', S85: 'motif EARS absent ou désaccordé', S86: 'provenance d\'initiative incomplète ou hors énumération', S87: 'présent sans avoir parlé',
 };

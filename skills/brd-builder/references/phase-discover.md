@@ -107,7 +107,9 @@ Les noms et fonctions recueillis au cadrage (section 1 bis de `references/elicit
 
 ## 3. Préparation d'un entretien
 
-Déclencheur : « prépare l'entretien avec… » ou partie prenante au statut `à interroger`.
+Déclencheur : « prépare l'entretien avec… », ou partie prenante au statut `à interroger` **qui n'est pas dans l'échange**.
+
+**Pas de guide pour quelqu'un qui est là.** Si la personne est présente — le tour de table du cadrage le dit, et `present` le consigne sur la source —, pose-lui ses questions dans le fil, une par une, selon la section 1 bis de `references/elicitation-patterns.md`. Ses réponses deviennent des sources immédiatement : il n'y a pas de notes à faire revenir, donc pas d'analyse de source (capacité 4). Le guide est pour l'absent, et c'est ce qui le rend utile : il part dans les mains d'un humain qui mènera l'entretien sans toi.
 
 **Le council en mode préparation passe avant.** Son objet est précisément de trouver les questions à mettre dans les guides : fait après, il arrive quand l'entretien est passé, et une partie prenante ne se reçoit pas trois fois. Si le council de préparation n'a pas tourné pour cette initiative (`council_runs`), lance-le d'abord.
 

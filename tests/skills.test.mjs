@@ -658,3 +658,26 @@ test('« interrogée » dit entendue une fois, pas interrogée sur tout', () => 
   const st = readFileSync(join(SKILLS, 'brd-builder', 'scripts', 'status.mjs'), 'utf8');
   assert.match(st, /c === 'sources' \? 'type'/, 'le point d\'étape ne dit pas de quelle nature sont les sources');
 });
+
+// La proposition du 26 octobre avait deux moitiés — « déclarer la pièce, et faire l'entretien en
+// direct » — et seule la première a été écrite. §3 produisait donc un fichier de guide pour toute
+// partie prenante aux zones ouvertes, sans jamais regarder si elle était dans l'échange : au premier
+// dossier réel, deux des quatre guides visaient des gens présents, qui pouvaient répondre tout de suite.
+test('on n\'écrit pas de guide d\'entretien pour quelqu\'un qui est dans l\'échange', () => {
+  const elic = readFileSync(join(SKILLS, 'brd-builder', 'references', 'elicitation-patterns.md'), 'utf8');
+  assert.equal(createHash('md5').update(elic).digest('hex'),
+    createHash('md5').update(readFileSync(join(SKILLS, 'prd-builder', 'references', 'elicitation-patterns.md'), 'utf8')).digest('hex'),
+    'elicitation-patterns.md diverge entre le BRD et le PRD');
+  assert.match(elic, /Qui est là se fait interroger maintenant/i, 'le tour de table n\'a aucune conséquence sur la façon d\'interroger');
+  assert.match(elic, /Le guide est pour l'\*\*absent\*\*/, 'rien ne borne le guide d\'entretien à l\'absent');
+  assert.match(elic, /`present`, ceux qui étaient là/, 'la présence n\'est pas distinguée de la parole');
+
+  const disc = readFileSync(join(SKILLS, 'brd-builder', 'references', 'phase-discover.md'), 'utf8');
+  assert.match(disc, /Pas de guide pour quelqu'un qui est là/i, 'la préparation d\'entretien ne regarde pas qui est présent');
+  assert.match(disc, /qui n'est pas dans l'échange/, 'le déclencheur du guide ignore la présence');
+
+  for (const [doc, skill] of [['BRD', 'brd-builder'], ['PRD', 'prd-builder']]) {
+    assert.match(readFileSync(join(SKILLS, skill, 'templates', 'state.yaml'), 'utf8'), /present:/,
+      `le modèle du ${doc} n'a pas où dire qui était présent`);
+  }
+});

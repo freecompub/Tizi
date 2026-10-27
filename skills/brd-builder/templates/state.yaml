@@ -88,7 +88,10 @@ sources: []
 #                          # celle qui a parlé, pas celle dont on rapporte les besoins (S81)
 #                          # observation, mesure et test donnent une preuve « observée » ; les autres une preuve « rapportée »
 #    date: ""
-#    stakeholders: [SH-01]
+#    stakeholders: [SH-01] # les voix ENTENDUES dans cet échange
+#    present: []           # ceux qui étaient là, y compris les silencieux. Renseigne `present` quand le
+#                          # tour de table en a nommé plus d'un : présent et locuteur d'aucune source,
+#                          # c'est quelqu'un qui n'a pas été entendu — et son silence n'est pas un accord
 #    path: ""              # fichier dans brd/<slug>/sources/ si fourni
 #    feedback: à envoyer   # retour à la source : à envoyer | envoyé | confirmé | corrigé | sans objet
 
