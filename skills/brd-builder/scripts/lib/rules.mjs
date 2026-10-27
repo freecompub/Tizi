@@ -98,6 +98,14 @@ export const OBSERVED_SOURCE_TYPES = ['observation', 'mesure', 'test'];
 // entretien. Partout ailleurs, quelqu'un a parlé, et le dossier doit pouvoir dire qui (S81).
 export const SOURCES_SANS_PRESENCE = ['document', 'ticket', 'dt-handoff', 'code', 'configuration'];
 const NON_ENTENDU = ['à interroger', 'non disponible'];
+// `cadrage` est l'échange qui OUVRE l'initiative : la personne y était présente, elle n'y a pas été
+// interrogée sur son travail. Sur le premier dossier réel, les DIX sources étaient de ce type, et
+// `S83` restait verte parce qu'un parent avait parlé au premier échange — le parent demandeur, et
+// développeur. Le dossier portait au même moment une zone ouverte demandant ce que disent « les
+// parents qui ne sont ni développeurs ni porteurs de la demande ».
+const PRESENCE_SANS_ENTRETIEN = ['cadrage'];
+// Les deux naissances d'initiative observées. `autre:<libellé>` reste ouvert : voir S86.
+const PROVENANCE = ['decoupage', 'sortie_perimetre'];
 // Un retour à la source fait : la personne a relu la synthèse, et l'a confirmée ou corrigée.
 const FEEDBACK_FAIT = ['confirmé', 'corrigé', 'sans objet'];
 // Les cinq motifs EARS (`references/ears.md`) et le marqueur que chacun impose à l'énoncé. La règle
@@ -106,9 +114,6 @@ const FEEDBACK_FAIT = ['confirmé', 'corrigé', 'sans objet'];
 // sans justificatif, le système doit refuser… » — une phrase sans ambiguïté — et un constat qui tombe
 // sur du correct abîme le catalogue entier. `ubiquitous` est l'invariant : il ne porte aucun marqueur,
 // et en porter un signale un motif mal déclaré.
-// Les deux naissances d'initiative observées. `autre:<libellé>` reste ouvert : voir S86.
-const PROVENANCE = ['decoupage', 'sortie_perimetre'];
-
 const EARS = {
   ubiquitous: [],
   event: [{ mot: 'Quand', re: /\bquand\b/i }],
@@ -264,8 +269,18 @@ export function checkBrd(s) {
   // parlé — le cas du référent qui répond pour ses agents, vu sur les deux dossiers réels.
   if (arr(s.stakeholders).length && arr(s.candidate_needs).filter(live).length) {
     const entendus = arr(s.stakeholders).filter(sh => sh.status === 'interrogée');
-    if (entendus.length && !entendus.some(sh => sh.end_user)) {
+    const util = entendus.filter(sh => sh.end_user);
+    // `interrogée` veut dire entendue au moins une fois, pas interrogée sur son travail : le statut
+    // écrase deux états, et c'est le second qui compte ici.
+    const interroges = new Set();
+    for (const src of arr(s.sources)) {
+      if (PRESENCE_SANS_ENTRETIEN.includes(src.type)) continue;
+      for (const id of arr(src.stakeholders)) interroges.add(id);
+    }
+    if (entendus.length && !util.length) {
       out.push({ rule: 'S83', id: 'stakeholders', message: 'des besoins recueillis, et aucun utilisateur direct entendu (`end_user`) : tout passe par des représentants' });
+    } else if (util.length && !util.some(sh => interroges.has(sh.id))) {
+      out.push({ rule: 'S83', id: 'stakeholders', message: `utilisateur direct présent au cadrage mais jamais interrogé (${util.map(sh => sh.id).join(', ')}) : être dans la pièce au premier échange n'est pas avoir été entendu sur son travail` });
     }
   }
   if (['define', 'govern'].includes(s.phase)) {

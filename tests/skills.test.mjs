@@ -644,3 +644,17 @@ test('un décompte vient d\'un script, et la pause présente le point d\'étape'
   assert.match(readFileSync(join(SKILLS, 'brd-builder', 'references', 'phase-define.md'), 'utf8'),
     /point d'entrée court \*\*depuis `scripts\/status\.mjs`\*\*/, 'l\'entrée de Define ordonne des décomptes sans nommer de script');
 });
+
+// « interrogée » écrasait deux états : entendue une fois, et interrogée sur son travail. Au premier
+// dossier réel le directeur était `interrogée` pour avoir répondu dans le fil du cadrage, et sept zones
+// ouvertes le nommaient encore — le guide d'entretien existait pour compenser un statut faux.
+test('« interrogée » dit entendue une fois, pas interrogée sur tout', () => {
+  const tpl = readFileSync(join(SKILLS, 'brd-builder', 'templates', 'state.yaml'), 'utf8');
+  assert.match(tpl, /ENTENDUE AU MOINS UNE FOIS/, 'le gabarit laisse « interrogée » vouloir dire « plus rien à lui demander »');
+  const disc = readFileSync(join(SKILLS, 'brd-builder', 'references', 'phase-discover.md'), 'utf8');
+  assert.match(disc, /aucune zone ouverte ne nomme plus cette personne en `ask_to`/, 'la zone se ferme encore sur le statut');
+  // Dix sources toutes de type `cadrage` disent que le dossier n'est jamais sorti de la pièce : le
+  // point d'étape les groupait par statut, que les sources n'ont pas, et affichait « 10 » tout court.
+  const st = readFileSync(join(SKILLS, 'brd-builder', 'scripts', 'status.mjs'), 'utf8');
+  assert.match(st, /c === 'sources' \? 'type'/, 'le point d\'étape ne dit pas de quelle nature sont les sources');
+});
