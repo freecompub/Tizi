@@ -769,3 +769,36 @@ test('la représentation se propose à la naissance d\'une partie prenante, et n
   assert.match(d, /À la naissance d'une partie prenante/, 'la cartographie ne dit pas quand remplir `represented_by`');
   assert.match(d, /ce qu'on attend d'elle/i, 'la zone sur la voix non entendue ne dit pas ce qu\'on cherche');
 });
+
+// En synchronisant un fichier commun, une boucle `cp` l'a copié dans les sept skills — y compris les
+// trois qui n'ont pas `lib/rules.mjs`. `lint.mjs` s'y est retrouvé incapable de s'importer, et rien ne
+// l'a vu : la suite vérifie que les fichiers communs sont IDENTIQUES là où ils existent, jamais qu'un
+// script sait résoudre ce qu'il importe.
+test('chaque script d\'un skill sait résoudre ce qu\'il importe', () => {
+  const manquants = [];
+  for (const s of skills) {
+    const dirs = [join(SKILLS, s, 'scripts'), join(SKILLS, s, 'scripts', 'lib')];
+    for (const dir of dirs) {
+      for (const f of existsSync(dir) ? readdirSync(dir).filter(x => x.endsWith('.mjs')) : []) {
+        const texte = readFileSync(join(dir, f), 'utf8');
+        for (const [, spec] of texte.matchAll(/(?:^|\n)\s*(?:import|export)[^'"\n]*from\s+'(\.[^']+)'/g)) {
+          if (!existsSync(join(dir, spec))) manquants.push(`${s}/scripts/${dir.endsWith('lib') ? 'lib/' : ''}${f} → ${spec}`);
+        }
+      }
+    }
+  }
+  assert.deepEqual(manquants, [], `import(s) introuvable(s) :\n  ${manquants.join('\n  ')}`);
+});
+
+// Le même défaut sous un autre angle, et le plus parlant : `session-start.mjs` est commun aux sept
+// skills et importait statiquement `block.mjs`, livré par deux d'entre eux. Le module échouait donc
+// AVANT son try/catch, dont le dernier mot est « un rappel ne doit jamais empêcher une session de
+// démarrer ». Il ne démarrait pas du tout dans cinq skills sur sept. Un script commun se lance partout.
+test('session-start.mjs démarre dans les sept skills', () => {
+  for (const s of skills) {
+    const p = join(SKILLS, s, 'scripts', 'session-start.mjs');
+    if (!existsSync(p)) continue;
+    const r = node(p, [], { cwd: tempDir(`tizi-start-${s}`) });
+    assert.equal(r.code, 0, `${s} : session-start.mjs sort en ${r.code}\n${r.err}`);
+  }
+});
