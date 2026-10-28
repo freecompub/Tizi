@@ -260,7 +260,7 @@ Quand ces conditions te semblent réunies, **propose** le passage à Define, san
 - la **porte de synthèse** est passée : avec l'utilisateur, juge chacune des cinq dimensions (`synthesis_check`) — **fidélité** (la synthèse reflète les sources, pas des suppositions), **couverture** (toutes les parties prenantes concernées sont représentées, y compris les silencieuses), **robustesse** (chaque besoin retenu repose sur plusieurs sources ; `lint.mjs` signale les besoins à source unique), **actionnabilité** (le problème est assez net pour guider la suite), **alignement** (les participants se reconnaîtraient dans la synthèse). Une dimension faible se corrige (retour aux sources, entretien complémentaire) ou s'assume avec une raison. Idée reprise de la validation de synthèse en cinq dimensions du design thinking de hve-core ;
 - `lint.mjs` a été lancé sur l'état ; les avertissements restants sont listés à l'utilisateur, sans bloquer.
 
-Liste ce qui manque encore, s'il y a lieu. Rappelle que les zones d'ombre `assumées` deviendront des hypothèses ou des risques dans le BRD. Si l'utilisateur accepte, passe `phase: define` dans `state.yaml` et note la date.
+Lance `status.mjs` : il donne les phases passées, celle en cours, et le compte des conditions de cette porte. Présente-le, liste ce qui manque — puis **pose la question dans tous les cas**, avec l'outil : passer en Define, ou s'arrêter là. S'il manque des conditions, les deux options sont « s'arrêter là » et « continuer sur ce qui manque », jamais « passer la porte » (`references/questions.md`). Rappelle que les zones d'ombre `assumées` deviendront des hypothèses ou des risques dans le BRD. Si l'utilisateur accepte, passe `phase: define` dans `state.yaml` et note la date.
 
 ## 11. Constitution du produit
 

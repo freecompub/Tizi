@@ -33,6 +33,7 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
 
 | Piste | Date | Où |
 |---|---|---|
+| Où on en est : le point d'étape dit les phases passées et les conditions qui restent avant la suivante, et un changement de phase se demande — l'interdiction de demander l'autorisation de travailler l'avait avalé | 28 octobre 2026 | `ou-on-en-est` |
 | Un identifiant ne voyage jamais seul : les scripts qui parlent nomment les personnes, `label()` donne la formulation de n'importe quel identifiant, et une question n'en porte pas | 28 octobre 2026 | `un-identifiant-ne-parle-pas` |
 | Une question dit à qui elle est posée : 52 questions en texte libre sur un dossier réel, UNE qui nommait quelqu'un. L'extrait de session compte désormais celles qui n'adressent personne | 28 octobre 2026 | `questions-adressees` |
 | Une dérogation nommée couvre aussi une règle de structure : `lint.mjs` la proposait sous chaque avertissement, et seules les règles de forme étaient dérogeables — une dérogation du dossier réel était ignorée depuis sa rédaction | 28 octobre 2026 | `questions-adressees` |
