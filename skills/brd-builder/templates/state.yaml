@@ -127,6 +127,10 @@ hypotheses: []
 #  - id: H-001
 #    text: ""
 #    basis: ""             # sur quoi repose l'hypothèse
+#    verification: ""      # COMMENT la trancher, et auprès de qui ou de quoi : une personne à entendre,
+#                          # un document à récupérer, un chiffre à relever. Dû tant qu'elle est à
+#                          # vérifier (S97) — sans lui, elle attend la session où quelqu'un y repense,
+#                          # et le moyen le moins coûteux ne se voit pas
 #    status: à vérifier    # à vérifier | confirmée | infirmée
 
 shadow_zones: []

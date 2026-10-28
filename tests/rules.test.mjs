@@ -582,3 +582,15 @@ test('S96 : un guide se périme quand son absent arrive', async () => {
   assert.ok(interviewFindings(s, ['guide-SH-99.md']).some(x => x.rule === 'S09'), 'un guide hors cartographie passe');
   assert.equal(interviewFindings(s, []).length, 0);
 });
+
+// Une hypothèse du BRD n'avait aucun champ pour dire COMMENT la trancher : `text`, `basis`, `status`.
+// Au deuxième dossier réel, les huit hypothèses ouvertes portaient le moyen dans leur `basis`, en prose
+// — « l'historique des remboursements, que le comptable détient, permettrait de le vérifier sans
+// interroger personne ». Le meilleur rapport coût/preuve du dossier, et rien ne pouvait le compter.
+test('S97 : une hypothèse à vérifier dit comment', () => {
+  const h = hyp => checkState({ document: 'brd', phase: 'discover', hypotheses: [hyp] }).filter(f => f.rule === 'S97');
+  assert.match(h({ id: 'H-001', text: 'x', status: 'à vérifier' })[0].message, /sans dire comment/);
+  assert.equal(h({ id: 'H-001', text: 'x', status: 'à vérifier', verification: 'Historique des remboursements, détenu par le comptable (SH-07)' }).length, 0, 'un moyen écrit ne suffit pas');
+  assert.equal(h({ id: 'H-001', text: 'x', status: 'confirmée' }).length, 0, 'une hypothèse tranchée réclame encore son moyen');
+  assert.equal(h({ id: 'H-001', text: 'x', status: 'à vérifier', verification: '   ' }).length, 1, 'un moyen vide passe pour écrit');
+});
