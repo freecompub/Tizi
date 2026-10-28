@@ -322,5 +322,11 @@ governance:
 #      decision: en_attente   # en_attente | acceptée | refusée
 #      target_version: ""
 
+lint_waivers: []           # dérogations nommées qui ne portent sur AUCUN élément : un constat sur une
+#  - { rule: S83, id: stakeholders, reason: "" }   # collection entière, sur un fichier de guide ou de
+                           # liste de contrôle. Partout ailleurs, la dérogation se met SUR l'élément
+                           # concerné. Les règles de forme (Lxx) comme de structure (Sxx) se dérogent,
+                           # et une dérogation sans `reason` ne compte pas : l'avertissement reste
+
 session:                   # continuité entre sessions (references/sessions.md)
   next_action: ""          # prochaine action notée avant une pause
