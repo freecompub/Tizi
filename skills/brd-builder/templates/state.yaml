@@ -111,6 +111,11 @@ candidate_needs: []
 #  - id: BC-001
 #    text: "Pouvoir …"
 #    sources: [{ ref: SRC-001, location: "l.42" }]
+#    concerns: []          # DE QUI c'est le besoin : les SH-xx qui le portent. Dû dès qu'il est confirmé,
+#                          # et sur tous en Define. S83 ne voit que l'absence totale d'utilisateur
+#                          # direct entendu — un sur quatre, et elle est verte ; ici le grain est le
+#                          # besoin, et un besoin formulé pour quelqu'un qu'on n'a pas entendu se dit
+#                          # (S95). Sur le dossier réel, l'information vivait dans `notes`, en prose
 #    status: proposé       # proposé | confirmé | intégré | abandonné | hors_périmètre
 #    reason: ""            # obligatoire si abandonné ou hors_périmètre
 #    moved_to: ""          # si hors_périmètre parce qu'une AUTRE initiative le reprend : son slug. Le

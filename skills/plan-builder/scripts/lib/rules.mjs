@@ -374,6 +374,29 @@ export function checkBrd(s) {
       out.push({ rule: 'S84', id: b.id, message: 'exigence validée sur des sources dont aucune n\'a été relue par la personne interrogée (`feedback`) : ce qui a été compris n\'a jamais été vérifié auprès d\'elle' });
     }
   }
+  // S83 ne voit que l'absence TOTALE : un utilisateur direct entendu sur quatre, et la règle est verte
+  // pour toujours. Au deuxième dossier réel, c'est exactement la situation — Samir entendu, le
+  // professeur, le comptable et la famille primo-inscrite jamais — et les besoins ne portent pas sur
+  // les mêmes gens : deux d'entre eux sont ceux de la famille qui s'inscrit pour la première fois,
+  // écrit en prose dans leurs `notes` (« Concerne SH-06 »), là où aucun script ne regarde. Le grain
+  // juste est donc le besoin, pas le dossier.
+  const entendusDeVive = new Set();
+  for (const src of arr(s.sources)) {
+    if (!RECUEIL_AUPRES_DE.includes(src.type)) continue;
+    for (const id of arr(src.stakeholders)) entendusDeVive.add(id);
+  }
+  const concernsDu = ['define', 'govern'].includes(s.phase) ? live : n => live(n) && ['confirmé', 'intégré'].includes(n.status);
+  for (const n of arr(s.candidate_needs).filter(live)) {
+    refs(out, 'S09', n, n.concerns, shs, 'partie prenante');
+    if (!arr(n.concerns).length) {
+      if (concernsDu(n)) out.push({ rule: 'S95', id: n.id, message: 'ne dit pas de qui il est le besoin (`concerns`) : un besoin sans porteur se défend tout seul en revue' });
+      continue;
+    }
+    const muets = arr(n.concerns).filter(id => shs.get(id)?.end_user && !entendusDeVive.has(id));
+    if (muets.length) {
+      out.push({ rule: 'S95', id: n.id, message: `besoin de ${muets.join(', ')}, dont aucune source recueillie ne porte la voix : il est formulé pour quelqu'un qu'on n'a pas entendu` });
+    }
+  }
   // `phase-discover.md` ordonne « Renseigne `end_user` et `represents` » et explique pourquoi : les
   // besoins opérationnels se recueillent au plus près du terrain. `represents` était rendu, `end_user`
   // n'était lu par rien. Un dossier peut donc collecter des besoins sans qu'aucun utilisateur réel ait
@@ -1184,5 +1207,5 @@ export const STRUCT_RULES = {
   S56: 'opportunité non décidée', S57: 'hypothèse risquée non testée', S58: 'itération sans revue', S59: 'release sans mesure des outcomes',
   S60: 'voie rapide non conforme', S61: 'ordre ouverture, milieu, fin', S62: 'story sans titre court',
   S63: 'exigence à source unique', S64: 'exigence sans source', S65: 'porte de synthèse', S66: 'exigence de transition incomplète', S67: 'exploration de concepts',
-  S68: 'espace réservé resté', S69: 'chiffre sans source', S70: 'fiche de contexte trop longue', S71: 'ADR sans règle', S72: 'collision entre tâches', S73: 'comportement existant à préserver', S74: 'taille et risque calculé', S75: 'attention humaine dépassée', S76: 'tâche non finie sans décision', S77: 'action de rétrospective sans suivi', S78: 'voie rapide sans épopée', S79: 'constitution', S80: 'liste de contrôle de relecture', S81: 'source sans personne entendue', S82: 'métrique et objectif désaccordés', S83: 'aucun utilisateur direct entendu', S84: 'exigence jamais relue par la source', S85: 'motif EARS absent ou désaccordé', S86: 'provenance d\'initiative incomplète ou hors énumération', S87: 'présent sans avoir parlé', S88: 'valeur hors énumération ou « autre » sans libellé', S89: 'droit de décision sans décideur ou confirmé par lui-même', S90: 'décision rendue au nom de quelqu\'un qu\'on n\'a pas entendu', S91: 'locuteur absent de la salle qu\'il a fait parler', S92: 'quadrant d\'implication affirmé au lieu d\'être déduit', S93: 'influence inconnue à fort pouvoir, sans attitude notée', S94: 'représentation non déclarée, ou tenue pour une voix',
+  S68: 'espace réservé resté', S69: 'chiffre sans source', S70: 'fiche de contexte trop longue', S71: 'ADR sans règle', S72: 'collision entre tâches', S73: 'comportement existant à préserver', S74: 'taille et risque calculé', S75: 'attention humaine dépassée', S76: 'tâche non finie sans décision', S77: 'action de rétrospective sans suivi', S78: 'voie rapide sans épopée', S79: 'constitution', S80: 'liste de contrôle de relecture', S81: 'source sans personne entendue', S82: 'métrique et objectif désaccordés', S83: 'aucun utilisateur direct entendu', S84: 'exigence jamais relue par la source', S85: 'motif EARS absent ou désaccordé', S86: 'provenance d\'initiative incomplète ou hors énumération', S87: 'présent sans avoir parlé', S88: 'valeur hors énumération ou « autre » sans libellé', S89: 'droit de décision sans décideur ou confirmé par lui-même', S90: 'décision rendue au nom de quelqu\'un qu\'on n\'a pas entendu', S91: 'locuteur absent de la salle qu\'il a fait parler', S92: 'quadrant d\'implication affirmé au lieu d\'être déduit', S93: 'influence inconnue à fort pouvoir, sans attitude notée', S94: 'représentation non déclarée, ou tenue pour une voix', S95: 'besoin sans porteur, ou porté par une voix jamais entendue',
 };
