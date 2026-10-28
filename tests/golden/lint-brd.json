@@ -26,5 +26,6 @@
   "S69 chiffre « 5 jours » dans la règle sans source qui le fixe : généraliser, ou citer la source",
   "S89 personne ne tranche « objectifs » : la fin de Discover en demande un décideur au moins pour le périmètre, les objectifs et les priorités",
   "S89 « perimetre » confirmé par son propre décideur : s'attribuer le droit de trancher n'est pas une confirmation, elle revient au sponsor",
-  "S89 « priorites » attribué sans confirmation (confirmed_by) : l'attribution se valide par le sponsor, pas par celui qui en bénéficie"
+  "S89 « priorites » attribué sans confirmation (confirmed_by) : l'attribution se valide par le sponsor, pas par celui qui en bénéficie",
+  "S95 ne dit pas de qui il est le besoin (`concerns`) : un besoin sans porteur se défend tout seul en revue"
 ]

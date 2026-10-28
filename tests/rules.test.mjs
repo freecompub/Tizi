@@ -530,3 +530,30 @@ test('S94 : la représentation s\'écrit, et elle ne vaut pas une voix', () => {
     { id: 'SH-06', status: 'à interroger', end_user: true }]));
   assert.equal(seuls.length, 0, JSON.stringify(seuls));
 });
+
+// S83 ne voit que l'absence TOTALE : un utilisateur direct entendu sur quatre, et elle est verte pour
+// toujours. C'est la situation du deuxième dossier réel, où les besoins ne portent pas sur les mêmes
+// gens — deux d'entre eux sont ceux de la famille qui s'inscrit pour la première fois, jamais entendue,
+// et ça n'était écrit que dans leurs `notes`, en prose.
+test('S95 : un besoin dit de qui il est, et sa voix a parlé', () => {
+  const etat = (extra, phase = 'discover') => checkState({
+    document: 'brd', phase,
+    stakeholders: [{ id: 'SH-01', status: 'interrogée', end_user: true, power: 'faible', impact: 'fort', influence: 'positive', quadrant: 'consulter' },
+      { id: 'SH-06', status: 'à interroger', end_user: true }],
+    sources: [{ id: 'SRC-1', type: 'entretien', stakeholders: ['SH-01'] }],
+    ...extra,
+  });
+  const s95 = d => d.filter(f => f.rule === 'S95');
+
+  // Proposé, le porteur n'est pas encore dû : on formule avant de savoir.
+  assert.equal(s95(etat({ candidate_needs: [{ id: 'BC-1', status: 'proposé' }] })).length, 0, 'un besoin proposé réclame déjà son porteur');
+  // Confirmé, il l'est.
+  assert.match(s95(etat({ candidate_needs: [{ id: 'BC-1', status: 'confirmé' }] }))[0].message, /ne dit pas de qui il est le besoin/);
+  // En Define, tous le sont.
+  assert.equal(s95(etat({ candidate_needs: [{ id: 'BC-1', status: 'proposé' }], synthesis_check: { date: '2026-10-28' } }, 'define')).length, 1, 'un besoin sans porteur passe la porte de synthèse');
+  // Le porteur est un utilisateur direct dont aucune source recueillie ne porte la voix.
+  assert.match(s95(etat({ candidate_needs: [{ id: 'BC-1', status: 'confirmé', concerns: ['SH-06'] }] }))[0].message, /on n'a pas entendu/);
+  // Et celui dont on a la voix ne dit rien.
+  assert.equal(s95(etat({ candidate_needs: [{ id: 'BC-1', status: 'confirmé', concerns: ['SH-01'] }] })).length, 0, 'un besoin porté par une voix entendue est signalé');
+  assert.ok(etat({ candidate_needs: [{ id: 'BC-1', status: 'confirmé', concerns: ['SH-99'] }] }).some(f => f.rule === 'S09'), 'un porteur inconnu passe');
+});
