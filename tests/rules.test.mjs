@@ -458,3 +458,38 @@ test('S91 : un locuteur est dans la salle qu\'il a fait parler', () => {
   const sansSalle = checkState({ ...base, sources: [{ id: 'SRC-001', type: 'mesure', stakeholders: ['SH-02'], present: ['SH-01'] }] });
   assert.equal(sansSalle.filter(f => f.rule === 'S91').length, 0, 'une mesure est traitée comme une pièce');
 });
+
+// La cartographie était la seule collection qu'aucune règle ne relisait. Trois phrases de
+// `phase-discover.md` restaient sans effet, et le deuxième dossier réel les a prises en défaut :
+// `impact: inconnu` — une valeur que le gabarit n'offrait pas — et, par-dessus, un quadrant
+// « impliquer » présenté comme déduit, que `phase-govern.md` transforme en approbateur.
+test('S92 et S93 : le quadrant se déduit, l\'influence se demande', () => {
+  const carte = sh => checkState({ document: 'brd', phase: 'discover', stakeholders: [{ id: 'SH-01', ...sh }] });
+  const seul = (d, regle, quoi) => { const f = d.filter(x => x.rule === regle); assert.equal(f.length, 1, `${quoi} : ${JSON.stringify(d.map(x => x.rule))}`); return f[0]; };
+
+  const suppose = carte({ power: 'fort', impact: 'inconnu', influence: 'positive', quadrant: 'impliquer', attitude: 'x' });
+  assert.match(seul(suppose, 'S92', 'quadrant déduit d\'un inconnu').message, /ne le donne pas/);
+
+  const faux = carte({ power: 'fort', impact: 'faible', influence: 'positive', quadrant: 'impliquer', attitude: 'x' });
+  assert.match(seul(faux, 'S92', 'quadrant contraire à la déduction').message, /donne « satisfaire »/);
+
+  const manquant = carte({ power: 'faible', impact: 'fort', influence: 'positive', attitude: 'x' });
+  assert.match(seul(manquant, 'S92', 'quadrant déductible non renseigné').message, /« consulter »/);
+
+  const juste = carte({ power: 'faible', impact: 'fort', influence: 'positive', quadrant: 'consulter', attitude: 'x' });
+  assert.equal(juste.filter(f => ['S92', 'S93'].includes(f.rule)).length, 0, 'une carte correcte est signalée');
+
+  // L'influence inconnue sur un fort pouvoir : S19 couvrait l'influence négative, pas celle-là.
+  const muette = carte({ power: 'fort', impact: 'fort', influence: 'inconnue', quadrant: 'impliquer' });
+  assert.match(seul(muette, 'S93', 'influence inconnue à fort pouvoir').message, /ne se déduit pas/);
+  const dite = carte({ power: 'fort', impact: 'fort', influence: 'inconnue', quadrant: 'impliquer', attitude: '« on verra bien »' });
+  assert.equal(dite.filter(f => f.rule === 'S93').length, 0, 'une attitude notée ne suffit pas à lever S93');
+  const faible = carte({ power: 'faible', impact: 'fort', influence: 'inconnue', quadrant: 'consulter' });
+  assert.equal(faible.filter(f => f.rule === 'S93').length, 0, 'un pouvoir faible déclenche S93');
+
+  // Une valeur hors énumération reste du ressort de S88, et `inconnu` en est une.
+  assert.ok(carte({ power: 'moyen', impact: 'fort', influence: 'positive', quadrant: 'consulter', attitude: 'x' }).some(f => f.rule === 'S88'), 'un pouvoir hors énumération passe');
+  // En Assess, la carte n'existe pas encore : le tour de table ne donne que des noms.
+  const assess = checkState({ document: 'brd', phase: 'assess', stakeholders: [{ id: 'SH-01', name: 'Dédé' }] });
+  assert.equal(assess.filter(f => ['S92', 'S93'].includes(f.rule)).length, 0, 'la carte est exigée dès Assess');
+});
