@@ -111,6 +111,8 @@ Déclencheur : « prépare l'entretien avec… », ou partie prenante au statut 
 
 **Pas de guide pour quelqu'un qui est là.** Si la personne est présente — le tour de table du cadrage le dit, et `present` le consigne sur la source —, pose-lui ses questions dans le fil, une par une, selon la section 1 bis de `references/elicitation-patterns.md`. Ses réponses deviennent des sources immédiatement : il n'y a pas de notes à faire revenir, donc pas d'analyse de source (capacité 4). Le guide est pour l'absent, et c'est ce qui le rend utile : il part dans les mains d'un humain qui mènera l'entretien sans toi.
 
+**Un guide se périme quand son absent arrive.** Le guide est un fichier ; l'état n'en sait rien. Au premier dossier réel, celui du directeur a été écrit un jour où il était absent — à raison — et le lendemain il a répondu en direct, les deux décisions que le guide annonçait ont été rendues, et la prochaine action disait encore « mener les entretiens préparés ». Dès que la personne est dans la salle, **retire son guide et réécris `session.next_action`** : `lint.mjs` le signale (S96) en comparant les guides du dossier à la salle du dernier échange.
+
 **Le council en mode préparation passe avant.** Son objet est précisément de trouver les questions à mettre dans les guides : fait après, il arrive quand l'entretien est passé, et une partie prenante ne se reçoit pas trois fois. Si le council de préparation n'a pas tourné pour cette initiative (`council_runs`), lance-le d'abord.
 
 Produis `brd/<slug>/interviews/guide-<SH-xx>.md` avec :

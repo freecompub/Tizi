@@ -557,3 +557,28 @@ test('S95 : un besoin dit de qui il est, et sa voix a parlé', () => {
   assert.equal(s95(etat({ candidate_needs: [{ id: 'BC-1', status: 'confirmé', concerns: ['SH-01'] }] })).length, 0, 'un besoin porté par une voix entendue est signalé');
   assert.ok(etat({ candidate_needs: [{ id: 'BC-1', status: 'confirmé', concerns: ['SH-99'] }] }).some(f => f.rule === 'S09'), 'un porteur inconnu passe');
 });
+
+// Un guide d'entretien est un fichier dont l'état ne sait rien. Au deuxième dossier réel, celui du
+// directeur a été écrit le 27 alors qu'il était absent — c'était juste — et le 28 il a répondu en
+// direct dans six sources : les deux décisions que le guide annonçait ont été rendues, et
+// `session.next_action` envoyait toujours conduire l'entretien, deux sessions plus tard.
+test('S96 : un guide se périme quand son absent arrive', async () => {
+  const { interviewFindings } = await import('../skills/brd-builder/scripts/lib/rules.mjs');
+  const s = {
+    document: 'brd', phase: 'discover',
+    stakeholders: [{ id: 'SH-01' }, { id: 'SH-02' }, { id: 'SH-04' }],
+    sources: [
+      { id: 'SRC-1', type: 'cadrage', date: '2026-10-27', stakeholders: ['SH-01'], present: ['SH-01'] },
+      { id: 'SRC-2', type: 'entretien', date: '2026-10-28', stakeholders: ['SH-02'], present: ['SH-01', 'SH-02'] },
+    ],
+  };
+  const f = interviewFindings(s, ['guide-SH-02.md', 'guide-SH-04.md']);
+  assert.equal(f.length, 1, JSON.stringify(f));
+  assert.equal(f[0].id, 'guide-SH-02.md');
+  assert.match(f[0].message, /dans la salle du dernier échange \(2026-10-28\)/);
+  // La salle est celle du DERNIER échange : présent la veille et absent depuis, le guide est légitime.
+  assert.equal(interviewFindings({ ...s, sources: [s.sources[0]] }, ['guide-SH-02.md']).length, 0, 'la salle de la veille vaut celle d\'aujourd\'hui');
+  // Un guide pour quelqu'un qui n'est pas dans la cartographie.
+  assert.ok(interviewFindings(s, ['guide-SH-99.md']).some(x => x.rule === 'S09'), 'un guide hors cartographie passe');
+  assert.equal(interviewFindings(s, []).length, 0);
+});
