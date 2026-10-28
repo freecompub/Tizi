@@ -58,7 +58,7 @@ Une zone d'ombre se termine de deux façons :
 
 **Qui te répond a été demandé en Assess** — nom et fonction de chaque personne présente (`references/phase-assess.md`). Chaque nom recueilli là entre ici dans la cartographie (capacité 2), où c'est toi qui déduis la qualité : en son nom, pour un groupe, en relayant un absent. Redemande-le seulement si le cadrage reprend après une pause, ou si rien dans l'état ne dit qui a répondu : la salle a pu changer sans que rien ne le dise. La règle d'enregistrement ne bouge pas — une réponse par répondant, sauf s'ils sont d'accord (section 1 bis de `references/elicitation-patterns.md`).
 
-Couvre ensuite ces thèmes dans cet ordre, **une question à la fois** — un thème qui demande un récit n'en supporte aucune autre à côté, et le silence après lui fait venir la précision (`references/questions.md`).
+Couvre ensuite ces thèmes dans cet ordre, **une question à la fois** — un thème qui demande un récit n'en supporte aucune autre à côté, et le silence après lui fait venir la précision (`references/questions.md`). Et dès que la salle compte plus d'une personne, **chaque question nomme celle à qui elle est posée** : le destinataire est déjà écrit, c'est l'`ask_to` de la zone que la question sert à lever. Posée à « tu », la réponse revient sans voix et l'attribution se redemande après coup.
 
 1. **Initiative** : son nom ; pourquoi maintenant (quel déclencheur) ?
 2. **Problème** : que se passe-t-il aujourd'hui ? Quels symptômes ? Quel impact (temps, coût, risque, qualité) ? Depuis quand ?

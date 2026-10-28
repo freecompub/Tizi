@@ -58,6 +58,14 @@ celle qui était molle le reste. C'est pourquoi chaque réponse se réécrit dan
 La seule exception est le choix fermé d'une même décision, plus bas — jamais une élicitation, jamais un
 arbitrage, jamais une case de canevas.
 
+**Une question dit à qui elle est posée.** Dès que plusieurs personnes répondent dans le même fil,
+la question nomme son destinataire, à la deuxième personne : « Dédé, à quoi verras-tu que c'est
+résolu ? » Sans ce nom, deux choses se perdent. La réponse arrive sans voix, et il faudra demander
+après coup qui a parlé — une question de plus, qui se pose seule, et dont la réponse est rarement
+fiable. Et celui qui pose finit par oublier que les autres sont là : il parle au clavier. Le
+destinataire ne se devine pas, il est déjà écrit — c'est l'`ask_to` de la zone d'ombre que la question
+sert à lever.
+
 Le fait que l'outil de l'hôte accepte quatre questions par appel ne change rien à cette règle : c'est
 une limite technique, pas une invitation. Quatre choix fermés dans un appel, oui ; quatre questions
 ouvertes, jamais.

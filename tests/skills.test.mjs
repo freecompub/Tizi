@@ -432,7 +432,9 @@ test('plusieurs répondants : une réponse chacun, et le silence n\'est pas un a
   // attribuées par défaut à la mauvaise personne. Courte et factuelle, elle paraît accolable comme le
   // tour de table — d'où la règle générale, qui ne vaut pas que pour le premier échange.
   assert.match(elic, /question d'attribution se pose seule/i, 'une question d\'attribution reste accolable à une question de fond');
-  assert.match(elic, /préfixer chaque réponse du prénom/i, 'rien ne propose la convention qui rend l\'attribution gratuite');
+  // La convention de préfixe reste écrite, mais au rang de repli : elle ne vaut que là où plusieurs
+  // répondent à la MÊME question, et elle met la charge sur la salle. Le remède est d'adresser.
+  assert.match(elic, /précéder chaque réponse du prénom/i, 'la convention de préfixe a disparu au lieu d\'être reléguée');
   // Et la licence « déduis la qualité » avait été étendue à l'identité du locuteur, par le vocabulaire
   // (« une vraie base de données » lu comme un parler de développeur — c'était l'enseignant).
   assert.match(elic, /qualité se déduit, l'identité se demande/i, 'rien ne borne la déduction à la qualité');
@@ -724,4 +726,26 @@ test('la doc nomme toutes les issues de l\'évaluation d\'une opportunité', () 
     if (v === 'en_attente') continue;        // l'état initial ne se raconte pas comme une issue
     assert.ok(assess.includes(mot), `la doc ne nomme pas l'issue « ${mot} » (${v}) dans sa section Assess`);
   }
+});
+
+// Deuxième dossier réel : 52 questions en texte libre, UNE qui nomme quelqu'un — et à la troisième
+// personne, à propos de quelqu'un qui était dans la pièce. Quatre tours de l'utilisateur sont partis à
+// réattribuer ce qui avait déjà été dit, jusqu'à une table de correspondance, et il a fallu qu'il
+// rappelle que les autres étaient là. La cause est qu'`ask_to` — le destinataire, renseigné sur les 71
+// zones d'ombre du dossier — ne servait qu'à GROUPER les zones dans un guide d'entretien : il
+// alimentait un fichier, jamais une phrase.
+test('une question dit à qui elle est posée, et son destinataire est déjà écrit', () => {
+  const q = readFileSync(join(SKILLS, 'brd-builder', 'references', 'questions.md'), 'utf8');
+  assert.match(q, /\*\*Une question dit à qui elle est posée\.\*\*/, 'rien n\'exige de nommer le destinataire');
+  assert.match(q, /deuxième personne/, 'rien ne dit que le destinataire est nommé, pas évoqué');
+  assert.match(q, /`ask_to`/, 'le destinataire est présenté comme un choix, alors qu\'il est déjà écrit');
+
+  const e = readFileSync(join(SKILLS, 'brd-builder', 'references', 'elicitation-patterns.md'), 'utf8');
+  assert.match(e, /\*\*Une question porte le nom de qui doit y répondre\.\*\*/, 'la salle n\'impose pas de nommer');
+  assert.match(e, /qui parle de lui devant lui/, 'la troisième personne reste permise devant l\'intéressé');
+  assert.match(e, /ne remplace pas l'adresse/, 'la convention de préfixe reste présentée comme le remède');
+
+  // La mesure, elle, est dans l'extrait de session : commune aux sept skills.
+  const s = readFileSync(join(SKILLS, 'brd-builder', 'scripts', 'lib', 'sessions.mjs'), 'utf8');
+  assert.match(s, /ne nomment personne/, 'l\'extrait ne compte pas les questions adressées à personne');
 });

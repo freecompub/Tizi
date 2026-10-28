@@ -130,6 +130,25 @@ export function answersOf(raw) {
   return new Map([...String(raw ?? '').matchAll(/"([^"]*)"\s*=\s*"([^"]*)"/g)].map(([, q, a]) => [q.trim(), a.trim()]));
 }
 
+// Les personnes que les dossiers touchés par la session nomment. Elles servent à mesurer une chose que
+// l'extrait seul ne pouvait pas voir : une question adressée à personne. Au deuxième dossier réel, 51
+// des 52 questions en texte libre ne nommaient aucun des trois présents, et l'attribution a dû être
+// reconstituée après coup, en quatre tours de l'utilisateur.
+export function namesIn(initiatives, root = '.') {
+  const noms = new Set();
+  for (const init of initiatives ?? []) {
+    try {
+      const s = yaml.load(readFileSync(join(root, init, 'state.yaml'), 'utf8')) ?? {};
+      for (const sh of s.stakeholders ?? []) if (sh?.name) noms.add(String(sh.name));
+    } catch { /* dossier absent ou illisible : on ne mesure rien plutôt que de deviner */ }
+  }
+  return [...noms];
+}
+// Une question « nomme quelqu'un » si le nom y figure tel quel. On ne cherche pas le vocatif : la
+// troisième personne — « à quoi Dédé verra-t-il… », posée devant lui — est déjà une amélioration sur
+// « tu », et la différence entre les deux ne se décide pas par expression régulière.
+const nomme = (question, noms) => noms.some(n => question.toLowerCase().includes(n.toLowerCase()));
+
 // Un extrait ne tronque pas en plein mot, et ne tronque pas en silence : la dernière réponse du premier
 // dossier réel s'arrêtait sur « **cette se », sans rien dire de ce qui manquait.
 const borne = (texte, max = 3000) => {
@@ -196,6 +215,13 @@ export function buildExtract(turns, meta) {
   for (const e of ecrites) parTour.set(e.tour, (parTour.get(e.tour) ?? 0) + 1);
   const groupes = [...parTour].filter(([, n]) => n > 1);
 
+  // Questions adressées à personne. La mesure n'a de sens qu'à partir de deux personnes connues :
+  // seul à répondre, on n'a pas besoin d'être nommé. Les deux formes comptent — une question à choix
+  // fermé posée à la salle laisse la même réponse sans voix qu'une question ouverte.
+  const personnes = meta.personnes ?? [];
+  const posees = [...ecrites.map(e => e.question), ...appels.flatMap(c => c.questions.map(q => q.question))];
+  const sansNom = personnes.length > 1 ? posees.filter(q => !nomme(q, personnes)).length : 0;
+
   const ligneQuestion = q => `- ${maskSecrets(q.question)}${q.options.length ? ` _(propositions : ${q.options.map(maskSecrets).join(' · ')})_` : ''}`;
   const blocAppel = c => [
     ...c.questions.map(q => `${ligneQuestion(q)}${q.reponse ? `\n  **Réponse** : ${maskSecrets(q.reponse)}` : ''}`),
@@ -219,6 +245,7 @@ export function buildExtract(turns, meta) {
     '### En texte libre', '',
     ...(ecrites.length ? ecrites.map(e => `- (tour ${e.tour}) ${maskSecrets(e.question)}`) : ['_Aucune._']), '',
     ...(groupes.length ? [`> ${groupes.length} tour(s) portent plus d'une question en texte libre : ${groupes.map(([t, n]) => `tour ${t} (${n})`).join(', ')}. Une question ouverte se pose seule.`, ''] : []),
+    ...(sansNom ? [`> ${sansNom} question(s) sur ${posees.length} ne nomment personne, alors que le dossier connaît ${personnes.length} personnes (${personnes.join(', ')}) : une question dit à qui elle est posée, à la deuxième personne, et son destinataire est l'\`ask_to\` de la zone qu'elle sert à lever.`, ''] : []),
     '## Dernière réponse de l\'assistant', '',
     lastAssistant ? borne(lastAssistant.text) : '_Aucune._', '',
     '## Questions en suspens à la fin de la session', '',

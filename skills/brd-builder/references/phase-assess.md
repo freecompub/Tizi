@@ -35,7 +35,7 @@ En cas de doute, traite-la comme figée et cherche le problème qui la motive. U
 
 ## La conversation : le canevas d'opportunité
 
-Remplis `opportunity.canvas` avec l'utilisateur, **une question à la fois** (`references/questions.md`). Ce n'est pas un formulaire : une réponse inconnue s'écrit comme hypothèse, et on avance.
+Remplis `opportunity.canvas` avec l'utilisateur, **une question à la fois** (`references/questions.md`), et si le tour de table a nommé plus d'une personne, **chaque question nomme celle à qui elle est posée** — « Dédé, à quoi verras-tu que c'est résolu ? » plutôt que « à quoi Dédé verra-t-il… », qui parle de lui devant lui. Ce n'est pas un formulaire : une réponse inconnue s'écrit comme hypothèse, et on avance.
 
 **Les cases factuelles ne font pas exception.** « Combien d'enfants, pour combien de familles, combien de groupes dans l'année » est court, factuel, et ça fait trois questions : la troisième revient approximative ou pas du tout, et personne ne s'en aperçoit (`references/questions.md`). Un **récit** (« raconte-moi ce qui se passe quand… », « qu'est-ce qui ne va pas aujourd'hui ») part seul lui aussi, et le silence après lui fait plus que n'importe quelle relance. Deux problèmes distincts dans la demande font deux tours.
 
