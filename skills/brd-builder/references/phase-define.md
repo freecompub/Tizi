@@ -185,7 +185,7 @@ Après l'étape 2, **lance** un council en mode `completude` (protocole : `refer
 - chaque exigence de transition a un type, ses parties prenantes et un critère d'achèvement ;
 - chaque règle métier validée a une source, un type et un responsable, et, si elle est de comportement, un niveau d'application ;
 - aucune décision n'est restée `proposé` sans zone d'ombre ouverte qui l'explique ;
-- `lint.mjs` a été lancé sur l'état complet ; chaque avertissement restant est corrigé ou couvert par une dérogation (`lint_waivers`) ;
+- `lint.mjs` a été lancé sur l'état complet ; chaque avertissement restant est corrigé ou couvert par une **dérogation nommée** (`lint_waivers`, sur l'élément, avec sa raison écrite — sans raison, elle ne compte pas). Les règles de structure se dérogent comme celles de forme : certaines disent une vérité irréductible, et au premier dossier réel c'était « le président tranche, se confirme et est son propre recours, parce qu'il n'y a personne au-dessus de lui ». Une dérogée ne disparaît pas, elle change de liste et part dans le dossier de revue ;
 - chaque besoin candidat `confirmé` est `intégré`, `abandonné` ou `hors_périmètre` ;
 - aucune zone d'ombre bloquante n'est ouverte ;
 - le BRD a été régénéré après la dernière validation.

@@ -594,3 +594,44 @@ test('S97 : une hypothèse à vérifier dit comment', () => {
   assert.equal(h({ id: 'H-001', text: 'x', status: 'confirmée' }).length, 0, 'une hypothèse tranchée réclame encore son moyen');
   assert.equal(h({ id: 'H-001', text: 'x', status: 'à vérifier', verification: '   ' }).length, 1, 'un moyen vide passe pour écrit');
 });
+
+// Les dérogations nommées ne portaient que sur les règles de FORME : `waivedOf` ne nourrit que
+// `checkText`. `lint.mjs` proposait pourtant `lint_waivers` sous chaque avertissement, y compris les
+// structurels, et `phase-define.md` fait de « corrigé ou couvert par une dérogation » le critère de
+// sortie. Au deuxième dossier réel, le dossier portait déjà une dérogation à S81, avec sa raison
+// écrite, et S81 criait toujours ; et trois S89 disaient une vérité irréductible — le président
+// tranche, se confirme et est son propre recours, parce qu'il n'y a personne au-dessus de lui.
+test('une dérogation nommée couvre aussi une règle de structure', () => {
+  const etat = extra => ({
+    document: 'brd', phase: 'discover',
+    stakeholders: [{ id: 'SH-01', status: 'interrogée', end_user: true, power: 'faible', impact: 'fort', influence: 'positive', quadrant: 'consulter' }],
+    sources: [{ id: 'SRC-1', type: 'cadrage', stakeholders: [] }],
+    ...extra,
+  });
+  const s81 = s => checkState(s).filter(f => f.rule === 'S81' && f.id === 'SRC-1');
+
+  const nu = s81(etat({}));
+  assert.equal(nu.length, 1);
+  assert.equal(nu[0].waived, undefined);
+
+  // Avec sa raison : l'avertissement ne disparaît pas, il porte sa dérogation.
+  const couvert = s81(etat({ sources: [{ id: 'SRC-1', type: 'cadrage', stakeholders: [], lint_waivers: [{ rule: 'S81', reason: 'Coquille conservée : tout a été réattribué à SRC-006.' }] }] }));
+  assert.equal(couvert.length, 1);
+  assert.match(couvert[0].waived, /Coquille conservée/);
+
+  // Sans raison, elle ne compte pas — et le constat le dit.
+  const muet = s81(etat({ sources: [{ id: 'SRC-1', type: 'cadrage', stakeholders: [], lint_waivers: [{ rule: 'S81' }] }] }));
+  assert.equal(muet[0].waived, undefined);
+  assert.match(muet[0].message, /ne dit pas pourquoi/);
+
+  // Un domaine de decision_rights porte un identifiant de constat composé : la dérogation le suit.
+  const dr = extra => checkState(etat({ decision_rights: [{ domain: 'perimetre', decider: 'SH-01', confirmed_by: 'SH-01', ...extra }] })).filter(f => f.rule === 'S89' && f.id === 'decision_rights:perimetre');
+  assert.equal(dr({})[0].waived, undefined);
+  assert.match(dr({ lint_waivers: [{ rule: 'S89', reason: 'Seul décideur de l\'association.' }] })[0].waived, /Seul décideur/);
+
+  // Un constat qui ne porte sur aucun élément — ici une collection — se dérogé à la racine, avec son id.
+  const s83 = s => checkState(s).filter(f => f.rule === 'S83');
+  const sansUtilisateur = { document: 'brd', phase: 'discover', stakeholders: [{ id: 'SH-01', status: 'interrogée', power: 'faible', impact: 'fort', influence: 'positive', quadrant: 'consulter' }], candidate_needs: [{ id: 'BC-1' }] };
+  assert.equal(s83(sansUtilisateur)[0].waived, undefined);
+  assert.match(s83({ ...sansUtilisateur, lint_waivers: [{ rule: 'S83', id: 'stakeholders', reason: 'Aucun utilisateur direct n\'existe encore : le produit n\'est pas né.' }] })[0].waived, /pas né/);
+});

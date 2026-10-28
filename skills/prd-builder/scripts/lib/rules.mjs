@@ -1222,10 +1222,44 @@ export function interviewFindings(s, files = []) {
   return out;
 }
 
+// Les dérogations nommées ne portaient que sur les règles de FORME : `waivedOf` ne nourrit que
+// `checkText`. Les règles de structure n'étaient donc pas dérogeables — alors que `lint.mjs` proposait
+// `lint_waivers` sous chaque avertissement, y compris les leurs, et que `phase-define.md` fait de
+// « corrigé ou couvert par une dérogation » le critère de sortie. Au deuxième dossier réel, trois S89
+// disaient une vérité irréductible : le président de l'association tranche, se confirme et est son
+// propre recours, parce qu'il n'y a personne au-dessus de lui. Il ne restait que deux issues — écrire
+// un confirmateur qu'on n'a pas entendu, ou traîner trois avertissements jusqu'à la gouvernance. Une
+// règle qu'on ne peut respecter qu'en mentant est pire que pas de règle.
+// Une dérogation sans raison écrite n'en est pas une : le constat reste, et dit pourquoi.
+const waiverIndex = s => {
+  const idx = new Map();
+  const add = (id, x) => { for (const w of arr(x?.lint_waivers)) if (w?.rule) idx.set(`${id}|${w.rule}`, String(w.reason ?? '').trim()); };
+  for (const [k, v] of Object.entries(s ?? {})) {
+    if (Array.isArray(v)) {
+      for (const x of v) {
+        if (!x || typeof x !== 'object') continue;
+        if (x.id) add(x.id, x);
+        if (k === 'decision_rights' && x.domain) add(`decision_rights:${x.domain}`, x);
+      }
+    } else if (v && typeof v === 'object' && k !== 'lint_waivers') add(k, v);
+  }
+  // Un constat qui ne porte pas sur un élément — une collection entière, un fichier de guide ou de
+  // liste de contrôle — n'a pas d'endroit où poser sa dérogation : elle va à la racine, avec son `id`.
+  for (const w of arr(s?.lint_waivers)) if (w?.rule && w?.id) idx.set(`${w.id}|${w.rule}`, String(w.reason ?? '').trim());
+  return idx;
+};
+
 export function checkState(s, ctx = {}) {
   const refs = ctx.refs ?? {};
   const base = s.document === 'plan' ? checkPlan(s, refs) : s.document === 'sad' ? checkSad(s) : s.document === 'prd' ? checkPrd(s) : checkBrd(s);
-  return [...base, ...placeholderFindings(s), ...unsourcedNumberFindings(s), ...constitutionFindings(s, ctx.constitution), ...checklistFindings(s, ctx.checklists), ...interviewFindings(s, ctx.interviews), ...coverageFindings(s, refs)];
+  const all = [...base, ...placeholderFindings(s), ...unsourcedNumberFindings(s), ...constitutionFindings(s, ctx.constitution), ...checklistFindings(s, ctx.checklists), ...interviewFindings(s, ctx.interviews), ...coverageFindings(s, refs)];
+  const idx = waiverIndex(s);
+  return all.map(f => {
+    const raison = idx.get(`${f.id}|${f.rule}`);
+    if (raison === undefined) return f;
+    if (!raison) return { ...f, message: `${f.message} — et la dérogation déclarée ne dit pas pourquoi : une dérogation nommée porte sa raison, sinon c'est un silence` };
+    return { ...f, waived: raison };
+  });
 }
 
 // Libellés des règles de structure, pour les rapports.
