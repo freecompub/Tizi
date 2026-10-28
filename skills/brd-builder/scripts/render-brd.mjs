@@ -57,7 +57,11 @@ const p = t => out.push(`${t}\n`);
 const ini = s.initiative ?? {};
 h(1, `BRD — ${txt(ini.name)}`);
 p(`**Version** : ${txt(s.governance?.version)} — **Statut** : ${txt(s.governance?.status)}\n`);
-p(`> Document généré à partir de \`state.yaml\` le ${new Date().toISOString().slice(0, 10)}. Ne pas le modifier directement : toute correction passe par l'état de session.`);
+// Le fichier du dossier et la copie figée dans `versions/` étaient IDENTIQUES à l'octet près,
+// en-tête comprise : rien ne disait lequel était figé et lequel allait dériver à la prochaine
+// modification de l'état. Qui ouvrait l'un croyait lire ce qui était parti en revue.
+// `freeze-version.mjs` réécrit cette ligne dans la copie immuable qu'il dépose.
+p(`> **Copie de travail** — régénérée depuis \`state.yaml\` le ${new Date().toISOString().slice(0, 10)}, et réécrite à chaque génération. Ne la modifie pas directement : toute correction passe par l'état. Les versions figées, s'il y en a, sont dans \`versions/\`.\n`);
 if (includeProposed) p('> **Brouillon de travail** : inclut les éléments au statut *proposé*, non encore validés.');
 
 const sec = s.brd_sections ?? {};

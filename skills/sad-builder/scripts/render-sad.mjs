@@ -168,7 +168,7 @@ const adrFile = a => `adr/${a.id}-${slugify(a.title)}.md`;
 
 h(1, `SAD — ${txt(s.initiative?.name)}`);
 p(`**Version** : ${txt(s.governance?.version)} — **Statut** : ${txt(s.governance?.status)} — **Contexte** : ${txt(s.context_mode)} — **PRD** : v${txt(s.source_prd?.version)}\n`);
-p(`> Document généré à partir de \`state.yaml\` le ${today()}. Ne pas le modifier directement : toute correction passe par l'état de session.`);
+p(`> **Copie de travail** — régénérée depuis \`state.yaml\` le ${today()}, et réécrite à chaque génération. Ne la modifie pas directement : toute correction passe par l'état. Les versions figées, s'il y en a, sont dans \`versions/\`.\n`);
 if (includeProposed) p('> **Brouillon de travail** : inclut les éléments au statut *proposé*.');
 const labels = { context: 'Contexte et périmètre', drivers: 'Moteurs architecturaux', domain: 'Domaine', views: 'Vues C4', decisions: 'Décisions', quality: 'Réponses aux NFR', data_interfaces: 'Données et interfaces', security: 'Sécurité', existing: 'Existant', risks: 'Hypothèses et risques' };
 h(2, 'Statut du document');

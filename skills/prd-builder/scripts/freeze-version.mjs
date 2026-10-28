@@ -4,7 +4,7 @@
 // avec un changelog calculé par identifiants par rapport à la version figée précédente.
 // Usage : node freeze-version.mjs <dossier>/state.yaml [--baseline]
 // Script commun aux skills brd-builder, prd-builder, sad-builder et plan-builder.
-import { existsSync, readdirSync, copyFileSync, chmodSync, cpSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, copyFileSync, chmodSync, cpSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -133,8 +133,16 @@ if (warnings.length) lines.push('## Avertissements', '', list(warnings));
 
 // Copie immuable.
 writeOut(join(target, 'CHANGELOG.md'), lines.join('\n'));
-for (const f of ['state.yaml', `${doc}.md`, ...(existsSync(join(root, 'refs.yaml')) ? ['refs.yaml'] : [])]) {
+for (const f of ['state.yaml', ...(existsSync(join(root, 'refs.yaml')) ? ['refs.yaml'] : [])]) {
   copyFileSync(join(root, f), join(target, f));
+}
+// Le document, lui, change d'en-tête en passant ici : la copie du dossier se régénère à chaque
+// appel du générateur, celle-ci jamais. Les deux fichiers étaient identiques à l'octet près, et rien
+// ne disait lequel était figé — qui ouvrait l'un croyait lire ce qui était parti en revue.
+{
+  const texte = readFileSync(join(root, `${doc}.md`), 'utf8');
+  const fige = `> **Version figée ${version}** le ${today()}. Copie immuable : elle ne se régénère pas et ne se modifie pas. La copie de travail du dossier, elle, continue de suivre l'état.`;
+  writeOut(join(target, `${doc}.md`), texte.replace(/^> \*\*Copie de travail\*\*.*$/m, fige));
 }
 // Documents générés à côté du document principal (ADR et contrats de la conception).
 for (const d of ['adr', 'contracts', 'stories', 'tasks']) {

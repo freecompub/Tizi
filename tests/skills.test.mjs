@@ -945,3 +945,20 @@ test('le point d\'étape dit les phases passées et ce qui reste avant la suivan
     assert.doesNotMatch(r.out, /Porte de sortie/, `${sk}/status.mjs annonce une porte qu'il ne sait pas calculer`);
   }
 });
+
+// Trois prescriptions qui manquaient à la gouvernance et à la préparation d'entretien, chacune vue sur
+// un dossier réel : deux relecteurs sur cinq n'avaient jamais parlé, le cycle de revue était parti sans
+// échéance, et le guide du directeur était encore là après qu'il eut répondu dans dix-sept sources.
+test('la gouvernance dit qui peut relire, et un guide ne survit pas à son entretien', () => {
+  const g = readFileSync(join(SKILLS, 'brd-builder', 'references', 'phase-govern.md'), 'utf8');
+  assert.match(g, /\*\*Un relecteur a été entendu\.\*\*/, 'un relecteur peut encore n\'avoir jamais parlé');
+  assert.match(g, /son silence sur le chemin de l'approbation/, 'rien ne dit ce que coûte un relecteur muet');
+  assert.match(g, /n'est pas un premier contact/, 'la revue reste un moyen d\'entendre quelqu\'un');
+  assert.match(g, /\*\*L'échéance est due\*\*/, 'un cycle de revue peut partir sans date');
+  assert.match(g, /il s'interrompt quand quelqu'un s'impatiente/, 'rien ne dit ce que coûte un cycle sans échéance');
+
+  const d = readFileSync(join(SKILLS, 'brd-builder', 'references', 'phase-discover.md'), 'utf8');
+  assert.match(d, /\*\*Un guide devient une source, ou il s'en va\.\*\*/, 'un guide consommé par la conversation reste');
+  assert.match(d, /un \*\*outil\*\*, pas une trace/, 'rien ne distingue l\'outil de la trace');
+  assert.match(d, /brief d'atelier/, 'le brief d\'atelier échappe au même critère');
+});

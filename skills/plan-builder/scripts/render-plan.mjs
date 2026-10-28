@@ -56,7 +56,7 @@ const p = t => out.push(`${t}\n`);
 
 h(1, `Plan — ${txt(s.initiative?.name)}`);
 p(`**Version** : ${txt(s.governance?.version)} — **Statut** : ${txt(s.governance?.status)} — **Release** : ${txt(settings.release)} — **Cadence** : ${flux ? 'flux' : 'sprint'} — **PRD** : v${txt(prd.source?.prd_version)} — **Conception** : v${txt(sad.source?.sad_version)}\n`);
-p(`> Document généré à partir de \`state.yaml\` et \`refs.yaml\` le ${today()}. Ne pas le modifier directement.`);
+p(`> **Copie de travail** — régénérée depuis \`state.yaml\` et \`refs.yaml\` le ${today()}, et réécrite à chaque génération. Ne la modifie pas directement : toute correction passe par l'état. Les versions figées, s'il y en a, sont dans \`versions/\`.\n`);
 
 const nReady = stories.filter(x => readiness.get(x.id).ready).length;
 const load = list_ => list_.reduce((n, t) => n + (weights[t.size] ?? 0), 0);

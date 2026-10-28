@@ -33,6 +33,8 @@ Une version figée n'est jamais modifiée. Pour figer à nouveau, incrémente d'
    - « consulter » → `relecteur` ;
    - « satisfaire » → `informé`.
    L'utilisateur ajuste. Il faut au moins un approbateur.
+
+   **Un relecteur a été entendu.** Le quadrant se déduit du pouvoir et de l'impact ; il ne dit rien de ce que la personne a dit. Or une revue demande « est-ce fidèle à ce que vous avez dit ? » — qui n'a rien dit n'a rien à vérifier, et lui donner le rôle met **son silence sur le chemin de l'approbation**, ce que le reste du document refuse partout. Une partie prenante au statut `à interroger` dans les quadrants `impliquer` ou `consulter` s'interroge **avant** la revue ; si c'est impossible, elle passe en `informé` et la couverture reste assumée telle quelle (`S98`). Un BRD de 700 lignes n'est pas un premier contact.
 2. **Version candidate** : propose un numéro (`0.x`), fais-le valider, renseigne `governance.version`, passe `governance.status` à `en_revue`.
 3. **Toilette avant d'envoyer** : lance `lint.mjs` sur l'état complet et traite les avertissements de forme. Une revue sert à obtenir un accord sur le fond ; des relecteurs qui passent leur temps sur des imprécisions de rédaction ne regardent plus le fond.
 4. **Fige la version** avec `freeze-version.mjs`, puis génère le dossier avec `review-pack.mjs`. Le dossier contient une synthèse d'une page (problème, objectifs, exigences Must, risques, points à trancher) et, pour chaque relecteur, les exigences issues de ses propres échanges et les questions qui lui sont adressées.
@@ -40,7 +42,7 @@ Une version figée n'est jamais modifiée. Pour figer à nouveau, incrémente d'
 6. **Canal de diffusion** — demande lequel l'utilisateur préfère :
    - **export** (par défaut, adapté aux relecteurs métier) : le BRD et les fiches sont envoyés en Word, PDF ou document partagé. Si `pandoc` est disponible, propose `pandoc brd.md -o brd.docx` ; préviens que les diagrammes Mermaid ne sont pas convertis et devront être exportés en image si nécessaire. Sinon, l'utilisateur exporte lui-même ;
    - **pull request** : adaptée si les relecteurs utilisent GitHub ; les commentaires de la PR sont ensuite traités comme des retours.
-7. Enregistre le cycle dans `governance.review_rounds` (`RV-n`, version, date d'envoi, canal, échéance).
+7. Enregistre le cycle dans `governance.review_rounds` (`RV-n`, version, date d'envoi, canal, échéance). **L'échéance est due** : sans date, un cycle ne se clôt pas — il s'interrompt quand quelqu'un s'impatiente. Si l'utilisateur ne la donne pas, c'est un trou, et il se voit (`S99`). Et une approbation ou une baseline posée alors que des commentaires restent `en_attente` approuve par-dessus un retour qu'on n'a pas tranché.
 
 ---
 

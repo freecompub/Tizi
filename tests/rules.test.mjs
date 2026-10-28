@@ -558,26 +558,35 @@ test('S95 : un besoin dit de qui il est, et sa voix a parlé', () => {
   assert.ok(etat({ candidate_needs: [{ id: 'BC-1', status: 'confirmé', concerns: ['SH-99'] }] }).some(f => f.rule === 'S09'), 'un porteur inconnu passe');
 });
 
-// Un guide d'entretien est un fichier dont l'état ne sait rien. Au deuxième dossier réel, celui du
-// directeur a été écrit le 27 alors qu'il était absent — c'était juste — et le 28 il a répondu en
-// direct dans six sources : les deux décisions que le guide annonçait ont été rendues, et
-// `session.next_action` envoyait toujours conduire l'entretien, deux sessions plus tard.
-test('S96 : un guide se périme quand son absent arrive', async () => {
+// Un guide d'entretien est un fichier dont l'état ne sait rien. Premier critère, trop étroit : « la
+// personne était dans la salle du dernier échange ». Le bon, donné par l'utilisateur : **un guide
+// devient une source, ou il s'en va.** S'il a reçu les réponses, une source pointe vers lui et il
+// reste ; si l'entretien s'est fait dans la conversation, il n'a rien reçu et ne porte rien que les
+// zones d'ombre n'aient. Au deuxième dossier réel, aucune source ne pointait vers `interviews/`, le
+// directeur était locuteur de six sources, et son guide était toujours là.
+test('S96 : un guide devient une source, ou il s\'en va', async () => {
   const { interviewFindings } = await import('../skills/brd-builder/scripts/lib/rules.mjs');
   const s = {
     document: 'brd', phase: 'discover',
     stakeholders: [{ id: 'SH-01' }, { id: 'SH-02' }, { id: 'SH-04' }],
     sources: [
-      { id: 'SRC-1', type: 'cadrage', date: '2026-10-27', stakeholders: ['SH-01'], present: ['SH-01'] },
-      { id: 'SRC-2', type: 'entretien', date: '2026-10-28', stakeholders: ['SH-02'], present: ['SH-01', 'SH-02'] },
+      { id: 'SRC-1', type: 'cadrage', date: '2026-10-27', stakeholders: ['SH-01'] },
+      { id: 'SRC-2', type: 'entretien', date: '2026-10-28', stakeholders: ['SH-02'] },
     ],
   };
+  // Le directeur a parlé, et rien ne vient de son guide : l'entretien s'est fait ailleurs.
   const f = interviewFindings(s, ['guide-SH-02.md', 'guide-SH-04.md']);
   assert.equal(f.length, 1, JSON.stringify(f));
   assert.equal(f[0].id, 'guide-SH-02.md');
-  assert.match(f[0].message, /dans la salle du dernier échange \(2026-10-28\)/);
-  // La salle est celle du DERNIER échange : présent la veille et absent depuis, le guide est légitime.
-  assert.equal(interviewFindings({ ...s, sources: [s.sources[0]] }, ['guide-SH-02.md']).length, 0, 'la salle de la veille vaut celle d\'aujourd\'hui');
+  assert.match(f[0].message, /aucune ne vient de ce fichier/);
+
+  // Le professeur n'a jamais parlé : son guide sert encore.
+  assert.equal(interviewFindings(s, ['guide-SH-04.md']).length, 0, 'un guide encore utile est signalé');
+
+  // Le guide a reçu les réponses : une source pointe vers lui, il reste pour toujours.
+  const recu = { ...s, sources: [...s.sources, { id: 'SRC-3', type: 'entretien', stakeholders: ['SH-02'], path: 'brd/demo/interviews/guide-SH-02.md' }] };
+  assert.equal(interviewFindings(recu, ['guide-SH-02.md']).length, 0, 'un guide devenu source est retiré');
+
   // Un guide pour quelqu'un qui n'est pas dans la cartographie.
   assert.ok(interviewFindings(s, ['guide-SH-99.md']).some(x => x.rule === 'S09'), 'un guide hors cartographie passe');
   assert.equal(interviewFindings(s, []).length, 0);
@@ -634,4 +643,40 @@ test('une dérogation nommée couvre aussi une règle de structure', () => {
   const sansUtilisateur = { document: 'brd', phase: 'discover', stakeholders: [{ id: 'SH-01', status: 'interrogée', power: 'faible', impact: 'fort', influence: 'positive', quadrant: 'consulter' }], candidate_needs: [{ id: 'BC-1' }] };
   assert.equal(s83(sansUtilisateur)[0].waived, undefined);
   assert.match(s83({ ...sansUtilisateur, lint_waivers: [{ rule: 'S83', id: 'stakeholders', reason: 'Aucun utilisateur direct n\'existe encore : le produit n\'est pas né.' }] })[0].waived, /pas né/);
+});
+
+// Deux collections de `governance` que rien ne lisait. Les relecteurs sont déduits du quadrant —
+// pouvoir × impact — et « cette personne a-t-elle été entendue ? » n'entre jamais dans le calcul : au
+// deuxième dossier réel, deux relecteurs sur cinq n'avaient jamais parlé. Une revue demande « est-ce
+// fidèle à ce que vous avez dit ? » : qui n'a rien dit n'a rien à vérifier, et le rôle met son silence
+// sur le chemin de l'approbation. Et `review_rounds` n'était lue par personne, alors que
+// `phase-govern.md` étape 7 prescrit d'y noter l'échéance — l'agent l'a demandée, ne l'a pas obtenue,
+// et a écrit le diagnostic dans son message de commit.
+test('S98 et S99 : un relecteur a été entendu, et un cycle a une échéance', () => {
+  const etat = gov => checkState({
+    document: 'brd', phase: 'govern',
+    stakeholders: [{ id: 'SH-01', name: 'Awa', status: 'interrogée' }, { id: 'SH-06', name: 'Bintou', status: 'à interroger' }],
+    governance: gov,
+  });
+  const seul = (d, regle, quoi) => { const f = d.filter(x => x.rule === regle); assert.equal(f.length, 1, `${quoi} : ${JSON.stringify(d.map(x => x.rule))}`); return f[0]; };
+
+  // Un relecteur jamais entendu.
+  assert.match(seul(etat({ reviewers: [{ stakeholder: 'SH-06', role: 'relecteur' }] }), 'S98', 'relecteur jamais entendu').message, /n'a rien dit/);
+  // Un approbateur jamais entendu, c'est pire encore.
+  assert.match(seul(etat({ reviewers: [{ stakeholder: 'SH-06', role: 'approbateur' }] }), 'S98', 'approbateur jamais entendu').message, /approbateur/);
+  // « Informé » est la sortie honnête : on ne lui demande pas de vérifier.
+  assert.equal(etat({ reviewers: [{ stakeholder: 'SH-06', role: 'informé' }] }).filter(f => f.rule === 'S98').length, 0, 'un informé est traité comme un relecteur');
+  assert.equal(etat({ reviewers: [{ stakeholder: 'SH-01', role: 'relecteur' }] }).filter(f => f.rule === 'S98').length, 0, 'un relecteur entendu est signalé');
+
+  // Un cycle envoyé sans échéance.
+  assert.match(seul(etat({ review_rounds: [{ id: 'RV-1', sent: '2026-10-28', channel: 'pr', deadline: '' }] }), 'S99', 'cycle sans échéance').message, /il s'interrompt/);
+  assert.equal(etat({ review_rounds: [{ id: 'RV-1', sent: '2026-10-28', deadline: '2026-11-10' }] }).filter(f => f.rule === 'S99').length, 0, 'un cycle daté est signalé');
+  // Un cycle pas encore envoyé n'a pas encore d'échéance à donner.
+  assert.equal(etat({ review_rounds: [{ id: 'RV-2', deadline: '' }] }).filter(f => f.rule === 'S99').length, 0, 'un cycle non envoyé réclame déjà son échéance');
+
+  // Et une approbation posée sur un retour qu'on n'a pas tranché.
+  const sur = etat({ comments: [{ id: 'CM-001', decision: 'en_attente' }], approvals: [{ stakeholder: 'SH-01', decision: 'approuvé' }] });
+  assert.match(seul(sur, 'S99', 'approbation sur commentaire en attente').message, /n'est pas un retour qu'on a traité/);
+  const tranche = etat({ comments: [{ id: 'CM-001', decision: 'accepté' }], approvals: [{ stakeholder: 'SH-01', decision: 'approuvé' }] });
+  assert.equal(tranche.filter(f => f.rule === 'S99').length, 0, 'un retour tranché bloque encore l\'approbation');
 });

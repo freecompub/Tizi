@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync, appendFileSync, readdirSync, existsSync, cpSync, mkdirSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { join } from 'node:path';
-import { sandbox, node, script, golden, lintSignature, tempDir, FIX } from './helpers.mjs';
+import { sandbox, node, script, golden, lintSignature, tempDir, FIX, SKILLS } from './helpers.mjs';
 
 const DOCS = { brd: 'brd-builder', prd: 'prd-builder', sad: 'sad-builder', plan: 'plan-builder' };
 const RENDER = { brd: ['render-brd.mjs', 'brd.md'], prd: ['render-prd.mjs', 'prd.md'], sad: ['render-sad.mjs', 'sad.md'], plan: ['render-plan.mjs', 'plan.md'] };
@@ -121,4 +121,28 @@ test('brd : chaque forme documentée du gabarit se rend dans le document', () =>
   // Et la section « Processus actuel » ne dit pas « Aucun élément » quand l'état en porte.
   const actuel = md.split('### Processus actuel')[1].split('### Processus cible')[0];
   assert.doesNotMatch(actuel, /Aucun élément/, 'le processus actuel est rendu vide alors que l\'état en porte');
+});
+
+// Le document du dossier et la copie figée dans `versions/` étaient IDENTIQUES à l'octet près, en-tête
+// comprise : « Document généré à partir de state.yaml le <date> ». Rien ne disait lequel était figé et
+// lequel allait dériver à la prochaine modification de l'état — et qui ouvrait l'un croyait lire ce qui
+// était parti en revue. Vu sur le deuxième dossier réel, où la question est venue de l'utilisateur.
+test('le document du dossier se dit copie de travail, la version figée se dit figée', () => {
+  const dir = sandbox();
+  const sp = join(dir, 'brd', 'demo', 'state.yaml');
+  writeFileSync(sp, readFileSync(sp, 'utf8').replace('version: "1.0"', 'version: "1.1"'));
+  assert.equal(node(script('brd-builder', 'render-brd.mjs'), ['brd/demo/state.yaml'], { cwd: dir }).code, 0);
+  const f = node(script('brd-builder', 'freeze-version.mjs'), ['brd/demo/state.yaml'], { cwd: dir });
+  assert.equal(f.code, 0, f.err);
+  const tete = p => readFileSync(join(dir, 'brd', 'demo', p), 'utf8').split('\n').find(l => l.startsWith('>'));
+  assert.match(tete('brd.md'), /\*\*Copie de travail\*\*/, 'le document du dossier ne se dit pas copie de travail');
+  assert.match(tete('brd.md'), /réécrite à chaque génération/, 'rien ne dit que la copie de travail va dériver');
+  assert.match(tete('versions/v1.1/brd.md'), /\*\*Version figée 1\.1\*\*/, 'la copie figée ne se dit pas figée');
+  assert.match(tete('versions/v1.1/brd.md'), /ne se régénère pas/, 'rien ne distingue la copie immuable');
+  assert.notEqual(tete('brd.md'), tete('versions/v1.1/brd.md'), 'les deux en-têtes sont identiques');
+
+  // Et les quatre générateurs disent la même chose, pour que le lecteur n'ait pas à apprendre quatre formes.
+  for (const [skill, scr] of [['prd-builder', 'render-prd.mjs'], ['sad-builder', 'render-sad.mjs'], ['plan-builder', 'render-plan.mjs']]) {
+    assert.match(readFileSync(join(SKILLS, skill, 'scripts', scr), 'utf8'), /\*\*Copie de travail\*\*/, `${scr} garde l'ancienne en-tête`);
+  }
 });
