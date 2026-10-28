@@ -40,18 +40,19 @@ opportunity:              # phase Assess (references/phase-assess.md)
 problem:
   statement: ""          # 2-3 phrases, confirmées par l'utilisateur
   confirmed: false
-  symptoms: []
-  impact: []             # temps, coût, risque, qualité
+  symptoms: []           # - { text: "", source: SRC-xxx }
+  impact: []             # - { type: temps|cout|risque|qualite, text: "", source: SRC-xxx }
 
 success_signals: []      # - { text: "", measurable: false }
 
 scope:
-  in: []
-  out: []
+  in: []                 # - { text: "", reason: "" } — ou une phrase, si elle se suffit
+  out: []                # - { text: "", reason: "" } — la raison compte : rien ne sort en silence
   deadline: ""
 
-current_process: []      # reconstitué en Discover (atelier, entretiens)
-#  - { event: "Dossier reçu", actor: "", source: SRC-xxx }
+current_process:         # reconstitué en Discover (atelier, entretiens). MÊME FORME que target_process :
+  events: []             # le processus actuel et le processus cible se lisent côte à côte
+#    - { event: "Dossier reçu", actor: "", source: SRC-xxx }
 
 constraints: []          # - { type: legale|contractuelle|organisationnelle|budgetaire|environnement|autre:<libellé>, text: "", source: SRC-xxx, implication: "" }
                           #   environnement : conditions réelles d'usage (bruit, lumière, mains occupées ou gantées, déplacement, connexion, interruptions, temps disponible)
@@ -227,7 +228,7 @@ decisions: []              # arbitrages rendus pendant la construction du BRD
 target_process:
   events: []
 #    - { event: "", actor: "", change: nouveau }   # nouveau | modifié | inchangé | supprimé
-  org_impacts: []          # rôles, organisation, formation
+  org_impacts: []          # rôles, organisation, formation — { text: "", source: SRC-xxx } ou une phrase
 
 risks: []
 #  - id: R-01
