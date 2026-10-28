@@ -225,3 +225,28 @@ test('index des sessions : un fichier par session, aucun écrivain partagé', ()
   assert.ok(vues.every(v => /^session: /m.test(v)), 'chaque fichier porte une seule session');
   assert.equal(new Set(vues.map(v => v.match(/^session: (.*)$/m)[1])).size, 2, 'deux sessions distinctes');
 });
+
+// Au deuxième dossier réel, 51 des 52 questions en texte libre ne nommaient personne, et la
+// cinquante-deuxième parlait de Dédé à la troisième personne alors qu'il était dans la pièce. Quatre
+// tours de l'utilisateur sont partis à dire qui avait dit quoi. L'extrait comptait déjà les lots de
+// questions ; il ne voyait pas celles qui n'étaient adressées à personne.
+test('extrait de session : les questions adressées à personne sont comptées', async () => {
+  const { readTranscript, buildExtract, namesIn } = await import('../skills/brd-builder/scripts/lib/sessions.mjs');
+  const dir = tempDir('tizi-adresse');
+  mkdirSync(join(dir, 'brd', 'demo'), { recursive: true });
+  writeFileSync(join(dir, 'brd', 'demo', 'state.yaml'), 'stakeholders:\n  - { id: SH-01, name: "Samir" }\n  - { id: SH-02, name: "Dédé" }\n  - { id: SH-03, name: "Tom" }\n');
+  const personnes = namesIn(['brd/demo'], dir);
+  assert.deepEqual(personnes, ['Samir', 'Dédé', 'Tom']);
+  const t = join(dir, 's.jsonl');
+  writeFileSync(t, [
+    { type: 'user', timestamp: '2026-11-02T08:00:00Z', message: { role: 'user', content: 'On reprend brd/demo.' } },
+    { type: 'assistant', timestamp: '2026-11-02T08:01:00Z', message: { role: 'assistant', content: [{ type: 'text', text: 'Qu\'est-ce que tu as fait pour retrouver son dossier, et où l\'as-tu retrouvé ?' }] } },
+    { type: 'assistant', timestamp: '2026-11-02T08:02:00Z', message: { role: 'assistant', content: [{ type: 'text', text: 'Dédé, à quoi verras-tu que le problème est résolu ?' }] } },
+  ].map(e => JSON.stringify(e)).join('\n'));
+  const md = buildExtract(readTranscript(t), { date: '2026-11-02', session: 'yyyy', initiatives: ['brd/demo'], event: 'Stop', personnes });
+  assert.match(md, /1 question\(s\) sur 2 ne nomment personne/, 'les questions adressées à personne ne sont pas comptées');
+  assert.match(md, /Samir, Dédé, Tom/, 'les personnes connues ne sont pas nommées dans le constat');
+  // Seul à répondre, on n'a pas besoin d'être nommé : la mesure n'a de sens qu'à partir de deux voix.
+  const seul = buildExtract(readTranscript(t), { date: '2026-11-02', session: 'yyyy', initiatives: ['brd/demo'], event: 'Stop', personnes: ['Samir'] });
+  assert.doesNotMatch(seul, /ne nomment personne/, 'la mesure se déclenche sur une seule personne connue');
+});
