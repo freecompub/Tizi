@@ -196,7 +196,25 @@ tours là où il en faut un : propose, l'autre dispose.
 **Ni l'autorisation de travailler.** « Dites-moi si vous voulez que j'enchaîne maintenant, ou qu'on
 s'arrête là » porte sur des étapes que la phase prescrit et qui n'engagent rien. La règle du contexte
 le dit déjà en creux : une question énonce **ce qui dépend de la réponse**. Quand rien n'en dépend, il
-n'y a pas de question — il y a un bouton qui apprend à cliquer sans lire.
+n'y a pas de question — il y a un bouton qui apprend à cliquer sans lire. **Cette interdiction porte
+sur la suite d'une phase, pas sur le passage à la phase suivante** : voir juste en dessous.
+
+**Mais un changement de phase se demande.** Ce n'est pas la suite du travail, c'est une porte : il
+s'écrit dans l'état avec sa date, il clôt ce qui précède, et les fichiers de phase le disent déjà —
+« **propose** le passage à Govern, **sans le décider** ». Quelque chose dépend donc de la réponse, et
+c'est un choix fermé : l'outil, les options, leurs conséquences. La question se pose **que les
+conditions de la porte soient réunies ou non** — si elles ne le sont pas, les options sont « s'arrêter
+là » et « continuer sur ce qui manque », jamais « passer la porte ». Et elle vient **après** l'état des
+lieux, jamais à sa place : `status.mjs` dit quelles phases sont passées, laquelle est en cours, et
+combien de conditions restent avant la suivante. Sur un dossier réel, l'utilisateur a annoncé « j'ai
+fini la phase BRD » alors que Define était faite, que Govern n'avait pas commencé et que quatre
+sections du document étaient encore `proposé` : personne ne lui avait jamais dit où il en était.
+
+**Et une transition qui ne se demande pas s'annonce quand même.** Le passage d'Assess à Discover suit
+la décision d'opportunité : elle a déjà été rendue par l'utilisateur, la redemander ferait un
+deuxième tour pour rien. Mais dire que la phase est close, sur quelle décision, et ce que la suivante
+couvre, ça n'est pas une question — c'est la seule chose qui empêche de découvrir trois sessions plus
+tard qu'on a changé d'étape sans le savoir.
 
 **Et la consignation n'est la branche d'aucune question.** « Sinon je consigne et je commite » laisse
 croire que la trace dépend de la réponse. Elle n'en dépend jamais : ce qui a été recueilli se réécrit

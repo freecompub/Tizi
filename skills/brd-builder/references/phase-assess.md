@@ -86,4 +86,4 @@ Même quand l'idée est imposée (une feuille de route décidée ailleurs), tien
 
 ## Fin de la phase
 
-Quand la décision est `aller_plus_loin` et déclarée par l'utilisateur, passe `phase: discover`. Le canevas sert de point de départ au cadrage : ne repose pas les questions déjà répondues.
+Quand la décision est `aller_plus_loin` et déclarée par l'utilisateur, passe `phase: discover` — et **dis-le** : la phase est close, sur cette décision, et voici ce que Discover couvre. Le passage ne se redemande pas, la décision d'opportunité l'a déjà tranché ; mais une transition muette laisse découvrir trois sessions plus tard qu'on a changé d'étape sans le savoir (`references/questions.md`). Le canevas sert de point de départ au cadrage : ne repose pas les questions déjà répondues.

@@ -190,4 +190,4 @@ Après l'étape 2, **lance** un council en mode `completude` (protocole : `refer
 - aucune zone d'ombre bloquante n'est ouverte ;
 - le BRD a été régénéré après la dernière validation.
 
-Liste ce qui manque, s'il y a lieu. Si l'utilisateur accepte, passe `phase: govern` et note la date.
+Lance `status.mjs` : il donne les phases passées, celle en cours, et le compte des conditions de cette porte. Présente-le, liste ce qui manque — puis **pose la question dans tous les cas**, avec l'outil : passer en Govern, ou s'arrêter là. S'il manque des conditions, les deux options sont « s'arrêter là » et « continuer sur ce qui manque », jamais « passer la porte » (`references/questions.md`). Si l'utilisateur accepte, passe `phase: govern` et note la date.

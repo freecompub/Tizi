@@ -883,3 +883,65 @@ test('la formulation d\'un identifiant se lit dans l\'état', async () => {
     assert.match(r.out, /OBJ-99 : inconnu dans ce dossier/, `${sk}/status.mjs invente une formulation`);
   }
 });
+
+// « Quand le skill s'arrête à une étape il ne dit jamais l'étape qu'on a validée et celles qui
+// restent. Il ne pose jamais la question : veux-tu qu'on s'arrête là ou qu'on enchaîne sur Discover ? »
+// La seconde moitié était INTERDITE par la doctrine, deux fois et dans ces mots — « ni l'autorisation
+// de travailler », et la séquence de pause qui part de l'annonce de l'utilisateur. L'interdiction est
+// juste pour la suite d'une phase et fausse pour le passage à la suivante : une porte s'écrit dans
+// l'état avec sa date, et les fichiers de phase disaient déjà « propose, sans décider ».
+test('un changement de phase se demande, et la position dans la chaîne se dit', () => {
+  const q = readFileSync(join(SKILLS, 'brd-builder', 'references', 'questions.md'), 'utf8');
+  assert.match(q, /\*\*Mais un changement de phase se demande\.\*\*/, 'le passage de phase reste une étape qui ne se demande pas');
+  assert.match(q, /pas sur le passage à la phase suivante/, 'l\'interdiction de demander ne dit pas ce qu\'elle ne couvre pas');
+  assert.match(q, /conditions de la porte soient réunies ou non/, 'la question n\'est due que porte ouverte');
+  assert.match(q, /jamais « passer la porte »/, 'les options proposées peuvent franchir une porte fermée');
+  assert.match(q, /transition qui ne se demande pas s'annonce quand même/, 'une transition muette reste muette');
+
+  // Et les deux portes du BRD posent la question, quoi qu'il manque.
+  for (const [f, suivante] of [['phase-discover.md', 'Define'], ['phase-define.md', 'Govern']]) {
+    const texte = readFileSync(join(SKILLS, 'brd-builder', 'references', f), 'utf8');
+    assert.match(texte, /pose la question dans tous les cas/, `${f} ne pose la question que si tout est prêt`);
+    assert.match(texte, new RegExp(`passer en ${suivante}, ou s'arrêter là`), `${f} n'offre pas l'alternative`);
+  }
+  // La sortie d'Assess ne se demande pas — la décision d'opportunité l'a tranché — mais elle s'annonce.
+  const a = readFileSync(join(SKILLS, 'brd-builder', 'references', 'phase-assess.md'), 'utf8');
+  assert.match(a, /la phase est close, sur cette décision/, 'le passage en Discover reste silencieux');
+});
+
+// Le point d'étape disait la phase courante et la porte PRÉCÉDENTE, jamais la position dans la chaîne
+// ni la distance à la porte suivante. `next-step.mjs` le fait au niveau des six documents, jamais à
+// l'intérieur d'un document.
+test('le point d\'étape dit les phases passées et ce qui reste avant la suivante', () => {
+  const dir = tempDir('tizi-portes');
+  mkdirSync(join(dir, 'brd', 'demo'), { recursive: true });
+  const etat = join(dir, 'brd', 'demo', 'state.yaml');
+  writeFileSync(etat, [
+    'document: brd', 'phase: define',
+    'objectives:', '  - { id: OBJ-01, statement: "Réduire les rejets", indicator: "taux", target: "5 %", status: validé }',
+    'business_requirements:', '  - { id: BR-01, statement: "Le système doit refuser un dossier incomplet", objectives: [OBJ-01], from_needs: [BC-01], status: proposé }',
+    'candidate_needs:', '  - { id: BC-01, text: "Pouvoir refuser tôt", sources: [{ ref: SRC-01 }], status: confirmé }',
+    'decisions:', '  - { id: DD-01, question: "Périmètre ?", status: proposé, options: [{ text: a }, { text: b }] }',
+    'shadow_zones:', '  - { id: ZO-01, type: probleme_flou, status: ouverte, blocking: true, question: "?" }',
+    'brd_sections: { context: proposé, objectives: validé }',
+  ].join('\n'));
+  const out = node(script('brd-builder', 'status.mjs'), [etat], { cwd: dir });
+  assert.equal(out.code, 0, out.err);
+  assert.match(out.out, /Phases : Assess ✓ · Discover ✓ · Define en cours · Govern à venir/, 'la position dans la chaîne n\'est pas dite');
+  assert.match(out.out, /Porte de sortie de Define — vers Govern/, 'la porte suivante n\'est pas nommée');
+  assert.match(out.out, /✗ toutes les sections du document sont validées — 1 section\(s\) : context/, 'les sections à valider ne sont pas comptées');
+  assert.match(out.out, /✗ aucun besoin candidat resté « confirmé » — 1 à solder/, 'un besoin non soldé passe');
+  assert.match(out.out, /✗ aucune décision restée « proposé » — 1 à rendre/, 'une décision non rendue passe');
+  assert.match(out.out, /✗ aucune zone d'ombre bloquante ouverte — 1 bloquante/, 'une zone bloquante passe');
+  assert.match(out.out, /avertissement\(s\) actif\(s\)/, 'le compte des avertissements n\'est pas repris');
+  assert.match(out.out, /Le passage se décide avec l'utilisateur/, 'rien ne dit que la porte ne se franchit pas seul');
+
+  // Les autres documents ont leurs phases, sans porte : leurs conditions de sortie ne sont pas écrites
+  // sous une forme calculable, et une porte à moitié juste vaut moins que pas de porte.
+  for (const [sk, doc, attendu] of [['prd-builder', 'prd', /Phases : Frame/], ['sad-builder', 'sad', /Phases : Explore/], ['plan-builder', 'plan', /Phases : Slice/]]) {
+    const r = node(script(sk, 'status.mjs'), [join(ROOT, 'exemple', doc, 'demo', 'state.yaml')], { cwd: ROOT });
+    assert.equal(r.code, 0, `${sk} : ${r.err}`);
+    assert.match(r.out, attendu, `${sk}/status.mjs ne dit pas les phases`);
+    assert.doesNotMatch(r.out, /Porte de sortie/, `${sk}/status.mjs annonce une porte qu'il ne sait pas calculer`);
+  }
+});
