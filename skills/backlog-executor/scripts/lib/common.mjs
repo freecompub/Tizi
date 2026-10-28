@@ -58,6 +58,30 @@ export const shLabel = (state, id) => {
   return s ? `${s.name || s.role} (${id})` : txt(id);
 };
 
+// La formulation humaine d'un identifiant quelconque : « réduire le temps de traitement (OBJ-03) ».
+// Un identifiant ne veut rien dire pour l'utilisateur sans un rappel de ce qu'il désigne, et cette
+// formulation NE SE CONVOQUE PAS DE MÉMOIRE — c'est la leçon des décomptes, où le dernier identifiant
+// lu comme un total annonçait 15 besoins candidats pour 11. Une glose fausse est pire qu'un
+// identifiant nu : l'identifiant nu laisse perplexe, la glose fausse fait croire.
+// Chaque collection a son champ définissant, et ils ne portent pas le même nom d'une collection à
+// l'autre : `statement` pour un objectif ou une règle, `text` pour un besoin ou un risque, `question`
+// pour une zone d'ombre ou une décision, `name` pour une personne.
+const DEFINIT = ['name', 'statement', 'text', 'question', 'title', 'role'];
+export const label = (state, id, max = 0) => {
+  for (const v of Object.values(state ?? {})) {
+    if (!Array.isArray(v)) continue;
+    const x = v.find(e => e && typeof e === 'object' && e.id === id);
+    if (!x) continue;
+    const champ = DEFINIT.find(c => String(x[c] ?? '').trim());
+    if (!champ) return txt(id);
+    let forme = String(x[champ]).replace(/\s+/g, ' ').trim();
+    // On ne coupe jamais en plein mot, et on dit qu'on a coupé.
+    if (max && forme.length > max) forme = `${forme.slice(0, max).replace(/\s+\S*$/, '')}…`;
+    return `${forme} (${id})`;
+  }
+  return txt(id);
+};
+
 export const prLabel = p => ({ must: 'Must', should: 'Should', could: 'Could', wont: "Won't" }[p] ?? 'Non priorisée');
 export const PRIORITY_ORDER = ['must', 'should', 'could', 'wont'];
 export const validated = coll => arr(coll).filter(x => x.status === 'validé');

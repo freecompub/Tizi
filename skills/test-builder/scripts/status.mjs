@@ -1,12 +1,27 @@
 #!/usr/bin/env node
 // Point d'étape déterministe d'une initiative, à partir de son état et de l'index des sessions — sans interprétation.
-// Usage : node status.mjs <chemin/state.yaml>
-import { arr, loadState, fail, shLabel } from './lib/common.mjs';
+// Usage : node status.mjs <chemin/state.yaml> [--id ID[,ID…]]
+//   --id : mode consultation — la formulation humaine des identifiants demandés, et rien d'autre.
+//          Un identifiant ne s'écrit jamais seul dans un message, et sa formulation se lit ici.
+import { arr, loadState, fail, shLabel, label } from './lib/common.mjs';
 import { condenseOf, sessionsFor } from './lib/sessions.mjs';
 
-const statePath = process.argv[2];
-if (!statePath) fail('Usage : node status.mjs <state.yaml>', 2);
+const args = process.argv.slice(2);
+const statePath = args.find(a => !a.startsWith('--') && !/^[A-Z]+-/.test(a));
+if (!statePath) fail('Usage : node status.mjs <state.yaml> [--id ID[,ID…]]', 2);
 const s = loadState(statePath);
+
+// Mode consultation : la formulation humaine des identifiants demandés. Un identifiant ne s'écrit
+// jamais seul dans un message, et sa formulation se LIT ici au lieu d'être convoquée de mémoire.
+if (args.includes('--id')) {
+  const ids = (args[args.indexOf('--id') + 1] ?? '').split(',').map(x => x.trim()).filter(Boolean);
+  if (!ids.length) fail('Usage : node status.mjs <state.yaml> --id ID[,ID…]', 2);
+  for (const id of ids) {
+    const forme = label(s, id);
+    console.log(forme === id ? `${id} : inconnu dans ce dossier` : forme);
+  }
+  process.exit(0);
+}
 const doc = s.document ?? 'brd';
 const initiative = statePath.replace(/\/state\.yaml$/, '').split('/').slice(-2).join('/');
 // Les sessions se cherchent à la racine du dépôt, pas dans le répertoire courant : lancé avec un chemin

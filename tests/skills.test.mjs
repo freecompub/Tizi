@@ -833,6 +833,53 @@ test('les scripts qui parlent nomment les personnes, pas leurs identifiants', ()
   const q = readFileSync(join(SKILLS, 'brd-builder', 'references', 'questions.md'), 'utf8');
   assert.match(q, /\*\*Un identifiant ne porte pas le sens\.\*\*/, 'rien n\'interdit de parler par adresses');
   assert.match(q, /première\s+mention dans un message porte la forme humaine/, 'rien ne dit quand la formulation est due');
-  assert.match(q, /qui cite/, 'le renvoi en fin de phrase est condamné avec le reste');
-  assert.match(q, /si on retirait l'identifiant, la phrase/, 'la règle n\'a pas de test praticable');
+  assert.match(q, /si on retirait l'identifiant, la phrase dirait-elle/, 'la règle n\'a pas de test praticable');
+  // Trois formes, parce qu'elles ne demandent pas la même chose : interdit dans une question, dû dans
+  // une affirmation, permis en renvoi et en étiquette.
+  assert.match(q, /Dans une question, l'identifiant est interdit/, 'une question peut encore porter une adresse');
+  assert.match(q, /Dans une affirmation, la formulation est due/, 'une affirmation peut encore se passer de formulation');
+  assert.match(q, /En renvoi et en étiquette, l'identifiant est permis/, 'le renvoi en fin de phrase est condamné avec le reste');
+  assert.match(q, /action: question-utilisateur/, 'le choix fermé posé en prose n\'est pas nommé');
+  // Et la formulation se lit, elle ne se convoque pas : une glose fausse fait croire.
+  assert.match(q, /ne se convoque pas de mémoire/, 'la formulation peut encore venir de mémoire');
+  assert.match(q, /--id OBJ-03/, 'rien ne dit où lire la formulation');
+  assert.match(q, /pour l'intervieweur seulement/i, 'l\'identifiant destiné à un tiers est interdit avec le reste');
+});
+
+// « ZO-003 ne veut rien dire s'il n'y a pas de rappel sur ce qui le définit. » Juste — et rien ne
+// donnait ce rappel à l'agent, qui le glosait donc de mémoire. Or une glose fausse est pire qu'un
+// identifiant nu : l'identifiant nu laisse perplexe, la glose fausse fait croire. C'est le défaut des
+// décomptes de mémoire — 15 besoins candidats annoncés pour 11 — avec de la prose au lieu de chiffres.
+test('la formulation d\'un identifiant se lit dans l\'état', async () => {
+  const { label } = await import('../skills/brd-builder/scripts/lib/common.mjs');
+  const s = {
+    stakeholders: [{ id: 'SH-01', name: 'Samir', role: 'parent d\'élève' }, { id: 'SH-07', role: 'comptable de l\'association' }],
+    objectives: [{ id: 'OBJ-03', statement: 'Réduire le temps de traitement d\'un dossier' }],
+    candidate_needs: [{ id: 'BC-002', text: 'Pouvoir savoir qu\'un dossier est bien arrivé et complet' }],
+    shadow_zones: [{ id: 'ZO-003', question: 'Dédé est directeur de quoi exactement ?' }],
+    business_rules: [{ id: 'RG-003', statement: 'Toute inscription doit être réglée par virement.' }],
+  };
+  // Chaque collection a son champ définissant, et ils n'ont pas le même nom.
+  assert.equal(label(s, 'OBJ-03'), 'Réduire le temps de traitement d\'un dossier (OBJ-03)');
+  assert.equal(label(s, 'BC-002'), 'Pouvoir savoir qu\'un dossier est bien arrivé et complet (BC-002)');
+  assert.equal(label(s, 'ZO-003'), 'Dédé est directeur de quoi exactement ? (ZO-003)');
+  assert.equal(label(s, 'RG-003'), 'Toute inscription doit être réglée par virement. (RG-003)');
+  assert.equal(label(s, 'SH-01'), 'Samir (SH-01)');
+  // Sans nom, la fonction : le comptable du dossier réel n'a jamais été nommé.
+  assert.equal(label(s, 'SH-07'), 'comptable de l\'association (SH-07)');
+  // Un identifiant inconnu se rend tel quel : on ne devine pas une formulation.
+  assert.equal(label(s, 'OBJ-99'), 'OBJ-99');
+  // On ne coupe jamais en plein mot, et on dit qu'on a coupé.
+  assert.equal(label(s, 'OBJ-03', 20), 'Réduire le temps de… (OBJ-03)');
+
+  // Et le mode de consultation, dans les sept skills.
+  const dir = tempDir('tizi-label');
+  mkdirSync(join(dir, 'brd', 'demo'), { recursive: true });
+  writeFileSync(join(dir, 'brd', 'demo', 'state.yaml'), 'document: brd\nobjectives:\n  - { id: OBJ-03, statement: "Réduire le temps de traitement" }\n');
+  for (const sk of skills) {
+    const r = node(join(SKILLS, sk, 'scripts', 'status.mjs'), [join(dir, 'brd', 'demo', 'state.yaml'), '--id', 'OBJ-03,OBJ-99'], { cwd: dir });
+    assert.equal(r.code, 0, `${sk} : ${r.err}`);
+    assert.match(r.out, /Réduire le temps de traitement \(OBJ-03\)/, `${sk}/status.mjs ne rend pas la formulation`);
+    assert.match(r.out, /OBJ-99 : inconnu dans ce dossier/, `${sk}/status.mjs invente une formulation`);
+  }
 });

@@ -33,6 +33,7 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
 
 | Piste | Date | Où |
 |---|---|---|
+| Un identifiant ne voyage jamais seul : les scripts qui parlent nomment les personnes, `label()` donne la formulation de n'importe quel identifiant, et une question n'en porte pas | 28 octobre 2026 | `un-identifiant-ne-parle-pas` |
 | Une question dit à qui elle est posée : 52 questions en texte libre sur un dossier réel, UNE qui nommait quelqu'un. L'extrait de session compte désormais celles qui n'adressent personne | 28 octobre 2026 | `questions-adressees` |
 | Une dérogation nommée couvre aussi une règle de structure : `lint.mjs` la proposait sous chaque avertissement, et seules les règles de forme étaient dérogeables — une dérogation du dossier réel était ignorée depuis sa rédaction | 28 octobre 2026 | `questions-adressees` |
 | La représentation s'écrit des deux côtés (S94, `represented_by`) : « chaque fonction a un représentant » était vrai, dit deux fois, et le dossier écrivait « non représentée » | 28 octobre 2026 | `questions-adressees` |
