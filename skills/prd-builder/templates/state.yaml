@@ -47,8 +47,8 @@ stakeholders: []          # qui a parlé, et en quelle qualité — chaîné : r
 
 sources: []               # preuves produit (entretiens, tests utilisateurs, analytics, études, décisions)
 #  - { id: SRC-001, type: entretien, date: "", stakeholders: [SH-01], present: [], path: "", feedback: à envoyer }   # type : cadrage | entretien | observation | test | analytics | étude | décision
-#                          # `present` : ceux qui étaient là, silencieux compris. Présent et locuteur
-#                          # d'aucune source, c'est quelqu'un qui n'a pas été entendu (section 1 bis)
+#                          # `present` : LA SALLE ENTIÈRE, silencieux ET locuteurs (S91). Présent et
+#                          # locuteur d'aucune source, c'est quelqu'un qui n'a pas été entendu (1 bis)
 #                          # cadrage : l'échange qui ouvre l'initiative — le brief, les notes, l'idée. Déclaratif.
 #                          # `stakeholders` dit QUI A PARLÉ, jamais celui dont on rapporte les besoins :
 #                          # une réunion à trois répondants donne trois sources, et S81 refuse une source

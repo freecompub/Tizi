@@ -431,3 +431,30 @@ test('S90 : une décision rendue au nom de quelqu\'un qu\'on n\'a pas entendu', 
   assert.match(s90(prd({ design_decisions: [{ id: 'DD-1', decided_by: 'SH-02' }] })).join(' | '), /décision de conception rendue au nom de Dédé/);
   assert.match(s90(prd({ decision_rights: [{ domain: 'objectifs', decider: 'SH-02' }] })).join(' | '), /droit de trancher « objectifs »/);
 });
+
+// Contrôle inverse de S87. Sur le deuxième dossier réel, vingt-et-une sources listaient dans `present`
+// toute la salle, locuteurs compris, et une seule l'avait lu à l'envers — « ceux qui étaient là et
+// n'ont rien dit » : `stakeholders: [SH-03, SH-02]` avec `present: [SH-01]`, donc deux personnes qui
+// parlent depuis l'extérieur de la pièce. Les deux lectures ne peuvent pas coexister dans un fichier.
+test('S91 : un locuteur est dans la salle qu\'il a fait parler', () => {
+  const base = {
+    document: 'brd', phase: 'discover',
+    stakeholders: [{ id: 'SH-01', name: 'Samir', status: 'interrogée' }, { id: 'SH-02', name: 'Dédé', status: 'interrogée' }],
+  };
+  const seul = (d, quoi) => { const f = d.filter(x => x.rule === 'S91'); assert.equal(f.length, 1, `${quoi} : ${JSON.stringify(d.filter(x => ['S91', 'S87'].includes(x.rule)))}`); return f[0]; };
+
+  const dehors = checkState({ ...base, sources: [{ id: 'SRC-001', type: 'entretien', stakeholders: ['SH-02'], present: ['SH-01'] }] });
+  assert.match(seul(dehors, 'locuteur hors de la pièce non signalé').message, /absent de « present »/);
+
+  // La salle entière : le locuteur y figure, le silencieux aussi — et c'est S87 qui parle du second.
+  const dedans = checkState({ ...base, sources: [{ id: 'SRC-001', type: 'entretien', stakeholders: ['SH-02'], present: ['SH-01', 'SH-02'] }] });
+  assert.equal(dedans.filter(f => f.rule === 'S91').length, 0, 'une source correcte est signalée');
+
+  // `present` vide : le tour de table n'a pas eu lieu, il n'y a rien à vérifier.
+  const vide = checkState({ ...base, sources: [{ id: 'SRC-001', type: 'entretien', stakeholders: ['SH-02'], present: [] }] });
+  assert.equal(vide.filter(f => f.rule === 'S91').length, 0, 'une source sans tour de table est signalée');
+
+  // Un document n'a pas de salle ; une mesure non plus.
+  const sansSalle = checkState({ ...base, sources: [{ id: 'SRC-001', type: 'mesure', stakeholders: ['SH-02'], present: ['SH-01'] }] });
+  assert.equal(sansSalle.filter(f => f.rule === 'S91').length, 0, 'une mesure est traitée comme une pièce');
+});
