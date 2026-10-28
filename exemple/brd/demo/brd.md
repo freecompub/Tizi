@@ -2,7 +2,7 @@
 
 **Version** : 1.0 — **Statut** : baseline
 
-> Document généré à partir de `state.yaml` le 2026-10-21. Ne pas le modifier directement : toute correction passe par l'état de session.
+> Document généré à partir de `state.yaml` le 2026-10-28. Ne pas le modifier directement : toute correction passe par l'état de session.
 
 ## Statut du document
 

@@ -5,7 +5,7 @@
 // Poser vingt questions d'un coup noie celles qui comptent ; chaque réponse est ensuite réécrite dans l'état (résolution
 // de la zone d'ombre et mise à jour des éléments touchés). Discipline reprise de la commande clarify de spec-kit.
 // Usage : node ask-five.mjs <état.yaml> [--max 5] [--json]
-import { arr, loadState, fail, table } from './lib/common.mjs';
+import { arr, loadState, fail, table, shLabel } from './lib/common.mjs';
 
 // Ce que coûte la zone laissée ouverte, de 5 à 1. La table ne parlait que le vocabulaire du BRD :
 // sur le PRD du deuxième dossier réel, quatorze types sur seize tombaient sur le défaut `?? 1`, si bien
@@ -50,7 +50,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const top = ranked.slice(0, max);
   if (args.includes('--json')) { console.log(JSON.stringify(top, null, 2)); process.exit(0); }
   if (!top.length) { console.log('Aucune zone d\'ombre ouverte.'); process.exit(0); }
-  console.log(table(['#', 'Zone', 'Question', 'Pourquoi maintenant', 'À qui'], top.map((z, i) => [i + 1, z.id, z.question ?? z.text ?? '', z.reasons.join(', ') || 'à lever', z.ask_to ?? z.owner ?? '—'])));
+  console.log(table(['#', 'Zone', 'Question', 'Pourquoi maintenant', 'À qui'], top.map((z, i) => [i + 1, z.id, z.question ?? z.text ?? '', z.reasons.join(', ') || 'à lever', z.ask_to || z.owner ? shLabel(s, z.ask_to || z.owner) : '—'])));
   // Ce script CLASSE, il ne compose pas un message. Dire « pose-les » faisait lire la sélection comme
   // un lot à envoyer d'un coup : l'agent vidait les cinq questions dans un seul tour, et les réponses
   // arrivaient mélangées quand elles arrivaient. Le nombre posé à la fois est dit ici, où il sera lu.

@@ -106,6 +106,25 @@ besoin repris par une autre initiative garde le sien, et sa place reste vide ici
 les entrées, par statut, sans interprétation. Un décompte de mémoire est d'autant plus dangereux qu'il
 est plausible : personne ne recompte un chiffre qui ressemble au bon.
 
+**Un identifiant ne porte pas le sens.** `OBJ-03`, `BR-01`, `ZO-038` sont des adresses : elles servent
+aux scripts, à la traçabilité et à retrouver la chose dans le fichier. Elles ne servent pas à parler,
+et l'utilisateur est le seul de la chaîne qui n'a pas l'index sous les yeux. Alors **la première
+mention dans un message porte la forme humaine**, prise dans le champ voisin — `name` pour une
+personne, `question` pour une zone d'ombre, `text` ou `statement` pour un besoin, une exigence, une
+règle. Les mentions suivantes du même message peuvent être l'identifiant seul.
+
+L'humain d'abord, l'identifiant entre parenthèses : « le dossier perdu dont le parent n'est jamais
+prévenu (BC-002) » se lit, « BC-002 (le dossier perdu…) » oblige à traiter une adresse avant de
+comprendre. Et **une personne dont le `name` est renseigné s'appelle par son nom** : `shLabel` dans
+`scripts/lib/common.mjs` rend « Samir (SH-01) », et c'est la forme attendue partout.
+
+Ce qui reste permis, et utile : l'identifiant **qui cite** une phrase déjà complète. « Il se verra
+refuser quelque chose que le document lui promet (ZO-082) » se comprend entier, et le renvoi dit
+seulement où c'est rangé. Ce qui est interdit, c'est l'identifiant **qui porte** : « H-017 ne souffre
+aucune exception », « ZO-038 d'abord », « SH-01 en est une avec deux enfants » — trois phrases réelles,
+vides pour qui les lit. La question à se poser est simple : si on retirait l'identifiant, la phrase
+dirait-elle encore quelque chose ? Si non, il manque la formulation.
+
 ## Quand l'outil n'existe pas
 
 En mode non interactif (`claude -p`, agent cloud) ou dans un éditeur qui ne l'expose pas, la règle ne

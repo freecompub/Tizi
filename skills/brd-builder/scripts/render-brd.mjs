@@ -5,7 +5,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import yaml from './lib/vendor/js-yaml.mjs';
-import { humanReviewFooter } from './lib/common.mjs';
+import { humanReviewFooter, shLabel } from './lib/common.mjs';
 import { checkBrd, coverage, evidenceOf, brSources } from './lib/rules.mjs';
 
 const args = process.argv.slice(2);
@@ -44,7 +44,7 @@ const objs = arr(s.objectives).filter(kept);
 const brs = arr(s.business_requirements).filter(kept);
 const rgs = arr(s.business_rules).filter(kept);
 const dds = arr(s.decisions).filter(kept);
-const shName = id => (sh.get(id) ? `${sh.get(id).name || sh.get(id).role} (${id})` : txt(id));
+const shName = id => shLabel(s, id);   // même rendu que partout ailleurs : « Samir (SH-01) »
 
 const priorities = [['must', 'Must'], ['should', 'Should'], ['could', 'Could'], ['wont', "Won't"]];
 const prLabel = p => (priorities.find(([k]) => k === p)?.[1] ?? 'Non priorisée');
