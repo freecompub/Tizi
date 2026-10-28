@@ -493,3 +493,40 @@ test('S92 et S93 : le quadrant se déduit, l\'influence se demande', () => {
   const assess = checkState({ document: 'brd', phase: 'assess', stakeholders: [{ id: 'SH-01', name: 'Dédé' }] });
   assert.equal(assess.filter(f => ['S92', 'S93'].includes(f.rule)).length, 0, 'la carte est exigée dès Assess');
 });
+
+// « J'ai bien précisé que chaque fonction a un représentant. » Dit deux fois, et le dossier affirmait le
+// contraire : `jamais entendue, jamais présente, et non représentée`. La phrase n'avait pas d'endroit
+// où se poser — `represents` est posé sur le REPRÉSENTANT et nomme un groupe en prose, qu'aucun script
+// ne rapproche d'un identifiant.
+test('S94 : la représentation s\'écrit, et elle ne vaut pas une voix', () => {
+  const carte = shs => checkState({ document: 'brd', phase: 'discover', stakeholders: shs, candidate_needs: [{ id: 'BC-1' }] });
+  const s94 = d => d.filter(f => f.rule === 'S94');
+  const rep = { id: 'SH-01', name: 'Samir', status: 'interrogée', represents: 'les parents d\'élèves', power: 'faible', impact: 'fort', influence: 'positive', quadrant: 'consulter', end_user: true };
+
+  // Quelqu'un se dit représentant d'un groupe, et l'utilisateur jamais entendu ne déclare rien.
+  const muet = s94(carte([rep, { id: 'SH-06', status: 'à interroger', end_user: true }]));
+  assert.equal(muet.length, 1, JSON.stringify(muet));
+  assert.match(muet[0].message, /aucune représentation déclarée/);
+
+  // Déclarée, mais plus aucune zone ne la nomme : la représentation a fermé la question.
+  const ferme = s94(carte([rep, { id: 'SH-06', status: 'à interroger', end_user: true, represented_by: 'SH-01' }]));
+  assert.equal(ferme.length, 1, JSON.stringify(ferme));
+  assert.match(ferme[0].message, /elle ne remplace pas sa voix/);
+
+  // Déclarée, et la zone sur sa voix reste ouverte : c'est la bonne tenue.
+  const tenu = checkState({
+    document: 'brd', phase: 'discover', candidate_needs: [{ id: 'BC-1' }],
+    stakeholders: [rep, { id: 'SH-06', status: 'à interroger', end_user: true, represented_by: 'SH-01' }],
+    shadow_zones: [{ id: 'ZO-01', type: 'partie_prenante_non_entendue', status: 'ouverte', ask_to: 'SH-01', related: ['SH-06'] }],
+  });
+  assert.equal(s94(tenu).length, 0, JSON.stringify(s94(tenu)));
+
+  // Un représentant de lui-même, et un représentant qui n'existe pas.
+  assert.match(s94(carte([rep, { id: 'SH-06', status: 'à interroger', end_user: true, represented_by: 'SH-06' }]))[0].message, /par elle-même/);
+  assert.ok(carte([rep, { id: 'SH-06', status: 'à interroger', end_user: true, represented_by: 'SH-99' }]).some(f => f.rule === 'S09'), 'un représentant inconnu passe');
+
+  // Personne ne se dit représentant : rien à déclarer, rien à signaler.
+  const seuls = s94(carte([{ id: 'SH-01', status: 'interrogée', end_user: true, power: 'faible', impact: 'fort', influence: 'positive', quadrant: 'consulter' },
+    { id: 'SH-06', status: 'à interroger', end_user: true }]));
+  assert.equal(seuls.length, 0, JSON.stringify(seuls));
+});

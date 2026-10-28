@@ -184,6 +184,30 @@ const rendueParAbsent = (out, s, shs, id, qui, quoi) => {
     out.push({ rule: 'S90', id, message: `${quoi} au nom de ${sh.name || sh.id}, que l'état déclare « ${sh.status} » : elle est rapportée par un tiers, pas rendue` });
   }
 };
+// « J'ai bien précisé que chaque fonction a un représentant. » La phrase était vraie, dite deux fois, et
+// le dossier affirmait le contraire — `status: à interroger  # jamais entendue, jamais présente, et non
+// représentée`. Il n'y avait pas d'endroit pour l'écrire : `represents` est posé sur le REPRÉSENTANT et
+// nomme un groupe en texte libre (« les parents d'élèves »), qu'aucun script ne peut rapprocher d'un
+// SH-xx. `represented_by` est le champ inverse, sur la personne représentée. Et il ne ferme rien : une
+// représentation enregistre qui répond pour quelqu'un, elle ne remplace pas un utilisateur direct
+// (`phase-discover.md` point 4, et S83).
+const nommeeDansUneZone = (s, id) => arr(s.shadow_zones).some(z => z.status === 'ouverte' && (z.ask_to === id || arr(z.related).includes(id)));
+const checkRepresentation = (s, out, shs, { endUsersSeuls }) => {
+  const porte = arr(s.stakeholders).some(sh => String(sh.represents ?? '').trim());
+  for (const sh of arr(s.stakeholders)) {
+    const par = sh.represented_by;
+    if (par && !shs.has(par)) out.push({ rule: 'S09', id: sh.id, message: `représentée par « ${par} », qui n'est pas une partie prenante connue` });
+    else if (par === sh.id) out.push({ rule: 'S94', id: sh.id, message: 'déclarée représentée par elle-même : la représentation désigne quelqu\'un d\'autre' });
+    const concerne = endUsersSeuls ? sh.end_user : true;
+    if (!concerne || !NON_ENTENDU.includes(sh.status)) continue;
+    if (par && shs.has(par) && par !== sh.id && !nommeeDansUneZone(s, sh.id)) {
+      out.push({ rule: 'S94', id: sh.id, message: `représentée par ${par} et jamais entendue, sans qu'aucune zone ouverte ne la nomme : une représentation dit qui répond pour elle, elle ne remplace pas sa voix` });
+    }
+    if (!par && porte) {
+      out.push({ rule: 'S94', id: sh.id, message: 'jamais entendue et aucune représentation déclarée, alors qu\'une autre partie prenante se dit représentante d\'un groupe : si c\'est d\'elle qu\'il s\'agit, dis-le en `represented_by`' });
+    }
+  }
+};
 export function evidenceOf(s, srcIds, ownerIds = []) {
   const srcs = new Map(arr(s.sources).map(x => [x.id, x]));
   const ids = [...new Set(arr(srcIds))];
@@ -454,6 +478,7 @@ export function checkBrd(s) {
       out.push({ rule: 'S93', id: sh.id, message: 'fort pouvoir, influence inconnue et aucune attitude notée : le sens dans lequel elle pèsera est la seule appréciation qui ne se déduit pas — elle se demande, et son absence est une zone d\'ombre' });
     }
   }
+  checkRepresentation(s, out, shs, { endUsersSeuls: true });
   return out;
 }
 
@@ -606,6 +631,7 @@ export function checkPrd(s) {
     for (const d of arr(s.decision_rights)) rendueParAbsent(out, s, shs, `decision_rights:${d.domain}`, d.decider, `attribution du droit de trancher « ${d.domain} »`);
     for (const g of arr(s.goals).filter(live)) rendueParAbsent(out, s, shs, g.id, g.decided_by, 'cible arrêtée');
     for (const d of arr(s.design_decisions).filter(live)) rendueParAbsent(out, s, shs, d.id, d.decided_by, 'décision de conception rendue');
+    checkRepresentation(s, out, shs, { endUsersSeuls: false });
   }
   return out;
 }
@@ -1158,5 +1184,5 @@ export const STRUCT_RULES = {
   S56: 'opportunité non décidée', S57: 'hypothèse risquée non testée', S58: 'itération sans revue', S59: 'release sans mesure des outcomes',
   S60: 'voie rapide non conforme', S61: 'ordre ouverture, milieu, fin', S62: 'story sans titre court',
   S63: 'exigence à source unique', S64: 'exigence sans source', S65: 'porte de synthèse', S66: 'exigence de transition incomplète', S67: 'exploration de concepts',
-  S68: 'espace réservé resté', S69: 'chiffre sans source', S70: 'fiche de contexte trop longue', S71: 'ADR sans règle', S72: 'collision entre tâches', S73: 'comportement existant à préserver', S74: 'taille et risque calculé', S75: 'attention humaine dépassée', S76: 'tâche non finie sans décision', S77: 'action de rétrospective sans suivi', S78: 'voie rapide sans épopée', S79: 'constitution', S80: 'liste de contrôle de relecture', S81: 'source sans personne entendue', S82: 'métrique et objectif désaccordés', S83: 'aucun utilisateur direct entendu', S84: 'exigence jamais relue par la source', S85: 'motif EARS absent ou désaccordé', S86: 'provenance d\'initiative incomplète ou hors énumération', S87: 'présent sans avoir parlé', S88: 'valeur hors énumération ou « autre » sans libellé', S89: 'droit de décision sans décideur ou confirmé par lui-même', S90: 'décision rendue au nom de quelqu\'un qu\'on n\'a pas entendu', S91: 'locuteur absent de la salle qu\'il a fait parler', S92: 'quadrant d\'implication affirmé au lieu d\'être déduit', S93: 'influence inconnue à fort pouvoir, sans attitude notée',
+  S68: 'espace réservé resté', S69: 'chiffre sans source', S70: 'fiche de contexte trop longue', S71: 'ADR sans règle', S72: 'collision entre tâches', S73: 'comportement existant à préserver', S74: 'taille et risque calculé', S75: 'attention humaine dépassée', S76: 'tâche non finie sans décision', S77: 'action de rétrospective sans suivi', S78: 'voie rapide sans épopée', S79: 'constitution', S80: 'liste de contrôle de relecture', S81: 'source sans personne entendue', S82: 'métrique et objectif désaccordés', S83: 'aucun utilisateur direct entendu', S84: 'exigence jamais relue par la source', S85: 'motif EARS absent ou désaccordé', S86: 'provenance d\'initiative incomplète ou hors énumération', S87: 'présent sans avoir parlé', S88: 'valeur hors énumération ou « autre » sans libellé', S89: 'droit de décision sans décideur ou confirmé par lui-même', S90: 'décision rendue au nom de quelqu\'un qu\'on n\'a pas entendu', S91: 'locuteur absent de la salle qu\'il a fait parler', S92: 'quadrant d\'implication affirmé au lieu d\'être déduit', S93: 'influence inconnue à fort pouvoir, sans attitude notée', S94: 'représentation non déclarée, ou tenue pour une voix',
 };
