@@ -249,4 +249,19 @@ test('extrait de session : les questions adressées à personne sont comptées',
   // Seul à répondre, on n'a pas besoin d'être nommé : la mesure n'a de sens qu'à partir de deux voix.
   const seul = buildExtract(readTranscript(t), { date: '2026-11-02', session: 'yyyy', initiatives: ['brd/demo'], event: 'Stop', personnes: ['Samir'] });
   assert.doesNotMatch(seul, /ne nomment personne/, 'la mesure se déclenche sur une seule personne connue');
+
+  // Et une question ne porte pas d'identifiant : on doit pouvoir le retirer sans rien perdre, donc il
+  // n'avait rien à y faire. Vu sur un dossier réel : « ZO-003 — « directeur » de quoi : une école, une
+  // association, les deux ? » — l'identifiant ne cite rien, ne glose rien, et annonce un champ à
+  // remplir. Le renvoi en fin d'AFFIRMATION reste utile, et n'est pas compté ici : on ne regarde que
+  // les questions posées.
+  const avec = join(dir, 'q.jsonl');
+  writeFileSync(avec, [
+    { type: 'user', timestamp: '2026-11-02T08:00:00Z', message: { role: 'user', content: 'On reprend brd/demo.' } },
+    { type: 'assistant', timestamp: '2026-11-02T08:01:00Z', message: { role: 'assistant', content: [{ type: 'text', text: 'ZO-003 — « directeur » de quoi : une école, une association, les deux ?' }] } },
+    { type: 'assistant', timestamp: '2026-11-02T08:02:00Z', message: { role: 'assistant', content: [{ type: 'text', text: 'Dédé, à quoi verras-tu que le problème est résolu ?' }] } },
+  ].map(e => JSON.stringify(e)).join('\n'));
+  const md2 = buildExtract(readTranscript(avec), { date: '2026-11-02', session: 'xxxx', initiatives: ['brd/demo'], event: 'Stop', personnes });
+  assert.match(md2, /1 question\(s\) sur 2 portent un identifiant/, 'les questions qui portent un identifiant ne sont pas comptées');
+  assert.match(md2, /ZO-003/, 'le constat ne montre pas la question en cause');
 });

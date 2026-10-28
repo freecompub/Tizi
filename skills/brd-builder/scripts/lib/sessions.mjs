@@ -148,6 +148,8 @@ export function namesIn(initiatives, root = '.') {
 // troisième personne — « à quoi Dédé verra-t-il… », posée devant lui — est déjà une amélioration sur
 // « tu », et la différence entre les deux ne se décide pas par expression régulière.
 const nomme = (question, noms) => noms.some(n => question.toLowerCase().includes(n.toLowerCase()));
+// Un identifiant du SDLC : une à quatre majuscules, un tiret, un nombre — ZO-003, BC-12, SH-01, R-04.
+const IDENTIFIANT_RE = /\b[A-Z]{1,4}-S?\d{1,3}\b/;
 
 // Un extrait ne tronque pas en plein mot, et ne tronque pas en silence : la dernière réponse du premier
 // dossier réel s'arrêtait sur « **cette se », sans rien dire de ce qui manquait.
@@ -188,7 +190,7 @@ export function buildExtract(turns, meta) {
   }
   const scripts = [...new Set(assistants.flatMap(a => (a.tools ?? []).filter(t => isShellTool(t.name)).map(t => String(t.input?.command ?? t.input?.raw ?? '')))
     .filter(c => /scripts\/[a-z-]+\.mjs/.test(c)).map(c => c.match(/scripts\/([a-z-]+\.mjs)/)[1]))];
-  const ids = [...new Set(turns.flatMap(t => [t.text, ...(t.tools ?? []).map(x => JSON.stringify(x.input))].join(' ').match(/\b[A-Z]{1,4}-S?\d{1,3}\b/g) ?? []))].sort();
+  const ids = [...new Set(turns.flatMap(t => [t.text, ...(t.tools ?? []).map(x => JSON.stringify(x.input))].join(' ').match(new RegExp(IDENTIFIANT_RE.source, 'g')) ?? []))].sort();
   const lastAssistant = [...assistants].reverse().find(a => a.text);
 
   // Questions posées par l'outil, dans l'ordre, chacune avec sa réponse quand l'hôte la nomme.
@@ -221,6 +223,11 @@ export function buildExtract(turns, meta) {
   const personnes = meta.personnes ?? [];
   const posees = [...ecrites.map(e => e.question), ...appels.flatMap(c => c.questions.map(q => q.question))];
   const sansNom = personnes.length > 1 ? posees.filter(q => !nomme(q, personnes)).length : 0;
+  // Une question ne porte pas d'identifiant : on doit pouvoir le retirer sans rien perdre, donc il
+  // n'avait rien à y faire. Vu sur un dossier réel : `ZO-003 — « directeur » de quoi : une école, une
+  // association, les deux ?` — l'identifiant ne cite rien, ne glose rien, et annonce « champ ZO-003, à
+  // remplir ». Le renvoi en fin d'AFFIRMATION, lui, reste utile : il dit où la chose est rangée.
+  const avecId = posees.filter(q => IDENTIFIANT_RE.test(q));
 
   const ligneQuestion = q => `- ${maskSecrets(q.question)}${q.options.length ? ` _(propositions : ${q.options.map(maskSecrets).join(' · ')})_` : ''}`;
   const blocAppel = c => [
@@ -245,6 +252,7 @@ export function buildExtract(turns, meta) {
     '### En texte libre', '',
     ...(ecrites.length ? ecrites.map(e => `- (tour ${e.tour}) ${maskSecrets(e.question)}`) : ['_Aucune._']), '',
     ...(groupes.length ? [`> ${groupes.length} tour(s) portent plus d'une question en texte libre : ${groupes.map(([t, n]) => `tour ${t} (${n})`).join(', ')}. Une question ouverte se pose seule.`, ''] : []),
+    ...(avecId.length ? [`> ${avecId.length} question(s) sur ${posees.length} portent un identifiant : une question n'en porte pas — celui à qui on demande n'a pas besoin de l'adresse de la chose, il a besoin de la chose. ${avecId.map(q => `« ${borne(q, 90)} »`).join(' ; ')}`, ''] : []),
     ...(sansNom ? [`> ${sansNom} question(s) sur ${posees.length} ne nomment personne, alors que le dossier connaît ${personnes.length} personnes (${personnes.join(', ')}) : une question dit à qui elle est posée, à la deuxième personne, et son destinataire est l'\`ask_to\` de la zone qu'elle sert à lever.`, ''] : []),
     '## Dernière réponse de l\'assistant', '',
     lastAssistant ? borne(lastAssistant.text) : '_Aucune._', '',

@@ -113,17 +113,40 @@ mention dans un message porte la forme humaine**, prise dans le champ voisin —
 personne, `question` pour une zone d'ombre, `text` ou `statement` pour un besoin, une exigence, une
 règle. Les mentions suivantes du même message peuvent être l'identifiant seul.
 
-L'humain d'abord, l'identifiant entre parenthèses : « le dossier perdu dont le parent n'est jamais
-prévenu (BC-002) » se lit, « BC-002 (le dossier perdu…) » oblige à traiter une adresse avant de
-comprendre. Et **une personne dont le `name` est renseigné s'appelle par son nom** : `shLabel` dans
-`scripts/lib/common.mjs` rend « Samir (SH-01) », et c'est la forme attendue partout.
+**Un seul critère, trois formes.** Le critère : *si on retirait l'identifiant, la phrase dirait-elle
+encore quelque chose ?* Il se décline en trois situations, et elles ne demandent pas la même chose.
 
-Ce qui reste permis, et utile : l'identifiant **qui cite** une phrase déjà complète. « Il se verra
-refuser quelque chose que le document lui promet (ZO-082) » se comprend entier, et le renvoi dit
-seulement où c'est rangé. Ce qui est interdit, c'est l'identifiant **qui porte** : « H-017 ne souffre
-aucune exception », « ZO-038 d'abord », « SH-01 en est une avec deux enfants » — trois phrases réelles,
-vides pour qui les lit. La question à se poser est simple : si on retirait l'identifiant, la phrase
-dirait-elle encore quelque chose ? Si non, il manque la formulation.
+- **Dans une question, l'identifiant est interdit.** On doit pouvoir le retirer sans rien perdre —
+  donc il n'avait rien à faire là. Celui à qui on demande n'a pas besoin de l'adresse de la chose, il
+  a besoin de la chose. `ZO-003 — « directeur » de quoi : une école, une association, les deux ?` est
+  le contre-exemple complet, pris sur un dossier réel : l'identifiant ne cite rien et ne glose rien, il
+  annonce « champ ZO-003, à remplir » ; et il masquait un second défaut, un **choix fermé posé en
+  prose**, avec ses trois options dans la phrase. La même question a été reposée plus tard par l'outil,
+  correctement — un tour perdu, alors que la zone portait `action: question-utilisateur` depuis le
+  début.
+- **Dans une affirmation, la formulation est due** : la phrase doit survivre au retrait. « Le filet
+  couvre 100 % des inscriptions — **H-017** ne souffre aucune exception » ne survit pas ; « …— et
+  l'hypothèse que le virement est la seule trace survivant à la perte du dossier ne souffre aucune
+  exception (H-017) » survit.
+- **En renvoi et en étiquette, l'identifiant est permis et utile.** En renvoi, la phrase est déjà
+  complète et il dit seulement où c'est rangé : « il se verra refuser quelque chose que le document lui
+  promet (ZO-082) ». En étiquette — début de ligne, de puce, de cellule —, l'identifiant devant suivi
+  de son énoncé se lit très bien : « **RG-003** : toute inscription doit être réglée par virement »,
+  et c'est la forme de `status.mjs`. En **prose courante**, l'humain d'abord et l'identifiant entre
+  parenthèses, parce qu'une adresse en tête oblige à analyser avant de comprendre.
+
+**Une personne s'appelle par son nom** dès que `name` est renseigné : `shLabel` rend « Samir (SH-01) ».
+Écrire « SH-02 cumule la présidence et la direction » dans le texte d'une zone d'ombre est pire
+qu'ailleurs, parce que `status.mjs` relira cette phrase à voix haute.
+
+**Et la formulation se lit dans l'état, elle ne se convoque pas de mémoire** — comme un décompte.
+`status.mjs <état> --id OBJ-03,ZO-003` la donne, en prenant le champ qui définit l'élément. Une glose
+fausse est pire qu'un identifiant nu : l'identifiant nu laisse perplexe, la glose fausse fait croire.
+C'est le défaut des décomptes de mémoire avec de la prose au lieu de chiffres.
+
+**L'exception** : un identifiant destiné à quelqu'un d'autre que l'utilisateur. Le guide d'entretien
+indique entre crochets la zone visée par chaque question, « pour l'intervieweur seulement, ne pas la
+lire à voix haute » : le destinataire n'est pas l'interviewé, et la règle ne l'interdit pas.
 
 ## Quand l'outil n'existe pas
 
