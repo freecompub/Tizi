@@ -33,6 +33,13 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
 
 | Piste | Date | Où |
 |---|---|---|
+| Une question dit à qui elle est posée : 52 questions en texte libre sur un dossier réel, UNE qui nommait quelqu'un. L'extrait de session compte désormais celles qui n'adressent personne | 28 octobre 2026 | `questions-adressees` |
+| Une dérogation nommée couvre aussi une règle de structure : `lint.mjs` la proposait sous chaque avertissement, et seules les règles de forme étaient dérogeables — une dérogation du dossier réel était ignorée depuis sa rédaction | 28 octobre 2026 | `questions-adressees` |
+| La représentation s'écrit des deux côtés (S94, `represented_by`) : « chaque fonction a un représentant » était vrai, dit deux fois, et le dossier écrivait « non représentée » | 28 octobre 2026 | `questions-adressees` |
+| Un besoin dit de qui il est (S95, `concerns`) : S83 ne voit que l'absence totale d'utilisateur direct entendu — un sur quatre, et elle est verte pour toujours | 28 octobre 2026 | `questions-adressees` |
+| La carte des parties prenantes a un lecteur (S92, S93) : le quadrant se recalcule au lieu de s'affirmer, `inconnu` devient une valeur d'impact et de pouvoir, et l'influence inconnue à fort pouvoir est due | 28 octobre 2026 | `questions-adressees` |
+| Un locuteur est dans la salle qu'il a fait parler (S91) : `present` se lisait dans les deux sens au sein d'un même dossier | 28 octobre 2026 | `questions-adressees` |
+| Un guide d'entretien se périme quand son absent arrive (S96), et une hypothèse à vérifier dit comment (S97, `verification`) | 28 octobre 2026 | `questions-adressees` |
 | La doc de méthode remise à jour : trois affirmations fausses, la famille « qui a parlé » décrite, et un garde qui relit les issues d'une opportunité contre le gabarit | 27 octobre 2026 | `doc-a-jour` |
 | Une décision rendue au nom de quelqu'un que l'état déclare `à interroger` est rapportée, pas rendue (S90) — le raisonnement de S81 sur les sources, transposé aux décisions | 27 octobre 2026 | `decision-au-nom-dun-absent` |
 | Une question à la fois, partout : les lots de 2 à 3 questions sont retirés, et une question se compte sur ce qu'elle demande — trois nombres dans une puce font trois questions | 27 octobre 2026 | `une-question-a-la-fois` |
@@ -102,7 +109,7 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
 - **`main` n'est pas protégée sur GitHub.** `ci-audit.mjs` le signale (« Branch not protected »,
   HTTP 404 avec un jeton sans droit d'administration), et personne ne l'a fait. Celui-là ne dépend pas
   de Tizi : quatre PR ont été fusionnées sur une branche que rien n'empêche de pousser en direct.
-- **Les 23 règles jamais exercées.** Sur les 89 règles du catalogue (`scripts/lib/rules.mjs` : 81 `S` et 8 `L`), 23 ne
+- **Les 23 règles jamais exercées.** Sur les 105 règles du catalogue (`scripts/lib/rules.mjs` : 97 `S` et 8 `L`), 23 ne
   sont déclenchées par aucun test ni aucune référence figée : `L04 S01 S02 S03 S06 S10 S15 S21 S25 S26
   S33 S34 S35 S37 S38 S39 S42 S46 S47 S49 S59 S62 S64`. Une règle jamais vue passer est une règle dont
   on ne sait pas si elle fonctionne.
@@ -225,11 +232,12 @@ Chacune deviendra une issue à part une fois décidée.
 - [ ] Grille de qualité ISO 29148 pour le BRD et le PRD (phase 2 du contrôle formel : le catalogue
       existant passe en mode bloquant, la grille s'y ajoute, et un autre modèle que le rédacteur
       l'applique)
-- [ ] Parties prenantes : dérogation nommée pour une partie prenante à impliquer jamais entendue. Le
+- [ ] Parties prenantes : règle sur une partie prenante du quadrant « impliquer » jamais entendue. Le
       reste de l'item est fait — `S81` (source attribuée à qui n'a pas été entendu), `S83` (des besoins
-      recueillis sans qu'aucun utilisateur direct ait parlé, `end_user`) et `S84` (exigence validée sur
-      des sources que personne n'a relues, `feedback`). Reste la dérogation nommée, qui est une décision
-      et pas un contrôle
+      recueillis sans qu'aucun utilisateur direct ait parlé, `end_user`), `S84` (exigence validée sur
+      des sources que personne n'a relues, `feedback`), `S94` (la représentation ne vaut pas une voix)
+      et `S95` (un besoin porté par quelqu'un qu'on n'a pas entendu). La **dérogation nommée**, qui
+      manquait, existe depuis le 28 octobre : toute règle se dérogé, avec sa raison écrite
 - [ ] Hook qui protège les listes de contrôle de relecture contre l'écriture par un agent (S80 vérifie
       aujourd'hui après coup ; un hook refuserait avant)
 - [x] Lancer l'audit indépendant (`evals/audit/tizi-auditor.md`) en contexte vierge et le comparer à
