@@ -886,7 +886,7 @@ Pour un logiciel comme Diabeo, ces exigences s’appliquent à toutes les étape
 | Codes | Signification |
 | --- | --- |
 | `L01`–`L08` | Règles de rédaction de la vérification de forme (termes vagues, énoncé multiple, pronom sans antécédent…) |
-| `S01`–`S97` | Règles de structure de la vérification de forme, communes à tous les skills |
+| `S01`–`S99` | Règles de structure de la vérification de forme, communes à tous les skills |
 | `G1`–`G6` | Garde-fous de contenu de l’export (secrets, chemins locaux, adresses, références non résolues, éléments non validés, longueurs) |
 | `C1`–`C10` | Conditions de la porte de PR (étape 5) |
 | `R1`–`R10` | Conditions de la porte de release (étape 6) |
