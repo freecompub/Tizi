@@ -749,3 +749,23 @@ test('une question dit à qui elle est posée, et son destinataire est déjà é
   const s = readFileSync(join(SKILLS, 'brd-builder', 'scripts', 'lib', 'sessions.mjs'), 'utf8');
   assert.match(s, /ne nomment personne/, 'l\'extrait ne compte pas les questions adressées à personne');
 });
+
+// `represented_by` est arrivé avec son lecteur (S94) et sans écrivain : un champ sans moment d'écriture
+// est le défaut de la veille retourné. Le moment juste est la naissance de la partie prenante — le
+// comptable du dossier réel est né d'une phrase, « généralement c'est le comptable qui nous remonte
+// l'information », et sa fiche porte « jamais cité avant SRC-015 ». Mais la représentation est une
+// QUALITÉ : elle se propose pour être corrigée, elle ne se demande pas. Demandée à chaque naissance,
+// elle offre un bouton pour couvrir l'absent, et la réponse la moins coûteuse est toujours oui.
+test('la représentation se propose à la naissance d\'une partie prenante, et ne se demande pas', () => {
+  const e = readFileSync(join(SKILLS, 'brd-builder', 'references', 'elicitation-patterns.md'), 'utf8');
+  assert.match(e, /reçoit sa représentation, elle ne la demande pas/, 'rien ne dit quand ni comment la représentation s\'écrit');
+  assert.match(e, /`represented_by: SH-02/, 'la proposition n\'a pas sa forme');
+  assert.match(e, /la réponse la moins coûteuse est toujours oui/, 'rien ne dit pourquoi la question serait pire que l\'inférence');
+  // Et la distinction qui décide si un représentant suffit : ce qu'on attend de la personne.
+  assert.match(e, /qu'attend-on d'elle/i, 'rien ne distingue ce qui se relaie de ce qui ne se relaie pas');
+  assert.match(e, /se relaient/, 'un fait et un vécu sont traités de la même façon');
+
+  const d = readFileSync(join(SKILLS, 'brd-builder', 'references', 'phase-discover.md'), 'utf8');
+  assert.match(d, /À la naissance d'une partie prenante/, 'la cartographie ne dit pas quand remplir `represented_by`');
+  assert.match(d, /ce qu'on attend d'elle/i, 'la zone sur la voix non entendue ne dit pas ce qu\'on cherche');
+});
