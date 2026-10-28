@@ -1182,10 +1182,39 @@ export function checklistFindings(s, lists = []) {
   return out;
 }
 
+// Un guide d'entretien est un fichier sur le disque dont l'état ne sait rien : ni qui il visait, ni que
+// la personne a été entendue depuis. Au deuxième dossier réel, `guide-SH-02.md` a été écrit le 27 pour
+// le directeur, absent — c'était juste ; le 28 il a répondu en direct dans six sources, les deux
+// décisions de périmètre que le guide annonçait ont été rendues, et `session.next_action` disait
+// toujours « mener les entretiens préparés : guide-SH-02.md ». Deux sessions plus tard, le dossier
+// envoyait encore l'utilisateur conduire un entretien qui avait eu lieu.
+// La salle courante est celle du dernier échange daté : ses présents, et ses locuteurs, qui sont dans
+// la pièce par construction (S91).
+export function interviewFindings(s, files = []) {
+  const out = [];
+  if (!files.length) return out;
+  const datees = arr(s.sources).filter(src => src.date && EN_PRESENCE.includes(src.type));
+  const derniere = datees.map(src => String(src.date)).sort().pop();
+  const salle = new Set();
+  for (const src of datees.filter(x => String(x.date) === derniere)) {
+    for (const p of [...arr(src.present), ...arr(src.stakeholders)]) salle.add(p);
+  }
+  const shs = mapOf(s.stakeholders);
+  for (const f of files) {
+    const id = f.match(/guide-(SH-\d+)/)?.[1];
+    if (!id) continue;
+    if (!shs.has(id)) { out.push({ rule: 'S09', id: f, message: `guide d'entretien pour ${id}, qui n'est pas dans la cartographie` }); continue; }
+    if (salle.has(id)) {
+      out.push({ rule: 'S96', id: f, message: `guide d'entretien pour ${id}, qui était dans la salle du dernier échange (${derniere}) : le guide est pour l'absent — une personne présente répond dans le fil, nommément. Retire-le, et réécris la prochaine action` });
+    }
+  }
+  return out;
+}
+
 export function checkState(s, ctx = {}) {
   const refs = ctx.refs ?? {};
   const base = s.document === 'plan' ? checkPlan(s, refs) : s.document === 'sad' ? checkSad(s) : s.document === 'prd' ? checkPrd(s) : checkBrd(s);
-  return [...base, ...placeholderFindings(s), ...unsourcedNumberFindings(s), ...constitutionFindings(s, ctx.constitution), ...checklistFindings(s, ctx.checklists), ...coverageFindings(s, refs)];
+  return [...base, ...placeholderFindings(s), ...unsourcedNumberFindings(s), ...constitutionFindings(s, ctx.constitution), ...checklistFindings(s, ctx.checklists), ...interviewFindings(s, ctx.interviews), ...coverageFindings(s, refs)];
 }
 
 // Libellés des règles de structure, pour les rapports.
@@ -1207,5 +1236,5 @@ export const STRUCT_RULES = {
   S56: 'opportunité non décidée', S57: 'hypothèse risquée non testée', S58: 'itération sans revue', S59: 'release sans mesure des outcomes',
   S60: 'voie rapide non conforme', S61: 'ordre ouverture, milieu, fin', S62: 'story sans titre court',
   S63: 'exigence à source unique', S64: 'exigence sans source', S65: 'porte de synthèse', S66: 'exigence de transition incomplète', S67: 'exploration de concepts',
-  S68: 'espace réservé resté', S69: 'chiffre sans source', S70: 'fiche de contexte trop longue', S71: 'ADR sans règle', S72: 'collision entre tâches', S73: 'comportement existant à préserver', S74: 'taille et risque calculé', S75: 'attention humaine dépassée', S76: 'tâche non finie sans décision', S77: 'action de rétrospective sans suivi', S78: 'voie rapide sans épopée', S79: 'constitution', S80: 'liste de contrôle de relecture', S81: 'source sans personne entendue', S82: 'métrique et objectif désaccordés', S83: 'aucun utilisateur direct entendu', S84: 'exigence jamais relue par la source', S85: 'motif EARS absent ou désaccordé', S86: 'provenance d\'initiative incomplète ou hors énumération', S87: 'présent sans avoir parlé', S88: 'valeur hors énumération ou « autre » sans libellé', S89: 'droit de décision sans décideur ou confirmé par lui-même', S90: 'décision rendue au nom de quelqu\'un qu\'on n\'a pas entendu', S91: 'locuteur absent de la salle qu\'il a fait parler', S92: 'quadrant d\'implication affirmé au lieu d\'être déduit', S93: 'influence inconnue à fort pouvoir, sans attitude notée', S94: 'représentation non déclarée, ou tenue pour une voix', S95: 'besoin sans porteur, ou porté par une voix jamais entendue',
+  S68: 'espace réservé resté', S69: 'chiffre sans source', S70: 'fiche de contexte trop longue', S71: 'ADR sans règle', S72: 'collision entre tâches', S73: 'comportement existant à préserver', S74: 'taille et risque calculé', S75: 'attention humaine dépassée', S76: 'tâche non finie sans décision', S77: 'action de rétrospective sans suivi', S78: 'voie rapide sans épopée', S79: 'constitution', S80: 'liste de contrôle de relecture', S81: 'source sans personne entendue', S82: 'métrique et objectif désaccordés', S83: 'aucun utilisateur direct entendu', S84: 'exigence jamais relue par la source', S85: 'motif EARS absent ou désaccordé', S86: 'provenance d\'initiative incomplète ou hors énumération', S87: 'présent sans avoir parlé', S88: 'valeur hors énumération ou « autre » sans libellé', S89: 'droit de décision sans décideur ou confirmé par lui-même', S90: 'décision rendue au nom de quelqu\'un qu\'on n\'a pas entendu', S91: 'locuteur absent de la salle qu\'il a fait parler', S92: 'quadrant d\'implication affirmé au lieu d\'être déduit', S93: 'influence inconnue à fort pouvoir, sans attitude notée', S94: 'représentation non déclarée, ou tenue pour une voix', S95: 'besoin sans porteur, ou porté par une voix jamais entendue', S96: 'guide d\'entretien pour quelqu\'un qui est dans la salle',
 };
