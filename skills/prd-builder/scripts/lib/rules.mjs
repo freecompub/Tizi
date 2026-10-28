@@ -107,6 +107,9 @@ const NON_ENTENDU = ['à interroger', 'non disponible'];
 // premier dossier réel les DIX sources étaient de ce type, et `S83` restait verte parce qu'un parent
 // avait parlé au premier échange — le parent demandeur, et développeur.
 const RECUEIL_AUPRES_DE = ['entretien', 'observation', 'atelier', 'test'];
+// Les échanges où des gens sont dans la même pièce — les seuls où `present` veut dire quelque chose.
+// Une mesure, une étude ou une décision de l'utilisateur n'ont pas de salle.
+const EN_PRESENCE = ['cadrage', ...RECUEIL_AUPRES_DE];
 // Les deux naissances d'initiative observées. `autre:<libellé>` reste ouvert : voir S86.
 const PROVENANCE = ['decoupage', 'sortie_perimetre'];
 // Un retour à la source fait : la personne a relu la synthèse, et l'a confirmée ou corrigée.
@@ -233,6 +236,17 @@ const checkSources = (s, out, shs) => {
     const muettes = connues.filter(p => NON_ENTENDU.includes(shs.get(p).status));
     if (connues.length && muettes.length === connues.length) {
       out.push({ rule: 'S81', id: src.id, message: `source attribuée à ${muettes.join(', ')}, que l'état déclare « ${shs.get(muettes[0]).status} » : ce qui en vient est rapporté par un tiers, pas recueilli` });
+    }
+    // Le contrôle inverse de S87. `present` dit « ceux qui étaient là, Y COMPRIS les silencieux » : la
+    // salle entière, locuteurs compris. Sur le deuxième dossier réel, vingt-et-une sources le lisaient
+    // comme ça et une seule à l'envers — `stakeholders: [SH-03, SH-02]` avec `present: [SH-01]`, donc
+    // deux personnes qui parlent depuis l'extérieur de la pièce. Les deux lectures ne peuvent pas
+    // coexister dans un même fichier, et c'est celle de S87 qui compte. Rien ne se vérifie quand
+    // `present` est vide : le tour de table n'a pas eu lieu, ou n'a nommé qu'une personne.
+    if (arr(src.present).length && EN_PRESENCE.includes(src.type)) {
+      for (const p of parties.filter(x => !arr(src.present).includes(x))) {
+        out.push({ rule: 'S91', id: src.id, message: `${p} est locuteur de cette source mais absent de « present » : on ne parle pas depuis l'extérieur de la pièce — « present » est la salle entière, silencieux ET locuteurs` });
+      }
     }
   }
   for (const p of presents) {
@@ -1106,5 +1120,5 @@ export const STRUCT_RULES = {
   S56: 'opportunité non décidée', S57: 'hypothèse risquée non testée', S58: 'itération sans revue', S59: 'release sans mesure des outcomes',
   S60: 'voie rapide non conforme', S61: 'ordre ouverture, milieu, fin', S62: 'story sans titre court',
   S63: 'exigence à source unique', S64: 'exigence sans source', S65: 'porte de synthèse', S66: 'exigence de transition incomplète', S67: 'exploration de concepts',
-  S68: 'espace réservé resté', S69: 'chiffre sans source', S70: 'fiche de contexte trop longue', S71: 'ADR sans règle', S72: 'collision entre tâches', S73: 'comportement existant à préserver', S74: 'taille et risque calculé', S75: 'attention humaine dépassée', S76: 'tâche non finie sans décision', S77: 'action de rétrospective sans suivi', S78: 'voie rapide sans épopée', S79: 'constitution', S80: 'liste de contrôle de relecture', S81: 'source sans personne entendue', S82: 'métrique et objectif désaccordés', S83: 'aucun utilisateur direct entendu', S84: 'exigence jamais relue par la source', S85: 'motif EARS absent ou désaccordé', S86: 'provenance d\'initiative incomplète ou hors énumération', S87: 'présent sans avoir parlé', S88: 'valeur hors énumération ou « autre » sans libellé', S89: 'droit de décision sans décideur ou confirmé par lui-même', S90: 'décision rendue au nom de quelqu\'un qu\'on n\'a pas entendu',
+  S68: 'espace réservé resté', S69: 'chiffre sans source', S70: 'fiche de contexte trop longue', S71: 'ADR sans règle', S72: 'collision entre tâches', S73: 'comportement existant à préserver', S74: 'taille et risque calculé', S75: 'attention humaine dépassée', S76: 'tâche non finie sans décision', S77: 'action de rétrospective sans suivi', S78: 'voie rapide sans épopée', S79: 'constitution', S80: 'liste de contrôle de relecture', S81: 'source sans personne entendue', S82: 'métrique et objectif désaccordés', S83: 'aucun utilisateur direct entendu', S84: 'exigence jamais relue par la source', S85: 'motif EARS absent ou désaccordé', S86: 'provenance d\'initiative incomplète ou hors énumération', S87: 'présent sans avoir parlé', S88: 'valeur hors énumération ou « autre » sans libellé', S89: 'droit de décision sans décideur ou confirmé par lui-même', S90: 'décision rendue au nom de quelqu\'un qu\'on n\'a pas entendu', S91: 'locuteur absent de la salle qu\'il a fait parler',
 };
