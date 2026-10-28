@@ -33,6 +33,10 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
 
 | Piste | Date | Où |
 |---|---|---|
+| Un relecteur a été entendu (S98) : le quadrant déduit le rôle de revue du pouvoir et de l'impact, jamais de ce que la personne a dit — deux relecteurs sur cinq n'avaient jamais parlé | 28 octobre 2026 | `livrable-sans-trou` |
+| Un cycle de revue a une échéance, et on n'approuve pas par-dessus un retour non tranché (S99) : `review_rounds` n'était lue par personne | 28 octobre 2026 | `livrable-sans-trou` |
+| Un guide devient une source, ou il s'en va (S96 recentrée) : un outil consommé par la conversation ne porte rien que les zones d'ombre n'aient | 28 octobre 2026 | `livrable-sans-trou` |
+| La copie de travail se dit copie de travail, et la version figée se dit figée : les deux fichiers étaient identiques à l'octet près, en-tête comprise | 28 octobre 2026 | `livrable-sans-trou` |
 | Un livrable sans trou : dix `[object Object]` et un processus actuel invisible dans un BRD figé et parti en revue — formes documentées, rendu corrigé, et une fixture qui les éprouve toutes | 28 octobre 2026 | `livrable-sans-trou` |
 | Où on en est : le point d'étape dit les phases passées et les conditions qui restent avant la suivante, et un changement de phase se demande — l'interdiction de demander l'autorisation de travailler l'avait avalé | 28 octobre 2026 | `ou-on-en-est` |
 | Un identifiant ne voyage jamais seul : les scripts qui parlent nomment les personnes, `label()` donne la formulation de n'importe quel identifiant, et une question n'en porte pas | 28 octobre 2026 | `un-identifiant-ne-parle-pas` |

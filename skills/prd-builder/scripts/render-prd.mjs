@@ -30,7 +30,7 @@ const p = t => out.push(`${t}\n`);
 // ── En-tête ─────────────────────────────────────────────────
 h(1, `PRD — ${txt(s.initiative?.name)}`);
 p(`**Version** : ${txt(s.governance?.version)} — **Statut** : ${txt(s.governance?.status)} — **Mode** : ${txt(s.mode)}${chained ? ` (BRD v${txt(s.source_brd?.version)})` : ''}\n`);
-p(`> Document généré à partir de \`state.yaml\` le ${today()}. Ne pas le modifier directement : toute correction passe par l'état de session.`);
+p(`> **Copie de travail** — régénérée depuis \`state.yaml\` le ${today()}, et réécrite à chaque génération. Ne la modifie pas directement : toute correction passe par l'état. Les versions figées, s'il y en a, sont dans \`versions/\`.\n`);
 if (includeProposed) p('> **Brouillon de travail** : inclut les éléments au statut *proposé*.');
 const labels = { context: 'Contexte et vision', goals: 'Objectifs produit', personas_journeys: 'Personas et parcours', releases: 'Releases et MVP', functional: 'Exigences fonctionnelles', non_functional: 'Exigences non fonctionnelles', constraints_decisions: 'Contraintes et décisions', metrics: 'Métriques', risks: 'Hypothèses et risques', glossary: 'Glossaire' };
 h(2, 'Statut du document');

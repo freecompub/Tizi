@@ -1204,20 +1204,57 @@ export function checklistFindings(s, lists = []) {
 export function interviewFindings(s, files = []) {
   const out = [];
   if (!files.length) return out;
-  const datees = arr(s.sources).filter(src => src.date && EN_PRESENCE.includes(src.type));
-  const derniere = datees.map(src => String(src.date)).sort().pop();
-  const salle = new Set();
-  for (const src of datees.filter(x => String(x.date) === derniere)) {
-    for (const p of [...arr(src.present), ...arr(src.stakeholders)]) salle.add(p);
-  }
+  // Premier critère, trop étroit : « la personne était dans la salle du dernier échange ». Le bon, donné
+  // par l'utilisateur : **un guide devient une source, ou il s'en va.** S'il a reçu les réponses, une
+  // source pointe vers lui et il reste pour toujours ; si l'entretien s'est fait dans la conversation,
+  // il n'a servi à rien et ne porte rien que l'état n'ait — ses questions viennent des zones d'ombre et
+  // de leur `ask_to`, qui restent. Un guide est un OUTIL, pas une trace : ce qui ne disparaît jamais,
+  // ce sont les sources, les besoins, les zones et les décisions. Et git garde le fichier.
+  // Au deuxième dossier réel : aucune source ne pointait vers `interviews/`, le directeur était
+  // locuteur de six sources, et son guide était toujours là — avec la prochaine action qui envoyait
+  // conduire son entretien.
+  const locuteurs = new Set(arr(s.sources).flatMap(src => arr(src.stakeholders)));
+  const recu = f => arr(s.sources).some(src => String(src.path ?? '').endsWith(f));
   const shs = mapOf(s.stakeholders);
   for (const f of files) {
     const id = f.match(/guide-(SH-\d+)/)?.[1];
     if (!id) continue;
     if (!shs.has(id)) { out.push({ rule: 'S09', id: f, message: `guide d'entretien pour ${id}, qui n'est pas dans la cartographie` }); continue; }
-    if (salle.has(id)) {
-      out.push({ rule: 'S96', id: f, message: `guide d'entretien pour ${id}, qui était dans la salle du dernier échange (${derniere}) : le guide est pour l'absent — une personne présente répond dans le fil, nommément. Retire-le, et réécris la prochaine action` });
+    if (locuteurs.has(id) && !recu(f)) {
+      out.push({ rule: 'S96', id: f, message: `guide d'entretien pour ${id}, qui a depuis parlé dans ${arr(s.sources).filter(src => arr(src.stakeholders).includes(id)).length} source(s), et aucune ne vient de ce fichier : l'entretien s'est fait ailleurs, le guide n'a rien reçu et ne porte rien que les zones d'ombre n'aient. Retire-le, et réécris la prochaine action` });
     }
+  }
+  return out;
+}
+
+// ── 4 et 6. La gouvernance : qui relit, et jusqu'à quand ─────────────────────
+// Deux collections que rien ne lisait. `governance.reviewers` est déduite du quadrant — pouvoir ×
+// impact — et la question « cette personne a-t-elle déjà été entendue ? » n'entre jamais dans le
+// calcul : au deuxième dossier réel, deux relecteurs sur cinq n'avaient jamais parlé. Or une revue
+// demande « est-ce fidèle à ce que vous avez dit ? » : qui n'a rien dit n'a rien à vérifier, et le rôle
+// met son silence sur le chemin de l'approbation — ce que S87 refuse partout ailleurs.
+// Et `review_rounds` n'était lue par personne, alors que `phase-govern.md` étape 7 prescrit d'y noter
+// l'échéance. L'agent l'a demandée, ne l'a pas obtenue, et a écrit le diagnostic dans son message de
+// commit : « sans date, un cycle de revue ne se clôt pas, il s'interrompt quand quelqu'un s'impatiente ».
+export function governanceFindings(s) {
+  const out = [];
+  const g = s.governance ?? {};
+  const shs = mapOf(s.stakeholders);
+  for (const r of arr(g.reviewers)) {
+    if (!['relecteur', 'approbateur'].includes(r.role)) continue;
+    const sh = r.stakeholder && shs.get(r.stakeholder);
+    if (sh && NON_ENTENDU.includes(sh.status)) {
+      out.push({ rule: 'S98', id: `reviewers:${r.stakeholder}`, message: `${r.role} que l'état déclare « ${sh.status} » : une revue demande si le document est fidèle à ce qu'on a dit, et cette personne n'a rien dit. Interroge-la d'abord, ou passe-la en « informé » — sinon son silence devient une approbation` });
+    }
+  }
+  for (const r of arr(g.review_rounds)) {
+    if (r.sent && !String(r.deadline ?? '').trim()) {
+      out.push({ rule: 'S99', id: r.id ?? 'review_rounds', message: 'cycle de revue envoyé sans échéance : sans date, un cycle ne se clôt pas — il s\'interrompt quand quelqu\'un s\'impatiente' });
+    }
+  }
+  const attente = arr(g.comments).filter(c => !c.decision || c.decision === 'en_attente');
+  if (attente.length && (arr(g.approvals).length || arr(g.baselines).length)) {
+    out.push({ rule: 'S99', id: 'governance', message: `${attente.length} commentaire(s) de revue sans décision (${attente.map(c => c.id).join(', ')}) alors que le document est approuvé ou figé : un retour qu'on n'a pas tranché n'est pas un retour qu'on a traité` });
   }
   return out;
 }
@@ -1252,7 +1289,7 @@ const waiverIndex = s => {
 export function checkState(s, ctx = {}) {
   const refs = ctx.refs ?? {};
   const base = s.document === 'plan' ? checkPlan(s, refs) : s.document === 'sad' ? checkSad(s) : s.document === 'prd' ? checkPrd(s) : checkBrd(s);
-  const all = [...base, ...placeholderFindings(s), ...unsourcedNumberFindings(s), ...constitutionFindings(s, ctx.constitution), ...checklistFindings(s, ctx.checklists), ...interviewFindings(s, ctx.interviews), ...coverageFindings(s, refs)];
+  const all = [...base, ...placeholderFindings(s), ...unsourcedNumberFindings(s), ...constitutionFindings(s, ctx.constitution), ...checklistFindings(s, ctx.checklists), ...interviewFindings(s, ctx.interviews), ...governanceFindings(s), ...coverageFindings(s, refs)];
   const idx = waiverIndex(s);
   return all.map(f => {
     const raison = idx.get(`${f.id}|${f.rule}`);
@@ -1281,5 +1318,5 @@ export const STRUCT_RULES = {
   S56: 'opportunité non décidée', S57: 'hypothèse risquée non testée', S58: 'itération sans revue', S59: 'release sans mesure des outcomes',
   S60: 'voie rapide non conforme', S61: 'ordre ouverture, milieu, fin', S62: 'story sans titre court',
   S63: 'exigence à source unique', S64: 'exigence sans source', S65: 'porte de synthèse', S66: 'exigence de transition incomplète', S67: 'exploration de concepts',
-  S68: 'espace réservé resté', S69: 'chiffre sans source', S70: 'fiche de contexte trop longue', S71: 'ADR sans règle', S72: 'collision entre tâches', S73: 'comportement existant à préserver', S74: 'taille et risque calculé', S75: 'attention humaine dépassée', S76: 'tâche non finie sans décision', S77: 'action de rétrospective sans suivi', S78: 'voie rapide sans épopée', S79: 'constitution', S80: 'liste de contrôle de relecture', S81: 'source sans personne entendue', S82: 'métrique et objectif désaccordés', S83: 'aucun utilisateur direct entendu', S84: 'exigence jamais relue par la source', S85: 'motif EARS absent ou désaccordé', S86: 'provenance d\'initiative incomplète ou hors énumération', S87: 'présent sans avoir parlé', S88: 'valeur hors énumération ou « autre » sans libellé', S89: 'droit de décision sans décideur ou confirmé par lui-même', S90: 'décision rendue au nom de quelqu\'un qu\'on n\'a pas entendu', S91: 'locuteur absent de la salle qu\'il a fait parler', S92: 'quadrant d\'implication affirmé au lieu d\'être déduit', S93: 'influence inconnue à fort pouvoir, sans attitude notée', S94: 'représentation non déclarée, ou tenue pour une voix', S95: 'besoin sans porteur, ou porté par une voix jamais entendue', S96: 'guide d\'entretien pour quelqu\'un qui est dans la salle', S97: 'hypothèse à vérifier sans moyen de vérification',
+  S68: 'espace réservé resté', S69: 'chiffre sans source', S70: 'fiche de contexte trop longue', S71: 'ADR sans règle', S72: 'collision entre tâches', S73: 'comportement existant à préserver', S74: 'taille et risque calculé', S75: 'attention humaine dépassée', S76: 'tâche non finie sans décision', S77: 'action de rétrospective sans suivi', S78: 'voie rapide sans épopée', S79: 'constitution', S80: 'liste de contrôle de relecture', S81: 'source sans personne entendue', S82: 'métrique et objectif désaccordés', S83: 'aucun utilisateur direct entendu', S84: 'exigence jamais relue par la source', S85: 'motif EARS absent ou désaccordé', S86: 'provenance d\'initiative incomplète ou hors énumération', S87: 'présent sans avoir parlé', S88: 'valeur hors énumération ou « autre » sans libellé', S89: 'droit de décision sans décideur ou confirmé par lui-même', S90: 'décision rendue au nom de quelqu\'un qu\'on n\'a pas entendu', S91: 'locuteur absent de la salle qu\'il a fait parler', S92: 'quadrant d\'implication affirmé au lieu d\'être déduit', S93: 'influence inconnue à fort pouvoir, sans attitude notée', S94: 'représentation non déclarée, ou tenue pour une voix', S95: 'besoin sans porteur, ou porté par une voix jamais entendue', S96: 'guide d\'entretien pour quelqu\'un qui est dans la salle', S97: 'hypothèse à vérifier sans moyen de vérification', S98: 'relecteur ou approbateur jamais entendu', S99: 'cycle de revue sans échéance, ou retour non tranché',
 };
