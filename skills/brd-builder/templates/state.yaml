@@ -60,10 +60,15 @@ stakeholders: []
 #  - id: SH-01
 #    name: ""
 #    role: ""
-#    impact: fort          # fort | faible — à quel point le changement touche son travail ou son pouvoir
-#    power: fort           # fort | faible — capacité à peser sur la décision ou sur l'adoption
-#    influence: positive   # positive | négative | neutre | inconnue — sens dans lequel elle pèsera
-#    quadrant: impliquer   # déduit de power × impact : impliquer | satisfaire | consulter | informer
+#    impact: fort          # fort | faible | inconnu — à quel point le changement touche son travail
+#    power: fort           # fort | faible | inconnu — capacité à peser sur la décision ou l'adoption
+#    influence: positive   # positive | négative | neutre | inconnue — sens dans lequel elle pèsera.
+#                          # La seule des quatre qui ne se déduit pas : elle se demande, et sur un fort
+#                          # pouvoir son absence est une zone d'ombre (S93)
+#    quadrant: impliquer   # DÉDUIT de power × impact, jamais affirmé (S92) : fort×fort impliquer,
+#                          # fort×faible satisfaire, faible×fort consulter, faible×faible informer.
+#                          # Si l'un des deux est `inconnu`, laisse-le VIDE : la gouvernance en tire un
+#                          # rôle de revue, et un quadrant supposé fait un approbateur supposé
 #    attitude: ""          # ce qu'elle pense du changement, du sponsor, de la démarche (verbatim si possible)
 #    decision_domains: []  # domaines de decision_rights sur lesquels elle a autorité
 #    end_user: false       # utilisatrice directe du futur processus ou système

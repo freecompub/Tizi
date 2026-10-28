@@ -140,7 +140,19 @@ const ENUMS = {
   'domaine de décision': { valeurs: ['perimetre', 'objectifs', 'priorites', 'donnees_securite'], prefixes: ['processus', 'regles'] },
   'type d\'exigence de transition': { valeurs: ['formation', 'conduite_du_changement', 'reprise_de_donnees', 'coexistence', 'communication', 'support'] },
   'type d\'interface': { valeurs: ['openapi', 'asyncapi'] },
+  // Les quatre appréciations de la cartographie. `impact` et `pouvoir` n'offraient que `fort | faible` :
+  // en Discover on ne sait pas toujours, et le deuxième dossier réel a écrit `impact: inconnu` — une
+  // valeur dont le gabarit ne disposait pas, qu'aucune règle ne voyait, et qui a quand même servi à
+  // « déduire » un quadrant. `inconnu` est donc une valeur, et S92 en tire la conséquence.
+  impact: { valeurs: ['fort', 'faible', 'inconnu'] },
+  pouvoir: { valeurs: ['fort', 'faible', 'inconnu'] },
+  influence: { valeurs: ['positive', 'négative', 'neutre', 'inconnue'] },
+  quadrant: { valeurs: ['impliquer', 'satisfaire', 'consulter', 'informer'] },
 };
+// `phase-discover.md` : le quadrant d'implication SE DÉDUIT du pouvoir et de l'impact. Il ne s'affirme
+// pas — et `phase-govern.md` en fait un rôle de revue (« impliquer » → approbateur), donc une déduction
+// fausse devient un approbateur faux.
+const QUADRANT = { 'fort|fort': 'impliquer', 'fort|faible': 'satisfaire', 'faible|fort': 'consulter', 'faible|faible': 'informer' };
 const checkEnum = (out, id, champ, v) => {
   if (!v) return;                       // l'absence est traitée par la règle propre à chaque collection
   const { valeurs, prefixes = [] } = ENUMS[champ];
@@ -411,9 +423,35 @@ export function checkBrd(s) {
     rendueParAbsent(out, s, shs, d.id, d.decided_by, 'décision rendue');
   }
   checkSources(s, out, shs);
+  // La cartographie était la seule collection qu'aucune règle ne relisait : `represents` et `end_user`
+  // ont leur lecteur depuis S83, les quatre appréciations n'en avaient aucun. Trois phrases de
+  // `phase-discover.md` restaient donc sans effet, et le deuxième dossier réel les a toutes les trois
+  // prises en défaut. Rien à vérifier en Assess : la carte n'existe pas encore, le tour de table ne
+  // donne que des noms et des fonctions.
+  const carte = ['discover', 'define', 'govern'].includes(s.phase);
   for (const sh of arr(s.stakeholders)) {
     if (sh.influence === 'négative' && sh.power === 'fort' && !arr(s.risks).some(r => arr(r.related).includes(sh.id) || r.origin === sh.id)) {
       out.push({ rule: 'S19', id: sh.id, message: 'partie prenante à fort pouvoir et influence négative sans risque associé' });
+    }
+    if (!carte) continue;
+    checkEnum(out, sh.id, 'impact', sh.impact);
+    checkEnum(out, sh.id, 'pouvoir', sh.power);
+    checkEnum(out, sh.id, 'influence', sh.influence);
+    checkEnum(out, sh.id, 'quadrant', sh.quadrant);
+    const deduit = QUADRANT[`${sh.power}|${sh.impact}`];
+    if (sh.quadrant && !deduit) {
+      out.push({ rule: 'S92', id: sh.id, message: `quadrant « ${sh.quadrant} » affirmé alors que pouvoir (${sh.power ?? 'absent'}) × impact (${sh.impact ?? 'absent'}) ne le donne pas : il se déduit, il ne s'affirme pas — laisse-le vide et pose la question` });
+    } else if (sh.quadrant && deduit !== sh.quadrant) {
+      out.push({ rule: 'S92', id: sh.id, message: `quadrant « ${sh.quadrant} » alors que pouvoir ${sh.power} × impact ${sh.impact} donne « ${deduit} »` });
+    } else if (!sh.quadrant && deduit) {
+      out.push({ rule: 'S92', id: sh.id, message: `quadrant absent alors que pouvoir ${sh.power} × impact ${sh.impact} le donne (« ${deduit} ») : la gouvernance en tire un rôle de revue` });
+    }
+    // `phase-discover.md` point 2 : « une influence inconnue sur une partie prenante à fort pouvoir est
+    // une zone d'ombre ». S19 existait pour l'influence NÉGATIVE, la phrase jumelle n'avait pas de
+    // lecteur. Au deuxième dossier réel, les six influences valaient `inconnue`, deux à fort pouvoir, et
+    // cinq attitudes sur six étaient vides : le champ n'a jamais été établi et rien ne l'a remarqué.
+    if (sh.power === 'fort' && (!sh.influence || sh.influence === 'inconnue') && !String(sh.attitude ?? '').trim()) {
+      out.push({ rule: 'S93', id: sh.id, message: 'fort pouvoir, influence inconnue et aucune attitude notée : le sens dans lequel elle pèsera est la seule appréciation qui ne se déduit pas — elle se demande, et son absence est une zone d\'ombre' });
     }
   }
   return out;
@@ -1120,5 +1158,5 @@ export const STRUCT_RULES = {
   S56: 'opportunité non décidée', S57: 'hypothèse risquée non testée', S58: 'itération sans revue', S59: 'release sans mesure des outcomes',
   S60: 'voie rapide non conforme', S61: 'ordre ouverture, milieu, fin', S62: 'story sans titre court',
   S63: 'exigence à source unique', S64: 'exigence sans source', S65: 'porte de synthèse', S66: 'exigence de transition incomplète', S67: 'exploration de concepts',
-  S68: 'espace réservé resté', S69: 'chiffre sans source', S70: 'fiche de contexte trop longue', S71: 'ADR sans règle', S72: 'collision entre tâches', S73: 'comportement existant à préserver', S74: 'taille et risque calculé', S75: 'attention humaine dépassée', S76: 'tâche non finie sans décision', S77: 'action de rétrospective sans suivi', S78: 'voie rapide sans épopée', S79: 'constitution', S80: 'liste de contrôle de relecture', S81: 'source sans personne entendue', S82: 'métrique et objectif désaccordés', S83: 'aucun utilisateur direct entendu', S84: 'exigence jamais relue par la source', S85: 'motif EARS absent ou désaccordé', S86: 'provenance d\'initiative incomplète ou hors énumération', S87: 'présent sans avoir parlé', S88: 'valeur hors énumération ou « autre » sans libellé', S89: 'droit de décision sans décideur ou confirmé par lui-même', S90: 'décision rendue au nom de quelqu\'un qu\'on n\'a pas entendu', S91: 'locuteur absent de la salle qu\'il a fait parler',
+  S68: 'espace réservé resté', S69: 'chiffre sans source', S70: 'fiche de contexte trop longue', S71: 'ADR sans règle', S72: 'collision entre tâches', S73: 'comportement existant à préserver', S74: 'taille et risque calculé', S75: 'attention humaine dépassée', S76: 'tâche non finie sans décision', S77: 'action de rétrospective sans suivi', S78: 'voie rapide sans épopée', S79: 'constitution', S80: 'liste de contrôle de relecture', S81: 'source sans personne entendue', S82: 'métrique et objectif désaccordés', S83: 'aucun utilisateur direct entendu', S84: 'exigence jamais relue par la source', S85: 'motif EARS absent ou désaccordé', S86: 'provenance d\'initiative incomplète ou hors énumération', S87: 'présent sans avoir parlé', S88: 'valeur hors énumération ou « autre » sans libellé', S89: 'droit de décision sans décideur ou confirmé par lui-même', S90: 'décision rendue au nom de quelqu\'un qu\'on n\'a pas entendu', S91: 'locuteur absent de la salle qu\'il a fait parler', S92: 'quadrant d\'implication affirmé au lieu d\'être déduit', S93: 'influence inconnue à fort pouvoir, sans attitude notée',
 };
