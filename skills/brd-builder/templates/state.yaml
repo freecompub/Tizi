@@ -73,6 +73,11 @@ stakeholders: []
 #    decision_domains: []  # domaines de decision_rights sur lesquels elle a autorité
 #    end_user: false       # utilisatrice directe du futur processus ou système
 #    represents: ""        # si elle parle au nom d'un groupe : lequel (les représentants ne remplacent pas les vrais utilisateurs)
+#    represented_by: ""    # l'inverse, sur la personne REPRÉSENTÉE : le SH-xx de qui répond pour elle.
+#                          # « Chaque fonction a un représentant » s'enregistre ici — pas dans la prose
+#                          # du `represents` d'un autre, qui nomme un groupe qu'aucun script ne peut
+#                          # rapprocher d'un identifiant. Et ça ne ferme rien : la zone sur sa voix
+#                          # non entendue reste ouverte (S94)
 #    status: à interroger  # à interroger | interrogée | non disponible. « interrogée » veut dire
 #                          # ENTENDUE AU MOINS UNE FOIS, pas « plus rien à lui demander » : la zone
 #                          # `partie_prenante_non_entendue` se ferme quand aucune zone ouverte ne la

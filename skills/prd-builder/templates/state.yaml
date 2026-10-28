@@ -43,6 +43,8 @@ stakeholders: []          # qui a parlé, et en quelle qualité — chaîné : r
 #    represents: ""        # si elle parle au nom d'un groupe ou d'un absent : lequel. C'est une QUALITÉ,
 #                          # que tu déduis et fais corriger — un représentant ne remplace pas les vrais
 #                          # utilisateurs, et laisse ouverte une zone `persona_non_fonde` sur eux
+#    represented_by: ""    # l'inverse, sur la personne REPRÉSENTÉE : le SH-xx de qui répond pour elle
+#                          # (S94). Ça enregistre qui parle en son nom, ça ne vaut pas sa voix
 #    status: à interroger  # à interroger | interrogée | non disponible
 
 sources: []               # preuves produit (entretiens, tests utilisateurs, analytics, études, décisions)
