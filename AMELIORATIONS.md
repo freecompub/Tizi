@@ -116,7 +116,7 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
 - **`main` n'est pas protégée sur GitHub.** `ci-audit.mjs` le signale (« Branch not protected »,
   HTTP 404 avec un jeton sans droit d'administration), et personne ne l'a fait. Celui-là ne dépend pas
   de Tizi : quatre PR ont été fusionnées sur une branche que rien n'empêche de pousser en direct.
-- **Les 23 règles jamais exercées.** Sur les 105 règles du catalogue (`scripts/lib/rules.mjs` : 97 `S` et 8 `L`), 23 ne
+- **Les 23 règles jamais exercées.** Sur les 107 règles du catalogue (`scripts/lib/rules.mjs` : 99 `S` et 8 `L`), 23 ne
   sont déclenchées par aucun test ni aucune référence figée : `L04 S01 S02 S03 S06 S10 S15 S21 S25 S26
   S33 S34 S35 S37 S38 S39 S42 S46 S47 S49 S59 S62 S64`. Une règle jamais vue passer est une règle dont
   on ne sait pas si elle fonctionne.
