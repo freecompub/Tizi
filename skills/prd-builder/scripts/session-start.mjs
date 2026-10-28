@@ -9,7 +9,10 @@ import { existsSync, readdirSync } from 'node:fs';
 import { normalizeHookInput } from './lib/agent-io.mjs';
 import yaml from './lib/vendor/js-yaml.mjs';
 import { dueReviews } from './due-reviews.mjs';
-import { loadBlocks, hoursBetween } from './block.mjs';
+// `block.mjs` n'est livré que par les skills qui tiennent le registre des blocages — implémentation et
+// planification — et ce fichier-ci est commun aux sept. Importé statiquement, il faisait échouer le
+// module AVANT le try/catch, donc `session-start.mjs` ne démarrait pas du tout dans cinq skills sur
+// sept, alors que son dernier mot est « un rappel ne doit jamais empêcher une session de démarrer ».
 import { condenseOf, loadIndex } from './lib/sessions.mjs';
 
 let raw = {};
@@ -36,9 +39,10 @@ try {
     lines.push(`- Dernière session de ${ini} sans condensé (${String(x.ended).slice(0, 16).replace('T', ' ')}) : le rédiger depuis ${x.extract || 'son extrait'} avant de reprendre.`);
   }
 
+  const blocs = await import('./block.mjs').catch(() => null);
   const dir = join(root, '.tizi', 'blocages');
-  if (existsSync(dir)) for (const f of readdirSync(dir).filter(x => x.endsWith('.yaml'))) for (const b of loadBlocks(root, f.replace(/\.yaml$/, ''))) {
-    const h = hoursBetween(b.started, new Date().toISOString());
+  if (blocs && existsSync(dir)) for (const f of readdirSync(dir).filter(x => x.endsWith('.yaml'))) for (const b of blocs.loadBlocks(root, f.replace(/\.yaml$/, ''))) {
+    const h = blocs.hoursBetween(b.started, new Date().toISOString());
     if (!b.ended && h > 48) lines.push(`- Blocage ouvert depuis ${Math.round(h / 24)} jour(s) : ${b.id} sur ${b.on} (${b.cause}) — ${b.note}`);
   }
   if (lines.length) process.stdout.write(`Tizi — à l'attention de l'équipe dans ce dépôt :\n${lines.join('\n')}\nMentionne-le à l'utilisateur au début de ta réponse, sans le traiter toi-même s'il ne le demande pas.\n`);
