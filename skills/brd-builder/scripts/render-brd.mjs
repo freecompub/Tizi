@@ -84,8 +84,16 @@ p(`**Décision** : ${txt(opp.decision)}${opp.decided_by ? ` — rendue par ${shN
 h(2, '1. Contexte et problème');
 p(`**Déclencheur** : ${txt(ini.trigger)}\n`);
 p(`**Problème** : ${txt(s.problem?.statement)}\n`);
-if (arr(s.problem?.symptoms).length) { p('**Symptômes**\n'); p(list(arr(s.problem.symptoms))); }
-if (arr(s.problem?.impact).length) { p('**Impact**\n'); p(list(arr(s.problem.impact))); }
+// `symptoms`, `impact`, `scope.in`, `scope.out` et `org_impacts` étaient listés tels quels. Le gabarit
+// ne documentait pas leur forme, l'agent y a mis `{ text, source }` — comme partout ailleurs dans le
+// modèle — et le document livré portait **dix `[object Object]`** : sept symptômes et trois impacts,
+// tous renseignés et sourcés dans l'état, illisibles dans le BRD figé et parti à cinq relecteurs.
+// `phrase` lit la forme documentée et tolère une chaîne nue, pour les dossiers écrits avant.
+const phrase = x => (x === null || typeof x !== 'object'
+  ? txt(x)
+  : `${x.type ? `**${txt(x.type)}** — ` : ''}${txt(x.text ?? x.event)}${x.reason ? ` — ${x.reason}` : ''}${x.source ? ` (${x.source})` : ''}`);
+if (arr(s.problem?.symptoms).length) { p('**Symptômes**\n'); p(list(arr(s.problem.symptoms).map(phrase))); }
+if (arr(s.problem?.impact).length) { p('**Impact**\n'); p(list(arr(s.problem.impact).map(phrase))); }
 
 // ── 2. Objectifs et indicateurs ─────────────────────────────
 h(2, '2. Objectifs et indicateurs');
@@ -127,7 +135,12 @@ if (dr.length) {
 // ── 4. Processus ────────────────────────────────────────────
 h(2, '4. Processus actuel et processus cible');
 h(3, 'Processus actuel');
-p(list(arr(s.current_process).map(e => `${txt(e.event)}${e.actor ? ` — ${shName(e.actor)}` : ''}`)));
+// `current_process` était une liste nue quand `target_process` est un objet portant `.events`. L'agent
+// a appliqué la symétrie — `current_process.events` —, le rendu lisait la liste, et la section
+// « Processus actuel » annonçait « Aucun élément » dans un BRD validé dont l'état tenait cinq étapes
+// sourcées. Un trou se voit ; du contenu invisible, non. Le gabarit est aligné, le rendu lit les deux.
+const evenements = x => (Array.isArray(x) ? x : arr(x?.events));
+p(list(evenements(s.current_process).map(e => `${txt(e.event)}${e.actor ? ` — ${shName(e.actor)}` : ''}${e.source ? ` (${e.source})` : ''}`)));
 h(3, 'Processus cible');
 const tev = arr(s.target_process?.events);
 p(table(['Événement', 'Acteur', 'Changement'], tev.map(e => [e.event, e.actor ? shName(e.actor) : '—', e.change])));
@@ -140,7 +153,7 @@ if (tev.length) {
   lines.push('```');
   p(lines.join('\n') + '\n');
 }
-if (arr(s.target_process?.org_impacts).length) { h(3, 'Impacts organisationnels'); p(list(arr(s.target_process.org_impacts))); }
+if (arr(s.target_process?.org_impacts).length) { h(3, 'Impacts organisationnels'); p(list(arr(s.target_process.org_impacts).map(phrase))); }
 
 // ── 5. Exigences métier ─────────────────────────────────────
 h(2, '5. Exigences métier');
@@ -196,8 +209,8 @@ for (const d of dds) {
 
 // ── 10. Périmètre ───────────────────────────────────────────
 h(2, '10. Périmètre');
-h(3, 'Inclus'); p(list(arr(s.scope?.in)));
-h(3, 'Exclu'); p(list(arr(s.scope?.out)));
+h(3, 'Inclus'); p(list(arr(s.scope?.in).map(phrase)));
+h(3, 'Exclu'); p(list(arr(s.scope?.out).map(phrase)));
 const hp = arr(s.candidate_needs).filter(n => n.status === 'hors_périmètre');
 if (hp.length) { h(3, 'Besoins exprimés hors périmètre'); p(table(['ID', 'Besoin', 'Raison'], hp.map(n => [n.id, n.text, n.reason]))); }
 if (s.scope?.deadline) p(`**Échéance** : ${s.scope.deadline}\n`);

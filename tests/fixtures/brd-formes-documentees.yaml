@@ -1,0 +1,78 @@
+# État BRD dont le seul but est de renseigner les collections que `exemple/brd/demo` laisse vides, dans
+# la forme que le gabarit documente. Le garde-fou de `chain.test.mjs` refusait déjà `[object Object]`
+# dans les documents générés — il n'a rien vu pendant des mois parce qu'aucun état de test ne portait
+# `problem.symptoms`, `problem.impact` ni `current_process`. Un contrôle ne vaut que l'état qu'on lui
+# donne à lire. Sur le deuxième dossier réel, le BRD figé et parti à cinq relecteurs portait dix
+# `[object Object]` et annonçait « Aucun élément » là où l'état tenait sept étapes sourcées.
+document: brd
+phase: define
+initiative:
+  name: "Formes documentées"
+  slug: "formes"
+  trigger: "éprouver que chaque forme documentée se rend"
+opportunity:
+  decision: aller_plus_loin
+  decided_by: SH-01
+  date: "2026-10-28"
+problem:
+  statement: "Les formes documentées du gabarit doivent se rendre dans le document."
+  confirmed: true
+  symptoms:
+    - { text: "Un symptôme porte son texte et sa source", source: SRC-01 }
+  impact:
+    - { type: risque, text: "Un impact porte son type, son texte et sa source", source: SRC-01 }
+scope:
+  in:
+    - { text: "Ce qui est dans le périmètre", reason: "parce qu'une inclusion se justifie" }
+  out:
+    - { text: "Ce qui en sort", reason: "parce que rien ne sort en silence" }
+  deadline: "2027-04-01"
+current_process:
+  events:
+    - { event: "Le dossier arrive au bureau", actor: SH-01, source: SRC-01 }
+target_process:
+  events:
+    - { event: "Le dossier arrive par la plateforme", actor: SH-01, change: modifié }
+  org_impacts:
+    - { text: "Le bureau relance les familles attendues", source: SRC-01 }
+stakeholders:
+  - { id: SH-01, name: "Awa", role: "agent du bureau", impact: fort, power: faible, influence: positive, quadrant: consulter, end_user: true, attitude: "favorable", status: interrogée }
+sources:
+  - { id: SRC-01, type: entretien, date: "2026-10-28", stakeholders: [SH-01], feedback: confirmé }
+candidate_needs:
+  - { id: BC-01, text: "Pouvoir déposer un dossier sans se déplacer", sources: [{ ref: SRC-01 }], concerns: [SH-01], status: intégré }
+hypotheses: []
+shadow_zones: []
+objectives:
+  - { id: OBJ-01, statement: "Réduire les déplacements", indicator: "part des dépôts à distance", baseline: "0 %", target: "80 %", deadline: "2027-04-01", owner: SH-01, status: validé }
+business_requirements:
+  - { id: BR-01, statement: "L'association doit permettre le dépôt à distance", objectives: [OBJ-01], from_needs: [BC-01], acceptance: ["Un dossier déposé à distance est reçu"], priority: must, status: validé }
+business_rules: []
+decisions: []
+risks: []
+decision_rights:
+  - { domain: perimetre, decider: SH-01, escalation: SH-01, confirmed_by: SH-01, source: SRC-01 }
+brd_sections:
+  context: validé
+  objectives: validé
+  stakeholders: validé
+  processes: validé
+  requirements: validé
+  business_rules: validé
+  constraints: validé
+  assumptions_risks: validé
+  decisions: validé
+  scope: validé
+  glossary: validé
+synthesis_check:
+  date: "2026-10-28"
+  fidelite: { status: ok }
+  couverture: { status: ok }
+  robustesse: { status: ok }
+  actionnabilite: { status: ok }
+  alignement: { status: ok }
+governance:
+  version: "0.1"
+  status: brouillon
+session:
+  next_action: ""
