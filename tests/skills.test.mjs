@@ -802,3 +802,37 @@ test('session-start.mjs démarre dans les sept skills', () => {
     assert.equal(r.code, 0, `${s} : session-start.mjs sort en ${r.code}\n${r.err}`);
   }
 });
+
+// « L'utilisateur ne peut pas se souvenir de toutes les références. » Vrai, et notre propre code savait
+// déjà le faire sans s'en servir : `shLabel` est dans le fichier commun depuis longtemps et rend
+// « Samir (SH-01) », mais seuls les artefacts ÉCRITS l'appelaient — `build-handoff.mjs`,
+// `review-pack.mjs`, et `render-brd.mjs` par une copie locale. Les deux scripts qui parlent dans la
+// conversation rendaient l'adresse : `status.mjs` glosait la zone d'ombre et son destinataire restait
+// « à SH-01 » dans la même ligne, `ask-five.mjs` pareil dans sa colonne « À qui ».
+test('les scripts qui parlent nomment les personnes, pas leurs identifiants', () => {
+  const dir = tempDir('tizi-identifiants');
+  mkdirSync(join(dir, 'brd', 'demo'), { recursive: true });
+  writeFileSync(join(dir, 'brd', 'demo', 'state.yaml'), [
+    'document: brd', 'phase: discover',
+    'stakeholders:', '  - { id: SH-01, name: "Samir", role: "parent d\'élève", status: interrogée }',
+    'shadow_zones:', '  - { id: ZO-001, type: probleme_flou, status: ouverte, ask_to: SH-01, question: "Comment un parent apprend-il que son dossier est perdu ?" }',
+  ].join('\n'));
+  const etat = join(dir, 'brd', 'demo', 'state.yaml');
+
+  for (const s of skills) {
+    for (const nom of ['status.mjs', 'ask-five.mjs']) {
+      const p = join(SKILLS, s, 'scripts', nom);
+      if (!existsSync(p)) continue;
+      const r = node(p, [etat], { cwd: dir });
+      assert.equal(r.code, 0, `${s}/${nom} : sortie ${r.code}\n${r.err}`);
+      assert.match(r.out, /Samir \(SH-01\)/, `${s}/${nom} rend l'identifiant au lieu du nom`);
+    }
+  }
+
+  // Et la règle est écrite là où vit la forme d'un message, commune aux sept skills.
+  const q = readFileSync(join(SKILLS, 'brd-builder', 'references', 'questions.md'), 'utf8');
+  assert.match(q, /\*\*Un identifiant ne porte pas le sens\.\*\*/, 'rien n\'interdit de parler par adresses');
+  assert.match(q, /première\s+mention dans un message porte la forme humaine/, 'rien ne dit quand la formulation est due');
+  assert.match(q, /qui cite/, 'le renvoi en fin de phrase est condamné avec le reste');
+  assert.match(q, /si on retirait l'identifiant, la phrase/, 'la règle n\'a pas de test praticable');
+});

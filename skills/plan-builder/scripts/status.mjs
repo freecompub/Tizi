@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Point d'étape déterministe d'une initiative, à partir de son état et de l'index des sessions — sans interprétation.
 // Usage : node status.mjs <chemin/state.yaml>
-import { arr, loadState, fail } from './lib/common.mjs';
+import { arr, loadState, fail, shLabel } from './lib/common.mjs';
 import { condenseOf, sessionsFor } from './lib/sessions.mjs';
 
 const statePath = process.argv[2];
@@ -40,7 +40,11 @@ for (const c of COLLECTIONS) {
 }
 const zo = arr(s.shadow_zones).filter(z => z.status === 'ouverte').sort((a, b) => (b.blocking ? 1 : 0) - (a.blocking ? 1 : 0));
 out.push('', `Zones d'ombre ouvertes : ${zo.length}${zo.filter(z => z.blocking).length ? ` (dont ${zo.filter(z => z.blocking).length} bloquante(s))` : ''}`);
-for (const z of zo.slice(0, 8)) out.push(`  ${z.blocking ? '!' : '-'} ${z.id} ${z.question ?? ''}${z.ask_to ? ` — à ${z.ask_to}` : ''}`);
+// La zone était glosée — son identifiant suivi de sa question — et le destinataire rendu en
+// identifiant nu, dans la même ligne : « ZO-008 … — à SH-01 », alors que `name` dit « Samir » juste à
+// côté. `shLabel` existe depuis longtemps dans le fichier commun, et seuls les artefacts ÉCRITS
+// l'appelaient : les deux scripts qui parlent dans la conversation rendaient l'adresse au lieu du nom.
+for (const z of zo.slice(0, 8)) out.push(`  ${z.blocking ? '!' : '-'} ${z.id} ${z.question ?? ''}${z.ask_to ? ` — à ${shLabel(s, z.ask_to)}` : ''}`);
 // La porte de synthèse se déclare avec l'utilisateur à la fin de Discover, et `S65` ne la contrôle qu'à
 // l'entrée de Define : jusque-là, rien ne disait ce qu'il restait à couvrir. Sur le premier dossier réel,
 // les cinq dimensions étaient vides après une heure et demie de cadrage, avec zéro partie prenante
