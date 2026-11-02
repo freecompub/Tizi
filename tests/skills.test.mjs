@@ -1096,3 +1096,21 @@ test('la gouvernance dit qui peut relire, et un guide ne survit pas à son entre
   assert.match(d, /un \*\*outil\*\*, pas une trace/, 'rien ne distingue l\'outil de la trace');
   assert.match(d, /brief d'atelier/, 'le brief d\'atelier échappe au même critère');
 });
+
+// L'étape 6 a trois noms depuis l'origine : le dossier `qa/<slug>/`, le document `test`, le skill
+// `test-builder`. Chaque couche utilise le sien et c'est cohérent, mais rien ne le disait : le point
+// d'étape affichait « (test) » sur un chemin `qa/…`, et qui cherche `test/<slug>/state.yaml` ne
+// trouve rien. Il n'y a pas de quatrième nom à chercher, et c'est écrit.
+test('les trois noms de l\'étape 6 sont nommés, et le point d\'étape dit où vit le document', () => {
+  const r = node(script('test-builder', 'status.mjs'), [join(ROOT, 'exemple', 'repo', 'qa', 'demo', 'state.yaml')], { cwd: join(ROOT, 'exemple', 'repo') });
+  assert.equal(r.code, 0, r.err);
+  assert.match(r.out, /\(test, dans qa\/\)/, 'le point d\'étape ne dit pas où vit le document');
+  // Pour les documents dont le dossier porte le nom, rien ne change : pas de bruit.
+  const i = node(script('impl-builder', 'status.mjs'), [join(ROOT, 'exemple', 'repo', 'impl', 'demo', 'state.yaml')], { cwd: join(ROOT, 'exemple', 'repo') });
+  assert.match(i.out, /\(impl\)/, 'un document dont le dossier porte le nom gagne une précision inutile');
+
+  const sk = readFileSync(join(SKILLS, 'test-builder', 'SKILL.md'), 'utf8');
+  assert.match(sk, /## Trois noms pour une étape/, 'les trois noms ne sont nommés nulle part');
+  assert.match(sk, /pas de quatrième nom à chercher/, 'rien ne dit qu\'il n\'y en a pas un de plus');
+  for (const nom of [/`qa\/<slug>\/`/, /`document: test`/, /`test-builder`/]) assert.match(sk, nom, `un des trois noms manque : ${nom}`);
+});

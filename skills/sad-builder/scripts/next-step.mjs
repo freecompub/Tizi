@@ -14,6 +14,9 @@ const args = process.argv.slice(2);
 const root = rootArg(args.find(a => !a.startsWith('--') && args[args.indexOf(a) - 1] !== '--initiative'),
   'Usage : node next-step.mjs [racine] [--initiative <slug>] [--json] — pour le dépôt courant : node next-step.mjs .');
 const only = args.includes('--initiative') ? args[args.indexOf('--initiative') + 1] : '';
+// `doc` est le DOSSIER sur le disque, pas la clé du document : l'étape 6 vit dans `qa/`, son état
+// porte `document: test`, et son point d'entrée s'appelle `tizi-test`. Trois noms, aucune couche qui
+// les réconcilie — voir `DOSSIER` dans lib/common.mjs et la note de test-builder/SKILL.md.
 const STEPS = [
   { doc: 'brd', entry: 'tizi-brd', label: '1. BRD' }, { doc: 'prd', entry: 'tizi-prd', label: '2. PRD' },
   { doc: 'sad', entry: 'tizi-sad', label: '3. Conception' }, { doc: 'plan', entry: 'tizi-plan', label: '4. Planification' },

@@ -85,6 +85,14 @@ export const label = (state, id, max = 0) => {
 export const prLabel = p => ({ must: 'Must', should: 'Should', could: 'Could', wont: "Won't" }[p] ?? 'Non priorisée');
 export const PRIORITY_ORDER = ['must', 'should', 'could', 'wont'];
 
+// Le dossier où vit un document, quand il ne porte pas son nom. L'étape 6 a TROIS noms : le dossier
+// est `qa/<slug>/`, le document est `test`, et le skill est `test-builder`. Aucune couche ne réconcilie
+// les trois — chacune utilise le sien, et c'est cohérent —, mais rien ne le disait : le point d'étape
+// affichait « (test) » sur un chemin `qa/…`, et qui cherche `test/<slug>/state.yaml` ne trouve rien.
+// Un nom de plus se devine mal ; une table de un se lit.
+export const DOSSIER = { test: 'qa' };
+export const dossierDe = doc => DOSSIER[doc] ?? doc;
+
 // Phases de chaque document, dans l'ordre. `status.mjs` et `lib/gates.mjs` les affichent et comptent
 // leurs portes, `lib/rules.mjs` vérifie qu'une porte franchie a laissé sa trace : la table ne peut donc
 // vivre dans aucun des trois. `close` n'y est pas — une opportunité jetée n'est pas une étape de plus —

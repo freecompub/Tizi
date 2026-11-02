@@ -28,6 +28,10 @@ Voir `references/test-strategy.md`.
 
 Un testeur qui remonte un problème suit `references/defects.md` (point d'entrée `tizi-bug`) : signalement, recherche de ce qui était convenu, tri — défaut, changement, question, doublon, non reproductible —, puis correction par une story en voie rapide et un test de régression `@DEF-xxx`.
 
+## Trois noms pour une étape
+
+Le dossier est `qa/<slug>/`, le document est `test` (`document: test` dans l'état), et le skill est `test-builder`. Les trois cohabitent depuis l'origine et chaque couche utilise le sien : les chemins disent `qa/`, le catalogue de règles et les phases disent `test`, le point d'entrée dit `tizi-test`. Rien ne les réconcilie à l'exécution, et rien ne le disait non plus : le point d'étape affichait « (test) » sur un chemin `qa/…`, et qui cherche `test/<slug>/state.yaml` ne trouve rien. **Il n'y a pas de quatrième nom à chercher.** `status.mjs` nomme désormais les deux (« test, dans qa/ »), et `lib/common.mjs` porte la table — d'une seule entrée.
+
 ## Phases
 
 | Phase | But | Instructions |
