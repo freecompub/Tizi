@@ -24,7 +24,7 @@ const refs = existsSync(refsPath) ? loadState(refsPath) : {};
 const constitution = (() => { for (const r of ['.', dirname(dirname(dirname(statePath)))]) if (existsSync(join(r, '.tizi', 'constitution.yaml'))) return loadState(join(r, '.tizi', 'constitution.yaml')); return null; })();
 const checklists = (() => { const d = join(dirname(statePath), 'checklists'); return existsSync(d) ? readdirSync(d).filter(f => f.endsWith('.md')).map(f => ({ file: f, text: readFileSync(join(d, f), 'utf8') })) : []; })();
 // Guides d'entretien présents sur le disque : un guide ne se périme pas tout seul quand son absent arrive.
-const interviews = (() => { const d = join(dirname(statePath), 'interviews'); return existsSync(d) ? readdirSync(d).filter(f => f.endsWith('.md')) : []; })();
+const interviews = (() => { const d = join(dirname(statePath), 'interviews'); return existsSync(d) ? readdirSync(d).filter(f => f.endsWith('.md')).map(f => ({ file: f, text: readFileSync(join(d, f), 'utf8') })) : []; })();
 let findings = checkState(state, { refs, constitution, checklists, interviews });
 
 // S53 : le handoff ingéré doit toujours exister avec l'empreinte relevée à l'ingestion.

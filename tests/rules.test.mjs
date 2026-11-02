@@ -795,3 +795,34 @@ test('S84 : une confirmation de l\'élément vaut la relecture de la source dont
   assert.equal(s84(['BR-1']), 0, 'l\'exigence confirmée est encore signalée');
   assert.equal(s84(['BC-1']), 0, 'le besoin d\'origine confirmé est encore signalé');
 });
+
+// « L'utilisateur est le seul de la chaîne qui n'a pas l'index sous les yeux » : c'était faux, et
+// c'est moi qui l'avais écrit. Une partie prenante, un relecteur, un approbateur ne l'ont JAMAIS vu.
+// Mesuré sur trois relevés de relecture réels envoyés à trois personnes : 46 identifiants que leur
+// propre fichier ne glose nulle part — dont deux besoins qu'on demandait à Samir de confirmer.
+test('S104 : un document qui part ne parle pas par adresses', () => {
+  const s = { document: 'brd', phase: 'define',
+    candidate_needs: [
+      { id: 'BC-002', text: 'Savoir, côté famille, que le dossier déposé a bien été reçu' },
+      { id: 'BC-003', text: "Qu'une famille déjà connue n'ait pas à réécrire ce que l'association détient déjà" }],
+    objectives: [{ id: 'OBJ-02', statement: 'Une famille accomplit l\'inscription sans déplacement imposé' }] };
+  const sur = texte => checkState(s, { interviews: [{ file: 'relecture-SH-01.md', text: texte }] }).filter(f => f.rule === 'S104');
+
+  // Le corps dit « BC-002 et BC-007 relus à Samir. Samir : "Oui." », et BC-002 n'est glosé nulle part.
+  const nu = sur('BC-002 et OBJ-02 relus à Samir. Samir : « Oui. »');
+  assert.equal(nu.length, 1);
+  assert.equal(nu[0].id, 'relecture-SH-01.md');
+  assert.match(nu[0].message, /^2 identifiant\(s\) que ce fichier ne glose nulle part : BC-002, OBJ-02/);
+  assert.match(nu[0].message, /valider ce qu'il ne peut pas lire/);
+
+  // Glosé, sous n'importe quelle forme : le contrôle ne juge pas la forme, il cherche l'énoncé.
+  assert.deepEqual(sur('- **BC-002** (confirmé) — Savoir, côté famille, que le dossier déposé a bien été reçu'), [], 'étiquette');
+  assert.deepEqual(sur('Le besoin de savoir, côté famille, que le dossier déposé a bien été reçu (BC-002).'), [], 'prose');
+  // Un identifiant que l'état ne connaît pas n'est pas du ressort de cette règle.
+  assert.deepEqual(sur('On a parlé de BR-999.'), []);
+  // Les mots courts se retirent des DEUX côtés : « une famille déjà connue n'ait pas à réécrire »
+  // contient bien l'énoncé de BC-003, et la première version du contrôle le dénonçait quand même.
+  assert.deepEqual(sur("Qu'une famille déjà connue n'ait pas à réécrire ce que l'association détient déjà (BC-003)"), []);
+  // Le guide d'entretien est l'exception : son lecteur est l'intervieweur, qui a le dossier.
+  assert.deepEqual(checkState(s, { interviews: [{ file: 'guide-SH-04.md', text: 'Et le dossier ? *(BC-002)*' }] }).filter(f => f.rule === 'S104'), []);
+});
