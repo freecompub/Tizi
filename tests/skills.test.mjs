@@ -832,7 +832,20 @@ test('les scripts qui parlent nomment les personnes, pas leurs identifiants', ()
   // Et la règle est écrite là où vit la forme d'un message, commune aux sept skills.
   const q = readFileSync(join(SKILLS, 'brd-builder', 'references', 'questions.md'), 'utf8');
   assert.match(q, /\*\*Un identifiant ne porte pas le sens\.\*\*/, 'rien n\'interdit de parler par adresses');
-  assert.match(q, /première\s+mention dans un message porte la forme humaine/, 'rien ne dit quand la formulation est due');
+  assert.match(q, /première\s+mention porte la forme humaine/, 'rien ne dit quand la formulation est due');
+  // Ce qui décide n'est pas la place dans la phrase, c'est la distance du lecteur à l'index. J'avais
+  // écrit « l'utilisateur est le seul de la chaîne qui n'a pas l'index sous les yeux » : faux, les
+  // parties prenantes ne l'ont jamais vu, et un relevé de relecture réel portait 46 identifiants que
+  // son propre fichier ne glosait nulle part.
+  assert.match(q, /la distance du lecteur à l'index/, 'la règle reste indexée sur la place dans la phrase');
+  assert.match(q, /Quelqu'un qui n'a jamais vu le dossier/, 'le lecteur le plus loin de l\'index n\'est pas nommé');
+  assert.match(q, /glosé \*\*sur place, à chaque fois\*\* — ou absent/, 'rien n\'exige la glose en place dans un document qui part');
+  assert.doesNotMatch(q, /l'utilisateur est le seul de la chaîne/, 'la phrase fausse est encore là');
+  // Et le renvoi, « permis et utile », ne vaut rien pour qui n'a pas où aller.
+  assert.match(q, /le renvoi ne sort pas du dossier/, 'le renvoi reste permis dans un document qui part');
+  // L'exception du guide d'entretien s'inverse quand le destinataire est la personne elle-même.
+  assert.match(q, /dès que le destinataire est la personne elle-même, l'exception s'inverse/, 'l\'exception ne se retourne pas');
+  assert.match(q, /Un document qui part se génère, il ne se rédige pas/, 'rien ne dit comment la règle devient tenable');
   assert.match(q, /si on retirait l'identifiant, la phrase dirait-elle/, 'la règle n\'a pas de test praticable');
   // Trois formes, parce qu'elles ne demandent pas la même chose : interdit dans une question, dû dans
   // une affirmation, permis en renvoi et en étiquette.

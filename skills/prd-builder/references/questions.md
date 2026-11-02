@@ -107,14 +107,36 @@ les entrées, par statut, sans interprétation. Un décompte de mémoire est d'a
 est plausible : personne ne recompte un chiffre qui ressemble au bon.
 
 **Un identifiant ne porte pas le sens.** `OBJ-03`, `BR-01`, `ZO-038` sont des adresses : elles servent
-aux scripts, à la traçabilité et à retrouver la chose dans le fichier. Elles ne servent pas à parler,
-et l'utilisateur est le seul de la chaîne qui n'a pas l'index sous les yeux. Alors **la première
-mention dans un message porte la forme humaine**, prise dans le champ voisin — `name` pour une
+aux scripts, à la traçabilité et à retrouver la chose dans le fichier. Elles ne servent pas à parler.
+Alors **la première mention porte la forme humaine**, prise dans le champ voisin — `name` pour une
 personne, `question` pour une zone d'ombre, `text` ou `statement` pour un besoin, une exigence, une
-règle. Les mentions suivantes du même message peuvent être l'identifiant seul.
+règle.
 
-**Un seul critère, trois formes.** Le critère : *si on retirait l'identifiant, la phrase dirait-elle
-encore quelque chose ?* Il se décline en trois situations, et elles ne demandent pas la même chose.
+**Ce qui décide, c'est la distance du lecteur à l'index.** Pas la place de l'identifiant dans la
+phrase : le même mot se lit autrement selon qui le reçoit.
+
+| Lecteur | Forme |
+|---|---|
+| Toi et les scripts | l'identifiant seul : c'est son métier |
+| **L'utilisateur** | première mention glosée, puis l'identifiant seul dans le même message |
+| **Quelqu'un qui n'a jamais vu le dossier** | glosé **sur place, à chaque fois** — ou absent |
+
+La troisième ligne est celle qu'on oublie, et c'est elle qui compte le plus, parce que ce sont des
+documents qui partent. Une partie prenante, un relecteur, un approbateur n'ont pas « moins » l'index
+sous les yeux que l'utilisateur : ils ne l'ont **jamais vu**. Pour eux, il n'y a pas de première
+mention qui couvre les suivantes, parce qu'on ne lit pas un document de trois cents lignes en
+remontant en arrière ; et il n'y a pas de renvoi possible, parce qu'il n'existe aucun endroit où
+renvoyer. Mesuré sur un relevé de relecture réel, envoyé à trois personnes : **46 identifiants** que
+le fichier où ils apparaissent ne glose nulle part. Le pire portait la validation des cinq seules
+exigences du dossier — « Premier lot d'exigences métier soumis à Dédé : BR-001 à BR-005, celles
+d'OBJ-01 […] Dédé : "Ça me convient." » : il lui dit qu'il a validé cinq choses et ne lui dit pas
+lesquelles. Un autre lui demandait de vérifier ce que « BC-002 et BC-007 » disent, et ces deux-là
+n'apparaissaient **nulle part ailleurs** dans le fichier.
+
+**Pour l'utilisateur : un critère, trois formes.** Le critère :
+*si on retirait l'identifiant, la phrase dirait-elle encore quelque chose ?* Il se décline en trois
+situations, et elles ne demandent pas la même chose. Elles valent dans la conversation ; dans un
+document qui sort, la troisième tombe.
 
 - **Dans une question, l'identifiant est interdit.** On doit pouvoir le retirer sans rien perdre —
   donc il n'avait rien à faire là. Celui à qui on demande n'a pas besoin de l'adresse de la chose, il
@@ -135,6 +157,13 @@ encore quelque chose ?* Il se décline en trois situations, et elles ne demanden
   et c'est la forme de `status.mjs`. En **prose courante**, l'humain d'abord et l'identifiant entre
   parenthèses, parce qu'une adresse en tête oblige à analyser avant de comprendre.
 
+**Et le renvoi ne sort pas du dossier.** « Il dit seulement où c'est rangé » suppose que le lecteur
+puisse y aller. Dans un document destiné à quelqu'un qui n'a pas le dossier, `(SRC-068)`, `(ZO-118)`,
+`(DD-10)` renvoient vers un fichier qu'il n'ouvrira jamais : ce n'est plus un renvoi, c'est du bruit.
+L'étiquette, elle, traverse : `**BC-003** (confirmé) — Qu'une famille déjà connue n'ait pas à réécrire
+ce que l'association détient déjà` se lit par n'importe qui. C'est la forme à reprendre partout dans
+un document qui part, listes comme prose.
+
 **Une personne s'appelle par son nom** dès que `name` est renseigné : `shLabel` rend « Samir (SH-01) ».
 Écrire « SH-02 cumule la présidence et la direction » dans le texte d'une zone d'ombre est pire
 qu'ailleurs, parce que `status.mjs` relira cette phrase à voix haute.
@@ -144,9 +173,22 @@ qu'ailleurs, parce que `status.mjs` relira cette phrase à voix haute.
 fausse est pire qu'un identifiant nu : l'identifiant nu laisse perplexe, la glose fausse fait croire.
 C'est le défaut des décomptes de mémoire avec de la prose au lieu de chiffres.
 
-**L'exception** : un identifiant destiné à quelqu'un d'autre que l'utilisateur. Le guide d'entretien
-indique entre crochets la zone visée par chaque question, « pour l'intervieweur seulement, ne pas la
-lire à voix haute » : le destinataire n'est pas l'interviewé, et la règle ne l'interdit pas.
+**L'exception, et son retournement.** Un identifiant peut viser quelqu'un d'autre que l'utilisateur :
+le guide d'entretien indique entre crochets la zone visée par chaque question,
+« pour l'intervieweur seulement, ne pas la lire à voix haute ». Le destinataire est alors
+l'intervieweur, pas l'interviewé, et la règle ne l'interdit pas.
+
+Mais **dès que le destinataire est la personne elle-même, l'exception s'inverse** et la règle devient
+plus stricte qu'ailleurs. Un relevé de relecture, une liste de contrôle, un dossier de revue partent
+chez quelqu'un qui n'a pas l'index : chaque identifiant y est glosé sur place, ou il n'y figure pas.
+La raison est dans la nature du document : on lui demande de vérifier que ce qu'on a écrit de lui est
+juste. Lui donner une adresse au lieu de la chose, c'est lui demander de valider ce qu'il ne peut pas
+lire — et il répondra « oui », comme c'est arrivé.
+
+**Un document qui part se génère, il ne se rédige pas.** C'est le seul moyen fiable : un script qui a
+l'état sous la main appelle `label()` et écrit la forme humaine avec son identifiant, là où l'agent
+qui rédige tape l'adresse de mémoire. La discipline ne tient pas sur trois cents lignes ; la
+génération, oui.
 
 ## Quand l'outil n'existe pas
 

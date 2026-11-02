@@ -1238,6 +1238,9 @@ export function checklistFindings(s, lists = []) {
 export function interviewFindings(s, files = []) {
   const out = [];
   if (!files.length) return out;
+  // Les appelants d'avant passaient des noms de fichiers, ceux d'aujourd'hui passent le texte avec :
+  // S104 a besoin du contenu. Les deux formes sont acceptées pour ne rien casser au passage.
+  const noms = files.map(f => (typeof f === 'string' ? f : f.file));
   // Premier critère, trop étroit : « la personne était dans la salle du dernier échange ». Le bon, donné
   // par l'utilisateur : **un guide devient une source, ou il s'en va.** S'il a reçu les réponses, une
   // source pointe vers lui et il reste pour toujours ; si l'entretien s'est fait dans la conversation,
@@ -1250,13 +1253,56 @@ export function interviewFindings(s, files = []) {
   const locuteurs = new Set(arr(s.sources).flatMap(src => arr(src.stakeholders)));
   const recu = f => arr(s.sources).some(src => String(src.path ?? '').endsWith(f));
   const shs = mapOf(s.stakeholders);
-  for (const f of files) {
+  for (const f of noms) {
     const id = f.match(/guide-(SH-\d+)/)?.[1];
     if (!id) continue;
     if (!shs.has(id)) { out.push({ rule: 'S09', id: f, message: `guide d'entretien pour ${id}, qui n'est pas dans la cartographie` }); continue; }
     if (locuteurs.has(id) && !recu(f)) {
       out.push({ rule: 'S96', id: f, message: `guide d'entretien pour ${id}, qui a depuis parlé dans ${arr(s.sources).filter(src => arr(src.stakeholders).includes(id)).length} source(s), et aucune ne vient de ce fichier : l'entretien s'est fait ailleurs, le guide n'a rien reçu et ne porte rien que les zones d'ombre n'aient. Retire-le, et réécris la prochaine action` });
     }
+  }
+  return out;
+}
+
+// ── S104. Un document qui part ne parle pas par adresses ────────────────────
+// `questions.md` disait « l'utilisateur est le seul de la chaîne qui n'a pas l'index sous les yeux ».
+// C'était faux, et c'est moi qui l'avais écrit : une partie prenante, un relecteur, un approbateur ne
+// l'ont JAMAIS vu. Mesuré sur trois relevés de relecture réels, envoyés à trois personnes : 46
+// identifiants que le fichier où ils apparaissent ne glose nulle part. Le pire portait la validation
+// des cinq seules exigences du dossier — « BR-001 à BR-005 […] Dédé : "Ça me convient." » : on lui dit
+// qu'il a validé cinq choses sans lui dire lesquelles. Un autre lui demandait de vérifier ce que
+// « BC-002 et BC-007 » disent, et ces deux-là n'apparaissaient nulle part ailleurs dans le fichier.
+//
+// Le contrôle ne juge pas la FORME de la glose — étiquette, parenthèse, prose : toutes sont bonnes —,
+// il demande seulement que l'énoncé de l'élément, tel que l'état le porte, se trouve dans le fichier.
+// Un contrôle de forme produirait des faux constats qu'on apprendrait à déroger, ce qui est pire que rien.
+// Les deux côtés se réduisent de la MÊME façon : accents, casse, ponctuation et mots courts retirés.
+// Première version fautive — les mots courts n'étaient filtrés que dans les mots-clefs, jamais dans le
+// fichier, donc la suite « famille deja connue reecrire » ne pouvait jamais se trouver dans
+// « une famille deja connue n ait pas a reecrire ». Quatre gloses correctes étaient dénoncées.
+const reduit = x => String(x ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  .replace(/[^a-z0-9]+/g, ' ').trim().split(' ').filter(m => m.length > 3);
+const motsClefs = texte => reduit(texte).slice(0, 4);
+const REF_RE = /\b[A-Z]{2,4}-\d{1,3}\b/g;
+export function outgoingFindings(s, fichiers = []) {
+  const out = [];
+  const index = new Map();
+  for (const v of Object.values(s ?? {})) {
+    if (!Array.isArray(v)) continue;
+    for (const x of v) if (x && typeof x === 'object' && x.id) index.set(x.id, x.name ?? x.statement ?? x.text ?? x.question ?? x.title ?? '');
+  }
+  for (const { file, text } of fichiers) {
+    // Le guide d'entretien est l'exception que `questions.md` nomme : son lecteur est l'intervieweur,
+    // qui a le dossier sous les yeux, et il porte la zone visée par chaque question « pour
+    // l'intervieweur seulement, ne pas la lire à voix haute ». Ce qui sort vers quelqu'un qui n'a
+    // jamais vu le dossier, c'est le relevé de relecture et la liste de contrôle.
+    if (/(?:^|\/)guide-/.test(file)) continue;
+    const plat = reduit(text).join(' ');
+    const nus = [...new Set([...String(text).matchAll(REF_RE)].map(m => m[0]))]
+      .filter(id => index.has(id))
+      .filter(id => { const mots = motsClefs(index.get(id)); return mots.length >= 2 && !plat.includes(mots.join(' ')); });
+    if (!nus.length) continue;
+    out.push({ rule: 'S104', id: file, message: `${nus.length} identifiant(s) que ce fichier ne glose nulle part : ${nus.slice(0, 8).join(', ')}${nus.length > 8 ? '…' : ''} — il part chez quelqu'un qui n'a jamais vu le dossier, et une adresse sans son énoncé lui demande de valider ce qu'il ne peut pas lire` });
   }
   return out;
 }
@@ -1394,6 +1440,8 @@ const waiverIndex = s => {
   return idx;
 };
 
+// Les fichiers qui quittent le dossier, sous la forme { file, text }, quelle que soit celle reçue.
+const fichiersDe = liste => arr(liste).map(f => (typeof f === 'string' ? { file: f, text: '' } : f)).filter(f => f.text);
 export function checkState(s, ctx = {}) {
   const refs = ctx.refs ?? {};
   // Le dernier terme de la chaîne de ternaires était `checkBrd` : TOUT document hors brd, prd, sad et
@@ -1406,7 +1454,7 @@ export function checkState(s, ctx = {}) {
     return [{ rule: 'S00', id: 'document', message: `document « ${doc} » : ce catalogue vérifie ${DOCUMENTS.join(', ')}, et rien d'autre — un état d'implémentation se vérifie avec pr-gate.mjs et trace-check.mjs, un état de tests avec release-matrix.mjs` }];
   }
   const base = doc === 'plan' ? checkPlan(s, refs) : doc === 'sad' ? checkSad(s) : doc === 'prd' ? checkPrd(s) : checkBrd(s);
-  const all = [...base, ...placeholderFindings(s), ...unsourcedNumberFindings(s), ...constitutionFindings(s, ctx.constitution), ...checklistFindings(s, ctx.checklists), ...interviewFindings(s, ctx.interviews), ...governanceFindings(s), ...coverageFindings(s, refs), ...phaseFindings(s), ...sourceContentFindings(s), ...confirmationFindings(s)];
+  const all = [...base, ...placeholderFindings(s), ...unsourcedNumberFindings(s), ...constitutionFindings(s, ctx.constitution), ...checklistFindings(s, ctx.checklists), ...interviewFindings(s, ctx.interviews), ...outgoingFindings(s, [...fichiersDe(ctx.interviews), ...fichiersDe(ctx.checklists)]), ...governanceFindings(s), ...coverageFindings(s, refs), ...phaseFindings(s), ...sourceContentFindings(s), ...confirmationFindings(s)];
   const idx = waiverIndex(s);
   return all.map(f => {
     const raison = idx.get(`${f.id}|${f.rule}`);
@@ -1421,6 +1469,7 @@ export const STRUCT_RULES = {
   S00: 'document hors du catalogue',
   S100: 'porte de phase franchie sans trace', S101: 'passage de phase sans décideur, date ou source',
   S102: 'source de parole sans ce qui a été dit', S103: 'confirmation non rattachée à ce qu\'elle confirme',
+  S104: 'document sortant parlant par adresses',
   S01: 'objectif non mesurable', S02: 'exigence sans objectif', S03: 'exigence sans besoin sourcé', S04: 'exigence sans critère d\'acceptation',
   S05: 'priorité ou release manquante', S06: 'exigence sans origine', S07: 'Must sans scénario d\'erreur', S08: 'NFR incomplète',
   S09: 'référence inexistante', S10: 'référence vers un élément abandonné', S11: 'règle métier sans source', S12: 'règle sans niveau d\'application',
