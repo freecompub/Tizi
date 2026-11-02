@@ -5,6 +5,20 @@ initiative:
   slug: ""
 context_mode: greenfield   # greenfield | brownfield — choisi au démarrage, ne change plus
 phase: explore             # explore | design | govern
+
+phase_log: []            # une porte franchie, une entrée — `phase` dit la phase EN COURS, `phase_log` dit
+                         # comment on y est arrivé. « Un changement de phase se demande : ce n'est pas la
+                         # suite du travail, c'est une porte, et il s'écrit dans l'état avec sa date »
+                         # (references/questions.md). Le champ manquait : au deuxième dossier réel l'agent
+                         # a écrit le passage en COMMENTAIRE, que rien ne lit et que le document rendu ne
+                         # peut pas reprendre. S100 réclame la trace, S101 son décideur et sa date.
+#  - from: discover      # la phase qui se clôt
+#    to: define          # celle qui s'ouvre
+#    date: ""            # AAAA-MM-JJ
+#    decided_by: SH-02   # qui a tranché — déclaré par l'utilisateur, jamais déduit
+#    source: SRC-080     # la source qui porte la décision
+#    gate: ""            # l'état de la porte au passage, tel que status.mjs l'a dit : « 7 conditions sur 7 »
+#    waived: []          # conditions franchies par dérogation : - { condition: "", reason: "" }
 created: ""
 updated: ""
 
@@ -25,7 +39,10 @@ decision_rights: []        # repris du PRD ; ajoute au moins le domaine `archite
 #  - { domain: architecture, decider: "", escalation: "", confirmed_by: "" }
 
 sources: []                # preuves techniques : code, configuration, manifeste, document, mesure, spike, entretien
-#  - { id: SRC-001, type: code, ref: "repo@commit:chemin", date: "", note: "" }
+#  - { id: SRC-001, type: code, ref: "repo@commit:chemin", date: "", note: "", confirms: [] }
+#                           # `note` porte ce que la source dit — dû pour un entretien (S102), où c'est le
+#                           # verbatim. `confirms` : ce que cette source confirme quand elle EST une
+#                           # relecture, et elle rejoint les `sources` de chacun (S103)
 
 # ─────────────── Explore ───────────────
 existing:                  # brownfield uniquement

@@ -115,13 +115,19 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
 | La porte de release compte trois verdicts par condition — satisfaite, en échec, **non mesurée** — et « incomplète » n'est pas « ouverte ». `[].every()` rend `true` : sur le dépôt d'exemple sans rapports, « ✓ R1 Toutes les suites collectées passent — aucun rapport ». Quatre conditions récupérées (R1, R5, R6, R7) sur le même état | 2 novembre 2026 | `porte-sans-mesure` |
 | `R6` et `R7` restent dans la table sans leur rapport, en disant le réglage qui les alimenterait, au lieu d'en disparaître : une condition qu'on ne voit pas ne se discute pas. Un seuil de mutation à 0 est une mise hors périmètre **écrite** | 2 novembre 2026 | `porte-sans-mesure` |
 | `S00` : un document hors de `brd`, `prd`, `sad`, `plan` se refuse au lieu de recevoir les règles du BRD. Le dernier terme de la chaîne de ternaires de `checkState` était `checkBrd`, et `coverage()` repliait de même — un état de tests recevait trois métriques inexistantes à « 100 % atteint » | 2 novembre 2026 | `porte-sans-mesure` |
+| `phase_log` : une porte franchie s'écrit — la phase close, celle qui s'ouvre, la date, qui a décidé, la source, l'état de la porte et les conditions franchies par dérogation. `questions.md` exigeait depuis le 28 octobre qu'« il s'écrive dans l'état avec sa date » et le champ n'existait pas : l'agent a écrit le passage en **commentaire YAML**, que rien ne lit, que le document rendu ne peut pas reprendre, et qui disparaît à la première réécriture du champ. `S100` réclame la trace, `S101` son décideur et sa date | 2 novembre 2026 | `champs-manquants` |
+| La ligne de phases du point d'étape dit la date et le nom de qui a décidé chaque passage, ou « passage sans trace » ; le document rendu porte le même parcours en table, dérogations comprises — un relecteur ne lit pas le YAML | 2 novembre 2026 | `champs-manquants` |
+| `quote` et `understood` sur une source : ce qui a été dit mot pour mot, et ce qu'on en a tiré, séparés parce qu'ils se corrigent séparément. Le modèle n'avait **aucun** champ pour le contenu d'une source : au deuxième dossier réel, 92 sources sur 93 dont 65 entretiens ne portaient que leurs métadonnées, et `feedback` comme `S84` portaient donc sur du vide. `S102` le dit sur la collection, pas 92 fois | 2 novembre 2026 | `champs-manquants` |
+| `confirms` sur une source : ce qu'elle confirme quand elle EST une relecture, et `S103` exige qu'elle rejoigne les `sources` de l'élément. Mesuré : Samir confirme BC-003 (SRC-086), BC-002 et BC-007 (SRC-087), aucun des trois ne cite ces sources — BC-007 paraissait reposer sur une voix unique alors que deux parties prenantes le portaient, et le relevé de relecture montrait trois besoins quand son corps en disait cinq | 2 novembre 2026 | `champs-manquants` |
+| `S84` accepte une confirmation de l'élément lui-même, pas seulement la relecture de la source dont il est tiré : c'est l'énoncé qui a été relu, et c'est mieux | 2 novembre 2026 | `champs-manquants` |
+| La table des phases vit dans `lib/common.mjs`, lue par `status.mjs` comme par `lib/rules.mjs` : elle ne pouvait appartenir à aucun des deux | 2 novembre 2026 | `champs-manquants` |
 
 ## Ouvert
 
 - **`main` n'est pas protégée sur GitHub.** `ci-audit.mjs` le signale (« Branch not protected »,
   HTTP 404 avec un jeton sans droit d'administration), et personne ne l'a fait. Celui-là ne dépend pas
   de Tizi : quatre PR ont été fusionnées sur une branche que rien n'empêche de pousser en direct.
-- **Les 21 règles jamais exercées.** Sur les 108 règles du catalogue (`scripts/lib/rules.mjs` : 100 `S` et 8 `L`), 21 ne
+- **Les 21 règles jamais exercées.** Sur les 112 règles du catalogue (`scripts/lib/rules.mjs` : 104 `S` et 8 `L`), 21 ne
   sont déclenchées par aucun test ni aucune référence figée : `S01 S02 S03 S06 S10 S21 S25 S26 S33 S34
   S35 S37 S38 S39 S42 S46 S47 S49 S59 S62 S70`. Une règle jamais vue passer est une règle dont on ne
   sait pas si elle fonctionne.

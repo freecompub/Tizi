@@ -6,6 +6,10 @@
 # `[object Object]` et annonçait « Aucun élément » là où l'état tenait sept étapes sourcées.
 document: brd
 phase: define
+phase_log:
+  - { from: assess, to: discover, date: "2026-10-29", decided_by: SH-01, source: SRC-01, gate: "2 conditions sur 2" }
+  - { from: discover, to: define, date: "2026-11-02", decided_by: SH-01, source: SRC-01, gate: "10 conditions sur 11",
+      waived: [{ condition: "toutes les parties prenantes entendues", reason: "une seule voix, assumée par écrit" }] }
 initiative:
   name: "Formes documentées"
   slug: "formes"
@@ -38,7 +42,9 @@ target_process:
 stakeholders:
   - { id: SH-01, name: "Awa", role: "agent du bureau", impact: fort, power: faible, influence: positive, quadrant: consulter, end_user: true, attitude: "favorable", status: interrogée }
 sources:
-  - { id: SRC-01, type: entretien, date: "2026-10-28", stakeholders: [SH-01], feedback: confirmé }
+  - { id: SRC-01, type: entretien, date: "2026-10-28", stakeholders: [SH-01], feedback: confirmé,
+      quote: "Le dossier arrive au bureau, et si personne n'est là il va dans la corbeille.",
+      understood: "Le dépôt n'a pas d'accusé de réception : la perte n'est détectée que par la famille." }
 candidate_needs:
   - { id: BC-01, text: "Pouvoir déposer un dossier sans se déplacer", sources: [{ ref: SRC-01 }], concerns: [SH-01], status: intégré }
 hypotheses: []

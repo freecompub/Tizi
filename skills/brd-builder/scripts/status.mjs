@@ -5,7 +5,7 @@
 //          Un identifiant ne s'écrit jamais seul dans un message, et sa formulation se lit ici.
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { arr, loadState, fail, shLabel, label } from './lib/common.mjs';
+import { arr, loadState, fail, shLabel, label, PHASES as TABLE_PHASES, PHASE_NOM } from './lib/common.mjs';
 import { condenseOf, sessionsFor } from './lib/sessions.mjs';
 
 const args = process.argv.slice(2);
@@ -60,13 +60,17 @@ for (const c of COLLECTIONS) {
 // a annoncé « j'ai fini la phase BRD » sur un dossier réel, Define était faite, Govern n'avait pas
 // commencé, quatre sections du document étaient encore `proposé`, et rien ne le disait. Les conditions
 // de sortie sont écrites dans les fichiers de phase : celles qui se calculent se calculent.
-const PHASES = { brd: ['assess', 'discover', 'define', 'govern'], prd: ['frame', 'specify', 'govern'],
-  sad: ['explore', 'design', 'govern'], plan: ['slice', 'refine', 'schedule', 'govern', 'review'] }[doc] ?? [];
-const NOM = { assess: 'Assess', discover: 'Discover', define: 'Define', govern: 'Govern', frame: 'Frame',
-  specify: 'Specify', explore: 'Explore', design: 'Design', slice: 'Slice', refine: 'Refine', schedule: 'Schedule', review: 'Review' };
+// La table vit dans `lib/common.mjs` : `lib/rules.mjs` en a besoin pour vérifier qu'une porte franchie
+// a laissé sa trace, et elle ne peut donc appartenir à aucun des deux.
+const PHASES = TABLE_PHASES[doc] ?? [];
+const NOM = PHASE_NOM;
 const rang = PHASES.indexOf(s.phase);
 if (rang >= 0) {
-  out.push('', `Phases : ${PHASES.map((p, i) => `${NOM[p]} ${i < rang ? '✓' : i === rang ? 'en cours' : 'à venir'}`).join(' · ')}`);
+  // Une phase passée dit quand et par qui, quand `phase_log` le porte : « j'ai fini la phase BRD » se
+  // vérifie, et un passage sans trace se voit à sa place vide au lieu de se découvrir trois sessions plus tard.
+  const log = new Map(arr(s.phase_log).map(e => [e.from, e]));
+  const passee = p => { const e = log.get(p); return e ? ` (${[e.date, e.decided_by ? shLabel(s, e.decided_by) : ''].filter(Boolean).join(', ')})` : ' (passage sans trace)'; };
+  out.push('', `Phases : ${PHASES.map((p, i) => `${NOM[p]} ${i < rang ? `✓${passee(p)}` : i === rang ? 'en cours' : 'à venir'}`).join(' · ')}`);
 }
 
 // Les avertissements actifs du catalogue, dérogations nommées retirées. `lib/rules.mjs` n'est livré que

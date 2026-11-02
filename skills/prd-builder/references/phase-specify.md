@@ -135,3 +135,5 @@ Le document comprend la matrice de couverture (BR → FR/NFR → AC en mode cha�
 - le PRD a été régénéré après la dernière validation.
 
 Si l'utilisateur accepte, passe `phase: govern`.
+
+**Et le passage lui-même s'écrit.** Dès que l'utilisateur a tranché, ajoute l'entrée à `phase_log` : la phase qui se clôt, celle qui s'ouvre, la date, qui a décidé, la source qui le porte, l'état de la porte tel que `status.mjs` l'a dit, et chaque condition franchie par dérogation avec sa raison. Sans cette entrée, `status.mjs` affiche « passage sans trace » et le document rendu ne peut pas dire au relecteur quand la phase a été close ni par qui (S100, S101).

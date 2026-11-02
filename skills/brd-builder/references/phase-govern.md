@@ -114,3 +114,5 @@ La construction du BRD est terminée quand une baseline existe et que le handoff
 Avant l'approbation, le document généré montre ses métriques de couverture et leurs seuils (section « Couverture »). Un seuil non atteint se corrige, ou se justifie par une dérogation dans `coverage_waivers` (métrique, raison, approbateur déclaré par l'utilisateur) ; `lint.mjs` le signale sinon (règle S54). Les seuils se règlent par projet dans `coverage_thresholds`.
 
 Le handoff est écrit avec son empreinte SHA-256 (`handoff.yaml.sha256`) et l'empreinte de la version figée dont il vient, ainsi que les métriques de couverture et les dérogations. L'étape suivante le vérifie avec `verify-handoff.mjs` avant de l'ingérer.
+
+**Et le passage lui-même s'écrit.** Dès que l'utilisateur a tranché, ajoute l'entrée à `phase_log` : la phase qui se clôt, celle qui s'ouvre, la date, qui a décidé, la source qui le porte, l'état de la porte tel que `status.mjs` l'a dit, et chaque condition franchie par dérogation avec sa raison. Sans cette entrée, `status.mjs` affiche « passage sans trace » et le document rendu ne peut pas dire au relecteur quand la phase a été close ni par qui (S100, S101).

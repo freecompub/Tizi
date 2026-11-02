@@ -191,3 +191,5 @@ Après l'étape 2, **lance** un council en mode `completude` (protocole : `refer
 - le BRD a été régénéré après la dernière validation.
 
 Lance `status.mjs` : il donne les phases passées, celle en cours, et le compte des conditions de cette porte. Présente-le, liste ce qui manque — puis **pose la question dans tous les cas**, avec l'outil : passer en Govern, ou s'arrêter là. S'il manque des conditions, les deux options sont « s'arrêter là » et « continuer sur ce qui manque », jamais « passer la porte » (`references/questions.md`). Si l'utilisateur accepte, passe `phase: govern` et note la date.
+
+**Et le passage lui-même s'écrit.** Dès que l'utilisateur a tranché, ajoute l'entrée à `phase_log` : la phase qui se clôt, celle qui s'ouvre, la date, qui a décidé, la source qui le porte, l'état de la porte tel que `status.mjs` l'a dit, et chaque condition franchie par dérogation avec sa raison. Sans cette entrée, `status.mjs` affiche « passage sans trace » et le document rendu ne peut pas dire au relecteur quand la phase a été close ni par qui (S100, S101).

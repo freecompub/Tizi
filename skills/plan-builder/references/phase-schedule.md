@@ -37,3 +37,5 @@ C'est le dernier moment où une story trop grosse coûte encore peu : après l'e
 ## Fin de la phase
 
 **Propose** le passage à Govern quand l'itération ou le réapprovisionnement est rempli de tâches validées, ordonnées, estimées et affectées, sans cycle ni dépassement de capacité, que le council en mode planification a été passé et ses questions enregistrées, et que `lint.mjs` a été lancé. Si l'utilisateur accepte, passe `phase: govern`.
+
+**Et le passage lui-même s'écrit.** Dès que l'utilisateur a tranché, ajoute l'entrée à `phase_log` : la phase qui se clôt, celle qui s'ouvre, la date, qui a décidé, la source qui le porte, l'état de la porte tel que `status.mjs` l'a dit, et chaque condition franchie par dérogation avec sa raison. Sans cette entrée, `status.mjs` affiche « passage sans trace » et le document rendu ne peut pas dire au relecteur quand la phase a été close ni par qui (S100, S101).

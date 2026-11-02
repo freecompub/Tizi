@@ -1,4 +1,6 @@
 [
+  "S100 la phase Refine est passée et rien ne dit comment : une porte s'écrit dans `phase_log` avec sa date, qui l'a décidée et la source qui le porte — sans quoi on découvre trois sessions plus tard qu'on a changé d'étape sans le savoir (passage vers Schedule)",
+  "S100 la phase Slice est passée et rien ne dit comment : une porte s'écrit dans `phase_log` avec sa date, qui l'a décidée et la source qui le porte — sans quoi on découvre trois sessions plus tard qu'on a changé d'étape sans le savoir (passage vers Refine)",
   "S40 planifiée alors que sa story US-002 n'est pas prête",
   "S40 planifiée alors que sa story US-005 n'est pas prête",
   "S41 règle Ne pas notifier le week-end sans exemple : on ne saura pas la tester",

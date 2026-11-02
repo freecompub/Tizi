@@ -927,8 +927,20 @@ test('le point d\'étape dit les phases passées et ce qui reste avant la suivan
   ].join('\n'));
   const out = node(script('brd-builder', 'status.mjs'), [etat], { cwd: dir });
   assert.equal(out.code, 0, out.err);
-  assert.match(out.out, /Phases : Assess ✓ · Discover ✓ · Define en cours · Govern à venir/, 'la position dans la chaîne n\'est pas dite');
+  // Deux portes ont été franchies pour arriver à Define, et `phase_log` est vide : le point d'étape le
+  // dit à leur place au lieu de les afficher comme un acquis muet.
+  assert.match(out.out, /Phases : Assess ✓ \(passage sans trace\) · Discover ✓ \(passage sans trace\) · Define en cours · Govern à venir/, 'la position dans la chaîne n\'est pas dite');
   assert.match(out.out, /Porte de sortie de Define — vers Govern/, 'la porte suivante n\'est pas nommée');
+  // Et quand le journal existe, la ligne de phases dit la date et le nom de qui a décidé — le champ
+  // manquait, donc l'agent écrivait le passage en commentaire de `state.yaml`, que personne ne lit.
+  writeFileSync(etat, readFileSync(etat, 'utf8') + [
+    '', 'stakeholders:', '  - { id: SH-02, name: "Dédé", status: interrogée }',
+    'phase_log:',
+    '  - { from: assess, to: discover, date: "2026-10-29", decided_by: SH-02, source: SRC-01, gate: "2 conditions sur 2" }',
+    '  - { from: discover, to: define, date: "2026-11-02", decided_by: SH-02, source: SRC-80, gate: "7 conditions sur 7" }', '',
+  ].join('\n'));
+  const trace = node(script('brd-builder', 'status.mjs'), [etat], { cwd: dir });
+  assert.match(trace.out, /Phases : Assess ✓ \(2026-10-29, Dédé \(SH-02\)\) · Discover ✓ \(2026-11-02, Dédé \(SH-02\)\) · Define en cours/, 'la trace du passage n\'est pas rendue');
   assert.match(out.out, /✗ toutes les sections du document sont validées — 1 section\(s\) : context/, 'les sections à valider ne sont pas comptées');
   assert.match(out.out, /✗ aucun besoin candidat resté « confirmé » — 1 à solder/, 'un besoin non soldé passe');
   assert.match(out.out, /✗ aucune décision restée « proposé » — 1 à rendre/, 'une décision non rendue passe');

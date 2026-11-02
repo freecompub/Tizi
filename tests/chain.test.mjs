@@ -118,6 +118,13 @@ test('brd : chaque forme documentée du gabarit se rend dans le document', () =>
     ['une exclusion de périmètre, avec sa raison', /- Ce qui en sort — parce que rien ne sort en silence/],
   ]) assert.match(md, motif, `${quoi} ne se rend pas`);
 
+  // Le passage de phase est une décision comme les autres : il a un décideur, une date, et l'état de
+  // la porte au moment où elle a été franchie — dérogations comprises. Faute de champ, l'agent
+  // l'écrivait en commentaire de `state.yaml`, et aucun relecteur ne lit le YAML.
+  assert.match(md, /### Parcours des phases/, 'le parcours des phases ne se rend pas');
+  assert.match(md, /\| Assess \| Discover \| 2026-10-29 \| Awa \(SH-01\) \| 2 conditions sur 2 \|/);
+  assert.match(md, /\| Discover \| Define \| 2026-11-02 \| Awa \(SH-01\) \| 10 conditions sur 11 ; dérogation : toutes les parties prenantes entendues — une seule voix, assumée par écrit \|/);
+
   // Et la section « Processus actuel » ne dit pas « Aucun élément » quand l'état en porte.
   const actuel = md.split('### Processus actuel')[1].split('### Processus cible')[0];
   assert.doesNotMatch(actuel, /Aucun élément/, 'le processus actuel est rendu vide alors que l\'état en porte');

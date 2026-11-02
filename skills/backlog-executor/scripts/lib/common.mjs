@@ -84,6 +84,24 @@ export const label = (state, id, max = 0) => {
 
 export const prLabel = p => ({ must: 'Must', should: 'Should', could: 'Could', wont: "Won't" }[p] ?? 'Non priorisée');
 export const PRIORITY_ORDER = ['must', 'should', 'could', 'wont'];
+
+// Phases de chaque document, dans l'ordre. `status.mjs` les affiche, `lib/rules.mjs` vérifie qu'une
+// porte franchie a laissé sa trace : la table ne peut donc vivre dans aucun des deux. `close` n'y est
+// pas — une opportunité jetée n'est pas une étape de plus — mais elle a son nom.
+export const PHASES = {
+  brd: ['assess', 'discover', 'define', 'govern'], prd: ['frame', 'specify', 'govern'],
+  sad: ['explore', 'design', 'govern'], plan: ['slice', 'refine', 'schedule', 'govern', 'review'],
+};
+export const PHASE_NOM = { assess: 'Assess', discover: 'Discover', define: 'Define', govern: 'Govern',
+  frame: 'Frame', specify: 'Specify', explore: 'Explore', design: 'Design', slice: 'Slice',
+  refine: 'Refine', schedule: 'Schedule', review: 'Review', close: 'Close' };
+// Les portes qu'il a FALLU franchir pour arriver à la phase courante. Vide si la phase sort de la
+// table : une initiative close ne doit pas se faire reprocher des passages qu'elle n'a pas faits.
+export function portesFranchies(doc, phase) {
+  const phases = PHASES[doc ?? 'brd'] ?? [];
+  const rang = phases.indexOf(phase);
+  return rang < 0 ? [] : phases.slice(0, rang).map((from, i) => ({ from, to: phases[i + 1] }));
+}
 export const validated = coll => arr(coll).filter(x => x.status === 'validé');
 
 // ── Intégrité des handoffs ───────────────────────────────────────────────────
