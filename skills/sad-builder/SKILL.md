@@ -73,7 +73,7 @@ Identifiants : `AD-xx` moteur architectural, `CTX-xx` contexte délimité, `PS-x
 ## Intégrité et couverture
 
 - Avant d'ingérer un handoff amont, vérifie-le avec `scripts/verify-handoff.mjs` ; n'ingère jamais un handoff altéré. Le handoff que tu produis porte sa propre empreinte.
-- Les métriques de couverture et leurs seuils sont calculés par les scripts (`coverage_thresholds`, `coverage_waivers`) ; tu ne déclares jamais toi-même une couverture atteinte.
+- Les métriques de couverture et leurs seuils sont calculés par les scripts (`thresholds`, `waivers`) ; tu ne déclares jamais toi-même une couverture atteinte. Une dérogation ne compte que si elle dit pourquoi et qui l'a approuvée, et un seuil à 0 passe par une dérogation comme un seuil non atteint.
 
 ## Hors périmètre
 

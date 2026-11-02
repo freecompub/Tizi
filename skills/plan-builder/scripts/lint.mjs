@@ -7,7 +7,7 @@
 //   --json : sortie machine
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { loadState, fail, verifyHandoff } from './lib/common.mjs';
+import { loadState, fail, ingestedHandoffs } from './lib/common.mjs';
 import { checkState } from './lib/rules.mjs';
 
 const args = process.argv.slice(2);
@@ -25,20 +25,9 @@ const constitution = (() => { for (const r of ['.', dirname(dirname(dirname(stat
 const checklists = (() => { const d = join(dirname(statePath), 'checklists'); return existsSync(d) ? readdirSync(d).filter(f => f.endsWith('.md')).map(f => ({ file: f, text: readFileSync(join(d, f), 'utf8') })) : []; })();
 // Guides d'entretien présents sur le disque : un guide ne se périme pas tout seul quand son absent arrive.
 const interviews = (() => { const d = join(dirname(statePath), 'interviews'); return existsSync(d) ? readdirSync(d).filter(f => f.endsWith('.md')).map(f => ({ file: f, text: readFileSync(join(d, f), 'utf8') })) : []; })();
-let findings = checkState(state, { refs, constitution, checklists, interviews });
-
-// S53 : le handoff ingéré doit toujours exister avec l'empreinte relevée à l'ingestion.
-const ingested = [];
-if (state.document === 'prd' && state.source_brd?.path) ingested.push([state.source_brd.path, state.source_brd.sha256]);
-if (state.document === 'sad' && state.source_prd?.path) ingested.push([state.source_prd.path, state.source_prd.sha256]);
-if (state.document === 'plan') for (const k of ['prd', 'sad']) if (refs.paths?.[k]) ingested.push([join(dirname(statePath), refs.paths[k]), refs.sha256?.[k]]);
-for (const [p, recorded] of ingested) {
-  const r = verifyHandoff(p);
-  if (!recorded) findings.push({ rule: 'S53', id: p, message: 'empreinte du handoff non relevée à l\'ingestion (lancer verify-handoff.mjs et reporter sha256 dans l\'état)' });
-  else if (!existsSync(p)) findings.push({ rule: 'S53', id: p, message: 'handoff ingéré introuvable' });
-  else if (r.sha256 !== recorded) findings.push({ rule: 'S53', id: p, message: 'le handoff a changé depuis l\'ingestion : relancer l\'ingestion et faire le point sur les écarts' });
-  else if (!r.ok) findings.push({ rule: 'S53', id: p, message: r.problems.join(' ; ') });
-}
+// S53 vit dans le catalogue, comme le reste : le contrôle des handoffs ingérés était ici, et `status.mjs`
+// ne pouvait donc pas le faire — la porte annonçait moins d'avertissements que le lint.
+let findings = checkState(state, { refs, constitution, checklists, interviews, handoffs: ingestedHandoffs(state, statePath, refs) });
 if (only.size) findings = findings.filter(f => only.has(f.id));
 // Un avertissement dérogé ne disparaît pas : il change de liste. Un trou nommé se répare, un trou
 // silencieux se propage — et une dérogation invisible est un contrôle désarmé sans trace.

@@ -20,7 +20,7 @@
   "S17 décision validée sans décideur déclaré",
   "S18 décision présentée avec moins de deux options : le décideur n'a pas eu de choix réel",
   "S19 partie prenante à fort pouvoir et influence négative sans risque associé",
-  "S54 Exigences métier avec critère d'acceptation : 50 % pour un seuil de 100 % (manquent : BR-002) ; corriger ou déclarer une dérogation dans coverage_waivers",
+  "S54 Exigences métier avec critère d'acceptation : 50 % pour un seuil de 100 % (manquent : BR-002) ; corriger, ou déclarer une dérogation dans `waivers` avec sa raison et son approbateur",
   "S56 décision d'opportunité sans décideur déclaré",
   "S65 dimension « robustesse » jugée faible sans décision de l'assumer",
   "S66 exigence de transition sans critère d'achèvement",
