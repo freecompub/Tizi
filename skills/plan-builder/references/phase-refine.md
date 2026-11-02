@@ -24,3 +24,5 @@ Commence par le walking skeleton, puis suis l'ordre de la story map.
 ## Fin de la phase
 
 **Propose** le passage à Schedule quand assez de stories sont prêtes pour remplir la prochaine itération (sprint) ou le prochain réapprovisionnement (flux). Les autres restent en Refine pour la suite. Si l'utilisateur accepte, passe `phase: schedule`.
+
+**Et le passage lui-même s'écrit.** Dès que l'utilisateur a tranché, ajoute l'entrée à `phase_log` : la phase qui se clôt, celle qui s'ouvre, la date, qui a décidé, la source qui le porte, l'état de la porte tel que `status.mjs` l'a dit, et chaque condition franchie par dérogation avec sa raison. Sans cette entrée, `status.mjs` affiche « passage sans trace » et le document rendu ne peut pas dire au relecteur quand la phase a été close ni par qui (S100, S101).

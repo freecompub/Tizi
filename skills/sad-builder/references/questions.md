@@ -200,7 +200,9 @@ n'y a pas de question — il y a un bouton qui apprend à cliquer sans lire. **C
 sur la suite d'une phase, pas sur le passage à la phase suivante** : voir juste en dessous.
 
 **Mais un changement de phase se demande.** Ce n'est pas la suite du travail, c'est une porte : il
-s'écrit dans l'état avec sa date, il clôt ce qui précède, et les fichiers de phase le disent déjà —
+s'écrit dans `phase_log` — la phase qui se clôt, celle qui s'ouvre, la date, qui a tranché, la source
+qui le porte, l'état de la porte au passage et les conditions franchies par dérogation —, il clôt ce
+qui précède, et les fichiers de phase le disent déjà —
 « **propose** le passage à Govern, **sans le décider** ». Quelque chose dépend donc de la réponse, et
 c'est un choix fermé : l'outil, les options, leurs conséquences. La question se pose **que les
 conditions de la porte soient réunies ou non** — si elles ne le sont pas, les options sont « s'arrêter

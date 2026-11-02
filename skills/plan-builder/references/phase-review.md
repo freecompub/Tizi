@@ -75,3 +75,5 @@ Les outcomes ne sont jamais acquis. Pour chaque release, **avant** de livrer, d�
 - quand et comment on **observera** des utilisateurs réels utiliser la release.
 
 Après la livraison, enregistre les observations et une conclusion (`outcome` : `atteint`, `partiel`, `non_atteint`). Chaque apprentissage devient soit une story (souvent en voie rapide), soit une **nouvelle opportunité** à faire évaluer dans le BRD. Les améliorations faites après une release sont souvent les plus précieuses. `lint.mjs` signale une release livrée sans plan de mesure (règle S59).
+
+**Et le passage lui-même s'écrit.** Dès que l'utilisateur a tranché, ajoute l'entrée à `phase_log` : la phase qui se clôt, celle qui s'ouvre, la date, qui a décidé, la source qui le porte, l'état de la porte tel que `status.mjs` l'a dit, et chaque condition franchie par dérogation avec sa raison. Sans cette entrée, `status.mjs` affiche « passage sans trace » et le document rendu ne peut pas dire au relecteur quand la phase a été close ni par qui (S100, S101).

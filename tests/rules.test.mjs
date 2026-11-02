@@ -721,3 +721,77 @@ test('S00 : un document que le catalogue ne vérifie pas se refuse, il ne se dev
   // Un état sans champ `document` reste lu comme un BRD, comme partout ailleurs.
   assert.equal(checkState({ phase: 'discover' }).some(x => x.rule === 'S00'), false);
 });
+
+// Trois fois la même faute : la doctrine exigeait une trace, le modèle d'état n'avait pas de champ, et
+// l'agent a improvisé en prose. `questions.md` dit du changement de phase qu'« il s'écrit dans l'état
+// avec sa date » ; `phase` était un scalaire nu, et au deuxième dossier réel le passage de Discover à
+// Define — sa date, son décideur, sa source, ses 7 conditions sur 7 — tenait dans un COMMENTAIRE YAML.
+test('S100 et S101 : une porte franchie laisse sa trace, avec son décideur et sa date', () => {
+  const porte = extra => checkState({ document: 'brd', phase: 'define', ...extra }).filter(f => ['S100', 'S101'].includes(f.rule));
+  // Deux portes franchies, aucune trace : deux constats, chacun nommant la phase close.
+  assert.deepEqual(porte({}).map(f => `${f.rule} ${f.id}`), ['S100 phase:assess', 'S100 phase:discover']);
+  assert.match(porte({})[0].message, /phase_log/);
+  const complet = [{ from: 'assess', to: 'discover', date: '2026-10-29', decided_by: 'SH-02', source: 'SRC-026' },
+    { from: 'discover', to: 'define', date: '2026-11-02', decided_by: 'SH-02', source: 'SRC-080' }];
+  assert.deepEqual(porte({ phase_log: complet }), [], 'un journal complet est encore signalé');
+  // Une entrée sans décideur ni source : la trace existe, la décision n'est pas nommée.
+  const boiteux = porte({ phase_log: [complet[0], { from: 'discover', to: 'define', date: '2026-11-02' }] });
+  assert.deepEqual(boiteux.map(f => f.rule), ['S101']);
+  assert.match(boiteux[0].message, /qui l'a décidée, ni la source/);
+  // Une initiative close ne se fait pas reprocher des passages qu'elle n'a pas faits.
+  assert.deepEqual(porte({ phase: 'close' }), []);
+  // Et les autres documents ont leur propre chaîne de phases.
+  assert.deepEqual(checkState({ document: 'sad', phase: 'govern' }).filter(f => f.rule === 'S100').map(f => f.id),
+    ['phase:explore', 'phase:design']);
+});
+
+// Le modèle d'état n'avait AUCUN champ pour ce qui avait été dit. Mesuré : 92 sources sur 93 — dont 65
+// entretiens — ne portaient que leurs métadonnées, et `feedback` comme S84 portaient donc sur du vide.
+test('S102 : une source de parole porte ce qui a été dit, ou elle ne se relit pas', () => {
+  const avec = sources => checkState({ document: 'brd', phase: 'discover', sources }).filter(f => f.rule === 'S102');
+  const muet = avec([{ id: 'SRC-1', type: 'entretien' }, { id: 'SRC-2', type: 'atelier' }, { id: 'SRC-3', type: 'observation' }]);
+  assert.equal(muet.length, 1, 'le constat porte sur la collection, pas sur chaque source');
+  assert.equal(muet[0].id, 'sources');
+  assert.match(muet[0].message, /^2 source\(s\) de parole sur 3 /);
+  assert.match(muet[0].message, /SRC-1, SRC-2/);
+  // Le verbatim, un fichier, ou la `note` du modèle de la conception : trois façons de porter le contenu.
+  assert.deepEqual(avec([{ id: 'SRC-1', type: 'entretien', quote: 'Elle revient pour compléter le dossier.' }]), []);
+  assert.deepEqual(avec([{ id: 'SRC-1', type: 'entretien', path: 'sources/SRC-1.md' }]), []);
+  assert.deepEqual(avec([{ id: 'SRC-1', type: 'entretien', note: 'ce qui a été dit' }]), []);
+  // `understood` seul ne compte pas : ce qui se relit, c'est ce qui a été dit.
+  assert.equal(avec([{ id: 'SRC-1', type: 'entretien', understood: 'une conclusion' }]).length, 1);
+  // Une source qui n'est pas de la parole se porte par son fichier, et ne réclame pas de verbatim.
+  assert.deepEqual(avec([{ id: 'SRC-1', type: 'document' }, { id: 'SRC-2', type: 'mesure' }]), []);
+});
+
+// Samir confirme BC-003 (SRC-086), BC-002 et BC-007 (SRC-087), et aucun des trois besoins ne cite ces
+// sources : BC-007 paraît reposer sur une voix unique alors que deux parties prenantes le portent.
+test('S103 : une confirmation rejoint ce qu\'elle confirme, sinon elle ne compte pour rien', () => {
+  const etat = (confirms, sourcesDuBesoin) => checkState({ document: 'brd', phase: 'define',
+    sources: [{ id: 'SRC-1', type: 'entretien', quote: 'a' }, { id: 'SRC-2', type: 'décision', quote: 'Oui', confirms }],
+    candidate_needs: [{ id: 'BC-1', text: 'Pouvoir déposer sans se déplacer', sources: sourcesDuBesoin }] });
+  const seul = etat(['BC-1'], [{ ref: 'SRC-1' }]).filter(f => f.rule === 'S103');
+  assert.equal(seul.length, 1);
+  assert.equal(seul[0].id, 'BC-1', 'le constat porte sur l\'élément resté sans sa confirmation');
+  assert.match(seul[0].message, /confirmé par SRC-2, qui ne figure pas dans ses sources/);
+  // Rattachée, elle se taît.
+  assert.deepEqual(etat(['BC-1'], [{ ref: 'SRC-1' }, { ref: 'SRC-2' }]).filter(f => f.rule === 'S103'), []);
+  // Et une confirmation d'un élément qui n'existe pas est une référence morte.
+  assert.ok(etat(['BC-9'], [{ ref: 'SRC-1' }]).some(f => f.rule === 'S09' && /confirmation de BC-9/.test(f.message)));
+});
+
+// S84 demande si ce qu'on a compris a été vérifié auprès de la personne. Une confirmation de l'exigence
+// elle-même y répond mieux qu'une relecture de son matériau : c'est l'énoncé qui a été relu.
+test('S84 : une confirmation de l\'élément vaut la relecture de la source dont il est tiré', () => {
+  const etat = confirms => ({ document: 'brd', phase: 'define',
+    sources: [{ id: 'SRC-1', type: 'entretien', quote: 'a', feedback: 'à envoyer' },
+      { id: 'SRC-2', type: 'entretien', quote: 'b', feedback: 'à envoyer' },
+      { id: 'SRC-3', type: 'décision', quote: 'Oui', confirms }],
+    candidate_needs: [{ id: 'BC-1', text: 'x', sources: [{ ref: 'SRC-1' }, { ref: 'SRC-2' }] }],
+    objectives: [{ id: 'OBJ-1', statement: 'o', indicator: 'i', target: 't', status: 'validé' }],
+    business_requirements: [{ id: 'BR-1', statement: 'Le système doit refuser un dossier incomplet', status: 'validé', from_needs: ['BC-1'], objectives: ['OBJ-1'], acceptance: ['y'] }] });
+  const s84 = c => checkState(etat(c)).filter(f => f.rule === 'S84').length;
+  assert.equal(s84([]), 1, 'une exigence jamais relue passe');
+  assert.equal(s84(['BR-1']), 0, 'l\'exigence confirmée est encore signalée');
+  assert.equal(s84(['BC-1']), 0, 'le besoin d\'origine confirmé est encore signalé');
+});

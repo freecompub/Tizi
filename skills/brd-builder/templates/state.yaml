@@ -11,6 +11,20 @@ initiative:
   #  reason: decoupage   # decoupage | sortie_perimetre | autre:<libellé>
   #  decision: ""        # la décision qui l'a produite, chez la mère : DD-xx, ou sa décision d'opportunité
 phase: assess            # assess | discover | define | govern | close (opportunité jetée)
+
+phase_log: []            # une porte franchie, une entrée — `phase` dit la phase EN COURS, `phase_log` dit
+                         # comment on y est arrivé. « Un changement de phase se demande : ce n'est pas la
+                         # suite du travail, c'est une porte, et il s'écrit dans l'état avec sa date »
+                         # (references/questions.md). Le champ manquait : au deuxième dossier réel l'agent
+                         # a écrit le passage en COMMENTAIRE, que rien ne lit et que le document rendu ne
+                         # peut pas reprendre. S100 réclame la trace, S101 son décideur et sa date.
+#  - from: discover      # la phase qui se clôt
+#    to: define          # celle qui s'ouvre
+#    date: ""            # AAAA-MM-JJ
+#    decided_by: SH-02   # qui a tranché — déclaré par l'utilisateur, jamais déduit
+#    source: SRC-080     # la source qui porte la décision
+#    gate: ""            # l'état de la porte au passage, tel que status.mjs l'a dit : « 7 conditions sur 7 »
+#    waived: []          # conditions franchies par dérogation : - { condition: "", reason: "" }
 created: ""              # AAAA-MM-JJ
 updated: ""
 
@@ -105,6 +119,19 @@ sources: []
 #                          # Renseigne `present` quand le tour de table en a nommé plus d'un : présent
 #                          # et locuteur d'aucune source, c'est quelqu'un qui n'a pas été entendu — et
 #                          # son silence n'est pas un accord
+#    quote: ""             # CE QUI A ÉTÉ DIT, mot pour mot, sans reformulation. Dû pour une source de
+#                          # parole — cadrage, entretien, atelier, revue, décision (S102) —, sauf si un
+#                          # fichier le porte. Le modèle n'avait aucun champ pour ça : au deuxième dossier
+#                          # réel, 92 sources sur 93 dont 65 entretiens ne portaient que leurs métadonnées,
+#                          # et ce qui avait été dit ne survivait qu'à la conversation. On ne fait pas
+#                          # relire ce qui n'est écrit nulle part : `feedback` et S84 portaient sur du vide
+#    understood: ""        # ce que l'agent en a TIRÉ, séparé du verbatim — c'est ce qui se corrige en
+#                          # relecture quand la citation est juste et la conclusion fausse. Ne remplace
+#                          # jamais `quote` : ce qui se relit, c'est ce qui a été dit
+#    confirms: []          # ce que cette source confirme ou corrige, quand elle EST une relecture :
+#                          # [BC-003, BR-001]. Et elle rejoint les `sources` de chacun (S103) — sinon la
+#                          # confirmation existe sans rattacher, l'élément reste à source unique et jamais
+#                          # relu, et le relevé de relecture ne la montre pas
 #    path: ""              # fichier dans brd/<slug>/sources/ si fourni
 #    feedback: à envoyer   # retour à la source : à envoyer | envoyé | confirmé | corrigé | sans objet
 

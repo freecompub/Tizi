@@ -6,7 +6,7 @@
 // complété de règles qui demandent du jugement. Une règle n'est définie qu'ici, jamais ailleurs.
 //
 // Sources : Constantinidis (check-list de bonne formulation, ch. 13) ; BABOK v3 (7.2 Verify Requirements).
-import { arr } from './common.mjs';
+import { arr, PHASE_NOM, portesFranchies } from './common.mjs';
 
 // ── Règles de rédaction (portent sur un énoncé) ─────────────────────────────
 
@@ -370,7 +370,10 @@ export function checkBrd(s) {
     // de le transformer en exigence ». Rien ne le signalait — le champ existait, personne ne le lisait,
     // et le retour à la source pouvait n'avoir jamais eu lieu sans que le dossier s'en aperçoive.
     const ids = brSources(s, b);
-    if (ids.length && !ids.some(id => FEEDBACK_FAIT.includes(srcs.get(id)?.feedback))) {
+    // Une source qui déclare `confirms: [BR-001]` EST la vérification : elle répond à la question que
+    // pose `feedback`, et mieux — c'est l'exigence elle-même qui a été relue, pas son matériau.
+    const vu = confirmes(s);
+    if (ids.length && !ids.some(id => FEEDBACK_FAIT.includes(srcs.get(id)?.feedback)) && !vu.has(b.id) && !arr(b.from_needs).some(n => vu.has(n))) {
       out.push({ rule: 'S84', id: b.id, message: 'exigence validée sur des sources dont aucune n\'a été relue par la personne interrogée (`feedback`) : ce qui a été compris n\'a jamais été vérifié auprès d\'elle' });
     }
   }
@@ -612,7 +615,7 @@ export function checkPrd(s) {
       // PRD depuis toujours, et `S84` ne vivait que dans `checkBrd` — invisible au garde-fou, qui lisait
       // `rules.mjs` en entier alors qu'il est copié dans quatre skills.
       const src = srcs.get(f.origin);
-      if (src && !FEEDBACK_FAIT.includes(src.feedback)) {
+      if (src && !FEEDBACK_FAIT.includes(src.feedback) && !confirmes(s).has(f.id)) {
         out.push({ rule: 'S84', id: f.id, message: `exigence tirée de ${f.origin}, que la personne interrogée n'a jamais relue (\`feedback\`) : ce qui a été compris n'a pas été vérifié auprès d'elle` });
       }
     }
@@ -1263,6 +1266,80 @@ export function interviewFindings(s, files = []) {
 // impact — et la question « cette personne a-t-elle déjà été entendue ? » n'entre jamais dans le
 // calcul : au deuxième dossier réel, deux relecteurs sur cinq n'avaient jamais parlé. Or une revue
 // demande « est-ce fidèle à ce que vous avez dit ? » : qui n'a rien dit n'a rien à vérifier, et le rôle
+// ── Les champs qui manquaient (S100 à S103) ─────────────────────────────────
+// Trois fois la même faute : la doctrine exigeait une trace, le modèle d'état n'avait pas de champ, et
+// l'agent a improvisé en prose là où aucun script ne regarde. `questions.md` dit du changement de
+// phase : « ce n'est pas la suite du travail, c'est une porte : IL S'ÉCRIT DANS L'ÉTAT AVEC SA DATE ».
+// `phase` était un scalaire nu. Sur le deuxième dossier réel, l'agent a donc écrit quatre lignes de
+// COMMENTAIRE YAML — « Discover close le 2026-11-02, porte de sortie à 7 conditions sur 7, passage
+// décidé par Dédé (SRC-080) » —, que rien ne lit, que le document rendu ne peut pas reprendre, et qui
+// disparaissent à la première réécriture du champ par un outil.
+
+// Une porte franchie sans trace, et une trace sans son décideur ni sa date.
+export function phaseFindings(s) {
+  const out = [];
+  const log = arr(s.phase_log);
+  for (const { from, to } of portesFranchies(s.document, s.phase)) {
+    if (!log.some(e => e.from === from)) {
+      out.push({ rule: 'S100', id: `phase:${from}`, message: `la phase ${PHASE_NOM[from] ?? from} est passée et rien ne dit comment : une porte s'écrit dans \`phase_log\` avec sa date, qui l'a décidée et la source qui le porte — sans quoi on découvre trois sessions plus tard qu'on a changé d'étape sans le savoir (passage vers ${PHASE_NOM[to] ?? to})` });
+    }
+  }
+  for (const e of log) {
+    const manque = [!String(e.date ?? '').trim() && 'sa date', !String(e.decided_by ?? '').trim() && 'qui l\'a décidée', !String(e.source ?? '').trim() && 'la source qui porte la décision'].filter(Boolean);
+    if (manque.length) out.push({ rule: 'S101', id: `phase:${e.from ?? '?'}`, message: `porte franchie sans ${manque.join(', ni ')} : un passage de phase se décide avec l'utilisateur, jamais seul, et la décision se nomme` });
+  }
+  return out;
+}
+
+// Une source de parole dont le contenu n'est écrit nulle part. Le modèle ne prévoyait AUCUN champ pour
+// ce qui avait été dit : sur le deuxième dossier réel, 92 sources sur 93 — dont 65 entretiens —
+// portaient `path: ""` et rien d'autre. `feedback` et `S84` demandent si la personne a relu ce qu'on a
+// compris d'elle : on ne fait pas relire ce qui n'existe pas. Le relevé de relecture n'a pu être écrit
+// que parce que l'agent avait encore la conversation en mémoire vive, et une reconstitution sur 93 a
+// échoué — « SRC-004 : aucun relevé écrit pour cette source ». Après un effacement de contexte, 93.
+// Le constat porte sur la collection : nommer 92 sources une par une ne se lit pas.
+const PAROLE = ['cadrage', 'entretien', 'atelier', 'revue', 'décision'];
+export function sourceContentFindings(s) {
+  const toutes = arr(s.sources);
+  // `note` est le nom que porte déjà le contenu dans le modèle de la conception : on n'impose pas un
+  // second nom pour la même chose. `understood` ne compte pas — ce qui se relit, c'est ce qui a été dit.
+  const muettes = toutes.filter(x => PAROLE.includes(x.type) && !['quote', 'note', 'path'].some(k => String(x[k] ?? '').trim()));
+  if (!muettes.length) return [];
+  const noms = muettes.slice(0, 8).map(x => x.id).join(', ');
+  return [{ rule: 'S102', id: 'sources', message: `${muettes.length} source(s) de parole sur ${toutes.length} ne portent pas ce qui a été dit, ni dans \`quote\` ni dans un fichier (\`path\`) : ${noms}${muettes.length > 8 ? '…' : ''} — une source dont le contenu n'est écrit nulle part ne se relit pas, et ce qu'elle disait ne survit qu'à la conversation` }];
+}
+
+// Une confirmation enregistrée comme source et jamais rattachée à ce qu'elle confirme. Mesuré sur le
+// deuxième dossier réel : Samir confirme BC-003 (SRC-086), BC-002 et BC-007 (SRC-087), et aucun des
+// trois besoins ne cite ces sources. BC-007 paraît donc reposer sur une voix unique alors que deux
+// parties prenantes le portent — et le relevé de relecture, construit depuis `sources`, montrait trois
+// besoins dans son récapitulatif quand son corps disait que Samir avait répondu sur cinq.
+function elementsIndex(s) {
+  const idx = new Map();
+  for (const v of Object.values(s ?? {})) {
+    if (!Array.isArray(v)) continue;
+    for (const x of v) if (x && typeof x === 'object' && x.id) idx.set(x.id, Array.isArray(x.sources) ? x.sources.map(r => r?.ref ?? r) : null);
+  }
+  return idx;
+}
+export function confirmationFindings(s) {
+  const out = [];
+  const idx = elementsIndex(s);
+  for (const src of arr(s.sources)) {
+    for (const ref of arr(src.confirms)) {
+      if (!idx.has(ref)) { out.push({ rule: 'S09', id: src.id, message: `source déclarée comme confirmation de ${ref}, qui n'existe pas` }); continue; }
+      const sources = idx.get(ref);
+      if (sources && !sources.includes(src.id)) {
+        out.push({ rule: 'S103', id: ref, message: `confirmé par ${src.id}, qui ne figure pas dans ses sources : une confirmation qui ne rejoint pas ce qu'elle confirme le laisse à source unique et jamais relu` });
+      }
+    }
+  }
+  return out;
+}
+// Ce que les sources confirment, pour S84 : une confirmation de l'élément vaut mieux qu'une relecture
+// de la source dont il est tiré, et elle répond à la même question — a-t-on vérifié ce qu'on a compris ?
+const confirmes = s => new Set(arr(s.sources).flatMap(x => arr(x.confirms)));
+
 // met son silence sur le chemin de l'approbation — ce que S87 refuse partout ailleurs.
 // Et `review_rounds` n'était lue par personne, alors que `phase-govern.md` étape 7 prescrit d'y noter
 // l'échéance. L'agent l'a demandée, ne l'a pas obtenue, et a écrit le diagnostic dans son message de
@@ -1329,7 +1406,7 @@ export function checkState(s, ctx = {}) {
     return [{ rule: 'S00', id: 'document', message: `document « ${doc} » : ce catalogue vérifie ${DOCUMENTS.join(', ')}, et rien d'autre — un état d'implémentation se vérifie avec pr-gate.mjs et trace-check.mjs, un état de tests avec release-matrix.mjs` }];
   }
   const base = doc === 'plan' ? checkPlan(s, refs) : doc === 'sad' ? checkSad(s) : doc === 'prd' ? checkPrd(s) : checkBrd(s);
-  const all = [...base, ...placeholderFindings(s), ...unsourcedNumberFindings(s), ...constitutionFindings(s, ctx.constitution), ...checklistFindings(s, ctx.checklists), ...interviewFindings(s, ctx.interviews), ...governanceFindings(s), ...coverageFindings(s, refs)];
+  const all = [...base, ...placeholderFindings(s), ...unsourcedNumberFindings(s), ...constitutionFindings(s, ctx.constitution), ...checklistFindings(s, ctx.checklists), ...interviewFindings(s, ctx.interviews), ...governanceFindings(s), ...coverageFindings(s, refs), ...phaseFindings(s), ...sourceContentFindings(s), ...confirmationFindings(s)];
   const idx = waiverIndex(s);
   return all.map(f => {
     const raison = idx.get(`${f.id}|${f.rule}`);
@@ -1342,6 +1419,8 @@ export function checkState(s, ctx = {}) {
 // Libellés des règles de structure, pour les rapports.
 export const STRUCT_RULES = {
   S00: 'document hors du catalogue',
+  S100: 'porte de phase franchie sans trace', S101: 'passage de phase sans décideur, date ou source',
+  S102: 'source de parole sans ce qui a été dit', S103: 'confirmation non rattachée à ce qu\'elle confirme',
   S01: 'objectif non mesurable', S02: 'exigence sans objectif', S03: 'exigence sans besoin sourcé', S04: 'exigence sans critère d\'acceptation',
   S05: 'priorité ou release manquante', S06: 'exigence sans origine', S07: 'Must sans scénario d\'erreur', S08: 'NFR incomplète',
   S09: 'référence inexistante', S10: 'référence vers un élément abandonné', S11: 'règle métier sans source', S12: 'règle sans niveau d\'application',

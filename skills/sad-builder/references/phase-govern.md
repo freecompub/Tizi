@@ -74,3 +74,5 @@ Après chaque version figée de la conception, lance `node <chemin-du-skill>/scr
 - **Analyse croisée du sens** : `scripts/cross-context.mjs <état>` rassemble tout ce que le document affirme ; lance le sous-agent `cross-analyzer` en contexte neuf sur ce dossier, écris sa réponse dans `analyse/findings.yaml`, puis `scripts/cross-merge.mjs <état>`. Les constats retenus deviennent des zones d'ombre **proposées** (`analyse/proposals.yaml`), à valider avec l'utilisateur : une contradiction est une question, jamais une correction que tu fais seul.
 
 Idées reprises de spec-kit (commandes checklist et analyze).
+
+**Et le passage lui-même s'écrit.** Dès que l'utilisateur a tranché, ajoute l'entrée à `phase_log` : la phase qui se clôt, celle qui s'ouvre, la date, qui a décidé, la source qui le porte, l'état de la porte tel que `status.mjs` l'a dit, et chaque condition franchie par dérogation avec sa raison. Sans cette entrée, `status.mjs` affiche « passage sans trace » et le document rendu ne peut pas dire au relecteur quand la phase a été close ni par qui (S100, S101).

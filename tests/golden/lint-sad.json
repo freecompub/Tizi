@@ -1,5 +1,6 @@
 [
   "L01 terme non mesurable « rapidement » : remplacer par un comportement observable ou une valeur cible",
+  "S100 la phase Explore est passée et rien ne dit comment : une porte s'écrit dans `phase_log` avec sa date, qui l'a décidée et la source qui le porte — sans quoi on découvre trois sessions plus tard qu'on a changé d'étape sans le savoir (passage vers Design)",
   "S22 scénario de qualité sans mesure chiffrée",
   "S23 ADR avec moins de deux options : ce n'est pas une décision",
   "S24 ADR sans moteur : on ne saura pas quand le remettre en cause",
