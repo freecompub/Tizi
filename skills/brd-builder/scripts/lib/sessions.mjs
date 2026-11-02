@@ -1,11 +1,35 @@
 // Continuité entre sessions : lecture des transcriptions Claude Code, extraits déterministes, index des sessions.
 // Commun à tous les skills du SDLC. Les transcriptions sont des fichiers JSONL (une ligne par événement).
 import { existsSync, readFileSync, writeFileSync, mkdirSync, renameSync, readdirSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import yaml from './vendor/js-yaml.mjs';
 import { isShellTool, isWriteTool, shellWrittenPaths, writtenPaths } from './agent-io.mjs';
 
 export const SESSIONS_DIR = '.tizi/sessions';
+
+// La racine du projet : le dépôt Git, à défaut le plus proche ancêtre qui porte `.tizi/`.
+//
+// Les quatre scripts de session la déduisaient chacun à leur façon — le `cwd` du hook pour
+// `session-capture.mjs` et `session-start.mjs`, `'.'` pour `session-search.mjs`, le chemin de l'état
+// pour `status.mjs`, le seul correct. Un `cd` dans un sous-répertoire pendant la session déplaçait donc
+// le magasin : sur le deuxième dossier réel, la même session existait en DEUX exemplaires, à la racine
+// et dans `brd/demat-inscriptions/`, et chaque capture n'en mettait à jour qu'un. Les deux copies
+// alternaient — 15:14 / 107 messages d'un côté, 15:35 / 108 de l'autre —, donc aucune n'était fiable,
+// et `loadIndex(cwd)` ne trouvait pas l'entrée de l'autre répertoire : ce n'était pas une course entre
+// deux écritures, c'étaient deux magasins indépendants.
+//
+// Le dépôt Git passe avant `.tizi/` exprès : sur un dépôt déjà abîmé, un `.tizi/` parasite existe dans
+// le dossier d'initiative, et chercher le plus proche y retournerait. Remonter jusqu'au dépôt répare
+// le cas d'avant au lieu de le perpétuer.
+export function projectRoot(from = '.') {
+  const depart = resolve(from);
+  let tizi = '';
+  for (let d = depart; ; d = dirname(d)) {
+    if (existsSync(join(d, '.git'))) return d;
+    if (!tizi && existsSync(join(d, '.tizi'))) tizi = d;
+    if (dirname(d) === d) return tizi || depart;
+  }
+}
 // Index historique, en un seul fichier : encore lu, plus jamais écrit. Il était réécrit à chaque tour
 // par chaque développeur, et versionné : deux personnes travaillant le même jour obtenaient un conflit
 // Git sur un fichier que personne ne modifie à la main. L'index est désormais éclaté en un fichier par
@@ -112,6 +136,12 @@ export function readTranscript(path) {
 }
 const parseArgs = v => { if (typeof v !== 'string') return v ?? {}; try { return JSON.parse(v); } catch { return { raw: v }; } };
 
+// Le motif `<document>/<slug>/` se trouve aussi dans un nom de branche Git et dans un slug simplement
+// évoqué. Sur le deuxième dossier réel, l'index annonçait quatre initiatives touchées et le dépôt en
+// contenait UNE : `brd/demat-inscriptions-relecture` était le nom de la branche d'un `git push`, et deux
+// autres étaient les dossiers d'essais précédents, mentionnés en conversation. Conséquence au
+// redémarrage : `session-start.mjs` réclamait un condensé pour trois dossiers qui n'existent pas ici.
+// Une initiative touchée est une initiative qui a un état sur le disque.
 export function initiativesIn(turns) {
   const found = new Set();
   for (const t of turns) {
@@ -120,6 +150,12 @@ export function initiativesIn(turns) {
   }
   return [...found].sort();
 }
+// Celles qui ont vraiment un état sur le disque. Les deux listes répondent à deux questions
+// différentes, et les confondre casse l'une ou l'autre : « cette session a-t-elle affaire au SDLC ? »
+// se lit sur les mentions — sinon un dépôt quelconque n'aurait jamais de capture —, « quelles
+// initiatives a-t-elle touchées ? » se lit sur le disque.
+export const surLeDisque = (initiatives, root) =>
+  (Array.isArray(initiatives) ? initiatives : []).filter(ini => existsSync(join(root, ini, 'state.yaml')));
 
 // Réponses de l'outil de questions. Claude Code renvoie une phrase de service en anglais qui renomme
 // chaque question avec sa réponse : `Your questions have been answered: "…"="…", "…"="…". You can now…`.
@@ -301,12 +337,22 @@ export function saveSessionEntry(entry, root = '.') {
 }
 export const sessionsFor = (initiative, root = '.') => loadIndex(root).sessions.filter(s => (s.initiatives ?? []).includes(initiative));
 
-// Le condensé d'une session, s'il existe. Le champ `condensed` de l'index n'est qu'un cache : il est
-// écrit par `session-capture.mjs`, qui tourne sur `Stop`, donc après tout ce que l'agent a fait dans
-// le tour — y compris le commit. Sur le premier dossier réel, le condensé était écrit et commité, et
-// l'index commité disait encore `condensed: ''` : `status.mjs`, `next-step.mjs` et `session-start.mjs`
-// demandaient tous les trois à la session suivante de rédiger un condensé qui existait déjà. On regarde
-// donc le fichier, à l'emplacement que le champ indique ou à celui que la convention de nom impose.
+// Le condensé d'une session, s'il existe : on regarde LE FICHIER, à l'emplacement que l'ancien champ
+// `condensed` indique s'il traîne encore dans un index, ou à celui que la convention de nom impose.
+//
+// Correction d'un diagnostic faux. J'avais écrit ici que le champ était « un cache écrit par
+// session-capture.mjs, qui tourne sur Stop, DONC APRÈS TOUT CE QUE L'AGENT A FAIT DANS LE TOUR ». Si
+// c'était la cause, le champ serait rempli : une capture qui tourne après tout ce qu'a fait l'agent voit
+// le condensé qu'il vient d'écrire. Les vraies raisons étaient deux, et aucune n'était celle-là — le
+// condensé est souvent écrit dans un tour postérieur à la dernière capture, et surtout la capture
+// cherchait le fichier dans `join(cwd, SESSIONS_DIR)` : lancée depuis un dossier d'initiative, elle le
+// cherchait là où il n'est pas. Mesuré en deux captures sur le même condensé : `condensed:
+// .tizi/sessions/…condense.md` depuis la racine, `condensed: ''` depuis `brd/demo`.
+//
+// J'avais affirmé une cause au lieu de la mesurer, puis écrit ce repli, qui a rendu la question sans
+// objet — donc personne n'y est revenu. Un contournement qui masque un défaut masque aussi le fait que
+// le diagnostic était faux. Le champ ne s'écrit plus : il ne pouvait que mentir, et les trois lecteurs
+// (`status.mjs`, `next-step.mjs`, `session-start.mjs`) passent tous par ici.
 export function condenseOf(entry, root = '.') {
   const date = String(entry?.started ?? entry?.ended ?? '').slice(0, 10);
   const candidats = [entry?.condensed, date && entry?.session ? `${SESSIONS_DIR}/${date}-${entry.session}.condense.md` : ''].filter(Boolean);

@@ -10,6 +10,10 @@ Un fichier d'état dit où l'on en est, pas comment on y est arrivé. Pour repre
 | Transcription | `.tizi/sessions/<date>-<session>.jsonl` | L'échange complet, consultable par recherche | Le hook, automatiquement |
 | Entrée d'index | `.tizi/sessions/<date>-<session>.index.yaml` | Dates, initiatives touchées, tâche, tokens, chemins des trois fichiers ci-dessus | Le hook, automatiquement |
 
+Les quatre fichiers de session vivent **à la racine du projet** — le dépôt Git, à défaut le plus proche ancêtre qui porte `.tizi/` —, jamais dans le répertoire courant. Un `.tizi/sessions/` apparu dans un dossier d'initiative est le reste d'un défaut corrigé le 2 novembre 2026 : le magasin suivait le répertoire où se trouvait le shell, si bien qu'un `cd` en cours de session en créait un second, et chaque capture n'en mettait à jour qu'un. Les chemins écrits dans l'entrée d'index sont relatifs à cette racine, et c'est contre elle qu'ils se résolvent. Un tel dossier parasite peut être supprimé : il n'est plus écrit, et plus rien ne le lit.
+
+Les **initiatives touchées** que porte l'entrée d'index sont celles qui ont un état sur le disque. Le motif `<document>/<slug>/` se trouve aussi dans un nom de branche Git et dans un slug simplement évoqué en conversation : sans ce filtre, l'index annonçait quatre initiatives là où le dépôt en contenait une, et le rappel de début de session réclamait un condensé pour trois dossiers qui n'existaient pas.
+
 La transcription seule ne suffirait pas : elle contient des affirmations que la suite a corrigées. L'état reste la référence ; les sessions servent à retrouver le pourquoi.
 
 ## Installer la capture
