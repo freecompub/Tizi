@@ -100,3 +100,40 @@ test('point d\'étape : tous les points d\'entrée du SDLC sont joignables', () 
   const manquants = source.filter(n => n !== 'tizi' && !cites.includes(n));
   assert.deepEqual(manquants, [], `points d'entrée jamais proposés par next-step.mjs : ${manquants.join(', ')}`);
 });
+
+// La porte de release comptait deux verdicts, et `[].every()` rend `true` : une condition sans mesure
+// s'affichait ✓. Sur le dépôt d'exemple, retirer les rapports donnait « ✓ R1 Toutes les suites
+// collectées passent — aucun rapport », et R6 comme R7 disparaissaient de la table — une condition
+// qu'on ne voit pas ne se discute pas. Trois états désormais, et « incomplète » n'est pas « ouverte ».
+test('porte de release : une condition non mesurée s\'affiche « ? », jamais ✓, et reste dans la table', () => {
+  const repo = join(sandbox(), 'repo');
+  const etat = join(repo, 'qa/demo/state.yaml');
+  // Intact : tout est mesuré, la porte s'ouvre — pas de régression sur le cas nominal.
+  let g = gate(repo);
+  assert.equal(g.y.verdict, 'ouverte');
+  assert.ok(g.y.gate.every(c => c.ok === true && c.mesure), 'une condition de l\'exemple intact n\'est pas satisfaite');
+
+  // Plus aucun rapport collecté, plus aucune session exploratoire.
+  const s = yaml.load(readFileSync(etat, 'utf8'));
+  for (const k of Object.keys(s.settings.reports)) s.settings.reports[k] = '';
+  s.exploratory = [];
+  writeFileSync(etat, yaml.dump(s, { lineWidth: 120 }));
+  g = gate(repo);
+  const par = Object.fromEntries(g.y.gate.map(c => [c.code, c]));
+  for (const code of ['R1', 'R5', 'R6', 'R7']) {
+    assert.equal(par[code]?.ok, null, `${code} rend un verdict sur une mesure absente`);
+    assert.equal(par[code]?.mesure, false, `${code} se dit mesurée`);
+  }
+  assert.match(g.out, /\? R1 .*non mesuré : aucun rapport collecté/);
+  assert.match(g.out, /\? R5 .*non mesuré : aucune session exploratoire/);
+  assert.match(g.md, /\? R6/, 'R6 a disparu de la table au lieu de s\'y dire non mesurée');
+  assert.match(g.md, /\? R7/, 'R7 a disparu de la table au lieu de s\'y dire non mesurée');
+  assert.equal(g.y.open, false);
+
+  // Un seuil à 0 est une mise hors périmètre écrite : elle se déclare, elle ne se devine pas.
+  s.settings.thresholds = { ...s.settings.thresholds, mutation: 0 };
+  writeFileSync(etat, yaml.dump(s, { lineWidth: 120 }));
+  const r6 = gate(repo).y.gate.find(c => c.code === 'R6');
+  assert.equal(r6.ok, true);
+  assert.match(r6.detail, /hors périmètre déclaré/);
+});

@@ -3,7 +3,7 @@
 // Usage : node render-prd.mjs <state.yaml> [--include-proposed]
 import { dirname, join } from 'node:path';
 import { arr, txt, table, list, loadState, writeOut, fail, prLabel, PRIORITY_ORDER, today, humanReviewFooter } from './lib/common.mjs';
-import { checkPrd, coverage } from './lib/rules.mjs';
+import { checkPrd, coverage, coverageRows } from './lib/rules.mjs';
 
 const args = process.argv.slice(2);
 const statePath = args.find(a => !a.startsWith('--'));
@@ -175,7 +175,7 @@ p(table(['FR', 'Priorité', 'Critères', 'Scénario d’erreur'], frs.map(f => {
 })));
 
 h(2, 'Couverture');
-p(table(['Métrique', 'Couverts', 'Taux', 'Seuil', 'Statut'], coverage(s, {}).map(c => [c.label, `${c.covered}/${c.total}`, `${c.pct} %`, `${c.threshold} %`, c.met ? 'atteint' : c.waiver ? `dérogation : ${c.waiver.reason}` : `**non atteint** (manquent : ${c.missing.join(', ')})`])));
+p(table(['Métrique', 'Couverts', 'Taux', 'Seuil', 'Statut'], coverageRows(coverage(s, {}))));
 h(2, '12. Annexe — Points de vérification');
 const shown = new Set([...goals, ...frs, ...acs, ...nfrs, ...dds, ...arr(s.business_rules)].map(x => x.id));
 const findings = checkPrd(s).filter(f => shown.has(f.id));

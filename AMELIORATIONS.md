@@ -110,16 +110,21 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
 | `blocking` sort du score d'`ask-five.mjs` (terme constant : 18 bloquantes sur 25 au premier dossier, 0 sur 21 au second) et reste la porte de sortie de phase, avec un critère resserré — « empêche l'étape suivante de commencer », l'étape nommée — écrit dans chaque document qui s'en sert, non plus dans le seul BRD | 25 octobre 2026 | `dossier-prd-reel` |
 | La table des poids d'`ask-five.mjs` couvre les types des quatre documents : quatorze types du PRD sur seize tombaient sur le défaut `?? 1`, si bien qu'un conflit d'intérêts pesait autant qu'un attendu implicite et qu'un persona sans preuve arrivait dernier. Sur le dossier réel, le classement passe de « 26 · 22 · 15 · 15 » à « 55 · 52 · 41 · 35 », conflits d'intérêts en tête | 25 octobre 2026 | `dossier-prd-reel` |
 | `ask-five.mjs` : le préambule de ligne de commande passe derrière la garde de `choose-path.mjs` — importer `rank`, qui est exporté pour ça, tuait le processus sur le message d'usage | 25 octobre 2026 | `dossier-prd-reel` |
+| `0 / 0` ne vaut plus 100 % : une métrique de couverture sans élément à compter se dit **non mesurée** (`mesure: false`, `pct: null`, `met: null`), troisième état distinct de « atteinte » et de « manquée ». Un BRD à l'ouverture affichait ses trois métriques « atteint » dans le document rendu comme dans le handoff | 2 novembre 2026 | `porte-sans-mesure` |
+| La table de couverture s'écrit une seule fois (`coverageRows`) pour les quatre documents, côté rendu comme côté passation : l'expression était recopiée huit fois, et huit fois elle disait « atteint » sur une métrique vide. Le handoff transporte `mesure`, pour que l'aval le sache | 2 novembre 2026 | `porte-sans-mesure` |
+| La porte de release compte trois verdicts par condition — satisfaite, en échec, **non mesurée** — et « incomplète » n'est pas « ouverte ». `[].every()` rend `true` : sur le dépôt d'exemple sans rapports, « ✓ R1 Toutes les suites collectées passent — aucun rapport ». Quatre conditions récupérées (R1, R5, R6, R7) sur le même état | 2 novembre 2026 | `porte-sans-mesure` |
+| `R6` et `R7` restent dans la table sans leur rapport, en disant le réglage qui les alimenterait, au lieu d'en disparaître : une condition qu'on ne voit pas ne se discute pas. Un seuil de mutation à 0 est une mise hors périmètre **écrite** | 2 novembre 2026 | `porte-sans-mesure` |
+| `S00` : un document hors de `brd`, `prd`, `sad`, `plan` se refuse au lieu de recevoir les règles du BRD. Le dernier terme de la chaîne de ternaires de `checkState` était `checkBrd`, et `coverage()` repliait de même — un état de tests recevait trois métriques inexistantes à « 100 % atteint » | 2 novembre 2026 | `porte-sans-mesure` |
 
 ## Ouvert
 
 - **`main` n'est pas protégée sur GitHub.** `ci-audit.mjs` le signale (« Branch not protected »,
   HTTP 404 avec un jeton sans droit d'administration), et personne ne l'a fait. Celui-là ne dépend pas
   de Tizi : quatre PR ont été fusionnées sur une branche que rien n'empêche de pousser en direct.
-- **Les 23 règles jamais exercées.** Sur les 107 règles du catalogue (`scripts/lib/rules.mjs` : 99 `S` et 8 `L`), 23 ne
-  sont déclenchées par aucun test ni aucune référence figée : `L04 S01 S02 S03 S06 S10 S15 S21 S25 S26
-  S33 S34 S35 S37 S38 S39 S42 S46 S47 S49 S59 S62 S64`. Une règle jamais vue passer est une règle dont
-  on ne sait pas si elle fonctionne.
+- **Les 21 règles jamais exercées.** Sur les 108 règles du catalogue (`scripts/lib/rules.mjs` : 100 `S` et 8 `L`), 21 ne
+  sont déclenchées par aucun test ni aucune référence figée : `S01 S02 S03 S06 S10 S21 S25 S26 S33 S34
+  S35 S37 S38 S39 S42 S46 S47 S49 S59 S62 S70`. Une règle jamais vue passer est une règle dont on ne
+  sait pas si elle fonctionne.
 - **Commiter un résultat d'eval**, même mauvais. `evals/results/` est ignoré par Git : les mesures
   n'existent que chez leur auteur. La dernière passe de déclenchement (24 octobre, 1 passe) donne un
   rappel de **0,00 pour `impl-builder`** — il ne s'est déclenché ni sur « Implémente la tâche TK-002 du

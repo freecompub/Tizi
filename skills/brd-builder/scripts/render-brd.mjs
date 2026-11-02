@@ -6,7 +6,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import yaml from './lib/vendor/js-yaml.mjs';
 import { humanReviewFooter, shLabel } from './lib/common.mjs';
-import { checkBrd, coverage, evidenceOf, brSources } from './lib/rules.mjs';
+import { checkBrd, coverage, evidenceOf, brSources, coverageRows } from './lib/rules.mjs';
 
 const args = process.argv.slice(2);
 const statePath = args.find(a => !a.startsWith('--'));
@@ -248,7 +248,7 @@ if (sc?.date) {
 const evAll = brs.map(b => evidenceOf(s, brSources(s, b), [b.id, ...arr(b.from_needs)]));
 p(`_Preuve des exigences présentées : ${evAll.filter(e => e.class === 'observé').length} observée(s), ${evAll.filter(e => e.class === 'rapporté').length} rapportée(s), ${evAll.filter(e => e.class === 'supposé').length} supposée(s) ; ${evAll.filter(e => e.sources === 1).length} à source unique._\n`);
 h(2, 'Couverture');
-p(table(['Métrique', 'Couverts', 'Taux', 'Seuil', 'Statut'], coverage(s, {}).map(c => [c.label, `${c.covered}/${c.total}`, `${c.pct} %`, `${c.threshold} %`, c.met ? 'atteint' : c.waiver ? `dérogation : ${c.waiver.reason}` : `**non atteint** (manquent : ${c.missing.join(', ')})`])));
+p(table(['Métrique', 'Couverts', 'Taux', 'Seuil', 'Statut'], coverageRows(coverage(s, {}))));
 h(2, '13. Annexe — Points de vérification');
 const shown = new Set([...objs, ...brs, ...rgs, ...dds].map(x => x.id));
 const findings = checkBrd(s).filter(f => shown.has(f.id));
