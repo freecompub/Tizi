@@ -78,7 +78,7 @@ Un identifiant attribué ne change jamais et n'est jamais réutilisé, même si 
 
 - `references/quality-iso29148.md` décrit la grille de qualité qu'appliquera le contrôle formel. Sers-t'en pour expliquer une faiblesse de rédaction, jamais pour noter ou bloquer toi-même.
 - Avant d'ingérer un handoff amont, vérifie-le avec `scripts/verify-handoff.mjs` ; n'ingère jamais un handoff altéré. Le handoff que tu produis porte sa propre empreinte.
-- Les métriques de couverture et leurs seuils sont calculés par les scripts (`coverage_thresholds`, `coverage_waivers`) ; tu ne déclares jamais toi-même une couverture atteinte.
+- Les métriques de couverture et leurs seuils sont calculés par les scripts (`thresholds`, `waivers`) ; tu ne déclares jamais toi-même une couverture atteinte. Une dérogation ne compte que si elle dit pourquoi et qui l'a approuvée, et un seuil à 0 passe par une dérogation comme un seuil non atteint.
 
 ## Hors périmètre
 

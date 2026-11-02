@@ -49,6 +49,70 @@ export function phaseTrail(s) {
     retours: log.filter(e => !porteDe(e)) };
 }
 
+// ── Un seuil, une dérogation : une seule logique ─────────────────────────────
+// Deux systèmes faisaient la même chose. `coverage_thresholds` / `coverage_waivers`, au niveau de
+// l'état, pour les quatre documents ; `settings.thresholds` / `waivers` pour la vérification de
+// release. Noms différents, emplacements différents, clés différentes (`metric` contre `id`), défauts
+// écrits à deux endroits — et **aucun des deux** ne vérifiait qu'une dérogation porte sa raison et son
+// approbateur, là où `lint_waivers` le fait depuis le 28 octobre. Une dérogation muette éteignait donc
+// un seuil sans que rien ne le dise.
+//
+// Un SEUIL éteint une mesure aussi. `stories_ready` a 0 pour seuil par défaut, et la table de
+// couverture du plan de l'exemple affichait « Stories prêtes | 2/5 | 40 % | 0 % | atteint » : trois
+// stories sur cinq non prêtes, lues comme une ligne verte. Un seuil à 0 n'est pas une mesure réussie,
+// c'est une mesure qu'on renonce à juger — elle passe donc par la dérogation, comme le reste.
+//
+// Un seul nom s'écrit désormais : `thresholds` et `waivers`, au niveau de l'état, pour les cinq
+// documents. Les anciens noms se lisent encore — un dossier en cours ne se casse pas — et `S107` dit
+// de les renommer.
+
+// Les anciens noms d'abord, le nouveau en dernier : s'ils coexistent, c'est `thresholds` qui tranche.
+export const seuilsDe = s => ({ ...(s?.coverage_thresholds ?? {}), ...(s?.settings?.thresholds ?? {}), ...(s?.thresholds ?? {}) });
+// La clé d'une dérogation : `metric` chez les quatre documents, `id` à la vérification de release.
+// Les deux se lisent, et une dérogation porte l'une ou l'autre, jamais les deux.
+export const cleDerogation = w => String(w?.metric ?? w?.id ?? '').trim();
+export const derogationsDe = s => [...arr(s?.waivers), ...arr(s?.coverage_waivers)];
+
+// « Une dérogation nommée porte sa raison, sinon c'est un silence. » La règle valait pour les
+// avertissements de forme, et pas pour les seuils — où ce qui est en jeu est une approbation de
+// release. Une dérogation de seuil dit pourquoi ET qui l'a approuvée : sans l'un des deux, elle ne
+// compte pas, et le constat le dit au lieu de la laisser éteindre la mesure.
+export function derogationDe(s, cle) {
+  const w = derogationsDe(s).find(x => cleDerogation(x) === String(cle));
+  if (!w) return null;
+  const manque = [!String(w.reason ?? '').trim() && 'pourquoi',
+    !String(w.approved_by ?? '').trim() && 'qui l\'a approuvée'].filter(Boolean);
+  return { ...w, cle: String(cle), valable: manque.length === 0, manque };
+}
+
+// Le verdict d'une mesure face à son seuil, en TROIS états — `true`, `false`, `null`. Le troisième
+// n'est ni une réussite ni un échec : la mesure n'a pas été faite, ou on a renoncé à la juger sans le
+// dire. Il ne s'affiche jamais ✓.
+export const INDICATIF = 'indicatif';
+export function verdictSeuil({ mesure, pct, seuil, derogation }) {
+  // Une mesure INDICATIVE se lit, elle ne se juge pas : « stories prêtes » n'a pas de cible — on n'a
+  // jamais besoin que toutes les stories soient prêtes, seulement assez pour le prochain cycle. Le
+  // catalogue avait écrit ce « pas de cible » avec un seuil de 0, et 0 compare : la table rendait
+  // « Stories prêtes | 2/5 | 40 % | 0 % | atteint ». Une mesure sans cible le dit ; un seuil à 0 est
+  // autre chose — un renoncement — et il passe par une dérogation. Seul le catalogue déclare
+  // `indicatif` : un projet qui écrit 0 dans `thresholds` assume, et l'assomption se nomme.
+  if (seuil === INDICATIF) return { ok: null, note: mesure ? 'indicatif : cette mesure se lit, elle ne se juge pas' : 'indicatif, et rien à mesurer' };
+  // Le seuil se regarde AVANT la mesure. Un seuil à 0 ne compare rien : `pct >= 0` est toujours vrai.
+  // C'est une mise hors périmètre, et une mise hors périmètre s'écrit. L'ordre compte : un projet qui
+  // a déclaré la mutation hors périmètre n'a pas de rapport de mutation, par construction — lui
+  // réclamer `settings.reports.mutation` serait lui demander ce qu'il a justement écarté.
+  if (Number(seuil) === 0) {
+    if (derogation?.valable) return { ok: true, note: `seuil à 0, hors périmètre assumé : ${derogation.reason} (approuvé par ${derogation.approved_by})` };
+    if (derogation) return { ok: null, note: `seuil à 0 et dérogation qui ne dit pas ${derogation.manque.join(', ni ')}` };
+    return { ok: null, note: 'seuil à 0 : la mesure n\'est pas jugée, et aucune dérogation nommée ne dit pourquoi' };
+  }
+  if (!mesure) return { ok: null, note: 'non mesuré' };
+  if (Number(pct) >= Number(seuil)) return { ok: true, note: '' };
+  if (derogation?.valable) return { ok: true, note: `sous le seuil, assumé : ${derogation.reason} (approuvé par ${derogation.approved_by})` };
+  if (derogation) return { ok: false, note: `dérogation déclarée qui ne dit pas ${derogation.manque.join(', ni ')}` };
+  return { ok: false, note: '' };
+}
+
 // ── Les portes ───────────────────────────────────────────────────────────────
 const vides = o => Object.entries(o ?? {}).filter(([, v]) => v !== 'validé').map(([k]) => k);
 const vivants = coll => arr(coll).filter(x => !['abandonné', 'hors_périmètre', 'rejeté', 'déprécié', 'remplacé'].includes(x.status));

@@ -174,6 +174,20 @@ export function verifyHandoff(path, frozenStatePath) {
   return { ok: problems.length === 0, sha256: actual, problems };
 }
 
+// Les handoffs qu'un état déclare avoir ingérés, vérifiés. Le contrôle vivait dans `lint.mjs`, hors du
+// catalogue : `status.mjs` ne pouvait donc pas le faire, et la condition « aucun avertissement » de la
+// porte en annonçait moins que le lint — mesuré 27 contre 29 sur un plan dont les handoffs amont ont
+// bougé. Deux scripts qui comptent la même chose la comptent au même endroit.
+// L'I/O reste ici, `lib/rules.mjs` ne lit aucun fichier : il reçoit le résultat.
+export function ingestedHandoffs(s, statePath, refs = {}) {
+  const d = dirname(statePath);
+  const liste = [];
+  if (s?.document === 'prd' && s.source_brd?.path) liste.push([s.source_brd.path, s.source_brd.sha256]);
+  if (s?.document === 'sad' && s.source_prd?.path) liste.push([s.source_prd.path, s.source_prd.sha256]);
+  if (s?.document === 'plan') for (const k of ['prd', 'sad']) if (refs?.paths?.[k]) liste.push([join(d, refs.paths[k]), refs.sha256?.[k]]);
+  return liste.map(([path, recorded]) => ({ path, recorded, present: existsSync(path), ...verifyHandoff(path) }));
+}
+
 // Empreinte d'un état de plan hors approbations de backlog : enregistrer une approbation ne change pas cette empreinte,
 // toute autre modification de l'état, si. Utilisée par plan-operations.mjs et vérifiée par backlog-executor.
 export function planStateDigest(state) {

@@ -23,8 +23,13 @@ release: REL-1
 candidate: ""              # version candidate testée, par exemple 1.2.0-rc1 (un tag) ou un commit
 candidate_commit: ""       # commit exact de la version candidate ; vide = résolu depuis le tag « candidate »
 
+thresholds: { mutation: 60, requirements: 100 }   # score de mutation global (%) ; part d'exigences prouvées (%)
+                            # Les seuils étaient dans `settings`, et les quatre documents amont les
+                            # avaient dans `coverage_thresholds` : deux noms, deux emplacements, la même
+                            # chose. Un seul nom désormais ; l'ancien reste lu (S107).
+                            # Un seuil à 0 ne compare rien : il passe par une dérogation nommée (S105).
+
 settings:
-  thresholds: { mutation: 60, requirements: 100 }   # score de mutation global (%) ; part d'exigences prouvées (%)
   critical_journeys: []    # parcours du PRD à couvrir de bout en bout : [PJ-01]
   impl_state: ""           # état d'implémentation pour la réalisation ; vide = impl/<initiative>/state.yaml
   reports:                 # rapports collectés (artefacts de CI de la version candidate)
@@ -63,8 +68,11 @@ exploratory: []            # sessions de tests exploratoires (references/explora
 #    notes: ""
 #    findings: []          # - { severity: bloquant | majeur | mineur, text: "", story: "" }
 
-waivers: []                # exigences non prouvées acceptées pour cette release
-#  - { id: AC-004, reason: "", approved_by: "" }
+waivers: []                # exigences non prouvées, et seuils non atteints, assumés pour cette release
+#  - { id: AC-004, reason: "", approved_by: "" }        # une exigence : la clé est `id`
+#  - { metric: mutation, reason: "", approved_by: "" }  # un seuil : la clé est `metric`
+#  Une dérogation ne compte que si elle dit POURQUOI et QUI l'a approuvée : `{ id: AC-004 }` seul
+#  suffisait à retirer un critère de la porte de release (R2). Sans l'un des deux, elle n'éteint rien.
 
 approvals: []              # - { who: "", decision: approuvé | refusé, date: "", reserves: [] } — déclaré par l'utilisateur
 

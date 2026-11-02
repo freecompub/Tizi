@@ -5,7 +5,7 @@
 //          Un identifiant ne s'écrit jamais seul dans un message, et sa formulation se lit ici.
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { arr, loadState, fail, shLabel, label, PHASE_NOM } from './lib/common.mjs';
+import { arr, loadState, fail, shLabel, label, PHASE_NOM, ingestedHandoffs } from './lib/common.mjs';
 import { phaseTrail, gateConditions } from './lib/gates.mjs';
 import { condenseOf, sessionsFor } from './lib/sessions.mjs';
 
@@ -91,18 +91,25 @@ if (parcours.phases.length) {
 // par les skills qui tiennent un document ; l'import est donc facultatif, comme celui des blocages dans
 // `session-start.mjs` — un point d'étape ne doit jamais échouer sur une pièce absente.
 const regles = await import('./lib/rules.mjs').catch(() => null);
-// Le même contexte que `lint.mjs`, sinon les deux scripts annoncent deux nombres différents — et un
-// décompte qui ne concorde pas avec l'autre se recompte à la main.
-const voisins = (nom, lire) => { const d = join(dirname(statePath), nom); return existsSync(d) ? readdirSync(d).filter(f => f.endsWith('.md')).map(lire) : []; };
-const actifs = regles ? regles.checkState(s, {
-  checklists: voisins('checklists', f => ({ file: f, text: readFileSync(join(dirname(statePath), 'checklists', f), 'utf8') })),
-  interviews: voisins('interviews', f => f),
-}).filter(f => !f.waived).length : null;
-// La porte de sortie, avec ses conditions comptées — pour les cinq documents à phases. Les `refs.yaml`
-// du plan portent les exigences de la release, que l'état ne contient pas : sans eux, la condition se
-// déclare non mesurée au lieu de se cocher.
+// Les `refs.yaml` du plan portent les exigences de la release et les éléments de la conception, que
+// l'état ne contient pas. La porte en a besoin, et le CATALOGUE aussi : `lint.mjs` les lui passe, pas
+// ce script — si bien que sur un plan les deux annonçaient deux nombres d'avertissements différents,
+// ce que le commentaire ci-dessous interdisait depuis le début. Un décompte qui ne concorde pas avec
+// l'autre se recompte à la main.
 const refsPath = join(dirname(statePath), 'refs.yaml');
-const porte = gateConditions(s, { actifs, refs: existsSync(refsPath) ? loadState(refsPath) : null });
+const refs = existsSync(refsPath) ? loadState(refsPath) : null;
+// Le même contexte que `lint.mjs`, sinon les deux scripts annoncent deux nombres différents.
+const voisins = (nom, lire) => { const d = join(dirname(statePath), nom); return existsSync(d) ? readdirSync(d).filter(f => f.endsWith('.md')).map(lire) : []; };
+// Le contexte COMPLET de `lint.mjs` : les handoffs amont, la constitution, les listes de contrôle et
+// les guides d'entretien. Il en manquait trois, et chacun retirait des constats du décompte.
+const constitution = (() => { for (const r of ['.', racine]) { const c = join(r, '.tizi', 'constitution.yaml'); if (existsSync(c)) return loadState(c); } return null; })();
+const actifs = regles ? regles.checkState(s, {
+  refs: refs ?? {}, constitution, handoffs: ingestedHandoffs(s, statePath, refs ?? {}),
+  checklists: voisins('checklists', f => ({ file: f, text: readFileSync(join(dirname(statePath), 'checklists', f), 'utf8') })),
+  interviews: voisins('interviews', f => ({ file: f, text: readFileSync(join(dirname(statePath), 'interviews', f), 'utf8') })),
+}).filter(f => !f.waived).length : null;
+// La porte de sortie, avec ses conditions comptées — pour les cinq documents à phases.
+const porte = gateConditions(s, { actifs, refs });
 if (porte) {
   out.push('', `Porte de sortie de ${porte.nom} — vers ${porte.suivante} : ${porte.tenues} condition(s) tenue(s) sur ${porte.mesurees} mesurée(s)${porte.nonMesurees ? `, ${porte.nonMesurees} non mesurée(s)` : ''}`);
   for (const [libelle, ok, detail] of porte.conditions) out.push(`  ${ok === true ? '✓' : ok === false ? '✗' : '?'} ${libelle}${ok === true ? '' : ` — ${detail}`}`);

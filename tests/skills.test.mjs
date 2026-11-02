@@ -1060,6 +1060,24 @@ test('la vérification a ses phases, et une condition qu\'on ne peut pas lire se
   assert.equal(sans.code, 0, sans.err);
   assert.match(sans.out, /\? chaque exigence de la release est couverte par une story validée — non mesuré : refs\.yaml absent/, 'une condition illisible est cochée ou cachée');
   assert.match(sans.out, /condition\(s\) tenue\(s\) sur \d+ mesurée\(s\), 1 non mesurée\(s\)/, 'le compte avale la condition non mesurée');
+
+  // Et le CATALOGUE a besoin des mêmes `refs` que la porte. `lint.mjs` les lui passait, pas
+  // `status.mjs` : sur un plan dont les stories perdent leurs exigences, trois constats (S39 ×2, S54)
+  // étaient invisibles au point d'étape, et la condition « aucun avertissement » en annonçait moins
+  // que le lint. Le commentaire du script l'interdisait depuis le début.
+  const demo = join(ROOT, 'exemple', 'plan', 'demo');
+  const copie = join(dir, 'plan', 'copie');
+  mkdirSync(copie, { recursive: true });
+  const brut = yaml.load(readFileSync(join(demo, 'state.yaml'), 'utf8'));
+  brut.stories = brut.stories.map(x => ({ ...x, frs: [] }));
+  writeFileSync(join(copie, 'state.yaml'), yaml.dump(brut, { lineWidth: 120 }));
+  writeFileSync(join(copie, 'refs.yaml'), readFileSync(join(demo, 'refs.yaml'), 'utf8'));
+  const pt = node(script('plan-builder', 'status.mjs'), [join(copie, 'state.yaml')], { cwd: dir });
+  const lt = node(script('plan-builder', 'lint.mjs'), [join(copie, 'state.yaml')], { cwd: dir });
+  const nPorte = Number(pt.out.match(/(\d+) avertissement\(s\) actif\(s\)/)?.[1]);
+  const nLint = Number(lt.out.match(/Vérification : (\d+) avertissement/)?.[1]);
+  assert.ok(nLint > 0, `le lint ne compte rien : ${lt.out}`);
+  assert.equal(nPorte, nLint, 'le point d\'étape et le lint annoncent deux nombres différents');
 });
 
 // Trois prescriptions qui manquaient à la gouvernance et à la préparation d'entretien, chacune vue sur

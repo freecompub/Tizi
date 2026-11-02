@@ -684,6 +684,66 @@ test('S98 et S99 : un relecteur a été entendu, et un cycle a une échéance', 
 // Le vide ne vaut pas une réussite. `0 / 0` rendait 100 % et « atteint » : un BRD à l'ouverture
 // affichait ses trois métriques de couverture comme satisfaites, dans le document rendu et dans le
 // handoff. Une métrique sans élément à compter n'est ni atteinte ni manquée : elle n'est pas mesurée.
+// Deux systèmes de seuils et de dérogations faisaient la même chose sous deux noms, et aucun des deux
+// ne vérifiait qu'une dérogation porte sa raison et son approbateur — là où `lint_waivers` le fait
+// depuis le 28 octobre. Pire : un SEUIL éteignait une mesure. `stories_ready` avait 0 pour défaut, et
+// la table du plan de l'exemple rendait « Stories prêtes | 2/5 | 40 % | 0 % | atteint ».
+test('un seuil, une dérogation : S105, S106, S107 et la mesure indicative', () => {
+  const brd = extra => ({ document: 'brd',
+    objectives: [{ id: 'OBJ-1', status: 'validé' }, { id: 'OBJ-2', status: 'validé' }],
+    business_requirements: [{ id: 'BR-1', status: 'validé', objectives: ['OBJ-1'], acceptance: ['x'] }], ...extra });
+  const r = (extra, regle) => coverageFindings(brd(extra)).filter(f => f.rule === regle);
+
+  // Sans rien : la métrique « objectifs servis » est à 50 % pour un seuil de 100 % → S54.
+  assert.equal(r({}, 'S54').length, 1);
+  // Un seuil à 0 ne compare rien : ce n'est pas une réussite, c'est un renoncement, et il se nomme.
+  const seuilZero = coverage(brd({ thresholds: { objective_br: 0 } })).find(m => m.id === 'objective_br');
+  assert.equal(seuilZero.met, null, 'un seuil à 0 rend la mesure atteinte');
+  assert.match(seuilZero.note, /seuil à 0 : la mesure n'est pas jugée/);
+  assert.equal(r({ thresholds: { objective_br: 0 } }, 'S54').length, 0, 'S54 parle encore d\'un seuil à 0');
+  assert.equal(r({ thresholds: { objective_br: 0 } }, 'S105').length, 1, 'un seuil à 0 passe sans un mot');
+  // La table ne l'écrit jamais « atteint ».
+  assert.match(coverageRows([seuilZero])[0][4], /_non mesuré_/);
+
+  // Une dérogation ne compte que si elle dit POURQUOI et QUI l'a approuvée.
+  const muette = { thresholds: { objective_br: 0 }, waivers: [{ metric: 'objective_br', reason: 'cadence flux' }] };
+  assert.equal(coverage(brd(muette)).find(m => m.id === 'objective_br').met, null);
+  assert.equal(r(muette, 'S106').length, 1, 'une dérogation sans approbateur éteint le seuil');
+  assert.match(r(muette, 'S106')[0].message, /ne dit pas qui l'a approuvée/);
+  const nommee = { thresholds: { objective_br: 0 }, waivers: [{ metric: 'objective_br', reason: 'cadence flux', approved_by: 'SH-01' }] };
+  const assumee = coverage(brd(nommee)).find(m => m.id === 'objective_br');
+  assert.equal(assumee.met, true, 'une dérogation nommée n\'assume pas le seuil');
+  assert.match(assumee.note, /hors périmètre assumé : cadence flux \(approuvé par SH-01\)/);
+  assert.deepEqual(coverageFindings(brd(nommee)).filter(f => ['S54', 'S105', 'S106'].includes(f.rule)), []);
+  // Et une dérogation muette sur un seuil simplement non atteint ne l'éteint pas non plus.
+  assert.equal(r({ waivers: [{ metric: 'objective_br', approved_by: 'SH-01' }] }, 'S54').length, 1);
+  assert.match(r({ waivers: [{ metric: 'objective_br', approved_by: 'SH-01' }] }, 'S106')[0].message, /ne dit pas pourquoi/);
+
+  // Les anciens noms se lisent encore — un dossier en cours ne casse pas — et S107 dit de renommer.
+  const ancien = coverage(brd({ coverage_thresholds: { objective_br: 50 } })).find(m => m.id === 'objective_br');
+  assert.equal(ancien.threshold, 50, 'l\'ancien nom de champ n\'est plus lu');
+  assert.equal(ancien.met, true);
+  assert.deepEqual(r({ coverage_thresholds: { objective_br: 50 } }, 'S107').map(f => f.id), ['champ:coverage_thresholds']);
+  assert.deepEqual(r({ coverage_waivers: [{ metric: 'objective_br', reason: 'x', approved_by: 'y' }] }, 'S107').map(f => f.id), ['champ:coverage_waivers']);
+  // Si les deux noms coexistent, c'est le nouveau qui tranche : sinon deux valeurs pour une même chose.
+  assert.equal(coverage(brd({ coverage_thresholds: { objective_br: 50 }, thresholds: { objective_br: 100 } })).find(m => m.id === 'objective_br').threshold, 100);
+
+  // Une mesure INDICATIVE se lit et ne se juge pas : « stories prêtes » n'a pas de cible. C'est le
+  // CATALOGUE qui le déclare, avec sa raison ; un projet qui écrit 0 assume, et son 0 reste un 0.
+  const plan = coverage({ document: 'plan', settings: { release: 'REL-1' },
+    stories: [{ id: 'US-1', status: 'validé' }, { id: 'US-2', status: 'proposé' }] }, {});
+  const prets = plan.find(m => m.id === 'stories_ready');
+  assert.equal(prets.threshold, 'indicatif');
+  assert.equal(prets.met, null, 'une mesure indicative se dit atteinte');
+  assert.match(coverageRows([prets])[0][4], /_indicatif_/);
+  assert.equal(coverageRows([prets])[0][3], '—', 'un seuil indicatif s\'écrit « indicatif % »');
+  assert.deepEqual(coverageFindings({ document: 'plan', stories: [{ id: 'US-1', status: 'validé' }] }, {}).filter(f => f.rule === 'S105'), [],
+    'une mesure indicative du catalogue produit un constat');
+  // Un projet ne déclare pas « indicatif » : écrit dans `thresholds`, il vaut 0 et se dérogue.
+  assert.equal(coverage({ document: 'plan', thresholds: { stories_ready: 'indicatif' },
+    stories: [{ id: 'US-1', status: 'validé' }, { id: 'US-2', status: 'proposé' }] }, {}).find(m => m.id === 'stories_ready').threshold, 0);
+});
+
 test('couverture : une collection vide n\'est pas une couverture atteinte', () => {
   const vide = coverage({ document: 'brd' });
   assert.equal(vide.length, 3, 'les trois métriques du BRD sont présentes');

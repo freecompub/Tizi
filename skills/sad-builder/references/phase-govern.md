@@ -60,7 +60,11 @@ Toute modification passe par une demande de changement (`CR-xxx`) avec analyse d
 
 ## Couverture et empreinte
 
-Avant l'approbation, le document généré montre ses métriques de couverture et leurs seuils (section « Couverture »). Un seuil non atteint se corrige, ou se justifie par une dérogation dans `coverage_waivers` (métrique, raison, approbateur déclaré par l'utilisateur) ; `lint.mjs` le signale sinon (règle S54). Les seuils se règlent par projet dans `coverage_thresholds`.
+Avant l'approbation, le document généré montre ses métriques de couverture et leurs seuils (section « Couverture »). Les seuils se règlent par projet dans `thresholds`, au niveau de l'état — **un seul nom pour les cinq documents** ; `coverage_thresholds` et `settings.thresholds` restent lus, et `S107` dit de les renommer.
+
+Un seuil non atteint se corrige, ou s'assume par une **dérogation nommée** dans `waivers` : `{ metric, reason, approved_by }`. Elle ne compte que si elle dit **pourquoi** et **qui l'a approuvée** — sans l'un des deux, elle n'éteint rien, l'avertissement reste (`S54`) et `S106` nomme ce qui manque. « Une dérogation nommée porte sa raison, sinon c'est un silence » : la règle valait pour les avertissements de forme, et pas pour les seuils, là où ce qui est en jeu est une approbation.
+
+Et un **seuil à 0 ne compare rien** : `pct >= 0` est toujours vrai. C'est une mise hors périmètre, et elle passe par la même dérogation (`S105`). Sans elle, la mesure se dit « non mesurée » au lieu de s'afficher atteinte — la table de couverture du plan de l'exemple rendait « Stories prêtes | 2/5 | 40 % | 0 % | atteint », trois stories sur cinq non prêtes lues comme une ligne verte.
 
 Le handoff est écrit avec son empreinte SHA-256 (`handoff.yaml.sha256`) et l'empreinte de la version figée dont il vient, ainsi que les métriques de couverture et les dérogations. L'étape suivante le vérifie avec `verify-handoff.mjs` avant de l'ingérer.
 

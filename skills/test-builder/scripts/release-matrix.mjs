@@ -10,6 +10,7 @@ import { arr, txt, table, loadState, writeOut, fail, today, verifyHandoff, human
 import { readReport } from './lib/testing.mjs';
 import { provenanceCheck } from './lib/ci.mjs';
 import { loadDefects } from './defect.mjs';
+import { seuilsDe, derogationsDe, cleDerogation, derogationDe, verdictSeuil } from './lib/gates.mjs';
 
 const statePath = process.argv[2];
 if (!statePath) fail('Usage : node release-matrix.mjs <state.yaml>', 2);
@@ -79,7 +80,12 @@ for (const [name, path] of Object.entries(set.reports ?? {})) {
   suites[name] = { total: r.total, failed: r.failed, path };
   for (const c of r.cases) cases.push({ ...c, suite: name });
 }
-const waivers = new Map(arr(s.waivers).map(w => [w.id, w]));
+// Une dérogation ne compte que si elle dit pourquoi ET qui l'a approuvée. `waivers.has(r.id)` suffisait
+// à faire passer une exigence en « dérogation » et à la retirer de R2 : `{ id: AC-004 }` seul éteignait
+// la preuve d'un critère. Même logique que les seuils des quatre documents (lib/gates.mjs).
+const derogations = derogationsDe(s).map(w => derogationDe(s, cleDerogation(w))).filter(w => w?.cle);
+const waivers = new Map(derogations.filter(w => w.valable).map(w => [w.cle, w]));
+const derogationsMuettes = derogations.filter(w => !w.valable);
 const nfrRes = new Map(arr(s.nfr_results).map(n => [n.id, n]));
 // Défauts (defect.mjs) : un défaut est résolu quand un test étiqueté @DEF-xxx passe dans les rapports collectés.
 const defects = loadDefects('.', s.initiative?.slug ?? '');
@@ -141,13 +147,23 @@ const xs = arr(s.exploratory);
 const nfrRows = rows.filter(r => r.kind === 'NFR');
 const pjRows = rows.filter(r => r.kind === 'parcours');
 const xsVivantes = xs.filter(x => x.status !== 'abandonnee');
-const seuilExig = set.thresholds?.requirements ?? 100;
-const seuilMut = set.thresholds?.mutation ?? 60;
+// Les seuils se lisent par la logique commune : `thresholds` au niveau de l'état, et les anciens noms
+// — dont `settings.thresholds` — encore acceptés pour ne casser aucun dossier en cours.
+const seuils = { requirements: 100, mutation: 60, ...seuilsDe(s) };
+const seuilExig = seuils.requirements;
+const seuilMut = seuils.mutation;
+// Un seuil à 0 ne compare rien, et ce n'est donc pas une réussite : c'est une mise hors périmètre, et
+// une mise hors périmètre s'écrit. « Un projet qui n'en veut pas pose son seuil à 0 et le dit par
+// écrit » : rien ne lisait cet écrit, et R6 passait au vert sur un seuil à 0 sans une ligne de raison.
+const verdictMut = verdictSeuil({ mesure: Boolean(mutation), pct: mutation?.score, seuil: seuilMut, derogation: derogationDe(s, 'mutation') });
+const verdictExig = verdictSeuil({ mesure: nonWaived.length > 0, pct, seuil: seuilExig, derogation: derogationDe(s, 'requirements') });
 const gate = [
   ['R1', 'Toutes les suites collectées passent', Object.keys(suites).length ? Object.values(suites).every(x => !x.failed && !x.missing && !x.error) : null,
     Object.entries(suites).map(([k, x]) => `${k} : ${x.missing ? 'rapport absent' : x.error ? 'illisible' : x.mutation !== undefined ? `mutation ${x.mutation} %` : `${x.total} test(s), ${x.failed} en échec`}`).join(' ; ') || 'aucun rapport collecté : renseigner settings.reports'],
-  ['R2', `Exigences prouvées (seuil ${seuilExig} %)`, nonWaived.length ? nonWaived.every(r => r.status === 'prouvé') && pct >= seuilExig : null,
-    nonWaived.length ? `${proved}/${nonWaived.length} prouvées, ${rows.length - nonWaived.length} dérogation(s)` : 'aucune exigence dans cette release : rien à prouver, donc rien de prouvé'],
+  ['R2', `Exigences prouvées (seuil ${seuilExig} %)`, verdictExig.ok === null ? null : verdictExig.ok && nonWaived.every(r => r.status === 'prouvé'),
+    nonWaived.length ? [`${proved}/${nonWaived.length} prouvées, ${waivers.size} dérogation(s) nommée(s)`, verdictExig.note,
+      derogationsMuettes.length ? `${derogationsMuettes.length} dérogation(s) qui ne comptent pas : ${derogationsMuettes.map(w => `${w.cle} (sans ${w.manque.join(', ni ')})`).join(' ; ')}` : ''].filter(Boolean).join(' — ')
+      : 'aucune exigence dans cette release : rien à prouver, donc rien de prouvé'],
   ['R3', 'Mesures des NFR conformes', nfrRows.length ? nfrRows.every(r => ['prouvé', 'dérogation'].includes(r.status)) : null,
     nfrRows.length ? `${nfrRows.filter(r => r.status === 'prouvé').length}/${nfrRows.length}` : 'aucune NFR à vérifier dans cette release'],
   ['R4', 'Parcours critiques couverts de bout en bout', pjRows.length ? pjRows.every(r => ['prouvé', 'dérogation'].includes(r.status)) : null,
@@ -160,9 +176,9 @@ const gate = [
     realizedUnproved.length || reqUnproved.length ? `réalisé mais non prouvé : ${[...realizedUnproved.map(f => f.id), ...reqUnproved.map(r => r.id)].join(', ')}` : `${frRows.filter(f => f.realization === 'réalisé').length} FR réalisée(s), toutes prouvées`],
   (() => { const pc = provenanceCheck(s, root); return ['R9', 'Preuves issues de la CI sur le commit candidat', pc.ok, pc.detail]; })(),
   // R6 et R7 restent dans la table même sans rapport : elles s'affichent « non mesuré », avec le
-  // réglage qui les alimenterait. Un projet qui n'en veut pas pose son seuil à 0 et le dit par écrit.
-  ['R6', `Score de mutation ≥ ${seuilMut} %`, seuilMut === 0 ? true : mutation ? mutation.score >= seuilMut : null,
-    seuilMut === 0 ? 'seuil 0 : hors périmètre déclaré' : mutation ? `${mutation.score} %` : 'aucun rapport de mutation collecté : renseigner settings.reports.mutation'],
+  // réglage qui les alimenterait. Un seuil à 0 passe par une dérogation nommée, comme le reste.
+  ['R6', `Score de mutation ≥ ${seuilMut} %`, verdictMut.ok,
+    [mutation ? `${mutation.score} %` : 'aucun rapport de mutation collecté : renseigner settings.reports.mutation', verdictMut.note === 'non mesuré' ? '' : verdictMut.note].filter(Boolean).join(' — ')],
   ['R7', 'Analyses de sécurité sans constat', suites.security ? !suites.security.failed && !suites.security.missing : null,
     suites.security ? (suites.security.missing ? 'rapport absent' : `${suites.security.failed ?? 0} constat(s)`) : 'aucune analyse de sécurité collectée : renseigner settings.reports.security'],
 ];
@@ -193,7 +209,10 @@ if (defects.length) {
 }
 md.push('## Exigences', '', table(['Exigence', 'Type', 'Libellé', 'Réalisation', 'Preuve', 'Tests'], rows.map(r => [r.id, r.kind, r.label, r.realization, r.status === 'prouvé' ? 'prouvé' : `**${r.status}**`, [...r.tests, r.measure].filter(Boolean).join(' ; ') || '—'])));
 if (xs.length) md.push('## Sessions exploratoires', '', table(['Session', 'Charte', 'Statut', 'Constats'], xs.map(x => [x.id, `Explorer ${txt(x.charter?.explore)} avec ${txt(x.charter?.with)} pour découvrir ${txt(x.charter?.discover)}`, x.status, arr(x.findings).map(f => `${f.severity} : ${f.text}${f.story ? ` (${f.story})` : ''}`).join(' ; ') || '—'])));
-if (waivers.size) md.push('## Dérogations', '', table(['Exigence', 'Raison', 'Approuvée par'], [...waivers.values()].map(w => [w.id, w.reason, w.approved_by])));
+if (derogations.length) md.push('## Dérogations', '',
+  'Une dérogation ne compte que si elle dit pourquoi **et** qui l\'a approuvée : sans l\'un des deux, elle n\'éteint rien et l\'exigence reste à prouver.', '',
+  table(['Exigence ou seuil', 'Raison', 'Approuvée par', 'Compte'],
+    derogations.map(w => [w.cle, w.reason, w.approved_by, w.valable ? 'oui' : `**non** — il manque ${w.manque.join(', et ')}`])));
 writeOut(join(root, 'matrix.md'), md.join('\n') + humanReviewFooter('rapport de vérification'));
 writeOut(join(root, 'matrix.yaml'), `# Matrice calculée — release-matrix.mjs\n${yaml.dump({ release: s.release, candidate: s.candidate, computed: today(), plan_version: plan.governance?.version ?? '', gate: gate.map(([code, label, ok, detail]) => ({ code, label, ok, mesure: ok !== null, detail })), open, verdict, requirements: rows, functional: frRows, stories: storyRows, defects: defects.map(d => ({ id: d.id, requirement: d.requirement ?? '', severity: d.severity ?? '', classification: d.classification, resolved: d.classification === 'defaut' ? resolved(d) : null })), gaps: { realized_unproved: [...realizedUnproved.map(f => f.id), ...reqUnproved.map(r => r.id)], not_done: notDone.map(f => f.id), unplanned_proof: unplannedProof }, suites }, { lineWidth: 120 })}`);
 for (const [c, l, ok, d] of gate) console.log(`${ok === true ? '✓' : ok === false ? '✗' : '?'} ${c} ${l} — ${ok === null ? 'non mesuré : ' : ''}${d}`);

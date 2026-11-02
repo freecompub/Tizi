@@ -7,7 +7,7 @@
 //
 // Sources : Constantinidis (check-list de bonne formulation, ch. 13) ; BABOK v3 (7.2 Verify Requirements).
 import { arr, PHASE_NOM, portesFranchies } from './common.mjs';
-import { porteDe } from './gates.mjs';
+import { porteDe, seuilsDe, derogationDe, derogationsDe, cleDerogation, verdictSeuil, INDICATIF } from './gates.mjs';
 
 // ── Règles de rédaction (portent sur un énoncé) ─────────────────────────────
 
@@ -1071,7 +1071,7 @@ export const COVERAGE_DEFAULTS = {
   brd: { br_objective: 100, br_acceptance: 100, objective_br: 100 },
   prd: { fr_ac: 100, fr_goal: 100, br_covered: 100, must_error: 100 },
   sad: { fr_allocated: 100, nfr_response: 100, driver_served: 100 },
-  plan: { release_fr_story: 100, security_planned: 100, verification_planned: 100, stories_ready: 0 },
+  plan: { release_fr_story: 100, security_planned: 100, verification_planned: 100, stories_ready: INDICATIF },
 };
 const metric = (id, label, items, ok) => ({ id, label, total: items.length, covered: items.filter(ok).length, missing: items.filter(x => !ok(x)).map(x => x.id) });
 
@@ -1122,18 +1122,23 @@ export function coverage(s, refs = {}) {
       metric('stories_ready', 'Stories prêtes', stories, x => storyReadiness(s, x, refs).ready),
     ];
   }
-  const thresholds = { ...COVERAGE_DEFAULTS[doc], ...(s.coverage_thresholds ?? {}) };
-  const waivers = arr(s.coverage_waivers);
+  // Les seuils et les dérogations passent par `lib/gates.mjs` : une seule logique pour les quatre
+  // documents et pour la vérification de release, qui en avait une autre sous d'autres noms.
+  const projet = Object.fromEntries(Object.entries(seuilsDe(s)).map(([k, v]) => [k, v === INDICATIF ? 0 : v]));
+  const thresholds = { ...COVERAGE_DEFAULTS[doc], ...projet };
   // `0 / 0` ne vaut pas 100 %. L'ancien calcul rendait `pct: 100, met: true` sur une collection vide :
   // un BRD à l'ouverture affichait ses trois métriques « atteint », et la table de couverture du
   // document comme celle du handoff l'écrivaient noir sur blanc. Une porte doit distinguer trois états,
   // pas deux : mesuré et conforme, mesuré et insuffisant, PAS MESURÉ. Le troisième ne s'affiche jamais ✓.
+  // Un seuil à 0 tombe dans le troisième : `stories_ready` en a 0 par défaut, et la table affichait
+  // « Stories prêtes | 2/5 | 40 % | 0 % | atteint ».
   return list.map(m => {
     const mesure = m.total > 0;
     const pct = mesure ? Math.round((m.covered / m.total) * 1000) / 10 : null;
     const threshold = thresholds[m.id] ?? 100;
-    const waiver = waivers.find(w => w.metric === m.id);
-    return { ...m, mesure, pct, threshold, met: mesure ? pct >= threshold : null, waiver: waiver ?? null };
+    const waiver = derogationDe(s, m.id);
+    const { ok, note } = verdictSeuil({ mesure, pct, seuil: threshold, derogation: waiver });
+    return { ...m, mesure, pct, threshold, met: ok, note, waiver };
   });
 }
 
@@ -1142,21 +1147,49 @@ export function coverage(s, refs = {}) {
 // une métrique vide.
 // `handoff` : le dossier de passation nomme qui a approuvé la dérogation et laisse tomber la liste des
 // manquants, que le document rendu détaille — c'est la seule différence entre les deux tables.
+// Trois états dans la colonne de verdict, pas deux : `met` vaut `true`, `false` ou `null`, et `null`
+// ne s'écrit jamais « atteint ». La note vient de `verdictSeuil` et dit lequel des trois et pourquoi.
 export function coverageRows(cov, { handoff = false } = {}) {
-  return cov.map(c => [c.label, `${c.covered}/${c.total}`, c.mesure ? `${c.pct} %` : '—', `${c.threshold} %`,
-    !c.mesure ? '_non mesuré_'
-      : c.met ? 'atteint'
-        : c.waiver ? `dérogation : ${c.waiver.reason}${handoff ? ` (${c.waiver.approved_by ?? '—'})` : ''}`
-          : `**non atteint**${!handoff && c.missing.length ? ` (manquent : ${c.missing.join(', ')})` : ''}`]);
+  return cov.map(c => [c.label, `${c.covered}/${c.total}`, c.mesure ? `${c.pct} %` : '—', c.threshold === INDICATIF ? '—' : `${c.threshold} %`,
+    c.threshold === INDICATIF ? `_indicatif_${c.mesure ? '' : ' — rien à mesurer'}`
+      : c.met === null ? `_non mesuré_${c.note && c.note !== 'non mesuré' ? ` — ${c.note}` : ''}`
+        : c.met ? (c.note ? `atteint par dérogation — ${c.note}` : 'atteint')
+          : c.note ? `**non atteint** — ${c.note}`
+            : `**non atteint**${!handoff && c.missing.length ? ` (manquent : ${c.missing.join(', ')})` : ''}`]);
 }
 
 // S54 ne parle que d'une métrique MESURÉE : une collection vide ne se reproche pas ici. Ce qui la rend
 // due relève de la phase — « des objectifs sans exigence » se dit à Define, pas à l'ouverture — et
 // chaque document a au moins une métrique qui regarde depuis l'amont (`objective_br`, `br_covered`,
 // `fr_allocated`, `release_fr_story`) : un dossier vide n'est donc pas silencieux pour autant.
+// S54 : un seuil mesuré et non atteint, que rien n'assume. S105 : un seuil qui ÉTEINT la mesure — 0 ne
+// compare rien — sans dérogation nommée pour le dire. S106 : une dérogation de seuil qui ne dit pas
+// pourquoi, ou qui ne nomme pas son approbateur : elle éteignait le seuil en silence, là où une
+// dérogation d'avertissement de forme est signalée depuis le 28 octobre quand elle est muette.
 export function coverageFindings(s, refs = {}) {
-  return coverage(s, refs).filter(m => m.mesure && !m.met && !m.waiver)
-    .map(m => ({ rule: 'S54', id: `couverture:${m.id}`, message: `${m.label} : ${m.pct} % pour un seuil de ${m.threshold} % (manquent : ${m.missing.slice(0, 8).join(', ')}${m.missing.length > 8 ? '…' : ''}) ; corriger ou déclarer une dérogation dans coverage_waivers` }));
+  const cov = coverage(s, refs);
+  const out = cov.filter(m => m.met === false && !m.waiver?.valable)
+    .map(m => ({ rule: 'S54', id: `couverture:${m.id}`, message: `${m.label} : ${m.pct} % pour un seuil de ${m.threshold} % (manquent : ${m.missing.slice(0, 8).join(', ')}${m.missing.length > 8 ? '…' : ''}) ; corriger, ou déclarer une dérogation dans \`waivers\` avec sa raison et son approbateur` }));
+  for (const m of cov.filter(x => x.mesure && x.met === null && x.threshold !== INDICATIF)) {
+    out.push({ rule: 'S105', id: `couverture:${m.id}`, message: `${m.label} : seuil à ${m.threshold} %, qui ne compare rien — la mesure (${m.pct} %) n'est pas jugée, et aucune dérogation nommée ne dit pourquoi. Un seuil à 0 est une mise hors périmètre : elle s'écrit dans \`waivers\` avec sa raison et son approbateur, ou le seuil remonte` });
+  }
+  // Une dérogation qui ne porte sur aucune métrique connue : elle dort dans l'état et n'assume rien.
+  const connues = new Set(cov.map(m => m.id));
+  for (const w of derogationsDe(s)) {
+    const cle = cleDerogation(w);
+    if (!cle || !connues.has(cle)) continue;
+    const d = derogationDe(s, cle);
+    if (!d.valable) out.push({ rule: 'S106', id: `derogation:${cle}`, message: `dérogation de seuil sur « ${cle} » qui ne dit pas ${d.manque.join(', ni ')} : une dérogation nommée porte sa raison ET son approbateur, sinon c'est un silence qui éteint une mesure` });
+  }
+  // Les anciens noms de champ. Deux systèmes faisaient la même chose sous deux noms ; un seul s'écrit
+  // désormais, les deux se lisent, et le constat dit lequel renommer.
+  for (const [vieux, neuf] of [['coverage_thresholds', 'thresholds'], ['coverage_waivers', 'waivers'], ['settings.thresholds', 'thresholds']]) {
+    const v = vieux === 'settings.thresholds' ? s?.settings?.thresholds : s?.[vieux];
+    if (v && (Array.isArray(v) ? v.length : Object.keys(v).length)) {
+      out.push({ rule: 'S107', id: `champ:${vieux}`, message: `\`${vieux}\` est l'ancien nom : les seuils et les dérogations s'écrivent dans \`${neuf}\`, au niveau de l'état, pour les cinq documents. L'ancien nom reste lu — rien ne casse — mais deux noms pour la même chose finissent par porter deux valeurs différentes` });
+    }
+  }
+  return out;
 }
 
 // ── Espaces réservés et chiffres non sourcés (emprunt aux règles de cohérence des ADR de hve-core) ──
@@ -1453,6 +1486,19 @@ const waiverIndex = s => {
 
 // Les fichiers qui quittent le dossier, sous la forme { file, text }, quelle que soit celle reçue.
 const fichiersDe = liste => arr(liste).map(f => (typeof f === 'string' ? { file: f, text: '' } : f)).filter(f => f.text);
+// S53 : le handoff ingéré doit toujours exister, avec l'empreinte relevée à l'ingestion. Le contrôle
+// était dans `lint.mjs`, hors catalogue, et lui seul le faisait. La lecture des fichiers reste chez
+// l'appelant (`ingestedHandoffs` de common.mjs) : ce catalogue ne lit aucun fichier.
+export function handoffFindings(handoffs) {
+  return arr(handoffs).flatMap(h => {
+    if (!h.recorded) return [{ rule: 'S53', id: h.path, message: 'empreinte du handoff non relevée à l\'ingestion (lancer verify-handoff.mjs et reporter sha256 dans l\'état)' }];
+    if (!h.present) return [{ rule: 'S53', id: h.path, message: 'handoff ingéré introuvable' }];
+    if (h.sha256 !== h.recorded) return [{ rule: 'S53', id: h.path, message: 'le handoff a changé depuis l\'ingestion : relancer l\'ingestion et faire le point sur les écarts' }];
+    if (!h.ok) return [{ rule: 'S53', id: h.path, message: arr(h.problems).join(' ; ') }];
+    return [];
+  });
+}
+
 export function checkState(s, ctx = {}) {
   const refs = ctx.refs ?? {};
   // Le dernier terme de la chaîne de ternaires était `checkBrd` : TOUT document hors brd, prd, sad et
@@ -1465,7 +1511,7 @@ export function checkState(s, ctx = {}) {
     return [{ rule: 'S00', id: 'document', message: `document « ${doc} » : ce catalogue vérifie ${DOCUMENTS.join(', ')}, et rien d'autre — un état d'implémentation se vérifie avec pr-gate.mjs et trace-check.mjs, un état de tests avec release-matrix.mjs` }];
   }
   const base = doc === 'plan' ? checkPlan(s, refs) : doc === 'sad' ? checkSad(s) : doc === 'prd' ? checkPrd(s) : checkBrd(s);
-  const all = [...base, ...placeholderFindings(s), ...unsourcedNumberFindings(s), ...constitutionFindings(s, ctx.constitution), ...checklistFindings(s, ctx.checklists), ...interviewFindings(s, ctx.interviews), ...outgoingFindings(s, [...fichiersDe(ctx.interviews), ...fichiersDe(ctx.checklists)]), ...governanceFindings(s), ...coverageFindings(s, refs), ...phaseFindings(s), ...sourceContentFindings(s), ...confirmationFindings(s)];
+  const all = [...base, ...placeholderFindings(s), ...unsourcedNumberFindings(s), ...constitutionFindings(s, ctx.constitution), ...checklistFindings(s, ctx.checklists), ...interviewFindings(s, ctx.interviews), ...outgoingFindings(s, [...fichiersDe(ctx.interviews), ...fichiersDe(ctx.checklists)]), ...governanceFindings(s), ...coverageFindings(s, refs), ...phaseFindings(s), ...sourceContentFindings(s), ...confirmationFindings(s), ...handoffFindings(ctx.handoffs)];
   const idx = waiverIndex(s);
   return all.map(f => {
     const raison = idx.get(`${f.id}|${f.rule}`);
@@ -1481,6 +1527,8 @@ export const STRUCT_RULES = {
   S100: 'porte de phase franchie sans trace', S101: 'passage de phase sans décideur, date ou source',
   S102: 'source de parole sans ce qui a été dit', S103: 'confirmation non rattachée à ce qu\'elle confirme',
   S104: 'document sortant parlant par adresses',
+  S105: 'seuil qui éteint une mesure sans dérogation nommée', S106: 'dérogation de seuil sans raison ou sans approbateur',
+  S107: 'ancien nom de champ pour les seuils ou les dérogations',
   S01: 'objectif non mesurable', S02: 'exigence sans objectif', S03: 'exigence sans besoin sourcé', S04: 'exigence sans critère d\'acceptation',
   S05: 'priorité ou release manquante', S06: 'exigence sans origine', S07: 'Must sans scénario d\'erreur', S08: 'NFR incomplète',
   S09: 'référence inexistante', S10: 'référence vers un élément abandonné', S11: 'règle métier sans source', S12: 'règle sans niveau d\'application',

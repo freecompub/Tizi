@@ -54,7 +54,8 @@ const handoff = {
 };
 const outDir = join(root, 'handoff', `v${version}`);
 const cov = coverage(s, refs);
-handoff.coverage = cov.map(({ id, label, covered, total, mesure, pct, threshold, met, waiver }) => ({ id, label, covered, total, mesure, pct, threshold, met, waiver }));
+// `note` part avec le reste : `met: null` sans sa raison fait redescendre l'aval dans l'état amont.
+handoff.coverage = cov.map(({ id, label, covered, total, mesure, pct, threshold, met, note, waiver }) => ({ id, label, covered, total, mesure, pct, threshold, met, note, waiver }));
 const handoffSha = writeHandoff(join(outDir, 'handoff.yaml'), '# Handoff plan → implémentation — généré, ne pas modifier.', handoff, statePath);
 const md = [`# Handoff plan → implémentation — ${handoff.source.initiative} (plan v${version})`, '', `Généré le ${today()}. Les tâches sont dans l'ordre d'exécution : une tâche ne démarre que lorsque ses dépendances sont terminées. Chaque PR cite l'identifiant de sa tâche.`, ''];
 md.push(table(['Rang', 'Tâche', 'Type', 'Taille', 'Affectation', 'Dépend de', 'Attend hors engagement', 'Fiche de contexte'],

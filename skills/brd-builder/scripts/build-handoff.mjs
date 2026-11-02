@@ -44,7 +44,8 @@ const handoff = {
 
 const outDir = join(root, 'handoff', `v${version}`);
 const cov = coverage(s, {});
-handoff.coverage = cov.map(({ id, label, covered, total, mesure, pct, threshold, met, waiver }) => ({ id, label, covered, total, mesure, pct, threshold, met, waiver }));
+// `note` part avec le reste : `met: null` sans sa raison fait redescendre l'aval dans l'état amont.
+handoff.coverage = cov.map(({ id, label, covered, total, mesure, pct, threshold, met, note, waiver }) => ({ id, label, covered, total, mesure, pct, threshold, met, note, waiver }));
 const handoffSha = writeHandoff(join(outDir, 'handoff.yaml'), '# Handoff BRD → PRD — généré, ne pas modifier.', handoff, statePath);
 
 const md = [];

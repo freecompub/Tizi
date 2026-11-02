@@ -130,10 +130,29 @@ test('porte de release : une condition non mesurée s\'affiche « ? », jamais �
   assert.match(g.md, /\? R7/, 'R7 a disparu de la table au lieu de s\'y dire non mesurée');
   assert.equal(g.y.open, false);
 
-  // Un seuil à 0 est une mise hors périmètre écrite : elle se déclare, elle ne se devine pas.
+  // Un seuil à 0 ne compare rien : « pose ton seuil à 0 et dis-le par écrit » était la doctrine, et
+  // RIEN ne lisait cet écrit — R6 passait au vert sur un seuil à 0, sans une ligne de raison. Un seuil
+  // qui éteint une mesure passe désormais par une dérogation nommée, comme un seuil non atteint.
   s.settings.thresholds = { ...s.settings.thresholds, mutation: 0 };
   writeFileSync(etat, yaml.dump(s, { lineWidth: 120 }));
   const r6 = gate(repo).y.gate.find(c => c.code === 'R6');
-  assert.equal(r6.ok, true);
-  assert.match(r6.detail, /hors périmètre déclaré/);
+  assert.equal(r6.ok, null, 'un seuil à 0 passe au vert sans que rien ne dise pourquoi');
+  assert.match(r6.detail, /seuil à 0 : la mesure n'est pas jugée, et aucune dérogation nommée ne dit pourquoi/);
+
+  // Et une dérogation ne compte que si elle dit pourquoi ET qui l'a approuvée.
+  s.waivers = [{ metric: 'mutation', reason: 'aucun outil de mutation sur cette pile' }];
+  writeFileSync(etat, yaml.dump(s, { lineWidth: 120 }));
+  const muette = gate(repo).y.gate.find(c => c.code === 'R6');
+  assert.equal(muette.ok, null, 'une dérogation sans approbateur éteint la mesure');
+  assert.match(muette.detail, /dérogation qui ne dit pas qui l'a approuvée/);
+
+  s.waivers = [{ metric: 'mutation', reason: 'aucun outil de mutation sur cette pile', approved_by: 'Alice' }];
+  writeFileSync(etat, yaml.dump(s, { lineWidth: 120 }));
+  const assumee = gate(repo);
+  const r6ok = assumee.y.gate.find(c => c.code === 'R6');
+  assert.equal(r6ok.ok, true, 'une dérogation nommée n\'assume pas le seuil');
+  assert.match(r6ok.detail, /hors périmètre assumé : aucun outil de mutation sur cette pile \(approuvé par Alice\)/);
+  // La table des dérogations dit lesquelles comptent, et ce qui manque aux autres.
+  assert.match(assumee.md, /Une dérogation ne compte que si elle dit pourquoi \*\*et\*\* qui l'a approuvée/);
+  assert.match(assumee.md, /\| mutation \| aucun outil de mutation sur cette pile \| Alice \| oui \|/);
 });

@@ -40,6 +40,10 @@ Réalisé ne veut pas dire prouvé : une tâche fusionnée montre qu'un code exi
 
 Présente la porte et la matrice. Une exigence non prouvée se corrige (test manquant, test en échec) ou devient une **dérogation** (`waivers`) avec raison et approbateur déclarés par l'utilisateur ; elle devient un risque suivi de la release. L'approbation de la release n'est enregistrée (`approvals`) que si l'utilisateur la déclare.
 
+**Une dérogation ne compte que si elle dit pourquoi ET qui l'a approuvée.** `{ id: AC-004 }` seul suffisait à faire passer un critère en « dérogation » et à le retirer de R2 : une exigence sortait de la porte sans qu'une ligne dise à quel titre. Sans l'un des deux champs, la dérogation n'éteint rien, l'exigence reste à prouver, et la table des dérogations de la matrice dit ce qui manque. Même logique, mêmes noms, que les seuils des quatre documents amont (`lib/gates.mjs`).
+
+Les **seuils** se lisent dans `thresholds`, au niveau de l'état — `settings.thresholds` reste lu, et `S107` dit de le renommer. Un seuil à **0** ne compare rien : c'est une mise hors périmètre, et elle passe par une dérogation nommée (`{ metric: mutation, reason, approved_by }`). La doctrine disait « un projet qui n'en veut pas pose son seuil à 0 et le dit par écrit », et rien ne lisait cet écrit : R6 passait au vert sur un seuil à 0, sans rapport et sans raison. Sans la dérogation, la condition se dit « non mesurée » — jamais ✓.
+
 ## Où sont les rapports
 
 | Moment | Emplacement | Durée |

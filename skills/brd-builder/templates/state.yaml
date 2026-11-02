@@ -311,8 +311,20 @@ transition_requirements: []  # exigences de transition : ce qu'il faut pour pass
 #    sources: []
 #    status: proposé
 
-coverage_thresholds: {}     # seuils de couverture en %, par métrique ; vide = valeurs par défaut (lib/rules.mjs, COVERAGE_DEFAULTS)
-coverage_waivers: []        # - { metric: fr_ac, reason: "", approved_by: "" }   # seuil non atteint, assumé et approuvé
+thresholds: {}              # seuils en %, par métrique ; vide = valeurs par défaut (lib/rules.mjs, COVERAGE_DEFAULTS).
+                            # Un seuil à 0 ne compare rien : c'est une mise hors périmètre, et elle passe
+                            # par une dérogation nommée ci-dessous (S105), sinon la mesure se dit « non
+                            # mesurée » au lieu de s'afficher atteinte. Mesuré sur le plan de l'exemple :
+                            # « Stories prêtes | 2/5 | 40 % | 0 % | atteint ».
+                            # Un seuil venu d'ici est un NOMBRE. Une mesure sans cible — « stories
+                            # prêtes » : on n'a jamais besoin que toutes le soient, seulement assez pour
+                            # le prochain cycle — est déclarée `indicatif` dans le catalogue, pas ici :
+                            # le catalogue dit pourquoi, un projet qui écrit 0 assume, et ça se nomme.
+waivers: []                 # - { metric: fr_ac, reason: "", approved_by: "" }   # seuil assumé, et par qui
+                            # Une dérogation ne compte que si elle dit POURQUOI et QUI l'a approuvée :
+                            # sans l'un des deux, elle n'éteint rien (S106). Un seul nom pour les cinq
+                            # documents : `coverage_thresholds`, `coverage_waivers` et
+                            # `settings.thresholds` restent lus, et S107 dit de les renommer.
 
 # ─────────────── Phase Govern ───────────────
 
