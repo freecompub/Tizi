@@ -77,7 +77,7 @@ Un identifiant attribué ne change jamais et n'est jamais réutilisé, même si 
 ## Intégrité et couverture
 
 - `references/quality-iso29148.md` décrit la grille de qualité qu'appliquera le contrôle formel. Sers-t'en pour expliquer une faiblesse de rédaction, jamais pour noter ou bloquer toi-même.
-- Avant d'ingérer un handoff amont, vérifie-le avec `scripts/verify-handoff.mjs` ; n'ingère jamais un handoff altéré. Le handoff que tu produis porte sa propre empreinte.
+- Avant d'ingérer un handoff amont, vérifie-le avec `scripts/verify-handoff.mjs` ; n'ingère jamais un handoff altéré. **Intègre veut dire « non altéré », pas « approuvé »** : le script dit aussi l'état du document amont, et refuse un handoff qui ne vient pas d'une baseline — `--accepte-non-baseline` passe outre, et c'est l'utilisateur qui le décide, pas toi. Reporte `sha256` **et** `status` dans ton état : S108 le rappelle jusqu'à ta gouvernance. Le handoff que tu produis porte sa propre empreinte.
 - Les métriques de couverture et leurs seuils sont calculés par les scripts (`thresholds`, `waivers`) ; tu ne déclares jamais toi-même une couverture atteinte. Une dérogation ne compte que si elle dit pourquoi et qui l'a approuvée, et un seuil à 0 passe par une dérogation comme un seuil non atteint.
 
 ## Hors périmètre

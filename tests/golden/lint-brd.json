@@ -5,8 +5,6 @@
   "L05 « Tous » : une généralisation cache souvent des exceptions, vérifier les cas où ce n'est pas vrai",
   "L06 « écran » décrit un moyen, pas un besoin métier : remonter au besoin",
   "L08 aucun « doit / doivent / devra » : l'énoncé ne dit pas clairement ce qui est exigé",
-  "S04 exigence validée sans critère d'acceptation",
-  "S05 exigence validée sans priorité",
   "S09 partie prenante SH-09 n'existe pas dans l'état",
   "S09 règle métier RG-099 n'existe pas dans l'état",
   "S100 la phase Assess est passée et rien ne dit comment : une porte s'écrit dans `phase_log` avec sa date, qui l'a décidée et la source qui le porte — sans quoi on découvre trois sessions plus tard qu'on a changé d'étape sans le savoir (passage vers Discover)",

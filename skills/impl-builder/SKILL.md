@@ -43,7 +43,7 @@ Le hook fonctionne avec Claude Code et avec GitHub Copilot (CLI, agent cloud, et
 ## Démarrage
 
 1. Cherche `impl/*/state.yaml`. S'il en existe, propose de reprendre la tâche en cours (`.impl/current.json`).
-2. Sinon, cherche le handoff du plan (`plan/<slug>/handoff/v<x.y>/handoff.yaml`). Vérifie-le avec `scripts/verify-handoff.mjs` ; n'utilise jamais un handoff altéré. Crée `impl/<slug>/` depuis `templates/state.yaml` et, s'il n'existe pas, `impl/config.yaml` depuis `templates/config.yaml` : fais-le compléter avec l'utilisateur (commandes de test, chemins, correspondance entre éléments C4 et dossiers du code).
+2. Sinon, cherche le handoff du plan (`plan/<slug>/handoff/v<x.y>/handoff.yaml`). Vérifie-le avec `scripts/verify-handoff.mjs` ; n'utilise jamais un handoff altéré, et reporte `sha256` **et** `status` dans `source_plan` — « intègre » veut dire « non altéré », pas « approuvé » (S108). Crée `impl/<slug>/` depuis `templates/state.yaml` et, s'il n'existe pas, `impl/config.yaml` depuis `templates/config.yaml` : fais-le compléter avec l'utilisateur (commandes de test, chemins, correspondance entre éléments C4 et dossiers du code).
 3. Prends la **première tâche du handoff dont les dépendances sont fusionnées**, jamais une autre sans l'accord de l'utilisateur. Lance `scripts/start-task.mjs`.
 
 ## Reprise après une pause

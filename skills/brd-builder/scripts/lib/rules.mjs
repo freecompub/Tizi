@@ -227,6 +227,10 @@ export function brSources(s, br) {
 const live = x => x && x.status !== 'abandonné';
 const isValid = x => x?.status === 'validé';
 const waivedOf = x => arr(x?.lint_waivers).map(w => w.rule);
+// Une exigence complète est due à la porte de Define, pas avant : les étapes 3 et 4 remplissent les
+// critères et les priorités. Un état sans phase est traité comme dû — on ne suppose pas qu'un travail
+// est en cours, et une version figée (`phase: govern`) l'est toujours.
+const duALaPorte = s => !['assess', 'discover', 'define'].includes(s?.phase ?? '');
 
 // Chaque entrée : [id, élément, message]. `ids` donne l'ensemble des identifiants connus.
 function refs(out, rule, owner, list, known, label) {
@@ -354,8 +358,17 @@ export function checkBrd(s) {
     arr(b.acceptance).forEach(a => checkText('AC', a, { waived: waivedOf(b) }).forEach(f => out.push({ ...f, id: b.id, message: `critère : ${f.message}` })));
     if (!arr(b.objectives).length) out.push({ rule: 'S02', id: b.id, message: 'exigence rattachée à aucun objectif' });
     if (!arr(b.from_needs).length) out.push({ rule: 'S03', id: b.id, message: 'exigence sans besoin candidat sourcé' });
-    if (isValid(b) && !arr(b.acceptance).length) out.push({ rule: 'S04', id: b.id, message: 'exigence validée sans critère d\'acceptation' });
-    if (isValid(b) && !b.priority) out.push({ rule: 'S05', id: b.id, message: 'exigence validée sans priorité' });
+    // Dus À LA PORTE de Define, pas pendant. Les critères d'acceptation s'écrivent à l'étape 3 et les
+    // priorités s'arbitrent à l'étape 4 : entre l'étape 2 et là, une exigence validée n'a ni l'un ni
+    // l'autre, et c'est le chemin que la doctrine prescrit. Sur le deuxième dossier réel, cinq
+    // avertissements sur seize — près d'un tiers — étaient ce passage normal, cinq fois « exigence
+    // validée sans priorité » sur cinq exigences. Un contrôle qui crie pendant le travail prescrit
+    // s'apprend à s'ignorer, et il s'ignore encore après l'étape 4. La porte de Define les compte
+    // (`lib/gates.mjs`), et c'est là que l'absence est une absence.
+    if (duALaPorte(s)) {
+      if (isValid(b) && !arr(b.acceptance).length) out.push({ rule: 'S04', id: b.id, message: 'exigence validée sans critère d\'acceptation' });
+      if (isValid(b) && !b.priority) out.push({ rule: 'S05', id: b.id, message: 'exigence validée sans priorité' });
+    }
     refs(out, 'S09', b, b.objectives, objs, 'objectif');
     refs(out, 'S09', b, b.from_needs, bcs, 'besoin candidat');
     refs(out, 'S09', b, b.business_rules, rgs, 'règle métier');
@@ -1486,6 +1499,43 @@ const waiverIndex = s => {
 
 // Les fichiers qui quittent le dossier, sous la forme { file, text }, quelle que soit celle reçue.
 const fichiersDe = liste => arr(liste).map(f => (typeof f === 'string' ? { file: f, text: '' } : f)).filter(f => f.text);
+// S70 : une fiche de contexte au-delà du budget. La règle vivait dans `render-plan.mjs`, en
+// `console.warn` — hors du catalogue, alors que l'en-tête de ce fichier dit « une règle n'est définie
+// qu'ici, jamais ailleurs ». Conséquence : invisible à `lint.mjs`, invisible au point d'étape, absente
+// de la condition « aucun avertissement » de la porte, et **non dérogeable** : `lint_waivers` ne
+// pouvait pas l'atteindre. Même défaut que S53, qui était le seul autre contrôle hors catalogue.
+// La taille ne se calcule qu'au rendu — c'est la fiche rendue qu'on mesure, pas l'état — donc
+// l'appelant passe le résultat, comme pour les handoffs ingérés.
+export function contextFindings(cards, budget = {}) {
+  const max = budget.max ?? 3000;
+  return arr(cards).filter(c => c.tokens > max).map(c => ({ rule: 'S70', id: c.id,
+    message: `fiche de contexte à ≈ ${c.tokens} tokens pour un budget de ${max} : au-delà, l'agent qui implémente perd en précision. Découper la tâche, ou alléger la story` }));
+}
+
+// S108 : le document est construit sur un handoff amont qui n'était pas une baseline. Chaque
+// `build-handoff.mjs` écrit `source.status` depuis le début, et un seul script le lisait — en
+// `console.warn`, que rien ne persiste et que personne ne relit. « Intègre » veut dire « non altéré »,
+// pas « approuvé » : un brouillon intact est intact, et le document aval s'en va vers sa gouvernance
+// sans que rien ne dise sur quoi il repose. Le constat ne bloque pas, il se dérogue — un travail
+// d'anticipation sur un brouillon est légitime, à condition qu'il soit écrit.
+const AMONT = { prd: ['source_brd', 'BRD'], sad: ['source_prd', 'PRD'], impl: ['source_plan', 'plan'], test: ['source_plan', 'plan'] };
+export function upstreamFindings(s, refs = {}) {
+  const out = [];
+  const dire = (champ, quoi, status) => out.push({ rule: 'S108', id: champ,
+    message: `construit sur un handoff du ${quoi} qui n'était pas une baseline (${status ? `état : ${status}` : 'état non relevé'}) : « intègre » veut dire « non altéré », pas « approuvé ». Faire figer le document amont et régénérer son handoff, ou nommer la dérogation` });
+  const [champ, quoi] = AMONT[s?.document ?? ''] ?? [];
+  if (champ && String(s[champ]?.path ?? '').trim() && s[champ].status !== 'baseline') dire(champ, quoi, s[champ].status);
+  // Le plan ne recopie pas l'état amont : `refs.yaml` porte les handoffs entiers.
+  if (s?.document === 'plan') {
+    for (const k of ['prd', 'sad']) {
+      if (!refs?.[k]) continue;
+      const st = refs[k].source?.status;
+      if (st !== 'baseline') dire(`refs:${k}`, k.toUpperCase(), st);
+    }
+  }
+  return out;
+}
+
 // S53 : le handoff ingéré doit toujours exister, avec l'empreinte relevée à l'ingestion. Le contrôle
 // était dans `lint.mjs`, hors catalogue, et lui seul le faisait. La lecture des fichiers reste chez
 // l'appelant (`ingestedHandoffs` de common.mjs) : ce catalogue ne lit aucun fichier.
@@ -1511,7 +1561,7 @@ export function checkState(s, ctx = {}) {
     return [{ rule: 'S00', id: 'document', message: `document « ${doc} » : ce catalogue vérifie ${DOCUMENTS.join(', ')}, et rien d'autre — un état d'implémentation se vérifie avec pr-gate.mjs et trace-check.mjs, un état de tests avec release-matrix.mjs` }];
   }
   const base = doc === 'plan' ? checkPlan(s, refs) : doc === 'sad' ? checkSad(s) : doc === 'prd' ? checkPrd(s) : checkBrd(s);
-  const all = [...base, ...placeholderFindings(s), ...unsourcedNumberFindings(s), ...constitutionFindings(s, ctx.constitution), ...checklistFindings(s, ctx.checklists), ...interviewFindings(s, ctx.interviews), ...outgoingFindings(s, [...fichiersDe(ctx.interviews), ...fichiersDe(ctx.checklists)]), ...governanceFindings(s), ...coverageFindings(s, refs), ...phaseFindings(s), ...sourceContentFindings(s), ...confirmationFindings(s), ...handoffFindings(ctx.handoffs)];
+  const all = [...base, ...placeholderFindings(s), ...unsourcedNumberFindings(s), ...constitutionFindings(s, ctx.constitution), ...checklistFindings(s, ctx.checklists), ...interviewFindings(s, ctx.interviews), ...outgoingFindings(s, [...fichiersDe(ctx.interviews), ...fichiersDe(ctx.checklists)]), ...governanceFindings(s), ...coverageFindings(s, refs), ...phaseFindings(s), ...sourceContentFindings(s), ...confirmationFindings(s), ...handoffFindings(ctx.handoffs), ...upstreamFindings(s, refs), ...contextFindings(ctx.cards, s.settings?.context_budget)];
   const idx = waiverIndex(s);
   return all.map(f => {
     const raison = idx.get(`${f.id}|${f.rule}`);
@@ -1529,6 +1579,7 @@ export const STRUCT_RULES = {
   S104: 'document sortant parlant par adresses',
   S105: 'seuil qui éteint une mesure sans dérogation nommée', S106: 'dérogation de seuil sans raison ou sans approbateur',
   S107: 'ancien nom de champ pour les seuils ou les dérogations',
+  S108: 'construit sur un handoff amont qui n\'était pas une baseline',
   S01: 'objectif non mesurable', S02: 'exigence sans objectif', S03: 'exigence sans besoin sourcé', S04: 'exigence sans critère d\'acceptation',
   S05: 'priorité ou release manquante', S06: 'exigence sans origine', S07: 'Must sans scénario d\'erreur', S08: 'NFR incomplète',
   S09: 'référence inexistante', S10: 'référence vers un élément abandonné', S11: 'règle métier sans source', S12: 'règle sans niveau d\'application',

@@ -1,8 +1,10 @@
 // Règles du catalogue commun, sur des états minimaux construits pour chaque cas.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { DOCUMENTS, checkState, coverage, coverageFindings, coverageRows, evidenceOf } from '../skills/brd-builder/scripts/lib/rules.mjs';
-
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { DOCUMENTS, STRUCT_RULES, TEXT_RULES, checkState, coverage, coverageFindings, coverageRows, evidenceOf, contextFindings } from '../skills/brd-builder/scripts/lib/rules.mjs';
+import { gateConditions } from '../skills/brd-builder/scripts/lib/gates.mjs';
 const codes = s => checkState(s).map(f => f.rule);
 const brd = extra => ({ document: 'brd', phase: 'discover', stakeholders: [{ id: 'SH-1', status: 'interrogée' }],
   sources: [{ id: 'SRC-1', type: 'entretien', stakeholders: ['SH-1'] }, { id: 'SRC-2', type: 'observation', stakeholders: ['SH-1'] }],
@@ -901,4 +903,248 @@ test('S104 : un document qui part ne parle pas par adresses', () => {
   assert.deepEqual(sur("Qu'une famille déjà connue n'ait pas à réécrire ce que l'association détient déjà (BC-003)"), []);
   // Le guide d'entretien est l'exception : son lecteur est l'intervieweur, qui a le dossier.
   assert.deepEqual(checkState(s, { interviews: [{ file: 'guide-SH-04.md', text: 'Et le dossier ? *(BC-002)*' }] }).filter(f => f.rule === 'S104'), []);
+});
+
+// Vingt règles du catalogue n'étaient citées par AUCUN test ni aucun golden : rien ne prouvait
+// qu'elles se déclenchent, ni qu'elles se taisent quand il faut. Une règle que personne n'exerce est
+// soit du code mort, soit un contrôle qui tire à côté — et dans les deux cas on ne l'apprend qu'en
+// production, sur le dossier de quelqu'un. Chacune est prise deux fois : l'état qui la viole, et le
+// même état corrigé.
+const seules = (etat, regle, ctx = {}) => checkState(etat, ctx).filter(f => f.rule === regle).map(f => f.id);
+
+test('les règles du BRD que rien n\'exerçait : S01, S02, S03, S10', () => {
+  const brd = extra => ({ document: 'brd', phase: 'define', ...extra });
+  // S01 : un objectif sans indicateur ou sans cible ne se mesure pas, donc ne se vérifie jamais.
+  assert.deepEqual(seules(brd({ objectives: [{ id: 'OBJ-1', statement: 'Réduire les rejets' }] }), 'S01'), ['OBJ-1']);
+  assert.deepEqual(seules(brd({ objectives: [{ id: 'OBJ-1', statement: 'x', indicator: 'taux' }] }), 'S01'), ['OBJ-1'], 'un objectif sans cible passe');
+  assert.deepEqual(seules(brd({ objectives: [{ id: 'OBJ-1', statement: 'x', indicator: 'taux', target: '5 %' }] }), 'S01'), []);
+  // S02 et S03 : une exigence qui ne sert aucun objectif, ou qui ne vient d'aucun besoin sourcé.
+  const nue = brd({ objectives: [{ id: 'OBJ-1', statement: 'x', indicator: 'i', target: 't' }],
+    candidate_needs: [{ id: 'BC-1', text: 'y', sources: [{ ref: 'SRC-1' }] }],
+    sources: [{ id: 'SRC-1', type: 'entretien', stakeholders: ['SH-1'] }],
+    stakeholders: [{ id: 'SH-1', name: 'A', status: 'interrogée' }],
+    business_requirements: [{ id: 'BR-1', statement: 'Le service doit accuser réception' }] });
+  assert.deepEqual(seules(nue, 'S02'), ['BR-1']);
+  assert.deepEqual(seules(nue, 'S03'), ['BR-1']);
+  const reliee = structuredClone(nue);
+  reliee.business_requirements[0].objectives = ['OBJ-1'];
+  reliee.business_requirements[0].from_needs = ['BC-1'];
+  assert.deepEqual(seules(reliee, 'S02'), []);
+  assert.deepEqual(seules(reliee, 'S03'), []);
+  // S10 : un renvoi vers un élément abandonné. La référence EXISTE — ce n'est pas S09 —, et c'est
+  // pire : elle a l'air juste, et ce qu'elle désigne a été écarté.
+  const mort = structuredClone(reliee);
+  mort.candidate_needs[0].status = 'abandonné';
+  assert.deepEqual(seules(mort, 'S10'), ['BR-1']);
+  assert.match(checkState(mort).find(f => f.rule === 'S10').message, /abandonné/);
+  assert.deepEqual(seules(reliee, 'S10'), []);
+});
+
+test('les règles du PRD que rien n\'exerçait : S06', () => {
+  const prd = extra => ({ document: 'prd', phase: 'specify', mode: 'autonome', ...extra });
+  const fr = o => ({ id: 'FR-1', statement: 'Quand une famille dépose, le système doit accuser réception',
+    pattern: 'event', status: 'validé', release: 'REL-1', priority: 'should', goals: ['GOAL-1'], ...o });
+  const base = extra => prd({ goals: [{ id: 'GOAL-1', statement: 'x', kpi: 'k', target: 't', status: 'validé' }],
+    acceptance_criteria: [{ id: 'AC-1', fr: 'FR-1', scenario: 's', given: 'g', when: 'w', then: 't' }], ...extra });
+  // S06 : une exigence qui ne dit pas d'où elle vient. Ni BR amont, ni source, ni décision produit :
+  // personne ne peut plus répondre « pourquoi celle-là ? ».
+  assert.deepEqual(seules(base({ functional_requirements: [fr()] }), 'S06'), ['FR-1']);
+  assert.deepEqual(seules(base({ functional_requirements: [fr({ origin: 'SRC-012' })] }), 'S06'), []);
+  assert.deepEqual(seules(base({ mode: 'chaîné', functional_requirements: [fr({ brd_requirements: ['BR-001'] })],
+    brd_ref: { requirements: [{ id: 'BR-001', statement: 'x', priority: 'must' }] } }), 'S06'), []);
+});
+
+test('les règles de la conception que rien n\'exerçait : S21, S25, S26, S33, S34, S35', () => {
+  const sad = extra => ({ document: 'sad', phase: 'design', context_mode: 'greenfield', ...extra });
+  // S21 : un moteur architectural sans origine. Un moteur qu'aucune NFR, contrainte, FR ni règle ne
+  // fonde est une préférence de l'architecte présentée comme une exigence.
+  assert.deepEqual(seules(sad({ drivers: [{ id: 'AD-1', kind: 'performance', status: 'validé' }] }), 'S21'), ['AD-1']);
+  assert.deepEqual(seules(sad({ drivers: [{ id: 'AD-1', kind: 'performance', origin: ['NFR-003'], status: 'validé' }] }), 'S21'), []);
+  // S25 : un ADR accepté sans conséquence négative — toute décision sacrifie quelque chose — ou sans
+  // moyen de confirmation : une règle qu'on ne saura jamais vérifier.
+  const adr = o => ({ id: 'ADR-1', title: 'x', status: 'accepté', context: 'c', drivers: ['AD-1'],
+    options: [{ name: 'a' }, { name: 'b' }], outcome: 'a', decided_by: 'SH-1', ...o });
+  assert.deepEqual(seules(sad({ decisions: [adr()] }), 'S25'), ['ADR-1', 'ADR-1'], 'les deux moitiés de S25 ne tirent pas');
+  assert.deepEqual(seules(sad({ decisions: [adr({ consequences: { bad: ['couplage'] } })] }), 'S25'), ['ADR-1']);
+  assert.deepEqual(seules(sad({ decisions: [adr({ consequences: { bad: ['couplage'] }, confirmation: 'test d\'architecture' })] }), 'S25'), []);
+  // S26 : une FR que le modèle n'alloue à rien. Elle est spécifiée et personne ne la construira.
+  const avecFr = extra => sad({ prd_ref: { functional_requirements: [{ id: 'FR-1', statement: 'x', priority: 'must' }] }, ...extra });
+  assert.deepEqual(seules(avecFr(), 'S26'), ['FR-1']);
+  assert.deepEqual(seules(avecFr({ elements: [{ id: 'CP-1', name: 'A', kind: 'container', parent: 'SYS-1', frs: ['FR-1'] },
+    { id: 'SYS-1', name: 'S', kind: 'system' }] }), 'S26'), []);
+  // Une FR `wont` ne s'alloue pas : elle est écartée, et le contrôle ne doit pas la réclamer.
+  assert.deepEqual(seules(sad({ prd_ref: { functional_requirements: [{ id: 'FR-9', statement: 'x', priority: 'wont' }] } }), 'S26'), []);
+  // S33 : deux éléments du modèle qui portent le même nom. Deux dessins, un seul nom : la conversation
+  // devient impossible et le code suit.
+  assert.deepEqual(seules(sad({ elements: [{ id: 'SYS-1', name: 'Portail', kind: 'system' }, { id: 'SYS-2', name: 'Portail', kind: 'system' }] }), 'S33'), ['SYS-1']);
+  assert.deepEqual(seules(sad({ elements: [{ id: 'SYS-1', name: 'Portail', kind: 'system' }, { id: 'SYS-2', name: 'Facturation', kind: 'system' }] }), 'S33'), []);
+  // S34 : la hiérarchie C4. Un conteneur pend d'un système interne, un composant d'un conteneur.
+  assert.deepEqual(seules(sad({ elements: [{ id: 'CP-1', name: 'A', kind: 'container' }] }), 'S34'), ['CP-1']);
+  assert.deepEqual(seules(sad({ elements: [{ id: 'SYS-1', name: 'S', kind: 'system', external: true },
+    { id: 'CP-1', name: 'A', kind: 'container', parent: 'SYS-1' }] }), 'S34'), ['CP-1'], 'un conteneur dans un système EXTERNE passe');
+  assert.deepEqual(seules(sad({ elements: [{ id: 'SYS-1', name: 'S', kind: 'system' },
+    { id: 'CP-1', name: 'A', kind: 'container', parent: 'SYS-1' },
+    { id: 'CM-1', name: 'B', kind: 'component', parent: 'CP-1' }] }), 'S34'), []);
+  assert.deepEqual(seules(sad({ elements: [{ id: 'SYS-1', name: 'S', kind: 'system' },
+    { id: 'CM-1', name: 'B', kind: 'component', parent: 'SYS-1' }] }), 'S34'), ['CM-1'], 'un composant pendu à un système passe');
+  // S35 : une règle métier automatisée que nul agrégat ne garantit. Elle est censée être tenue par le
+  // code, et le modèle du domaine ne dit pas où.
+  // Les règles arrivent du PRD, en lecture seule : la conception les lit dans `prd_ref`. Et
+  // `automation` vaut `à_décider | automatisée | manuelle` — seule `automatisée` demande un agrégat.
+  const rg = { id: 'RG-1', statement: 'x', automation: 'automatisée' };
+  assert.deepEqual(seules(sad({ prd_ref: { business_rules: [rg] } }), 'S35'), ['RG-1']);
+  assert.deepEqual(seules(sad({ prd_ref: { business_rules: [rg] }, contexts: [{ id: 'CTX-1', name: 'C',
+    aggregates: [{ name: 'Dossier', invariants: ['RG-1'] }] }] }), 'S35'), []);
+  for (const a of ['à_décider', 'manuelle']) {
+    assert.deepEqual(seules(sad({ prd_ref: { business_rules: [{ id: 'RG-2', statement: 'x', automation: a }] } }), 'S35'), [],
+      `une règle « ${a} » réclame un agrégat`);
+  }
+});
+
+test('les règles du plan que rien n\'exerçait : S37, S38, S42, S46, S47, S49, S59, S62', () => {
+  const plan = extra => ({ document: 'plan', phase: 'schedule', settings: { cadence: 'sprint', release: 'REL-1' }, ...extra });
+  const story = o => ({ id: 'US-1', title: 'Accuser réception', status: 'validé', release: 'REL-1',
+    lane: 'standard', map_task: 'T-03', frs: ['FR-001'], size: 'M', ...o });
+  // S62 : une story sans titre court. Un identifiant ne se dit pas dans une conversation d'équipe.
+  assert.deepEqual(seules(plan({ stories: [story({ title: '' })] }), 'S62'), ['US-1']);
+  assert.deepEqual(seules(plan({ stories: [story()] }), 'S62'), []);
+  // S37 et S38 : une story qui ne sert aucune exigence, ou qui n'est rattachée à aucune tâche de la
+  // story map. En voie rapide, les deux sont normaux — la correction n'a pas d'exigence amont.
+  assert.deepEqual(seules(plan({ stories: [story({ frs: [] })] }), 'S37'), ['US-1']);
+  assert.deepEqual(seules(plan({ stories: [story({ map_task: '' })] }), 'S38'), ['US-1']);
+  const rapide = story({ frs: [], map_task: '', lane: 'rapide', attach_to: 'ACT-01', origin: { type: 'defaut', ref: 'DEF-001' } });
+  assert.deepEqual(seules(plan({ stories: [rapide] }), 'S37'), [], 'une story en voie rapide réclame une FR');
+  assert.deepEqual(seules(plan({ stories: [rapide] }), 'S38'), [], 'une story en voie rapide réclame une tâche de la map');
+  // S42 : au-delà du seuil de règles, la story est probablement à scinder. Le seuil se règle.
+  const regles = n => ({ example_map: { session: { date: '2026-11-02', participants: ['métier', 'dev', 'test'] },
+    rules: Array.from({ length: n }, (_, i) => ({ ref: `RG-00${i + 1}`, text: 'x', examples: [`EX-00${i + 1}`] })) } });
+  assert.deepEqual(seules(plan({ stories: [story(regles(5))] }), 'S42'), ['US-1']);
+  assert.deepEqual(seules(plan({ stories: [story(regles(4))] }), 'S42'), []);
+  assert.deepEqual(seules(plan({ settings: { cadence: 'sprint', max_rules_per_story: 6 }, stories: [story(regles(5))] }), 'S42'), [],
+    'le seuil du projet n\'est pas lu');
+  // S46 : des dépendances circulaires entre tâches. Aucune ne peut commencer, et le plan a l'air prêt.
+  const tk = (id, o) => ({ id, kind: 'dev', title: 't', story: 'US-1', size: 'S', assignee_type: 'humain', status: 'validé', ...o });
+  const boucle = plan({ stories: [story()], tasks: [tk('TK-1', { depends_on: ['TK-2'] }), tk('TK-2', { depends_on: ['TK-1'] })] });
+  assert.equal(seules(boucle, 'S46').length, 1);
+  assert.match(checkState(boucle).find(f => f.rule === 'S46').message, /TK-1 → TK-2/);
+  assert.deepEqual(seules(plan({ stories: [story()], tasks: [tk('TK-1', { depends_on: ['TK-2'] }), tk('TK-2')] }), 'S46'), []);
+  // S47 : une tâche planifiée avant celle dont elle dépend. En sprint, la dépendance n'est dans
+  // aucune itération ; en flux, elle est plus loin dans la file.
+  assert.deepEqual(seules(plan({ stories: [story()],
+    tasks: [tk('TK-1', { iteration: 'IT-1', depends_on: ['TK-2'] }), tk('TK-2')] }), 'S47'), ['TK-1']);
+  assert.deepEqual(seules(plan({ stories: [story()],
+    tasks: [tk('TK-1', { iteration: 'IT-1', depends_on: ['TK-2'] }), tk('TK-2', { iteration: 'IT-1' })] }), 'S47'), []);
+  assert.deepEqual(seules(plan({ settings: { cadence: 'flux', flow: { wip_limit: 3 } }, stories: [story()],
+    tasks: [tk('TK-1', { order: 1, depends_on: ['TK-2'] }), tk('TK-2', { order: 5 })] }), 'S47'), ['TK-1']);
+  // S49 : la limite d'encours, en cadence flux seulement. Non définie, ou dépassée.
+  const flux = extra => plan({ settings: { cadence: 'flux', release: 'REL-1', ...extra }, stories: [story()] });
+  assert.deepEqual(seules(flux(), 'S49'), ['settings.flow']);
+  assert.match(checkState(flux()).find(f => f.rule === 'S49').message, /non définie/);
+  const deuxEnCours = { tasks: [tk('TK-1', { status: 'en_cours' }), tk('TK-2', { status: 'en_cours' })] };
+  assert.deepEqual(seules({ ...flux({ flow: { wip_limit: 1 } }), ...deuxEnCours }, 'S49'), ['settings.flow']);
+  assert.match(checkState({ ...flux({ flow: { wip_limit: 1 } }), ...deuxEnCours }).find(f => f.rule === 'S49').message, /2 tâches en cours pour une limite de 1/);
+  assert.deepEqual(seules({ ...flux({ flow: { wip_limit: 3 } }), ...deuxEnCours }, 'S49'), []);
+  // En sprint, S49 ne dit rien : la limite d'encours n'est pas le mécanisme de cette cadence.
+  assert.deepEqual(seules(plan({ stories: [story()] }), 'S49'), [], 'S49 parle en cadence sprint');
+  // S59 : une release livrée sans plan de mesure, ou sans observation ni conclusion. Les améliorations
+  // d'après une release sont souvent les plus précieuses, et personne ne les voit sans la mesure.
+  const livree = o => plan({ release_tracking: [{ release: 'REL-1', status: 'livrée', ...o }] });
+  assert.deepEqual(seules(livree({ outcome: 'atteint' }), 'S59'), ['REL-1']);
+  assert.match(checkState(livree({ outcome: 'atteint' })).find(f => f.rule === 'S59').message, /plan de mesure/);
+  assert.deepEqual(seules(livree({ measurement: [{ metric: 'MET-01', how: 'h', window: 'w', owner: 'o' }], outcome: 'a_mesurer' }), 'S59'), ['REL-1']);
+  assert.match(checkState(livree({ measurement: [{ metric: 'MET-01' }], outcome: 'a_mesurer' })).find(f => f.rule === 'S59').message, /observation/);
+  assert.deepEqual(seules(livree({ measurement: [{ metric: 'MET-01' }], outcome: 'partiel' }), 'S59'), []);
+  assert.deepEqual(seules(plan({ release_tracking: [{ release: 'REL-1', status: 'en_cours' }] }), 'S59'), [],
+    'une release non livrée réclame déjà ses observations');
+});
+
+// S70 vivait dans `render-plan.mjs`, en `console.warn` — hors du catalogue, alors que l'en-tête de
+// `lib/rules.mjs` dit « une règle n'est définie qu'ici, jamais ailleurs ». Elle était donc invisible au
+// lint, au point d'étape et à la porte, et surtout NON DÉROGEABLE : `lint_waivers` ne l'atteignait pas.
+test('S70 : la fiche de contexte trop longue est une règle du catalogue, dérogeable', () => {
+  const cards = [{ id: 'TK-001', tokens: 3400 }, { id: 'TK-002', tokens: 1200 }];
+  assert.deepEqual(contextFindings(cards).map(f => f.id), ['TK-001']);
+  assert.match(contextFindings(cards)[0].message, /≈ 3400 tokens pour un budget de 3000/);
+  assert.deepEqual(contextFindings(cards, { max: 4000 }), [], 'le budget du projet n\'est pas lu');
+  // Et par `checkState`, elle se dérogue comme les autres : une dérogation nommée, avec sa raison.
+  const etat = b => ({ document: 'plan', phase: 'schedule', settings: { cadence: 'sprint', context_budget: { max: 3000 } }, ...b });
+  assert.deepEqual(checkState(etat({}), { cards }).filter(f => f.rule === 'S70').map(f => f.id), ['TK-001']);
+  const derogee = checkState(etat({ lint_waivers: [{ rule: 'S70', id: 'TK-001', reason: 'migration en un bloc, non scindable' }] }), { cards })
+    .find(f => f.rule === 'S70');
+  assert.match(derogee.waived, /non scindable/, 'S70 ne se dérogue toujours pas');
+});
+
+// Chaque `build-handoff.mjs` écrivait `source.status` depuis le début, et un SEUL script le lisait —
+// en `console.warn`, que rien ne persiste. « Intègre » veut dire « non altéré », pas « approuvé ».
+test('S108 : le document aval dit sur quel état amont il a été construit', () => {
+  const prd = st => ({ document: 'prd', phase: 'specify', source_brd: { path: 'brd/demo/handoff/v1.0/handoff.yaml', version: '1.0', status: st } });
+  assert.deepEqual(seules(prd('baseline'), 'S108'), []);
+  assert.deepEqual(seules(prd('brouillon'), 'S108'), ['source_brd']);
+  assert.match(checkState(prd('brouillon')).find(f => f.rule === 'S108').message, /du BRD qui n'était pas une baseline \(état : brouillon\)/);
+  // Un état non relevé est le cas le plus courant : le champ n'existait pas, et l'absence ne se lit pas
+  // comme une approbation. C'est « on ne sait pas », et ça se dit.
+  assert.match(checkState(prd('')).find(f => f.rule === 'S108').message, /état non relevé/);
+  // Sans handoff amont déclaré — un PRD autonome —, il n'y a rien à reprocher.
+  assert.deepEqual(seules({ document: 'prd', phase: 'specify', mode: 'autonome', source_brd: { path: '' } }, 'S108'), []);
+  // Le plan ne recopie pas l'état amont : ses `refs.yaml` portent les handoffs entiers.
+  const refs = (p, d) => ({ refs: { prd: { source: { status: p } }, sad: { source: { status: d } } } });
+  assert.deepEqual(seules({ document: 'plan', phase: 'slice' }, 'S108', refs('baseline', 'baseline')), []);
+  assert.deepEqual(seules({ document: 'plan', phase: 'slice' }, 'S108', refs('en_revue', 'baseline')), ['refs:prd']);
+  assert.deepEqual(seules({ document: 'plan', phase: 'slice' }, 'S108', refs('en_revue', 'brouillon')), ['refs:prd', 'refs:sad']);
+});
+
+// Cinq avertissements sur seize, au deuxième dossier réel, étaient le chemin que la doctrine prescrit :
+// les critères d'acceptation s'écrivent à l'étape 3 de Define et les priorités s'arbitrent à l'étape 4,
+// si bien qu'entre l'étape 2 et là, chaque exigence validée criait « sans critère » et « sans
+// priorité ». Un contrôle qui crie pendant le travail qu'il prescrit s'apprend à s'ignorer — et il
+// s'ignore encore quand il a raison. S04 et S05 sont dus à LA PORTE de Define, pas pendant.
+test('S04 et S05 sont dus à la porte de Define, pas pendant le travail qu\'elle prescrit', () => {
+  const brd = phase => ({ document: 'brd', phase,
+    objectives: [{ id: 'OBJ-1', statement: 'x', indicator: 'i', target: 't', status: 'validé' }],
+    candidate_needs: [{ id: 'BC-1', text: 'y', sources: [{ ref: 'SRC-1' }], status: 'intégré' }],
+    business_requirements: [{ id: 'BR-1', statement: 'Le service doit accuser réception',
+      objectives: ['OBJ-1'], from_needs: ['BC-1'], status: 'validé' }] });
+  for (const p of ['assess', 'discover', 'define']) {
+    assert.deepEqual(seules(brd(p), 'S04'), [], `S04 crie pendant ${p}`);
+    assert.deepEqual(seules(brd(p), 'S05'), [], `S05 crie pendant ${p}`);
+  }
+  // Une fois la porte franchie, l'absence est une absence. Une version figée porte `govern`.
+  assert.deepEqual(seules(brd('govern'), 'S04'), ['BR-1']);
+  assert.deepEqual(seules(brd('govern'), 'S05'), ['BR-1']);
+  // Un état sans phase est traité comme dû : on ne suppose pas qu'un travail est en cours.
+  assert.deepEqual(seules(brd(undefined), 'S05'), ['BR-1']);
+  // Et la porte de Define les compte pendant Define, elle : l'information ne disparaît pas, elle
+  // change de place — du bruit continu vers le moment où elle se décide.
+  const porte = gateConditions(brd('define'));
+  const sansPriorite = porte.conditions.find(c => /priorité/.test(c[0]));
+  assert.equal(sansPriorite[1], false, 'la porte ne voit pas l\'exigence sans priorité');
+  assert.match(sansPriorite[2], /BR-1/);
+});
+
+// Vingt règles de structure n'étaient citées par aucun test ni aucun golden. Une règle que personne
+// n'exerce est soit du code mort, soit un contrôle qui tire à côté, et on ne l'apprend qu'en
+// production, sur le dossier de quelqu'un : S35 réclamait un agrégat à des règles `à_décider` et
+// `manuelle`, parce que le filtre inventait une valeur d'énumération. Ce test tient la propriété.
+test('aucune règle du catalogue n\'est laissée sans témoin', () => {
+  const dir = new URL('.', import.meta.url).pathname;
+  const sources = [...readdirSync(dir).filter(f => f.endsWith('.test.mjs')).map(f => readFileSync(join(dir, f), 'utf8')),
+    ...readdirSync(join(dir, 'golden')).map(f => readFileSync(join(dir, 'golden', f), 'utf8'))].join('\n');
+  const muettes = [...Object.keys(STRUCT_RULES), ...TEXT_RULES.map(r => r.id)]
+    .filter(r => !new RegExp(`\\b${r}\\b`).test(sources));
+  assert.deepEqual(muettes, [], `règle(s) sans témoin : ${muettes.join(' ')} — un test par règle, l'état qui la viole et le même corrigé`);
+});
+
+// L04 : un énoncé qui commence par un pronom. « Il doit accuser réception » — qui, « il » ? L'énoncé
+// voyage seul : dans un handoff, dans une fiche de contexte, dans un relevé de relecture, et son
+// antécédent reste dans le paragraphe d'où on l'a tiré.
+test('L04 : un énoncé ne commence pas par un pronom', () => {
+  const brd = statement => ({ document: 'brd', phase: 'define',
+    business_requirements: [{ id: 'BR-1', statement, objectives: ['OBJ-1'], from_needs: ['BC-1'] }] });
+  for (const p of ['Il doit accuser réception du dossier', 'Elle doit être notifiée', 'Cela doit être tracé', 'Ce dernier doit répondre']) {
+    assert.deepEqual(checkState(brd(p)).filter(f => f.rule === 'L04').map(f => f.id), ['BR-1'], `« ${p} » passe`);
+  }
+  assert.deepEqual(checkState(brd('Le service doit accuser réception du dossier')).filter(f => f.rule === 'L04'), []);
+  // « Il » dans la phrase, et non à son ouverture, ne déclenche rien : la règle porte sur l'énoncé qui
+  // s'ouvre sur un pronom, pas sur l'usage du pronom.
+  assert.deepEqual(checkState(brd('Le service doit accuser réception dès qu\'il reçoit le dossier')).filter(f => f.rule === 'L04'), []);
 });

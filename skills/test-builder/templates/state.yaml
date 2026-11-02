@@ -5,6 +5,12 @@ source_plan:
   path: ""                 # plan/<slug>/handoff/v<x.y>/handoff.yaml ; la version figée voisine donne stories, exemples et refs
   version: ""
   sha256: ""
+  status: ""             # état de gouvernance du document amont, relevé par verify-handoff.mjs :
+                         # baseline | approuvé | en_revue | brouillon. Chaque build-handoff l'écrit
+                         # depuis le début, et un seul script le lisait (en console.warn, que rien ne
+                         # persiste). « Intègre » veut dire « non altéré », pas « approuvé » : un
+                         # brouillon intact est intact, et c'est tout. S108 le rappelle jusqu'à la
+                         # gouvernance aval.
 phase: prepare           # prepare | execute | prove — le champ manquait, et l'étape livrait pourtant
                          # trois fichiers de phase : la doctrine décrivait un parcours que rien ne
                          # situait, et aucune porte ne se comptait. status.mjs les affiche désormais.

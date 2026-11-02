@@ -6,6 +6,7 @@
   "S07 exigence Must sans scénario d'erreur",
   "S08 NFR incomplète : metric, target, measurement manquant(s)",
   "S100 la phase Frame est passée et rien ne dit comment : une porte s'écrit dans `phase_log` avec sa date, qui l'a décidée et la source qui le porte — sans quoi on découvre trois sessions plus tard qu'on a changé d'étape sans le savoir (passage vers Specify)",
+  "S108 construit sur un handoff du BRD qui n'était pas une baseline (état non relevé) : « intègre » veut dire « non altéré », pas « approuvé ». Faire figer le document amont et régénérer son handoff, ou nommer la dérogation",
   "S20 règle à automatiser couverte par aucune exigence fonctionnelle",
   "S54 FR Must avec un scénario d'erreur : 0 % pour un seuil de 100 % (manquent : FR-001) ; corriger, ou déclarer une dérogation dans `waivers` avec sa raison et son approbateur",
   "S54 FR avec au moins un critère d'acceptation : 50 % pour un seuil de 100 % (manquent : FR-002) ; corriger, ou déclarer une dérogation dans `waivers` avec sa raison et son approbateur",
