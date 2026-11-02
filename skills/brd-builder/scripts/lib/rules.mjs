@@ -107,14 +107,28 @@ const NON_ENTENDU = ['à interroger', 'non disponible'];
 // Rappel du défaut d'origine : `cadrage` est l'échange qui OUVRE l'initiative, déclaratif. Sur le
 // premier dossier réel les DIX sources étaient de ce type, et `S83` restait verte parce qu'un parent
 // avait parlé au premier échange — le parent demandeur, et développeur.
-const RECUEIL_AUPRES_DE = ['entretien', 'observation', 'atelier', 'test'];
+const RECUEIL_AUPRES_DE = ['entretien', 'observation', 'atelier', 'test', 'échange écrit'];
 // Les échanges où des gens sont dans la même pièce — les seuls où `present` veut dire quelque chose.
-// Une mesure, une étude ou une décision de l'utilisateur n'ont pas de salle.
-const EN_PRESENCE = ['cadrage', ...RECUEIL_AUPRES_DE];
+// Une mesure, une étude ou une décision de l'utilisateur n'ont pas de salle. Un `échange écrit` non
+// plus : on y est interrogé sans y être présent, et un tour de table n'y aurait pas de sens. La liste
+// dérivait de RECUEIL_AUPRES_DE ; elle s'écrit en clair parce que les deux ne coïncident plus.
+const EN_PRESENCE = ['cadrage', 'entretien', 'observation', 'atelier', 'test'];
 // Les deux naissances d'initiative observées. `autre:<libellé>` reste ouvert : voir S86.
 const PROVENANCE = ['decoupage', 'sortie_perimetre'];
 // Un retour à la source fait : la personne a relu la synthèse, et l'a confirmée ou corrigée.
 const FEEDBACK_FAIT = ['confirmé', 'corrigé', 'sans objet'];
+// `envoyé` et `à envoyer` tombaient dans le même sac : S84 ne testait que l'appartenance à la liste
+// ci-dessus, donc « demandé le 21, pas encore de réponse » et « jamais rien demandé à personne »
+// rendaient le même constat, avec le même message — jamais vérifié. L'état `envoyé` vivait dans le
+// gabarit depuis le début et aucune règle ne le lisait : il ne servait à rien. Une demande partie est
+// une question qui vit, pas un trou. Mais une demande qu'on DIT partie sans dire quand ne se vérifie
+// pas, et c'est l'agent qui écrit le champ : d'où trois états, et le troisième tient à la date.
+const JOUR = /^\d{4}-\d{2}-\d{2}$/;
+export const feedbackEtat = src => {
+  if (FEEDBACK_FAIT.includes(src?.feedback)) return 'fait';
+  if (src?.feedback === 'envoyé' && JOUR.test(String(src?.feedback_le ?? '').trim())) return 'attente';
+  return 'absent';
+};
 // Les cinq motifs EARS (`references/ears.md`) et le marqueur que chacun impose à l'énoncé. La règle
 // cherche la trace de la forme déclarée, pas le style : `unwanted` ne réclame que la condition, pas le
 // « alors » que la référence met dans son tableau. Exigé, il signalait « Si un agent transmet un dossier
@@ -137,7 +151,7 @@ const EARS = {
 // qui n'était analysé nulle part avant S86 : un préfixe se coupe sur le `:`, et le libellé est dû.
 const ENUMS = {
   'type de contrainte': { valeurs: ['legale', 'contractuelle', 'organisationnelle', 'budgetaire', 'environnement'] },
-  'type de source': { valeurs: ['cadrage', 'entretien', 'observation', 'mesure', 'test', 'document', 'atelier', 'ticket', 'revue', 'dt-handoff', 'décision', 'analytics', 'étude'] },
+  'type de source': { valeurs: ['cadrage', 'entretien', 'échange écrit', 'observation', 'mesure', 'test', 'document', 'atelier', 'ticket', 'revue', 'dt-handoff', 'décision', 'analytics', 'étude'] },
   'domaine de décision': { valeurs: ['perimetre', 'objectifs', 'priorites', 'donnees_securite'], prefixes: ['processus', 'regles'] },
   'type d\'exigence de transition': { valeurs: ['formation', 'conduite_du_changement', 'reprise_de_donnees', 'coexistence', 'communication', 'support'] },
   'type d\'interface': { valeurs: ['openapi', 'asyncapi'] },
@@ -418,8 +432,22 @@ export function checkBrd(s) {
     // Une source qui déclare `confirms: [BR-001]` EST la vérification : elle répond à la question que
     // pose `feedback`, et mieux — c'est l'exigence elle-même qui a été relue, pas son matériau.
     const vu = confirmes(s);
-    if (ids.length && !ids.some(id => FEEDBACK_FAIT.includes(srcs.get(id)?.feedback)) && !vu.has(b.id) && !arr(b.from_needs).some(n => vu.has(n))) {
-      out.push({ rule: 'S84', id: b.id, message: 'exigence validée sur des sources dont aucune n\'a été relue par la personne interrogée (`feedback`) : ce qui a été compris n\'a jamais été vérifié auprès d\'elle' });
+    if (ids.length && !vu.has(b.id) && !arr(b.from_needs).some(n => vu.has(n))) {
+      const lot = ids.map(id => srcs.get(id)).filter(Boolean);
+      const etats = lot.map(feedbackEtat);
+      // Une seule relecture faite suffit — c'est la règle d'origine. Sinon, le lot est soit en attente
+      // (au moins une demande partie et datée), soit muet. Les deux ne se disent pas pareil : la
+      // première est une question qu'on a posée, la seconde une question qu'on n'a pas posée.
+      if (!etats.includes('fait')) {
+        const attente = etats.includes('attente');
+        const sansDate = lot.filter(x => x.feedback === 'envoyé' && feedbackEtat(x) === 'absent').map(x => x.id);
+        out.push({ rule: 'S84', id: b.id, ...(attente ? { pending: true } : {}),
+          message: attente
+            ? 'exigence validée sur des sources dont la relecture est partie et pas encore revenue (`feedback: envoyé`) : la question vit, elle n\'est pas encore tranchée'
+            : sansDate.length
+              ? `exigence validée sur des sources dites parties en relecture sans dire quand (\`feedback_le\` manque sur ${sansDate.join(', ')}) : « envoyé » sans date ne se vérifie pas, et c'est l'agent qui écrit le champ`
+              : 'exigence validée sur des sources dont aucune n\'a été relue par la personne interrogée (`feedback`) : ce qui a été compris n\'a jamais été vérifié auprès d\'elle' });
+      }
     }
   }
   // S83 ne voit que l'absence TOTALE : un utilisateur direct entendu sur quatre, et la règle est verte
@@ -673,8 +701,14 @@ export function checkPrd(s) {
       // PRD depuis toujours, et `S84` ne vivait que dans `checkBrd` — invisible au garde-fou, qui lisait
       // `rules.mjs` en entier alors qu'il est copié dans quatre skills.
       const src = srcs.get(f.origin);
-      if (src && !FEEDBACK_FAIT.includes(src.feedback) && !confirmes(s).has(f.id)) {
-        out.push({ rule: 'S84', id: f.id, message: `exigence tirée de ${f.origin}, que la personne interrogée n'a jamais relue (\`feedback\`) : ce qui a été compris n'a pas été vérifié auprès d'elle` });
+      const etat = src ? feedbackEtat(src) : 'fait';
+      if (etat !== 'fait' && !confirmes(s).has(f.id)) {
+        out.push({ rule: 'S84', id: f.id, ...(etat === 'attente' ? { pending: true } : {}),
+          message: etat === 'attente'
+            ? `exigence tirée de ${f.origin}, dont la relecture est partie le ${src.feedback_le} et pas encore revenue : la question vit, elle n'est pas encore tranchée`
+            : src.feedback === 'envoyé'
+              ? `exigence tirée de ${f.origin}, dite partie en relecture sans dire quand (\`feedback_le\`) : « envoyé » sans date ne se vérifie pas, et c'est l'agent qui écrit le champ`
+              : `exigence tirée de ${f.origin}, que la personne interrogée n'a jamais relue (\`feedback\`) : ce qui a été compris n'a pas été vérifié auprès d'elle` });
       }
     }
     deadRefs(out, f, f.goals, goals);
@@ -1445,10 +1479,13 @@ export function phaseFindings(s) {
 // que parce que l'agent avait encore la conversation en mémoire vive, et une reconstitution sur 93 a
 // échoué — « SRC-004 : aucun relevé écrit pour cette source ». Après un effacement de contexte, 93.
 // Le constat porte sur la collection : nommer 92 sources une par une ne se lit pas.
-const PAROLE = ['cadrage', 'entretien', 'atelier', 'revue', 'décision'];
+// `échange écrit` en fait partie, et c'est là qu'il coûte le moins : les mots existent déjà, il n'y a
+// qu'à les recopier. Une source dont le contenu tenait dans un fil de messages est précisément celle
+// dont personne ne pense à écrire le verbatim, parce qu'on croit que le fil le gardera.
+const PAROLE = ['cadrage', 'entretien', 'échange écrit', 'atelier', 'revue', 'décision'];
 // Les sources où quelqu'un a PARLÉ et où ce qu'on en a tiré est une interprétation. `décision` en est
 // retirée : une décision de l'utilisateur est son propre dernier mot, on ne la lui fait pas relire.
-const RECUEIL_DE_PAROLE = PAROLE.filter(t => t !== 'décision');
+export const RECUEIL_DE_PAROLE = PAROLE.filter(t => t !== 'décision');
 export function sourceContentFindings(s) {
   const toutes = arr(s.sources);
   // `note` est le nom que porte déjà le contenu dans le modèle de la conception : on n'impose pas un
