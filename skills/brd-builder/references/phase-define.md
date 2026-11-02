@@ -118,6 +118,8 @@ Un critère peut renvoyer à l'indicateur d'un objectif. Le format Given / When 
 3. Signale si plus de 60 % des exigences sont `must` : la priorisation n'aide alors plus à décider. Propose de revoir les cas limites.
 4. Une exigence `wont` reste dans le BRD : elle documente ce qui est explicitement écarté pour cette fois.
 
+**Une exigence validée aux étapes 2 et 3 n'a pas encore de priorité, et ce n'est pas un défaut.** `S04` (critère d'acceptation) et `S05` (priorité) ne sont donc **pas dus pendant Define** : ils le sont à sa porte, où `status.mjs` les compte et nomme les exigences qui manquent. Au deuxième dossier réel, cinq avertissements sur seize — près d'un tiers — étaient ce passage normal : cinq fois « exigence validée sans priorité », sur les cinq exigences du premier lot. Un contrôle qui crie pendant le travail qu'il prescrit s'apprend à s'ignorer, et il s'ignore ensuite quand il a raison.
+
 ---
 
 ## Étape 5. Processus cible

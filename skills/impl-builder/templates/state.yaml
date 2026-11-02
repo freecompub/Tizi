@@ -5,6 +5,12 @@ source_plan:
   path: ""                 # plan/<slug>/handoff/v<x.y>/handoff.yaml
   version: ""
   sha256: ""               # relevé par verify-handoff.mjs
+  status: ""             # état de gouvernance du document amont, relevé par verify-handoff.mjs :
+                         # baseline | approuvé | en_revue | brouillon. Chaque build-handoff l'écrit
+                         # depuis le début, et un seul script le lisait (en console.warn, que rien ne
+                         # persiste). « Intègre » veut dire « non altéré », pas « approuvé » : un
+                         # brouillon intact est intact, et c'est tout. S108 le rappelle jusqu'à la
+                         # gouvernance aval.
 config: impl/config.yaml
 
 tasks: []

@@ -44,7 +44,10 @@ while (order.length < engaged.length) {
 }
 const external = t => arr(t.depends_on).filter(d => !ids.has(d) && !done.has(d));
 const handoff = {
-  source: { initiative: s.initiative?.name ?? '', plan_version: version, cadence: flux ? 'flux' : 'sprint', generated: today() },
+  // `status` manquait ici, et seulement ici : les trois autres handoffs le portaient depuis le début.
+  // Tout l'aval du plan — implémentation et tests — n'avait donc aucun moyen de savoir si le plan
+  // avait été figé, même en le cherchant (S108).
+  source: { initiative: s.initiative?.name ?? '', plan_version: version, status: s.governance?.status ?? '', cadence: flux ? 'flux' : 'sprint', generated: today() },
   definition_of_done: arr(s.definition_of_done),
   held_back: held.map(t => ({ id: t.id, story: t.story, reasons: storyReadiness(s, storyOf(t.story), refs).reasons })),
   tasks: order.map((t, i) => ({ rank: i + 1, id: t.id, kind: t.kind, title: t.title ?? '', story: t.story ?? '', size: t.size ?? '', assignee_type: t.assignee_type ?? 'humain', assignee: t.assignee ?? '',

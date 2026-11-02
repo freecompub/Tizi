@@ -41,7 +41,7 @@ La phase en cours est dans `phase`, et chaque passage de porte s'écrit dans `ph
 ## Démarrage
 
 1. Cherche `qa/*/state.yaml`. S'il en existe, propose de reprendre.
-2. Sinon, vérifie le handoff du plan avec `scripts/verify-handoff.mjs` (jamais un handoff altéré), crée `qa/<slug>/` depuis `templates/state.yaml`, et fais préciser la release et la version candidate.
+2. Sinon, vérifie le handoff du plan avec `scripts/verify-handoff.mjs` (jamais un handoff altéré ; « intègre » ne veut pas dire « approuvé », et `sha256` comme `status` se reportent dans `source_plan` — S108), crée `qa/<slug>/` depuis `templates/state.yaml`, et fais préciser la release et la version candidate.
 
 ## Reprise après une pause
 

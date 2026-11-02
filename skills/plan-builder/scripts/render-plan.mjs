@@ -8,7 +8,7 @@
 import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { arr, txt, table, list, loadState, writeOut, fail, prLabel, today, humanReviewFooter, approxTokens } from './lib/common.mjs';
-import { checkPlan, storyReadiness, taskCycles, coverage, iterationStats, capacitySuggestion, riskSize, plannedAttention, coverageRows } from './lib/rules.mjs';
+import { checkPlan, storyReadiness, taskCycles, coverage, iterationStats, capacitySuggestion, riskSize, plannedAttention, coverageRows, contextFindings } from './lib/rules.mjs';
 
 const args = process.argv.slice(2);
 const statePath = args.find(a => !a.startsWith('--'));
@@ -262,10 +262,11 @@ for (const t of tasks) {
   packSizes.push({ id: t.id, tokens });
   writeOut(join(root, 'tasks', `${t.id}.md`), text);
 }
-// Budget des fiches de contexte (S70) : au-delà, l'agent qui implémente perd en précision (dégradation du contexte).
+// Budget des fiches de contexte (S70) : au-delà, l'agent qui implémente perd en précision (dégradation
+// du contexte). La règle était écrite ICI, hors du catalogue : invisible au lint, au point d'étape et à
+// la porte, et impossible à déroger. Elle est au catalogue ; la taille, elle, ne se mesure qu'au rendu.
 const budget = settings.context_budget ?? { target: 1600, max: 3000 };
-const over = packSizes.filter(x => x.tokens > budget.max);
-if (over.length) console.warn(`⚠ [S70] fiche(s) de contexte au-delà du budget (${budget.max} tokens environ) : ${over.map(x => `${x.id} ≈ ${x.tokens}`).join(', ')}. Découper la tâche, ou alléger la story.`);
+for (const f of contextFindings(packSizes, budget)) console.warn(`⚠ [${f.rule}] ${f.id} : ${f.message}`);
 
 console.log(`Fiches de contexte : ${packSizes.map(x => `${x.id} ≈ ${x.tokens}`).join(', ') || 'aucune'} tokens (cible ${budget.target}, maximum ${budget.max}).`);
 console.log(`Plan généré : ${join(root, 'plan.md')} (${stories.length} story(s) dont ${nReady} prête(s), ${tasks.length} tâche(s), ${findings.length} avertissement(s))`);

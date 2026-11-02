@@ -246,7 +246,11 @@ const PORTES = {
     explore: s => {
       const DROITS = ['architecture', 'acceptation_risque_securite'];
       const garanties = new Set(arr(s.contexts).flatMap(c => arr(c.aggregates)).flatMap(a => arr(a.invariants)));
-      const automatisees = arr(s.prd_ref?.business_rules ?? s.business_rules).filter(r => r.automation && r.automation !== 'aucune');
+      // `automation` vaut `à_décider | automatisée | manuelle` — « aucune » n'est pas dans
+      // l'énumération. Écrit ici au chantier précédent, le filtre réclamait donc un agrégat pour une
+      // règle encore `à_décider` et pour une règle restée `manuelle`. S35 dit la même chose, et
+      // correctement : les deux contrôles lisent la même valeur.
+      const automatisees = arr(s.prd_ref?.business_rules ?? s.business_rules).filter(r => r.automation === 'automatisée');
       return [
         sans('un décideur pour l\'architecture et l\'acceptation du risque de sécurité', DROITS.filter(d => !decideur(s, d)), 'domaine(s) sans décideur'),
         s.context_mode === 'brownfield'

@@ -31,6 +31,8 @@ updated: ""
 sources_handoff:
   prd: ""                  # prd/<slug>/handoff/v<x.y>/handoff.yaml
   sad: ""                  # sad/<slug>/handoff/v<x.y>/handoff.yaml
+# L'état de gouvernance des documents amont n'est pas recopié ici : `refs.yaml` porte les handoffs
+# entiers, donc `refs.prd.source.status` et `refs.sad.source.status`. C'est ce que S108 lit.
 
 settings:
   cadence: sprint          # sprint | flux — choisi par projet (references/cadence.md)
