@@ -91,6 +91,16 @@ Le script produit `sad.md` (vues C4 en Mermaid, actuelles et cibles en brownfiel
 
 ---
 
+## Retour ponctuel en arrière
+
+Si une zone d'ombre bloquante apparaît (contradiction, valeur actuelle inconnue, profil manquant…) :
+
+1. Enregistre-la et explique pourquoi elle bloque.
+2. Propose un retour **ciblé sur cette seule zone d'ombre** : préparer l'entretien ou la question qui la lèvera, puis revenir à l'étape en cours. La phase ne change pas.
+3. **Écris le retour dans `phase_log`**, avec `kind: retour` : la phase d'où l'on part, celle où l'on retourne, la date, qui a décidé, la zone d'ombre qui l'a provoqué et la raison. Un retour est un passage comme un autre, et il s'écrit dans le même journal que les portes — sinon le parcours réel d'un dossier qui a reculé se relit comme un parcours tout droit. `status.mjs` l'affiche sous la ligne des phases.
+
+---
+
 ## Fin de la phase
 
 **Propose** le passage à Govern quand :
@@ -106,6 +116,6 @@ Le script produit `sad.md` (vues C4 en Mermaid, actuelles et cibles en brownfiel
 - toutes les sections de `sad_sections` sont validées ; le SAD a été régénéré ;
 - `lint.mjs` a été lancé ; chaque avertissement restant est corrigé ou couvert par une dérogation.
 
-Si l'utilisateur accepte, passe `phase: govern`.
+Lance `status.mjs` : il compte les conditions de cette porte qui **se calculent**, et nomme ce qui manque — identifiants compris. Celles qui se jugent n'y sont pas, et le compte dit « n tenues sur m mesurées » : ce n'est pas « la porte est franchie ». Présente-le, liste ce qui manque — puis **pose la question dans tous les cas**, avec l'outil : passer la phase, ou s'arrêter là. S'il manque des conditions, les deux options sont « s'arrêter là » et « continuer sur ce qui manque », jamais « passer la porte » (`references/questions.md`). Si l'utilisateur accepte, passe `phase: govern`.
 
 **Et le passage lui-même s'écrit.** Dès que l'utilisateur a tranché, ajoute l'entrée à `phase_log` : la phase qui se clôt, celle qui s'ouvre, la date, qui a décidé, la source qui le porte, l'état de la porte tel que `status.mjs` l'a dit, et chaque condition franchie par dérogation avec sa raison. Sans cette entrée, `status.mjs` affiche « passage sans trace » et le document rendu ne peut pas dire au relecteur quand la phase a été close ni par qui (S100, S101).

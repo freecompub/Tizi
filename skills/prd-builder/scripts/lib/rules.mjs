@@ -7,6 +7,7 @@
 //
 // Sources : Constantinidis (check-list de bonne formulation, ch. 13) ; BABOK v3 (7.2 Verify Requirements).
 import { arr, PHASE_NOM, portesFranchies } from './common.mjs';
+import { porteDe } from './gates.mjs';
 
 // ── Règles de rédaction (portent sur un énoncé) ─────────────────────────────
 
@@ -1325,14 +1326,24 @@ export function outgoingFindings(s, fichiers = []) {
 export function phaseFindings(s) {
   const out = [];
   const log = arr(s.phase_log);
+  // Le journal porte deux sortes d'entrées, et un retour ne tient PAS lieu de porte : sans ce filtre,
+  // un retour ponctuel écrit depuis Define aurait suffi à faire croire que la porte de Define avait
+  // laissé sa trace. Deux mécanismes dans un même champ se distinguent, ou ils se couvrent.
+  const portes = log.filter(porteDe);
   for (const { from, to } of portesFranchies(s.document, s.phase)) {
-    if (!log.some(e => e.from === from)) {
+    if (!portes.some(e => e.from === from)) {
       out.push({ rule: 'S100', id: `phase:${from}`, message: `la phase ${PHASE_NOM[from] ?? from} est passée et rien ne dit comment : une porte s'écrit dans \`phase_log\` avec sa date, qui l'a décidée et la source qui le porte — sans quoi on découvre trois sessions plus tard qu'on a changé d'étape sans le savoir (passage vers ${PHASE_NOM[to] ?? to})` });
     }
   }
   for (const e of log) {
-    const manque = [!String(e.date ?? '').trim() && 'sa date', !String(e.decided_by ?? '').trim() && 'qui l\'a décidée', !String(e.source ?? '').trim() && 'la source qui porte la décision'].filter(Boolean);
-    if (manque.length) out.push({ rule: 'S101', id: `phase:${e.from ?? '?'}`, message: `porte franchie sans ${manque.join(', ni ')} : un passage de phase se décide avec l'utilisateur, jamais seul, et la décision se nomme` });
+    // Un retour ne porte pas de source : il porte la zone d'ombre qui l'a provoqué et sa raison.
+    const manque = porteDe(e)
+      ? [!String(e.date ?? '').trim() && 'sa date', !String(e.decided_by ?? '').trim() && 'qui l\'a décidée', !String(e.source ?? '').trim() && 'la source qui porte la décision'].filter(Boolean)
+      : [!String(e.date ?? '').trim() && 'sa date', !String(e.decided_by ?? '').trim() && 'qui l\'a décidé', !String(e.reason ?? '').trim() && 'pourquoi on revient en arrière'].filter(Boolean);
+    if (manque.length) out.push({ rule: 'S101', id: `phase:${e.from ?? '?'}`,
+      message: porteDe(e)
+        ? `porte franchie sans ${manque.join(', ni ')} : un passage de phase se décide avec l'utilisateur, jamais seul, et la décision se nomme`
+        : `retour en arrière écrit sans ${manque.join(', ni ')} : un retour se décide comme une porte, et un journal qui ne dit pas pourquoi on a reculé ne se relit pas` });
   }
   return out;
 }

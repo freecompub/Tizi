@@ -60,3 +60,18 @@ Commite ensuite l'archive, puis vérifie avec `freeze-evidence.mjs … --check`,
 ## La CI elle-même
 
 `node <chemin-du-skill>/scripts/ci-audit.mjs .` vérifie que la CI du dépôt fait ce qu'elle doit : porte de PR rejouée sur chaque pull request et exigée avant fusion, preuves de release produites sur le commit lui-même, permissions déclarées et minimales, pas de `pull_request_target`, actions épinglées. Il lit la protection de la branche principale en lecture seule ; sans droit, il la déclare non vérifiable au lieu de conclure. Rapport dans `.tizi/ci-audit.md`. À lancer à l'adoption de Tizi, puis à chaque changement des workflows.
+
+---
+
+## Fin de la phase
+
+La vérification est terminée quand la matrice est complète, la porte de release calculée par `release-matrix.mjs`, la décision déclarée par l'utilisateur et les preuves figées. La porte de release n'est **pas** ici : elle lit les rapports, et elle vit dans `release-matrix.mjs`, avec ses trois verdicts — tenue, en échec, non mesurée.
+
+Les conditions de phase qui se calculent, elles :
+
+- chaque exigence non prouvée est couverte par une dérogation nommée (`waivers`, avec sa raison et son approbateur) ;
+- une décision de release est déclarée (`approvals`).
+
+Lance `status.mjs` : il compte les conditions de cette porte qui **se calculent**, et nomme ce qui manque — identifiants compris. Celles qui se jugent n'y sont pas, et le compte dit « n tenues sur m mesurées » : ce n'est pas « la porte est franchie ». Présente-le, liste ce qui manque — puis **pose la question dans tous les cas**, avec l'outil : passer la phase, ou s'arrêter là. S'il manque des conditions, les deux options sont « s'arrêter là » et « continuer sur ce qui manque », jamais « passer la porte » (`references/questions.md`).
+
+**Et le passage lui-même s'écrit.** Dès que l'utilisateur a tranché, ajoute l'entrée à `phase_log` : la phase qui se clôt, celle qui s'ouvre, la date, qui a décidé, l'état de la porte tel que `status.mjs` l'a dit, et chaque condition franchie par dérogation avec sa raison. Sans cette entrée, `status.mjs` affiche « passage sans trace », et le parcours de la vérification ne se relit nulle part.

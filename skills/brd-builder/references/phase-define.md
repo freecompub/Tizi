@@ -159,13 +159,13 @@ Si l'utilisateur modifie `brd.md` à la main, explique que la modification sera 
 
 ---
 
-## Retour ponctuel en Discover
+## Retour ponctuel en arrière
 
 Si une zone d'ombre bloquante apparaît (contradiction, valeur actuelle inconnue, profil manquant…) :
 
 1. Enregistre-la et explique pourquoi elle bloque.
-2. Propose un retour **ciblé sur cette seule zone d'ombre** : préparer l'entretien ou la question qui la lèvera, puis revenir à l'étape en cours. La phase reste `define`.
-3. Trace-le dans `define_returns`.
+2. Propose un retour **ciblé sur cette seule zone d'ombre** : préparer l'entretien ou la question qui la lèvera, puis revenir à l'étape en cours. La phase ne change pas.
+3. **Écris le retour dans `phase_log`**, avec `kind: retour` : la phase d'où l'on part, celle où l'on retourne, la date, qui a décidé, la zone d'ombre qui l'a provoqué et la raison. Un retour est un passage comme un autre, et il s'écrit dans le même journal que les portes — sinon le parcours réel d'un dossier qui a reculé se relit comme un parcours tout droit. `status.mjs` l'affiche sous la ligne des phases.
 
 ---
 
@@ -184,10 +184,11 @@ Après l'étape 2, **lance** un council en mode `completude` (protocole : `refer
 - chaque exigence validée a au moins un critère d'acceptation et une priorité ;
 - chaque exigence de transition a un type, ses parties prenantes et un critère d'achèvement ;
 - chaque règle métier validée a une source, un type et un responsable, et, si elle est de comportement, un niveau d'application ;
-- aucune décision n'est restée `proposé` sans zone d'ombre ouverte qui l'explique ;
+- **aucun élément n'est resté `proposé`** : objectifs, exigences métier, règles métier, exigences de transition, décisions, risques. La porte ne regardait que les décisions, et au deuxième dossier réel elle affichait « ✓ aucune décision restée proposé » avec **neuf règles métier à `proposé`** qu'aucune condition ne lisait — tranchées par personne, et parties telles quelles vers le PRD. Un élément qui reste `proposé` parce qu'une zone d'ombre ouverte l'explique se dérogue comme le reste, par une dérogation nommée, pas par une exception que le compte garderait pour lui ;
 - `lint.mjs` a été lancé sur l'état complet ; chaque avertissement restant est corrigé ou couvert par une **dérogation nommée** (`lint_waivers`, sur l'élément, avec sa raison écrite — sans raison, elle ne compte pas). Les règles de structure se dérogent comme celles de forme : certaines disent une vérité irréductible, et au premier dossier réel c'était « le président tranche, se confirme et est son propre recours, parce qu'il n'y a personne au-dessus de lui ». Une dérogée ne disparaît pas, elle change de liste et part dans le dossier de revue ;
 - chaque besoin candidat `confirmé` est `intégré`, `abandonné` ou `hors_périmètre` ;
 - aucune zone d'ombre bloquante n'est ouverte ;
+- **chaque zone d'ombre est `levée` ou `assumée`, et chaque `assumée` est emportée par un risque ou une hypothèse qui la nomme.** Une zone encore `ouverte` à la porte est une question que plus personne ne posera : le document part sans elle, et rien ne la rattrape. Au deuxième dossier réel, soixante-trois zones ouvertes ont franchi la porte pour **zéro risque** au BRD — dont deux bloquantes sur la conservation de données de santé ;
 - le BRD a été régénéré après la dernière validation.
 
 Lance `status.mjs` : il donne les phases passées, celle en cours, et le compte des conditions de cette porte. Présente-le, liste ce qui manque — puis **pose la question dans tous les cas**, avec l'outil : passer en Govern, ou s'arrêter là. S'il manque des conditions, les deux options sont « s'arrêter là » et « continuer sur ce qui manque », jamais « passer la porte » (`references/questions.md`). Si l'utilisateur accepte, passe `phase: govern` et note la date.

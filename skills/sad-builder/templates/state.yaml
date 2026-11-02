@@ -19,6 +19,12 @@ phase_log: []            # une porte franchie, une entrée — `phase` dit la ph
 #    source: SRC-080     # la source qui porte la décision
 #    gate: ""            # l'état de la porte au passage, tel que status.mjs l'a dit : « 7 conditions sur 7 »
 #    waived: []          # conditions franchies par dérogation : - { condition: "", reason: "" }
+#    kind: porte         # porte (par défaut) | retour — un retour en arrière est un passage comme un
+#                        # autre, et il s'écrit dans le MÊME journal : `define_returns` ne valait que
+#                        # pour le BRD, les trois autres documents reculaient sans rien écrire, et les
+#                        # phases cycliques du plan ne se lisaient nulle part. Un retour porte en plus
+#                        # `zone` (la zone d'ombre qui l'a provoqué) et `reason`. Sur un retour ponctuel,
+#                        # `phase` ne change pas : le journal dit l'aller-retour, `phase` dit où on est.
 created: ""
 updated: ""
 

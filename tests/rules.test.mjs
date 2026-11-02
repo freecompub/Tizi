@@ -743,6 +743,22 @@ test('S100 et S101 : une porte franchie laisse sa trace, avec son décideur et s
   // Et les autres documents ont leur propre chaîne de phases.
   assert.deepEqual(checkState({ document: 'sad', phase: 'govern' }).filter(f => f.rule === 'S100').map(f => f.id),
     ['phase:explore', 'phase:design']);
+
+  // Un retour en arrière s'écrit dans le MÊME journal, avec `kind: retour`. Il ne tient donc PAS lieu
+  // de porte : sans ce filtre, un retour écrit depuis Discover aurait suffi à faire croire que la
+  // porte de Discover avait laissé sa trace. Deux mécanismes dans un champ se distinguent, ou ils se
+  // couvrent l'un l'autre.
+  const avecRetour = porte({ phase_log: [complet[0],
+    { from: 'discover', to: 'discover', date: '2026-11-01', decided_by: 'SH-02', reason: 'contradiction', kind: 'retour' }] });
+  assert.deepEqual(avecRetour.map(f => `${f.rule} ${f.id}`), ['S100 phase:discover'], 'un retour tient lieu de porte');
+  // Et un retour se décide comme une porte : il dit sa date, qui l'a décidé et pourquoi on recule.
+  // Il ne porte pas de source, lui : c'est une zone d'ombre qui l'a provoqué.
+  const retourMuet = porte({ phase_log: [...complet, { from: 'define', to: 'discover', date: '2026-11-03', kind: 'retour' }] });
+  assert.deepEqual(retourMuet.map(f => f.rule), ['S101']);
+  assert.match(retourMuet[0].message, /retour en arrière écrit sans qui l'a décidé, ni pourquoi on revient en arrière/);
+  assert.deepEqual(porte({ phase_log: [...complet,
+    { from: 'define', to: 'discover', date: '2026-11-03', decided_by: 'SH-02', reason: 'valeur actuelle inconnue', zone: 'ZO-012', kind: 'retour' }] }), [],
+  'un retour complet est encore signalé');
 });
 
 // Le modèle d'état n'avait AUCUN champ pour ce qui avait été dit. Mesuré : 92 sources sur 93 — dont 65

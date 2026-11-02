@@ -76,4 +76,17 @@ Les outcomes ne sont jamais acquis. Pour chaque release, **avant** de livrer, d�
 
 Après la livraison, enregistre les observations et une conclusion (`outcome` : `atteint`, `partiel`, `non_atteint`). Chaque apprentissage devient soit une story (souvent en voie rapide), soit une **nouvelle opportunité** à faire évaluer dans le BRD. Les améliorations faites après une release sont souvent les plus précieuses. `lint.mjs` signale une release livrée sans plan de mesure (règle S59).
 
+## Fin de la phase
+
+Review clôt un cycle, et le cycle suivant **repart en Refine** : c'est un passage en arrière, et il s'écrit dans `phase_log` comme les autres, avec `kind: porte` — la phase change vraiment. `status.mjs` affiche alors « Refine en cours (passage n°2) » et garde le ✓ de Govern et de Review : les phases du plan se répètent, et la ligne le montre au lieu d'annoncer « Govern à venir » sur un plan dont la baseline est figée.
+
+**Propose** le retour en Refine, sans le décider, quand :
+
+- une revue d'équipe est enregistrée pour le cycle clos ;
+- chaque tâche non finie du cycle a une décision de report (`carryover`) ;
+- chaque constat de revue donne une story ou une action ;
+- chaque zone d'ombre est `levée` ou `assumée`, et chaque `assumée` est emportée par un risque ou une hypothèse qui la nomme.
+
+Lance `status.mjs` : il compte les conditions de cette porte qui **se calculent**, et nomme ce qui manque — identifiants compris. Celles qui se jugent n'y sont pas, et le compte dit « n tenues sur m mesurées » : ce n'est pas « la porte est franchie ». Présente-le, liste ce qui manque — puis **pose la question dans tous les cas**, avec l'outil : passer la phase, ou s'arrêter là. S'il manque des conditions, les deux options sont « s'arrêter là » et « continuer sur ce qui manque », jamais « passer la porte » (`references/questions.md`). Si l'utilisateur accepte, passe `phase: refine`.
+
 **Et le passage lui-même s'écrit.** Dès que l'utilisateur a tranché, ajoute l'entrée à `phase_log` : la phase qui se clôt, celle qui s'ouvre, la date, qui a décidé, la source qui le porte, l'état de la porte tel que `status.mjs` l'a dit, et chaque condition franchie par dérogation avec sa raison. Sans cette entrée, `status.mjs` affiche « passage sans trace » et le document rendu ne peut pas dire au relecteur quand la phase a été close ni par qui (S100, S101).

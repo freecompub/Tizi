@@ -5,7 +5,8 @@
 //          Un identifiant ne s'écrit jamais seul dans un message, et sa formulation se lit ici.
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { arr, loadState, fail, shLabel, label, PHASES as TABLE_PHASES, PHASE_NOM } from './lib/common.mjs';
+import { arr, loadState, fail, shLabel, label, PHASE_NOM } from './lib/common.mjs';
+import { phaseTrail, gateConditions } from './lib/gates.mjs';
 import { condenseOf, sessionsFor } from './lib/sessions.mjs';
 
 const args = process.argv.slice(2);
@@ -59,18 +60,31 @@ for (const c of COLLECTIONS) {
 // jamais la position dans la chaîne, ni ce qui reste avant la porte suivante. Au moment où l'utilisateur
 // a annoncé « j'ai fini la phase BRD » sur un dossier réel, Define était faite, Govern n'avait pas
 // commencé, quatre sections du document étaient encore `proposé`, et rien ne le disait. Les conditions
-// de sortie sont écrites dans les fichiers de phase : celles qui se calculent se calculent.
-// La table vit dans `lib/common.mjs` : `lib/rules.mjs` en a besoin pour vérifier qu'une porte franchie
-// a laissé sa trace, et elle ne peut donc appartenir à aucun des deux.
-const PHASES = TABLE_PHASES[doc] ?? [];
-const NOM = PHASE_NOM;
-const rang = PHASES.indexOf(s.phase);
-if (rang >= 0) {
+// de sortie sont écrites dans les fichiers de phase : celles qui se calculent se calculent, et elles
+// vivent dans `lib/gates.mjs` — pour les cinq documents à phases, plus seulement pour le BRD.
+const parcours = phaseTrail(s);
+if (parcours.phases.length) {
   // Une phase passée dit quand et par qui, quand `phase_log` le porte : « j'ai fini la phase BRD » se
-  // vérifie, et un passage sans trace se voit à sa place vide au lieu de se découvrir trois sessions plus tard.
-  const log = new Map(arr(s.phase_log).map(e => [e.from, e]));
-  const passee = p => { const e = log.get(p); return e ? ` (${[e.date, e.decided_by ? shLabel(s, e.decided_by) : ''].filter(Boolean).join(', ')})` : ' (passage sans trace)'; };
-  out.push('', `Phases : ${PHASES.map((p, i) => `${NOM[p]} ${i < rang ? `✓${passee(p)}` : i === rang ? 'en cours' : 'à venir'}`).join(' · ')}`);
+  // vérifie, et un passage sans trace se voit à sa place vide au lieu de se découvrir trois sessions
+  // plus tard. Une phase close plusieurs fois le dit aussi : les phases du plan se répètent à chaque
+  // cycle, et la ligne annonçait « Govern à venir » sur un plan dont la version 1.0 était figée.
+  const marque = x => {
+    if (x.courante) return x.closes.length ? `en cours (passage n°${x.closes.length + 1})` : 'en cours';
+    // Hors de la table — une initiative close —, ce qui n'a pas de trace est inconnu, pas « à venir ».
+    if (!x.passee) return parcours.horsTable ? 'sans trace' : 'à venir';
+    const e = x.closes.at(-1);
+    const fois = x.closes.length > 1 ? ` ×${x.closes.length}` : '';
+    return e ? `✓${fois} (${[e.date, e.decided_by ? shLabel(s, e.decided_by) : ''].filter(Boolean).join(', ')})` : `✓${fois} (passage sans trace)`;
+  };
+  const terme = parcours.horsTable
+    ? ` · ${PHASE_NOM[parcours.horsTable] ?? parcours.horsTable} — ${parcours.horsTable === 'close' ? 'initiative close' : 'phase hors de la table de ce document'}`
+    : '';
+  out.push('', `Phases : ${parcours.trail.map(x => `${x.nom} ${marque(x)}`).join(' · ')}${terme}`);
+  // Un retour en arrière est un passage comme un autre, et il s'écrit dans le même journal : sans lui,
+  // le parcours réel d'un dossier qui a reculé se lit comme un parcours tout droit.
+  for (const r of parcours.retours) {
+    out.push(`  ↩ retour en ${PHASE_NOM[r.to] ?? r.to} depuis ${PHASE_NOM[r.from] ?? r.from}${r.date ? ` le ${r.date}` : ''}${r.decided_by ? `, ${shLabel(s, r.decided_by)}` : ''}${r.zone ? ` — ${r.zone}` : ''}${r.reason ? ` : ${r.reason}` : ''}`);
+  }
 }
 
 // Les avertissements actifs du catalogue, dérogations nommées retirées. `lib/rules.mjs` n'est livré que
@@ -84,45 +98,15 @@ const actifs = regles ? regles.checkState(s, {
   checklists: voisins('checklists', f => ({ file: f, text: readFileSync(join(dirname(statePath), 'checklists', f), 'utf8') })),
   interviews: voisins('interviews', f => f),
 }).filter(f => !f.waived).length : null;
-const CANVAS = ['problems', 'users', 'solutions_today', 'user_metrics', 'business_metrics'];
-const vides = o => Object.entries(o ?? {}).filter(([, v]) => v !== 'validé').map(([k]) => k);
-const PORTES = {
-  assess: () => [
-    ['le canevas d\'opportunité est rempli', CANVAS.every(k => arr(s.opportunity?.canvas?.[k]).length), `${CANVAS.filter(k => !arr(s.opportunity?.canvas?.[k]).length).join(', ') || '—'} à remplir`],
-    ['une décision d\'opportunité est rendue, par une personne nommée', Boolean(s.opportunity?.decision && s.opportunity.decision !== 'en_attente' && s.opportunity?.decided_by), `décision : ${s.opportunity?.decision ?? '—'}`],
-  ],
-  discover: () => [
-    ['le problème est formulé et confirmé par l\'utilisateur', Boolean(s.problem?.statement && s.problem?.confirmed), s.problem?.statement ? 'formulé, pas confirmé' : 'pas encore formulé'],
-    ['au moins un signal de succès', arr(s.success_signals).length > 0, `${arr(s.success_signals).length} signal(aux)`],
-    ['un council en mode couverture est passé', arr(s.council_runs).some(r => r.mode === 'couverture'), `modes passés : ${[...new Set(arr(s.council_runs).map(r => r.mode))].join(', ') || 'aucun'}`],
-    ['chaque besoin candidat est sourcé', arr(s.candidate_needs).every(n => arr(n.sources).length), `${arr(s.candidate_needs).filter(n => !arr(n.sources).length).length} sans source`],
-    ['la porte de synthèse est déclarée', Boolean(s.synthesis_check?.date), 'cinq dimensions à juger avec l\'utilisateur'],
-  ],
-  define: () => [
-    ['toutes les sections du document sont validées', vides(s.brd_sections).length === 0, `${vides(s.brd_sections).length} section(s) : ${vides(s.brd_sections).join(', ')}`],
-    ['chaque objectif porte une exigence, et chaque exigence un objectif', (() => {
-      const brs = arr(s.business_requirements).filter(b => b.status !== 'abandonné');
-      const couverts = new Set(brs.flatMap(b => arr(b.objectives)));
-      return arr(s.objectives).every(o => couverts.has(o.id)) && brs.every(b => arr(b.objectives).length);
-    })(), 'rattachements manquants'],
-    ['aucun besoin candidat resté « confirmé »', !arr(s.candidate_needs).some(n => n.status === 'confirmé'), `${arr(s.candidate_needs).filter(n => n.status === 'confirmé').length} à solder`],
-    ['aucune décision restée « proposé »', !arr(s.decisions).some(d => d.status === 'proposé'), `${arr(s.decisions).filter(d => d.status === 'proposé').length} à rendre`],
-  ],
-  govern: () => [
-    ['des relecteurs sont nommés', arr(s.governance?.reviewers).length > 0, 'déduits de la cartographie'],
-    ['au moins une approbation', arr(s.governance?.approvals).some(a => a.decision?.startsWith('approuvé')), `${arr(s.governance?.approvals).length} approbation(s)`],
-    ['une version de référence est figée', arr(s.governance?.baselines).length > 0, 'freeze-version.mjs --baseline'],
-  ],
-}[s.phase];
-if (PORTES && doc === 'brd') {
-  const conds = [
-    ...PORTES(),
-    ['aucune zone d\'ombre bloquante ouverte', !arr(s.shadow_zones).some(z => z.status === 'ouverte' && z.blocking), `${arr(s.shadow_zones).filter(z => z.status === 'ouverte' && z.blocking).length} bloquante(s)`],
-    ...(actifs === null ? [] : [['aucun avertissement ni corrigé ni dérogé (lint.mjs)', actifs === 0, `${actifs} avertissement(s) actif(s)`]]),
-  ];
-  const suivante = rang >= 0 && rang + 1 < PHASES.length ? NOM[PHASES[rang + 1]] : 'la suite';
-  out.push('', `Porte de sortie de ${NOM[s.phase]} — vers ${suivante} : ${conds.filter(c => c[1]).length} condition(s) sur ${conds.length}`);
-  for (const [libelle, ok, detail] of conds) out.push(`  ${ok ? '✓' : '✗'} ${libelle}${ok ? '' : ` — ${detail}`}`);
+// La porte de sortie, avec ses conditions comptées — pour les cinq documents à phases. Les `refs.yaml`
+// du plan portent les exigences de la release, que l'état ne contient pas : sans eux, la condition se
+// déclare non mesurée au lieu de se cocher.
+const refsPath = join(dirname(statePath), 'refs.yaml');
+const porte = gateConditions(s, { actifs, refs: existsSync(refsPath) ? loadState(refsPath) : null });
+if (porte) {
+  out.push('', `Porte de sortie de ${porte.nom} — vers ${porte.suivante} : ${porte.tenues} condition(s) tenue(s) sur ${porte.mesurees} mesurée(s)${porte.nonMesurees ? `, ${porte.nonMesurees} non mesurée(s)` : ''}`);
+  for (const [libelle, ok, detail] of porte.conditions) out.push(`  ${ok === true ? '✓' : ok === false ? '✗' : '?'} ${libelle}${ok === true ? '' : ` — ${detail}`}`);
+  out.push('  Les conditions qui se jugent — la synthèse, le MVP, « assez de stories » — ne sont pas ici : elles se tranchent avec l\'utilisateur (references/phase-*.md).');
   out.push('  Le passage se décide avec l\'utilisateur, jamais seul (references/questions.md).');
 }
 

@@ -78,8 +78,10 @@ Après les moteurs et le domaine, **lance** un council en mode `exploration` (`r
 - la vue de contexte est validée ;
 - le council en mode exploration a été passé, et ses questions enregistrées comme zones d'ombre ;
 - aucune zone d'ombre bloquante n'est ouverte ;
+- chaque zone d'ombre est `levée` ou `assumée`, et chaque `assumée` est emportée par un risque ou une hypothèse qui la nomme : une zone encore `ouverte` à la porte est une question que plus personne ne posera ;
+- aucun élément n'est resté `proposé` : ce que personne n'a tranché ne franchit pas la porte ;
 - `lint.mjs` a été lancé ; ses avertissements sont listés sans bloquer.
 
-Si l'utilisateur accepte, passe `phase: design`.
+Lance `status.mjs` : il compte les conditions de cette porte qui **se calculent**, et nomme ce qui manque — identifiants compris. Celles qui se jugent n'y sont pas, et le compte dit « n tenues sur m mesurées » : ce n'est pas « la porte est franchie ». Présente-le, liste ce qui manque — puis **pose la question dans tous les cas**, avec l'outil : passer la phase, ou s'arrêter là. S'il manque des conditions, les deux options sont « s'arrêter là » et « continuer sur ce qui manque », jamais « passer la porte » (`references/questions.md`). Si l'utilisateur accepte, passe `phase: design`.
 
 **Et le passage lui-même s'écrit.** Dès que l'utilisateur a tranché, ajoute l'entrée à `phase_log` : la phase qui se clôt, celle qui s'ouvre, la date, qui a décidé, la source qui le porte, l'état de la porte tel que `status.mjs` l'a dit, et chaque condition franchie par dérogation avec sa raison. Sans cette entrée, `status.mjs` affiche « passage sans trace » et le document rendu ne peut pas dire au relecteur quand la phase a été close ni par qui (S100, S101).

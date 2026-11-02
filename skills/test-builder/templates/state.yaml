@@ -5,6 +5,20 @@ source_plan:
   path: ""                 # plan/<slug>/handoff/v<x.y>/handoff.yaml ; la version figée voisine donne stories, exemples et refs
   version: ""
   sha256: ""
+phase: prepare           # prepare | execute | prove — le champ manquait, et l'étape livrait pourtant
+                         # trois fichiers de phase : la doctrine décrivait un parcours que rien ne
+                         # situait, et aucune porte ne se comptait. status.mjs les affiche désormais.
+
+phase_log: []            # une porte franchie, une entrée — `phase` dit la phase EN COURS, `phase_log` dit
+                         # comment on y est arrivé, et un retour en arrière s'y écrit avec `kind: retour`.
+#  - from: prepare       # la phase qui se clôt
+#    to: execute         # celle qui s'ouvre
+#    date: ""            # AAAA-MM-JJ
+#    decided_by: ""      # qui a tranché — déclaré par l'utilisateur, jamais déduit
+#    gate: ""            # l'état de la porte au passage, tel que status.mjs l'a dit
+#    waived: []          # conditions franchies par dérogation : - { condition: "", reason: "" }
+#    kind: porte         # porte (par défaut) | retour
+
 release: REL-1
 candidate: ""              # version candidate testée, par exemple 1.2.0-rc1 (un tag) ou un commit
 candidate_commit: ""       # commit exact de la version candidate ; vide = résolu depuis le tag « candidate »

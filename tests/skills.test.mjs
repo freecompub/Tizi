@@ -23,7 +23,7 @@ for (const s of skills) for (const f of existsSync(join(SKILLS, s, 'agents')) ? 
   const fm = yaml.load(readFileSync(join(SKILLS, s, 'agents', f), 'utf8').split(/^---$/m)[1]);
   assert.equal(fm.name, f.replace(/\.md$/, '')); assert.ok(fm.description);
 });
-const COMMON = ['lib/common.mjs', 'lib/agent-io.mjs', 'lib/sessions.mjs', 'lib/vendor/js-yaml.mjs', 'session-capture.mjs', 'session-search.mjs', 'status.mjs', 'next-step.mjs', 'choose-path.mjs', 'sync-agent-instructions.mjs', 'adopt.mjs', 'block.mjs', 'due-reviews.mjs', 'session-start.mjs', 'constitution.mjs', 'ask-five.mjs', 'review-checklist.mjs', 'review-sources.mjs', 'lib/checklists.mjs', 'cross-context.mjs', 'cross-merge.mjs', 'lib/rules.mjs', 'lint.mjs', 'freeze-version.mjs', 'verify-handoff.mjs', 'lib/testing.mjs', 'defect.mjs'];
+const COMMON = ['lib/common.mjs', 'lib/agent-io.mjs', 'lib/sessions.mjs', 'lib/vendor/js-yaml.mjs', 'session-capture.mjs', 'session-search.mjs', 'status.mjs', 'next-step.mjs', 'choose-path.mjs', 'sync-agent-instructions.mjs', 'adopt.mjs', 'block.mjs', 'due-reviews.mjs', 'session-start.mjs', 'constitution.mjs', 'ask-five.mjs', 'review-checklist.mjs', 'review-sources.mjs', 'lib/checklists.mjs', 'cross-context.mjs', 'cross-merge.mjs', 'lib/rules.mjs', 'lib/gates.mjs', 'lint.mjs', 'freeze-version.mjs', 'verify-handoff.mjs', 'lib/testing.mjs', 'defect.mjs'];
 for (const f of COMMON) test(`fichier commun identique partout : ${f}`, () => {
   const hashes = skills.filter(s => existsSync(join(SKILLS, s, 'scripts', f))).map(s => createHash('md5').update(readFileSync(join(SKILLS, s, 'scripts', f))).digest('hex'));
   assert.ok(hashes.length >= 2); assert.equal(new Set(hashes).size, 1, `${f} diverge entre skills`);
@@ -954,21 +954,112 @@ test('le point d\'étape dit les phases passées et ce qui reste avant la suivan
   ].join('\n'));
   const trace = node(script('brd-builder', 'status.mjs'), [etat], { cwd: dir });
   assert.match(trace.out, /Phases : Assess ✓ \(2026-10-29, Dédé \(SH-02\)\) · Discover ✓ \(2026-11-02, Dédé \(SH-02\)\) · Define en cours/, 'la trace du passage n\'est pas rendue');
-  assert.match(out.out, /✗ toutes les sections du document sont validées — 1 section\(s\) : context/, 'les sections à valider ne sont pas comptées');
-  assert.match(out.out, /✗ aucun besoin candidat resté « confirmé » — 1 à solder/, 'un besoin non soldé passe');
-  assert.match(out.out, /✗ aucune décision restée « proposé » — 1 à rendre/, 'une décision non rendue passe');
-  assert.match(out.out, /✗ aucune zone d'ombre bloquante ouverte — 1 bloquante/, 'une zone bloquante passe');
+  assert.match(out.out, /✗ toutes les sections du document sont validées — 1 section\(s\) à valider : context/, 'les sections à valider ne sont pas comptées');
+  assert.match(out.out, /✗ aucun besoin candidat resté « confirmé » — 1 besoin\(s\) à solder : BC-01/, 'un besoin non soldé passe');
+  // La porte ne regardait QUE les décisions : sur le dossier réel, neuf règles métier à `proposé`
+  // passaient sans un mot, et le détail nomme désormais chaque collection et ses identifiants.
+  assert.match(out.out, /✗ aucun élément resté « proposé ».*1 exigence\(s\) métier \(BR-01\), 1 décision\(s\) \(DD-01\)/, 'un élément non tranché passe hors des décisions');
+  assert.match(out.out, /✗ aucune zone d'ombre bloquante ouverte — 1 bloquante\(s\) : ZO-01/, 'une zone bloquante passe');
+  // Une zone non bloquante encore ouverte à la porte est une question que plus personne ne posera :
+  // soixante-trois sont parties ainsi du dossier réel, pour zéro risque au BRD.
+  assert.match(out.out, /✗ chaque zone d'ombre est levée ou assumée — 1 encore ouverte\(s\) \(ZO-01\)/, 'une zone ouverte franchit la porte sans destination');
   assert.match(out.out, /avertissement\(s\) actif\(s\)/, 'le compte des avertissements n\'est pas repris');
+  assert.match(out.out, /condition\(s\) tenue\(s\) sur \d+ mesurée\(s\)/, 'le compte ne distingue pas ce qui est mesuré');
   assert.match(out.out, /Le passage se décide avec l'utilisateur/, 'rien ne dit que la porte ne se franchit pas seul');
+  assert.match(out.out, /ne sont pas ici : elles se tranchent avec l'utilisateur/, 'rien ne dit que la porte ne compte pas tout');
 
-  // Les autres documents ont leurs phases, sans porte : leurs conditions de sortie ne sont pas écrites
-  // sous une forme calculable, et une porte à moitié juste vaut moins que pas de porte.
-  for (const [sk, doc, attendu] of [['prd-builder', 'prd', /Phases : Frame/], ['sad-builder', 'sad', /Phases : Explore/], ['plan-builder', 'plan', /Phases : Slice/]]) {
-    const r = node(script(sk, 'status.mjs'), [join(ROOT, 'exemple', doc, 'demo', 'state.yaml')], { cwd: ROOT });
+  // Les quatre documents ont désormais la même porte calculée, et l'étape « tests » aussi : la
+  // doctrine disait « Propose le passage quand… » pour les cinq, et seul le BRD comptait.
+  for (const [sk, etatAmont, attendu, porte] of [
+    ['prd-builder', 'prd/demo/state.yaml', /Phases : Frame/, /Porte de sortie de Specify — vers Govern/],
+    ['sad-builder', 'sad/demo/state.yaml', /Phases : Explore/, /Porte de sortie de Design — vers Govern/],
+    ['plan-builder', 'plan/demo/state.yaml', /Phases : Slice/, /Porte de sortie de Schedule — vers Govern/],
+  ]) {
+    const r = node(script(sk, 'status.mjs'), [join(ROOT, 'exemple', etatAmont)], { cwd: ROOT });
     assert.equal(r.code, 0, `${sk} : ${r.err}`);
     assert.match(r.out, attendu, `${sk}/status.mjs ne dit pas les phases`);
-    assert.doesNotMatch(r.out, /Porte de sortie/, `${sk}/status.mjs annonce une porte qu'il ne sait pas calculer`);
+    assert.match(r.out, porte, `${sk}/status.mjs ne calcule pas sa porte`);
   }
+});
+
+// Trois défauts du parcours des phases, vus sur le plan de l'exemple et sur le dossier réel : les
+// phases cycliques rendues comme une ligne droite, `close` qui faisait disparaître la ligne entière,
+// et un retour en arrière qui ne s'écrivait nulle part hors du BRD.
+test('le parcours des phases : un cycle, un terme, un retour', () => {
+  const dir = tempDir('tizi-parcours');
+  mkdirSync(join(dir, 'plan', 'demo'), { recursive: true });
+  const etat = join(dir, 'plan', 'demo', 'state.yaml');
+  // Un plan au deuxième cycle : Govern et Review sont passés, et la phase est revenue en Refine.
+  writeFileSync(etat, [
+    'document: plan', 'phase: refine',
+    'stakeholders:', '  - { id: SH-01, name: "Alice" }',
+    'phase_log:',
+    '  - { from: slice, to: refine, date: "2026-10-01", decided_by: SH-01 }',
+    '  - { from: refine, to: schedule, date: "2026-10-05", decided_by: SH-01 }',
+    '  - { from: schedule, to: govern, date: "2026-10-08", decided_by: SH-01 }',
+    '  - { from: govern, to: review, date: "2026-10-20", decided_by: SH-01 }',
+    '  - { from: review, to: refine, date: "2026-10-21", decided_by: SH-01 }',
+    '  - { from: refine, to: schedule, date: "2026-11-02", decided_by: SH-01, kind: retour, zone: ZO-09, reason: "capacité revue à la baisse" }',
+  ].join('\n'));
+  const r = node(script('plan-builder', 'status.mjs'), [etat], { cwd: dir });
+  assert.equal(r.code, 0, r.err);
+  // La ligne lisait le RANG de la phase courante : avec `refine` au rang 1, elle annonçait « Govern à
+  // venir · Review à venir » sur un plan dont la baseline était figée et la revue enregistrée.
+  // La date affichée est celle qui CLÔT la phase : Govern se clôt le 20, Review le 21.
+  assert.match(r.out, /Schedule ✓ \(2026-10-08/, 'une phase close après la phase courante est annoncée « à venir »');
+  assert.match(r.out, /Govern ✓ \(2026-10-20/, 'la gouvernance passée est annoncée « à venir »');
+  assert.match(r.out, /Review ✓ \(2026-10-21/, 'la revue passée est annoncée « à venir »');
+  assert.match(r.out, /Refine en cours \(passage n°2\)/, 'rien ne dit que la phase est reprise une deuxième fois');
+  assert.match(r.out, /Slice ✓ \(2026-10-01/, 'la première porte a perdu sa trace');
+  // Un retour ponctuel s'écrit dans le MÊME journal, avec `kind: retour` : `define_returns` ne valait
+  // que pour le BRD, et les trois autres documents reculaient sans rien écrire.
+  assert.match(r.out, /↩ retour en Schedule depuis Refine le 2026-11-02, Alice \(SH-01\) — ZO-09 : capacité revue à la baisse/, 'un retour en arrière ne se lit pas');
+
+  // Une initiative close : la ligne des phases disparaissait entièrement, et le point d'étape ne
+  // disait plus rien du parcours — sur un dossier réel découpé en deux, où c'était tout l'intérêt.
+  mkdirSync(join(dir, 'brd', 'close'), { recursive: true });
+  const fin = join(dir, 'brd', 'close', 'state.yaml');
+  writeFileSync(fin, ['document: brd', 'phase: close',
+    'phase_log:', '  - { from: assess, to: discover, date: "2026-10-24" }'].join('\n'));
+  const c = node(script('brd-builder', 'status.mjs'), [fin], { cwd: dir });
+  assert.equal(c.code, 0, c.err);
+  assert.match(c.out, /Phases : Assess ✓ \(2026-10-24\)/, 'une initiative close perd son parcours');
+  assert.match(c.out, /Close — initiative close/, 'le terme n\'est pas nommé');
+  // Ce qui n'a pas de trace, sur une initiative close, est inconnu — pas « à venir ».
+  assert.match(c.out, /Define sans trace/, 'une phase sans trace est annoncée « à venir » sur une initiative close');
+  assert.doesNotMatch(c.out, /Porte de sortie/, 'une initiative close se voit proposer une porte');
+});
+
+// L'étape « tests » livrait trois fichiers de phase — Prepare, Execute, Prove — et son état n'avait pas
+// de champ `phase` : la doctrine décrivait un parcours que rien ne situait. Et une condition qui se lit
+// hors de l'état ne se coche pas faute de pouvoir se lire : l'absence de mesure ne vaut pas une
+// réussite, comme pour les trois couvertures à « 0/0 = 100 % ATTEINT ».
+test('la vérification a ses phases, et une condition qu\'on ne peut pas lire se dit non mesurée', () => {
+  const dir = tempDir('tizi-phases-test');
+  mkdirSync(join(dir, 'qa', 'demo'), { recursive: true });
+  const etat = join(dir, 'qa', 'demo', 'state.yaml');
+  writeFileSync(etat, ['document: test', 'phase: prepare',
+    'settings: { critical_journeys: [], reports: [] }',
+    'exploratory:', '  - { id: EXP-01, date: "2026-11-02" }',
+    'environments: []'].join('\n'));
+  const r = node(script('test-builder', 'status.mjs'), [etat], { cwd: dir });
+  assert.equal(r.code, 0, r.err);
+  assert.match(r.out, /Phases : Prepare en cours · Execute à venir · Prove à venir/, 'la vérification n\'a pas de parcours');
+  assert.match(r.out, /Porte de sortie de Prepare — vers Execute/, 'la porte de Prepare ne se compte pas');
+  assert.match(r.out, /✗ les parcours critiques sont choisis/, 'un parcours critique manquant passe');
+  assert.match(r.out, /✗ chaque session exploratoire a une charte — 1 session\(s\) sans charte : EXP-01/, 'une charte manquante passe');
+  // Le catalogue de règles n'est pas livré avec test-builder : la porte ne réclame donc pas de lint,
+  // au lieu d'annoncer une condition qu'elle ne saurait pas juger.
+  assert.doesNotMatch(r.out, /lint\.mjs/, 'la porte des tests réclame un lint que le skill n\'a pas');
+
+  // Les exigences de la release sont dans `refs.yaml` : sans lui, la condition se déclare non mesurée.
+  mkdirSync(join(dir, 'plan', 'demo'), { recursive: true });
+  const plan = join(dir, 'plan', 'demo', 'state.yaml');
+  writeFileSync(plan, ['document: plan', 'phase: slice', 'settings: { release: REL-1 }', 'stories: []'].join('\n'));
+  const sans = node(script('plan-builder', 'status.mjs'), [plan], { cwd: dir });
+  assert.equal(sans.code, 0, sans.err);
+  assert.match(sans.out, /\? chaque exigence de la release est couverte par une story validée — non mesuré : refs\.yaml absent/, 'une condition illisible est cochée ou cachée');
+  assert.match(sans.out, /condition\(s\) tenue\(s\) sur \d+ mesurée\(s\), 1 non mesurée\(s\)/, 'le compte avale la condition non mesurée');
 });
 
 // Trois prescriptions qui manquaient à la gouvernance et à la préparation d'entretien, chacune vue sur
