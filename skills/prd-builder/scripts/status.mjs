@@ -5,7 +5,7 @@
 //          Un identifiant ne s'écrit jamais seul dans un message, et sa formulation se lit ici.
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { arr, loadState, fail, shLabel, label, PHASE_NOM, ingestedHandoffs } from './lib/common.mjs';
+import { arr, loadState, fail, shLabel, label, PHASE_NOM, ingestedHandoffs, dossierDe } from './lib/common.mjs';
 import { phaseTrail, gateConditions } from './lib/gates.mjs';
 import { condenseOf, sessionsFor } from './lib/sessions.mjs';
 
@@ -42,7 +42,10 @@ const COLLECTIONS = {
   plan: ['stories', 'examples', 'tasks', 'iterations'],
   impl: ['tasks'], test: ['exploratory', 'nfr_results', 'waivers'],
 }[doc] ?? [];
-const out = [`Point d'étape — ${s.initiative?.name ?? initiative} (${doc}) — phase : ${s.phase ?? '—'} — version : ${s.governance?.version ?? '—'} (${s.governance?.status ?? '—'})`, ''];
+// Le document ET son dossier quand les deux noms diffèrent : « (test) » sur un chemin `qa/…` laissait
+// chercher un dossier `test/` qui n'existe pas.
+const ou = dossierDe(doc) === doc ? doc : `${doc}, dans ${dossierDe(doc)}/`;
+const out = [`Point d'étape — ${s.initiative?.name ?? initiative} (${ou}) — phase : ${s.phase ?? '—'} — version : ${s.governance?.version ?? '—'} (${s.governance?.status ?? '—'})`, ''];
 for (const c of COLLECTIONS) {
   const items = arr(s[c]);
   if (!items.length) continue;

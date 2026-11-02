@@ -54,9 +54,33 @@ export const isShellTool = name => /^(bash|powershell|run_in_terminal|shell|run_
 // et `tee`, qui désignent leur cible sans ambiguïté. Le reste n'est pas devinable, et l'extrait dit
 // alors combien de commandes il n'a pas pu lire plutôt que de conclure qu'il n'y a rien eu.
 const SHELL_WRITE_RE = /(?:^|[|;&(]|\s)(?:>>?\s*|tee\s+(?:-a\s+)?)(['"]?)((?!\/dev\/)[\w./~@+-]+)\1/g;
+// Le corps d'un heredoc est une DONNÉE, pas de la syntaxe de shell : on l'enlève avant de chercher des
+// redirections dedans. Sans ça, l'extrait de session annonçait un fichier nommé « 40 » — un `> 40` écrit
+// dans le texte d'un rapport passé en heredoc, lu comme une redirection. On garde la ligne d'en-tête,
+// qui porte souvent la vraie cible (`cat > rapport.md <<'EOF'`), et on jette jusqu'au délimiteur.
+const HEREDOC_RE = /<<(-?)\s*(['"]?)([A-Za-z_][\w]*)\2/;
+export function stripHeredocs(command) {
+  const lignes = String(command ?? '').split('\n');
+  const out = [];
+  for (let i = 0; i < lignes.length; i += 1) {
+    out.push(lignes[i]);
+    const m = HEREDOC_RE.exec(lignes[i]);
+    if (!m) continue;
+    const [, tiret, , delim] = m;
+    // `<<-` autorise une indentation du délimiteur de fin.
+    const fin = l => (tiret ? l.trimStart() : l) === delim;
+    i += 1;
+    while (i < lignes.length && !fin(lignes[i])) i += 1;
+  }
+  return out.join('\n');
+}
 export function shellWrittenPaths(command) {
   const paths = new Set();
-  for (const m of String(command ?? '').matchAll(SHELL_WRITE_RE)) paths.add(m[2]);
+  for (const m of stripHeredocs(command).matchAll(SHELL_WRITE_RE)) {
+    // Une cible faite de chiffres seuls est un descripteur ou une comparaison, jamais un fichier.
+    if (/^\d+$/.test(m[2])) continue;
+    paths.add(m[2]);
+  }
   return [...paths];
 }
 

@@ -189,6 +189,18 @@ const IDENTIFIANT_RE = /\b[A-Z]{1,4}-S?\d{1,3}\b/;
 
 // Un extrait ne tronque pas en plein mot, et ne tronque pas en silence : la dernière réponse du premier
 // dossier réel s'arrêtait sur « **cette se », sans rien dire de ce qui manquait.
+// Un fragment cité DANS une phrase se coupe autrement qu'un bloc. `borne` ajoute sa marque après deux
+// retours à la ligne — ce qui est juste pour un bloc, et ce qui, dans « … », fermait le bloc de
+// citation du markdown et laissait le guillemet fermant seul sur une ligne de corps de texte :
+//   > 1 question(s) … : « Qui, dans l'association, a le droit de décider qu'une donnée
+//
+//   _[…] 109 caractère(s) de plus dans la transcription._ »
+// On ne coupe jamais en plein mot, et on dit qu'on a coupé — le même geste que `label()`.
+const bribe = (texte, max) => {
+  const t = maskSecrets(String(texte ?? '')).replace(/\s+/g, ' ').trim();
+  return t.length <= max ? t : `${t.slice(0, max).replace(/\s+\S*$/, '')}…`;
+};
+// Un BLOC de texte : la marque va à la ligne, parce qu'elle parle du reste du bloc.
 const borne = (texte, max = 3000) => {
   const s = maskSecrets(texte);
   if (s.length <= max) return s;
@@ -288,7 +300,7 @@ export function buildExtract(turns, meta) {
     '### En texte libre', '',
     ...(ecrites.length ? ecrites.map(e => `- (tour ${e.tour}) ${maskSecrets(e.question)}`) : ['_Aucune._']), '',
     ...(groupes.length ? [`> ${groupes.length} tour(s) portent plus d'une question en texte libre : ${groupes.map(([t, n]) => `tour ${t} (${n})`).join(', ')}. Une question ouverte se pose seule.`, ''] : []),
-    ...(avecId.length ? [`> ${avecId.length} question(s) sur ${posees.length} portent un identifiant : une question n'en porte pas — celui à qui on demande n'a pas besoin de l'adresse de la chose, il a besoin de la chose. ${avecId.map(q => `« ${borne(q, 90)} »`).join(' ; ')}`, ''] : []),
+    ...(avecId.length ? [`> ${avecId.length} question(s) sur ${posees.length} portent un identifiant : une question n'en porte pas — celui à qui on demande n'a pas besoin de l'adresse de la chose, il a besoin de la chose. ${avecId.map(q => `« ${bribe(q, 90)} »`).join(' ; ')}`, ''] : []),
     ...(sansNom ? [`> ${sansNom} question(s) sur ${posees.length} ne nomment personne, alors que le dossier connaît ${personnes.length} personnes (${personnes.join(', ')}) : une question dit à qui elle est posée, à la deuxième personne, et son destinataire est l'\`ask_to\` de la zone qu'elle sert à lever.`, ''] : []),
     '## Dernière réponse de l\'assistant', '',
     lastAssistant ? borne(lastAssistant.text) : '_Aucune._', '',

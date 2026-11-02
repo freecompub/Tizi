@@ -5,6 +5,8 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { DOCUMENTS, STRUCT_RULES, TEXT_RULES, checkState, coverage, coverageFindings, coverageRows, evidenceOf, contextFindings } from '../skills/brd-builder/scripts/lib/rules.mjs';
 import { gateConditions } from '../skills/brd-builder/scripts/lib/gates.mjs';
+import { shellWrittenPaths } from '../skills/brd-builder/scripts/lib/agent-io.mjs';
+import { buildExtract } from '../skills/brd-builder/scripts/lib/sessions.mjs';
 const codes = s => checkState(s).map(f => f.rule);
 const brd = extra => ({ document: 'brd', phase: 'discover', stakeholders: [{ id: 'SH-1', status: 'interrogée' }],
   sources: [{ id: 'SRC-1', type: 'entretien', stakeholders: ['SH-1'] }, { id: 'SRC-2', type: 'observation', stakeholders: ['SH-1'] }],
@@ -1147,4 +1149,40 @@ test('L04 : un énoncé ne commence pas par un pronom', () => {
   // « Il » dans la phrase, et non à son ouverture, ne déclenche rien : la règle porte sur l'énoncé qui
   // s'ouvre sur un pronom, pas sur l'usage du pronom.
   assert.deepEqual(checkState(brd('Le service doit accuser réception dès qu\'il reçoit le dossier')).filter(f => f.rule === 'L04'), []);
+});
+
+// Trois petits défauts de l'extrait de session et du point d'étape, chacun vu sur un dossier réel.
+test('un heredoc est une donnée : pas de fichier nommé « 40 »', () => {
+  // L'extrait annonçait un fichier modifié nommé `40` : un « > 40 » écrit dans le TEXTE d'un rapport
+  // passé en heredoc, lu comme une redirection de shell. Le corps d'un heredoc est une donnée.
+  assert.deepEqual(shellWrittenPaths("cat > rapport.md <<'EOF'\nIl reste plus de > 40 sources à relire.\nEOF"), ['rapport.md']);
+  assert.deepEqual(shellWrittenPaths("python3 - <<'PY'\nopen('a.md','w').write('x > 12')\nPY"), []);
+  // La ligne d'en-tête porte souvent la vraie cible : on la garde, et on jette jusqu'au délimiteur.
+  assert.deepEqual(shellWrittenPaths("cat <<-FIN > sortie.txt\n  texte > ailleurs.md\n\tFIN\nls"), ['sortie.txt']);
+  assert.deepEqual(shellWrittenPaths("cat > un.md <<'A'\nx\nA\ncat > deux.md <<'B'\ny > z.md\nB"), ['un.md', 'deux.md']);
+  // Un heredoc jamais fermé ne doit pas faire perdre la cible de sa propre ligne.
+  assert.deepEqual(shellWrittenPaths("cat > ouvert.md <<'EOF'\nx > jamais.md"), ['ouvert.md']);
+  // Une cible faite de chiffres seuls est un descripteur ou une comparaison, jamais un fichier.
+  assert.deepEqual(shellWrittenPaths('if [ $n > 40 ]; then echo x; fi'), []);
+  assert.deepEqual(shellWrittenPaths('node x.mjs 2>&1 | head'), []);
+  // Et les vraies écritures passent toujours.
+  assert.deepEqual(shellWrittenPaths('echo ok > fichier.txt'), ['fichier.txt']);
+  assert.deepEqual(shellWrittenPaths('ls | tee -a journal.log'), ['journal.log']);
+  assert.deepEqual(shellWrittenPaths('node x.mjs > /dev/null'), []);
+});
+
+test('un fragment cité dans une phrase ne casse pas son bloc de citation', () => {
+  // `borne` ajoute sa marque de troncature après DEUX retours à la ligne — juste pour un bloc, et
+  // destructeur dans « … » : le bloc de citation du markdown se fermait et le guillemet fermant
+  // restait seul sur une ligne de corps de texte.
+  const q = `Qui, dans l'association, a le droit de décider qu'une donnée de santé d'un enfant devienne accessible à quelqu'un qui n'y a pas accès aujourd'hui, et pour combien de temps la conserve-t-on (ZO-013) ?`;
+  const md = buildExtract([{ role: 'user', text: 'ok', at: '2026-11-02T10:00:00Z' },
+    { role: 'assistant', text: q, at: '2026-11-02T10:01:00Z', tools: [] }],
+  { date: '2026-11-02', session: 'abc', initiatives: [], event: 'Stop', personnes: [] });
+  const ligne = md.split('\n').find(l => /question\(s\) sur/.test(l));
+  assert.ok(ligne, 'la ligne des questions à identifiant a disparu');
+  assert.match(ligne, /« [^»\n]+… »$/, 'la citation ne se referme pas sur sa propre ligne');
+  assert.doesNotMatch(md, /caractère\(s\) de plus dans la transcription\._ »/, 'la marque de bloc est insérée dans une citation');
+  // Et elle dit toujours qu'elle a coupé, sans couper en plein mot.
+  assert.match(ligne, /d'un enfant… »/);
 });

@@ -891,6 +891,12 @@ Pour un logiciel comme Diabeo, ces exigences s’appliquent à toutes les étape
 | `C1`–`C10` | Conditions de la porte de PR (étape 5) |
 | `R1`–`R10` | Conditions de la porte de release (étape 6) |
 
+Les **portes de phase** des cinq documents à phases (BRD, PRD, conception, plan, tests) se calculent dans `lib/gates.mjs` et s’affichent au point d’étape. Elles ne portent que les conditions **calculables** : ce qui se juge — « le MVP satisfait les critères », « assez de stories sont prêtes », « les participants se reconnaîtraient dans la synthèse » — reste dans les fichiers de phase et se tranche avec l’utilisateur. Le compte dit « n tenues sur m mesurées », jamais « la porte est franchie ». Chaque condition a **trois** états : tenue, en échec, non mesurée ; une condition non mesurée ne s’affiche jamais ✓, parce qu’une absence de mesure n’est pas une réussite.
+
+Un passage de porte s’écrit dans `phase_log`, avec sa date, son décideur et l’état de la porte au passage ; un retour en arrière s’y écrit aussi, avec `kind: retour`, la zone d’ombre qui l’a provoqué et sa raison. `S100` et `S101` réclament la trace, et un retour ne tient pas lieu de porte.
+
+Les **seuils** et les **dérogations** sont un seul système pour les cinq documents : `thresholds` et `waivers`, au niveau de l’état. Une dérogation ne compte que si elle dit **pourquoi** et **qui l’a approuvée** (`S106`), et un seuil à 0 — qui ne compare rien — est un renoncement qui passe par une dérogation nommée (`S105`).
+
 ## Sources
 
 Trois ouvrages ont été lus en entier en octobre 2026 : deux ont servi à confronter les étapes 1 et 2, le troisième les étapes 2 et 4. Les tableaux et paragraphes ci-dessous indiquent d’où vient chaque pratique ajoutée ou confirmée.
