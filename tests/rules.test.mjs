@@ -1,7 +1,7 @@
 // Règles du catalogue commun, sur des états minimaux construits pour chaque cas.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { checkState, evidenceOf } from '../skills/brd-builder/scripts/lib/rules.mjs';
+import { DOCUMENTS, checkState, coverage, coverageFindings, coverageRows, evidenceOf } from '../skills/brd-builder/scripts/lib/rules.mjs';
 
 const codes = s => checkState(s).map(f => f.rule);
 const brd = extra => ({ document: 'brd', phase: 'discover', stakeholders: [{ id: 'SH-1', status: 'interrogée' }],
@@ -679,4 +679,45 @@ test('S98 et S99 : un relecteur a été entendu, et un cycle a une échéance', 
   assert.match(seul(sur, 'S99', 'approbation sur commentaire en attente').message, /n'est pas un retour qu'on a traité/);
   const tranche = etat({ comments: [{ id: 'CM-001', decision: 'accepté' }], approvals: [{ stakeholder: 'SH-01', decision: 'approuvé' }] });
   assert.equal(tranche.filter(f => f.rule === 'S99').length, 0, 'un retour tranché bloque encore l\'approbation');
+});
+
+// Le vide ne vaut pas une réussite. `0 / 0` rendait 100 % et « atteint » : un BRD à l'ouverture
+// affichait ses trois métriques de couverture comme satisfaites, dans le document rendu et dans le
+// handoff. Une métrique sans élément à compter n'est ni atteinte ni manquée : elle n'est pas mesurée.
+test('couverture : une collection vide n\'est pas une couverture atteinte', () => {
+  const vide = coverage({ document: 'brd' });
+  assert.equal(vide.length, 3, 'les trois métriques du BRD sont présentes');
+  for (const m of vide) {
+    assert.equal(m.mesure, false, `${m.id} se dit mesurée`);
+    assert.equal(m.pct, null, `${m.id} porte un taux`);
+    assert.equal(m.met, null, `${m.id} se dit atteinte ou manquée`);
+  }
+  // La table le dit, au lieu d'écrire « atteint » sur du vide.
+  const [, couverts, taux, , statut] = coverageRows(vide)[0];
+  assert.equal(couverts, '0/0');
+  assert.equal(taux, '—');
+  assert.equal(statut, '_non mesuré_');
+  // Et S54 ne reproche rien : ce qui rend la métrique due relève de la phase, pas du compte.
+  assert.equal(coverageFindings({ document: 'brd' }).length, 0, 'S54 parle d\'une métrique non mesurée');
+
+  // Mesurée et insuffisante : inchangé.
+  const servis = coverage({ document: 'brd', objectives: [{ id: 'OBJ-1', status: 'validé' }, { id: 'OBJ-2', status: 'validé' }],
+    business_requirements: [{ id: 'BR-1', status: 'validé', objectives: ['OBJ-1'], acceptance: ['x'] }] });
+  const obj = servis.find(m => m.id === 'objective_br');
+  assert.deepEqual([obj.mesure, obj.pct, obj.met], [true, 50, false]);
+  assert.equal(coverageFindings({ document: 'brd', objectives: [{ id: 'OBJ-1', status: 'validé' }] }).filter(f => f.rule === 'S54').length, 1);
+});
+
+// Un document hors du catalogue recevait les règles du BRD, et trois métriques vides à « 100 %
+// atteint ». Un rapport faux coûte plus cher qu'un refus.
+test('S00 : un document que le catalogue ne vérifie pas se refuse, il ne se devine pas', () => {
+  const f = checkState({ document: 'test', release: 'REL-1' });
+  assert.equal(f.length, 1, 'un état de tests reçoit plusieurs constats');
+  assert.equal(f[0].rule, 'S00');
+  assert.match(f[0].message, /release-matrix\.mjs/, 'le refus ne dit pas quoi utiliser à la place');
+  assert.deepEqual(coverage({ document: 'test' }), [], 'un document inconnu reçoit des métriques');
+  // Les quatre documents connus passent par leur propre jeu de règles.
+  for (const d of DOCUMENTS) assert.equal(checkState({ document: d }).some(x => x.rule === 'S00'), false, d);
+  // Un état sans champ `document` reste lu comme un BRD, comme partout ailleurs.
+  assert.equal(checkState({ phase: 'discover' }).some(x => x.rule === 'S00'), false);
 });

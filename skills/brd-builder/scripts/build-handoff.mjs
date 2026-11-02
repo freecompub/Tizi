@@ -5,7 +5,7 @@
 import { dirname, join, basename, resolve } from 'node:path';
 import yaml from './lib/vendor/js-yaml.mjs';
 import { arr, txt, table, list, loadState, writeOut, fail, shLabel, prLabel, PRIORITY_ORDER, validated, today, writeHandoff } from './lib/common.mjs';
-import { coverage, evidenceOf, brSources } from './lib/rules.mjs';
+import { coverage, coverageRows, evidenceOf, brSources } from './lib/rules.mjs';
 
 const statePath = process.argv[2];
 if (!statePath) fail('Usage : node build-handoff.mjs <versions/v<version>/state.yaml>', 2);
@@ -44,7 +44,7 @@ const handoff = {
 
 const outDir = join(root, 'handoff', `v${version}`);
 const cov = coverage(s, {});
-handoff.coverage = cov.map(({ id, label, covered, total, pct, threshold, met, waiver }) => ({ id, label, covered, total, pct, threshold, met, waiver }));
+handoff.coverage = cov.map(({ id, label, covered, total, mesure, pct, threshold, met, waiver }) => ({ id, label, covered, total, mesure, pct, threshold, met, waiver }));
 const handoffSha = writeHandoff(join(outDir, 'handoff.yaml'), '# Handoff BRD → PRD — généré, ne pas modifier.', handoff, statePath);
 
 const md = [];
@@ -63,7 +63,7 @@ md.push('### Risques', '', table(['ID', 'Risque', 'Probabilité', 'Impact'], han
 md.push('### Zones d\'ombre assumées', '', list(handoff.assumed_shadow_zones.map(z => `${z.id} — ${z.question} (${txt(z.reason)})`)));
 if (handoff.approval_reserves.length) md.push('### Réserves d\'approbation', '', list(handoff.approval_reserves.map(r => `${shLabel(s, r.by)} : ${r.reserves.join(', ')}`)));
 md.push('## Périmètre', '', '**Inclus**', '', list(handoff.scope.in), '**Exclu**', '', list(handoff.scope.out));
-md.push('', '## Couverture', '', table(['Métrique', 'Couverts', 'Taux', 'Seuil', 'Statut'], handoff.coverage.map(c => [c.label, `${c.covered}/${c.total}`, `${c.pct} %`, `${c.threshold} %`, c.met ? 'atteint' : c.waiver ? `dérogation : ${c.waiver.reason} (${c.waiver.approved_by ?? '—'})` : '**non atteint**'])));
+md.push('', '## Couverture', '', table(['Métrique', 'Couverts', 'Taux', 'Seuil', 'Statut'], coverageRows(handoff.coverage, { handoff: true })));
 md.push('', `Empreinte SHA-256 de handoff.yaml : \`${handoffSha}\`. L\'étape suivante la vérifie avec verify-handoff.mjs avant d\'ingérer.`, '');
 writeOut(join(outDir, 'handoff.md'), md.join('\n'));
 

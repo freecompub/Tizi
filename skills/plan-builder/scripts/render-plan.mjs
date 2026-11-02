@@ -8,7 +8,7 @@
 import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { arr, txt, table, list, loadState, writeOut, fail, prLabel, today, humanReviewFooter, approxTokens } from './lib/common.mjs';
-import { checkPlan, storyReadiness, taskCycles, coverage, iterationStats, capacitySuggestion, riskSize, plannedAttention } from './lib/rules.mjs';
+import { checkPlan, storyReadiness, taskCycles, coverage, iterationStats, capacitySuggestion, riskSize, plannedAttention, coverageRows } from './lib/rules.mjs';
 
 const args = process.argv.slice(2);
 const statePath = args.find(a => !a.startsWith('--'));
@@ -179,7 +179,7 @@ p('**Definition of Done**\n'); p(list(arr(s.definition_of_done)));
 
 // Annexe
 h(2, 'Couverture');
-p(table(['Métrique', 'Couverts', 'Taux', 'Seuil', 'Statut'], coverage(s, refs).map(c => [c.label, `${c.covered}/${c.total}`, `${c.pct} %`, `${c.threshold} %`, c.met ? 'atteint' : c.waiver ? `dérogation : ${c.waiver.reason}` : `**non atteint** (manquent : ${c.missing.join(', ')})`])));
+p(table(['Métrique', 'Couverts', 'Taux', 'Seuil', 'Statut'], coverageRows(coverage(s, refs))));
 h(2, 'Annexe — Points de vérification');
 const findings = checkPlan(s, refs);
 p('_Vérification de forme non bloquante (catalogue `lib/rules.mjs`). Elle ne remplace pas le contrôle formel._\n');

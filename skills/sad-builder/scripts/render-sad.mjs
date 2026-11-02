@@ -8,7 +8,7 @@
 import { dirname, join } from 'node:path';
 import yaml from './lib/vendor/js-yaml.mjs';
 import { arr, txt, table, list, loadState, writeOut, fail, prLabel, today, humanReviewFooter } from './lib/common.mjs';
-import { checkSad, coverage } from './lib/rules.mjs';
+import { checkSad, coverage, coverageRows } from './lib/rules.mjs';
 
 const args = process.argv.slice(2);
 const statePath = args.find(a => !a.startsWith('--'));
@@ -290,7 +290,7 @@ p(table(['Terme', 'Définition'], arr(s.glossary).map(g => [g.term, g.definition
 
 // Annexe : vérification
 h(2, 'Couverture');
-p(table(['Métrique', 'Couverts', 'Taux', 'Seuil', 'Statut'], coverage(s, {}).map(c => [c.label, `${c.covered}/${c.total}`, `${c.pct} %`, `${c.threshold} %`, c.met ? 'atteint' : c.waiver ? `dérogation : ${c.waiver.reason}` : `**non atteint** (manquent : ${c.missing.join(', ')})`])));
+p(table(['Métrique', 'Couverts', 'Taux', 'Seuil', 'Statut'], coverageRows(coverage(s, {}))));
 h(2, 'Annexe — Points de vérification');
 const findings = checkSad(s);
 p('_Vérification de forme non bloquante (catalogue `lib/rules.mjs`). Elle ne remplace pas le contrôle formel._\n');

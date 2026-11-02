@@ -128,33 +128,53 @@ const notDone = frRows.filter(f => ['non commencé', 'non planifié', 'sans tâc
 const known = new Set([...rows.map(r => r.id), ...relFrs.map(f => f.id)]);
 const unplannedProof = [...new Set(cases.filter(c => c.status === 'passed').flatMap(c => c.ids).filter(id => /^(AC|EX|FR)-/.test(id) && !known.has(id)))];
 
-// Porte.
+// Porte. Trois verdicts par condition, pas deux : `true` satisfaite, `false` en échec, `null` NON
+// MESURÉE. Sans ce troisième état, `[].every()` rendait `true` et la porte s'ouvrait sur le vide —
+// « ✓ R1 Toutes les suites collectées passent — aucun rapport », mesuré sur le dépôt d'exemple. R6 et
+// R7 disparaissaient même de la table quand leur rapport n'était pas collecté : une condition qu'on
+// ne voit pas ne se discute pas. Une porte « incomplète » n'est pas une porte ouverte, et
+// l'approbation reste de toute façon une déclaration humaine : elle se prend en connaissance de cause.
 const nonWaived = rows.filter(r => r.status !== 'dérogation');
 const proved = rows.filter(r => r.status === 'prouvé').length;
-const pct = nonWaived.length ? Math.round((proved / nonWaived.length) * 1000) / 10 : 100;
+const pct = nonWaived.length ? Math.round((proved / nonWaived.length) * 1000) / 10 : null;
 const xs = arr(s.exploratory);
+const nfrRows = rows.filter(r => r.kind === 'NFR');
+const pjRows = rows.filter(r => r.kind === 'parcours');
+const xsVivantes = xs.filter(x => x.status !== 'abandonnee');
+const seuilExig = set.thresholds?.requirements ?? 100;
+const seuilMut = set.thresholds?.mutation ?? 60;
 const gate = [
-  ['R1', 'Toutes les suites collectées passent', Object.values(suites).every(x => !x.failed && !x.missing && !x.error),
-    Object.entries(suites).map(([k, x]) => `${k} : ${x.missing ? 'rapport absent' : x.error ? 'illisible' : x.mutation !== undefined ? `mutation ${x.mutation} %` : `${x.total} test(s), ${x.failed} en échec`}`).join(' ; ') || 'aucun rapport'],
-  ['R2', `Exigences prouvées (seuil ${set.thresholds?.requirements ?? 100} %)`, nonWaived.every(r => r.status === 'prouvé') && pct >= (set.thresholds?.requirements ?? 100),
-    `${proved}/${nonWaived.length} prouvées, ${rows.length - nonWaived.length} dérogation(s)`],
-  ['R3', 'Mesures des NFR conformes', rows.filter(r => r.kind === 'NFR').every(r => ['prouvé', 'dérogation'].includes(r.status)), `${rows.filter(r => r.kind === 'NFR' && r.status === 'prouvé').length}/${rows.filter(r => r.kind === 'NFR').length}`],
-  ['R4', 'Parcours critiques couverts de bout en bout', rows.filter(r => r.kind === 'parcours').every(r => ['prouvé', 'dérogation'].includes(r.status)), `${rows.filter(r => r.kind === 'parcours' && r.status === 'prouvé').length}/${rows.filter(r => r.kind === 'parcours').length}`],
-  ['R5', 'Sessions exploratoires faites, sans constat bloquant ouvert', xs.every(x => x.status !== 'prevue') && !xs.some(x => arr(x.findings).some(f => f.severity === 'bloquant' && !f.resolved)),
-    `${xs.filter(x => x.status === 'faite').length}/${xs.filter(x => x.status !== 'abandonnee').length} faite(s), ${xs.flatMap(x => arr(x.findings)).filter(f => f.severity === 'bloquant' && !f.resolved).length} bloquant(s) ouvert(s)`],
+  ['R1', 'Toutes les suites collectées passent', Object.keys(suites).length ? Object.values(suites).every(x => !x.failed && !x.missing && !x.error) : null,
+    Object.entries(suites).map(([k, x]) => `${k} : ${x.missing ? 'rapport absent' : x.error ? 'illisible' : x.mutation !== undefined ? `mutation ${x.mutation} %` : `${x.total} test(s), ${x.failed} en échec`}`).join(' ; ') || 'aucun rapport collecté : renseigner settings.reports'],
+  ['R2', `Exigences prouvées (seuil ${seuilExig} %)`, nonWaived.length ? nonWaived.every(r => r.status === 'prouvé') && pct >= seuilExig : null,
+    nonWaived.length ? `${proved}/${nonWaived.length} prouvées, ${rows.length - nonWaived.length} dérogation(s)` : 'aucune exigence dans cette release : rien à prouver, donc rien de prouvé'],
+  ['R3', 'Mesures des NFR conformes', nfrRows.length ? nfrRows.every(r => ['prouvé', 'dérogation'].includes(r.status)) : null,
+    nfrRows.length ? `${nfrRows.filter(r => r.status === 'prouvé').length}/${nfrRows.length}` : 'aucune NFR à vérifier dans cette release'],
+  ['R4', 'Parcours critiques couverts de bout en bout', pjRows.length ? pjRows.every(r => ['prouvé', 'dérogation'].includes(r.status)) : null,
+    pjRows.length ? `${pjRows.filter(r => r.status === 'prouvé').length}/${pjRows.length}` : 'aucun parcours critique déclaré : renseigner settings.critical_journeys'],
+  ['R5', 'Sessions exploratoires faites, sans constat bloquant ouvert', xsVivantes.length ? xs.every(x => x.status !== 'prevue') && !xs.some(x => arr(x.findings).some(f => f.severity === 'bloquant' && !f.resolved)) : null,
+    xsVivantes.length ? `${xs.filter(x => x.status === 'faite').length}/${xsVivantes.length} faite(s), ${xs.flatMap(x => arr(x.findings)).filter(f => f.severity === 'bloquant' && !f.resolved).length} bloquant(s) ouvert(s)` : 'aucune session exploratoire prévue'],
   ['R10', 'Aucun défaut bloquant ou majeur ouvert, aucun signalement à trier', !untriaged.length && !openDefects.some(d => ['bloquant', 'majeur'].includes(d.severity)),
     untriaged.length || openDefects.length ? [untriaged.length ? `à trier : ${untriaged.map(d => d.id).join(', ')}` : '', openDefects.length ? `ouverts : ${openDefects.map(d => `${d.id} (${d.severity})`).join(', ')}` : ''].filter(Boolean).join(' ; ') : `${defects.filter(d => d.classification === 'defaut').length} défaut(s), tous résolus par un test de régression`],
   ['R8', 'Rien de réalisé sans être prouvé', !realizedUnproved.length && !reqUnproved.length,
     realizedUnproved.length || reqUnproved.length ? `réalisé mais non prouvé : ${[...realizedUnproved.map(f => f.id), ...reqUnproved.map(r => r.id)].join(', ')}` : `${frRows.filter(f => f.realization === 'réalisé').length} FR réalisée(s), toutes prouvées`],
   (() => { const pc = provenanceCheck(s, root); return ['R9', 'Preuves issues de la CI sur le commit candidat', pc.ok, pc.detail]; })(),
-  ...(mutation ? [['R6', `Score de mutation ≥ ${set.thresholds?.mutation ?? 60} %`, mutation.score >= (set.thresholds?.mutation ?? 60), `${mutation.score} %`]] : []),
-  ...(suites.security ? [['R7', 'Analyses de sécurité sans constat', !suites.security.failed && !suites.security.missing, suites.security.missing ? 'rapport absent' : `${suites.security.failed ?? 0} constat(s)`]] : []),
+  // R6 et R7 restent dans la table même sans rapport : elles s'affichent « non mesuré », avec le
+  // réglage qui les alimenterait. Un projet qui n'en veut pas pose son seuil à 0 et le dit par écrit.
+  ['R6', `Score de mutation ≥ ${seuilMut} %`, seuilMut === 0 ? true : mutation ? mutation.score >= seuilMut : null,
+    seuilMut === 0 ? 'seuil 0 : hors périmètre déclaré' : mutation ? `${mutation.score} %` : 'aucun rapport de mutation collecté : renseigner settings.reports.mutation'],
+  ['R7', 'Analyses de sécurité sans constat', suites.security ? !suites.security.failed && !suites.security.missing : null,
+    suites.security ? (suites.security.missing ? 'rapport absent' : `${suites.security.failed ?? 0} constat(s)`) : 'aucune analyse de sécurité collectée : renseigner settings.reports.security'],
 ];
-const open = gate.every(g => g[2]);
+const nonMesurees = gate.filter(g => g[2] === null);
+const enEchec = gate.filter(g => g[2] === false);
+const open = !nonMesurees.length && !enEchec.length;
+const verdict = enEchec.length ? 'fermée' : nonMesurees.length ? `incomplète — ${nonMesurees.length} condition(s) non mesurée(s)` : 'ouverte';
 
 // Écriture.
 const md = [`# Matrice de couverture — ${txt(s.initiative?.name)}, ${txt(s.release)}, version candidate ${txt(s.candidate)}`, '', `Calculée le ${today()} depuis le plan v${txt(plan.governance?.version)} et les rapports collectés. Une exigence n'est prouvée que par un test qui la référence et qui passe.`, ''];
-md.push('## Porte de release', '', table(['', 'Condition', 'Détail'], gate.map(([c, l, ok, d]) => [`${ok ? '✓' : '✗'} ${c}`, l, d])), '', `**Porte ${open ? 'ouverte' : 'fermée'}.** L'approbation de la release reste une déclaration humaine.`, '');
+md.push('## Porte de release', '', table(['', 'Condition', 'Détail'], gate.map(([c, l, ok, d]) => [`${ok === true ? '✓' : ok === false ? '✗' : '?'} ${c}`, l, ok === null ? `_non mesuré_ — ${d}` : d])), '',
+  `**Porte ${verdict}.** Une condition « ? » n'est pas satisfaite : elle n'a pas été mesurée. L'approbation de la release reste une déclaration humaine.`, '');
 md.push('## Réalisé et prouvé, par activité', '', 'Réalisé ne veut pas dire prouvé : une tâche fusionnée montre qu\'un code existe, pas que le comportement convenu fonctionne. La réalisation est calculée depuis le plan et l\'implémentation, la preuve depuis les rapports de tests.', '');
 const acts = [...new Set(frRows.map(f => f.activity))];
 for (const a of acts) {
@@ -175,7 +195,7 @@ md.push('## Exigences', '', table(['Exigence', 'Type', 'Libellé', 'Réalisation
 if (xs.length) md.push('## Sessions exploratoires', '', table(['Session', 'Charte', 'Statut', 'Constats'], xs.map(x => [x.id, `Explorer ${txt(x.charter?.explore)} avec ${txt(x.charter?.with)} pour découvrir ${txt(x.charter?.discover)}`, x.status, arr(x.findings).map(f => `${f.severity} : ${f.text}${f.story ? ` (${f.story})` : ''}`).join(' ; ') || '—'])));
 if (waivers.size) md.push('## Dérogations', '', table(['Exigence', 'Raison', 'Approuvée par'], [...waivers.values()].map(w => [w.id, w.reason, w.approved_by])));
 writeOut(join(root, 'matrix.md'), md.join('\n') + humanReviewFooter('rapport de vérification'));
-writeOut(join(root, 'matrix.yaml'), `# Matrice calculée — release-matrix.mjs\n${yaml.dump({ release: s.release, candidate: s.candidate, computed: today(), plan_version: plan.governance?.version ?? '', gate: gate.map(([code, label, ok, detail]) => ({ code, label, ok, detail })), open, requirements: rows, functional: frRows, stories: storyRows, defects: defects.map(d => ({ id: d.id, requirement: d.requirement ?? '', severity: d.severity ?? '', classification: d.classification, resolved: d.classification === 'defaut' ? resolved(d) : null })), gaps: { realized_unproved: [...realizedUnproved.map(f => f.id), ...reqUnproved.map(r => r.id)], not_done: notDone.map(f => f.id), unplanned_proof: unplannedProof }, suites }, { lineWidth: 120 })}`);
-for (const [c, l, ok, d] of gate) console.log(`${ok ? '✓' : '✗'} ${c} ${l} — ${d}`);
-console.log(`Porte ${open ? 'OUVERTE' : 'FERMÉE'} — ${join(root, 'matrix.md')}`);
+writeOut(join(root, 'matrix.yaml'), `# Matrice calculée — release-matrix.mjs\n${yaml.dump({ release: s.release, candidate: s.candidate, computed: today(), plan_version: plan.governance?.version ?? '', gate: gate.map(([code, label, ok, detail]) => ({ code, label, ok, mesure: ok !== null, detail })), open, verdict, requirements: rows, functional: frRows, stories: storyRows, defects: defects.map(d => ({ id: d.id, requirement: d.requirement ?? '', severity: d.severity ?? '', classification: d.classification, resolved: d.classification === 'defaut' ? resolved(d) : null })), gaps: { realized_unproved: [...realizedUnproved.map(f => f.id), ...reqUnproved.map(r => r.id)], not_done: notDone.map(f => f.id), unplanned_proof: unplannedProof }, suites }, { lineWidth: 120 })}`);
+for (const [c, l, ok, d] of gate) console.log(`${ok === true ? '✓' : ok === false ? '✗' : '?'} ${c} ${l} — ${ok === null ? 'non mesuré : ' : ''}${d}`);
+console.log(`Porte ${verdict.toUpperCase()} — ${join(root, 'matrix.md')}`);
 if (!open) process.exitCode = 1;

@@ -1058,6 +1058,11 @@ export function checkPlan(s, refs = {}) {
 // Chaque métrique : identifiant stable, libellé, éléments couverts / total, seuil (en %).
 // Seuils par défaut ci-dessous ; un projet les règle dans `coverage_thresholds` de l'état.
 // Un seuil non atteint se justifie par une dérogation dans `coverage_waivers` : { metric, reason, approved_by }.
+// Les quatre documents que ce catalogue vérifie. L'implémentation et les tests ont leurs propres
+// contrôles — `pr-gate.mjs`, `tdd-guard.mjs`, `trace-check.mjs`, `release-matrix.mjs` — et ne passent
+// pas par ici : ils vérifient du code et des rapports de CI, pas la cohérence interne d'un document.
+export const DOCUMENTS = ['brd', 'prd', 'sad', 'plan'];
+
 export const COVERAGE_DEFAULTS = {
   brd: { br_objective: 100, br_acceptance: 100, objective_br: 100 },
   prd: { fr_ac: 100, fr_goal: 100, br_covered: 100, must_error: 100 },
@@ -1067,7 +1072,11 @@ export const COVERAGE_DEFAULTS = {
 const metric = (id, label, items, ok) => ({ id, label, total: items.length, covered: items.filter(ok).length, missing: items.filter(x => !ok(x)).map(x => x.id) });
 
 export function coverage(s, refs = {}) {
-  const doc = ['prd', 'sad', 'plan'].includes(s.document) ? s.document : 'brd';
+  // Un document inconnu n'a pas de métriques : il n'en reçoit pas celles du BRD. L'ancien repli
+  // mesurait un état de tests avec `br_objective`, `br_acceptance` et `objective_br` — trois métriques
+  // qui n'existent pas pour lui, toutes à « 100 % atteint » faute de collections à compter.
+  const doc = s.document ?? 'brd';
+  if (!DOCUMENTS.includes(doc)) return [];
   const valid = x => ['validé', 'accepté'].includes(x?.status);
   let list = [];
   if (doc === 'brd') {
@@ -1111,16 +1120,38 @@ export function coverage(s, refs = {}) {
   }
   const thresholds = { ...COVERAGE_DEFAULTS[doc], ...(s.coverage_thresholds ?? {}) };
   const waivers = arr(s.coverage_waivers);
+  // `0 / 0` ne vaut pas 100 %. L'ancien calcul rendait `pct: 100, met: true` sur une collection vide :
+  // un BRD à l'ouverture affichait ses trois métriques « atteint », et la table de couverture du
+  // document comme celle du handoff l'écrivaient noir sur blanc. Une porte doit distinguer trois états,
+  // pas deux : mesuré et conforme, mesuré et insuffisant, PAS MESURÉ. Le troisième ne s'affiche jamais ✓.
   return list.map(m => {
-    const pct = m.total ? Math.round((m.covered / m.total) * 1000) / 10 : 100;
+    const mesure = m.total > 0;
+    const pct = mesure ? Math.round((m.covered / m.total) * 1000) / 10 : null;
     const threshold = thresholds[m.id] ?? 100;
     const waiver = waivers.find(w => w.metric === m.id);
-    return { ...m, pct, threshold, met: pct >= threshold, waiver: waiver ?? null };
+    return { ...m, mesure, pct, threshold, met: mesure ? pct >= threshold : null, waiver: waiver ?? null };
   });
 }
 
+// Lignes de la table de couverture — une seule écriture pour les quatre documents, côté document rendu
+// comme côté handoff : l'expression était recopiée huit fois, et huit fois elle disait « atteint » sur
+// une métrique vide.
+// `handoff` : le dossier de passation nomme qui a approuvé la dérogation et laisse tomber la liste des
+// manquants, que le document rendu détaille — c'est la seule différence entre les deux tables.
+export function coverageRows(cov, { handoff = false } = {}) {
+  return cov.map(c => [c.label, `${c.covered}/${c.total}`, c.mesure ? `${c.pct} %` : '—', `${c.threshold} %`,
+    !c.mesure ? '_non mesuré_'
+      : c.met ? 'atteint'
+        : c.waiver ? `dérogation : ${c.waiver.reason}${handoff ? ` (${c.waiver.approved_by ?? '—'})` : ''}`
+          : `**non atteint**${!handoff && c.missing.length ? ` (manquent : ${c.missing.join(', ')})` : ''}`]);
+}
+
+// S54 ne parle que d'une métrique MESURÉE : une collection vide ne se reproche pas ici. Ce qui la rend
+// due relève de la phase — « des objectifs sans exigence » se dit à Define, pas à l'ouverture — et
+// chaque document a au moins une métrique qui regarde depuis l'amont (`objective_br`, `br_covered`,
+// `fr_allocated`, `release_fr_story`) : un dossier vide n'est donc pas silencieux pour autant.
 export function coverageFindings(s, refs = {}) {
-  return coverage(s, refs).filter(m => !m.met && !m.waiver)
+  return coverage(s, refs).filter(m => m.mesure && !m.met && !m.waiver)
     .map(m => ({ rule: 'S54', id: `couverture:${m.id}`, message: `${m.label} : ${m.pct} % pour un seuil de ${m.threshold} % (manquent : ${m.missing.slice(0, 8).join(', ')}${m.missing.length > 8 ? '…' : ''}) ; corriger ou déclarer une dérogation dans coverage_waivers` }));
 }
 
@@ -1288,7 +1319,16 @@ const waiverIndex = s => {
 
 export function checkState(s, ctx = {}) {
   const refs = ctx.refs ?? {};
-  const base = s.document === 'plan' ? checkPlan(s, refs) : s.document === 'sad' ? checkSad(s) : s.document === 'prd' ? checkPrd(s) : checkBrd(s);
+  // Le dernier terme de la chaîne de ternaires était `checkBrd` : TOUT document hors brd, prd, sad et
+  // plan recevait les règles du BRD. Un état d'implémentation ou de tests s'y serait fait reprocher ses
+  // objectifs non mesurables et ses exigences sans source, et la couverture lui aurait rendu trois
+  // métriques vides à « 100 % atteint ». Un document qu'on ne sait pas vérifier se refuse, il ne se
+  // devine pas : un rapport faux coûte plus cher qu'un refus.
+  const doc = s.document ?? 'brd';
+  if (!DOCUMENTS.includes(doc)) {
+    return [{ rule: 'S00', id: 'document', message: `document « ${doc} » : ce catalogue vérifie ${DOCUMENTS.join(', ')}, et rien d'autre — un état d'implémentation se vérifie avec pr-gate.mjs et trace-check.mjs, un état de tests avec release-matrix.mjs` }];
+  }
+  const base = doc === 'plan' ? checkPlan(s, refs) : doc === 'sad' ? checkSad(s) : doc === 'prd' ? checkPrd(s) : checkBrd(s);
   const all = [...base, ...placeholderFindings(s), ...unsourcedNumberFindings(s), ...constitutionFindings(s, ctx.constitution), ...checklistFindings(s, ctx.checklists), ...interviewFindings(s, ctx.interviews), ...governanceFindings(s), ...coverageFindings(s, refs)];
   const idx = waiverIndex(s);
   return all.map(f => {
@@ -1301,6 +1341,7 @@ export function checkState(s, ctx = {}) {
 
 // Libellés des règles de structure, pour les rapports.
 export const STRUCT_RULES = {
+  S00: 'document hors du catalogue',
   S01: 'objectif non mesurable', S02: 'exigence sans objectif', S03: 'exigence sans besoin sourcé', S04: 'exigence sans critère d\'acceptation',
   S05: 'priorité ou release manquante', S06: 'exigence sans origine', S07: 'Must sans scénario d\'erreur', S08: 'NFR incomplète',
   S09: 'référence inexistante', S10: 'référence vers un élément abandonné', S11: 'règle métier sans source', S12: 'règle sans niveau d\'application',
