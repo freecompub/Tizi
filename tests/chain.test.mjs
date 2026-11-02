@@ -153,3 +153,63 @@ test('le document du dossier se dit copie de travail, la version figée se dit f
     assert.match(readFileSync(join(SKILLS, skill, 'scripts', scr), 'utf8'), /\*\*Copie de travail\*\*/, `${scr} garde l'ancienne en-tête`);
   }
 });
+
+// Le relevé à relire se génère. La méthode avait le contrôle — `feedback` sur la source, `S84` sur
+// l'exigence — et aucun instrument pour le satisfaire : ni script, ni gabarit, ni doctrine. L'agent a
+// inventé la forme, bonne, mais il tapait les identifiants de mémoire : les trois relevés envoyés à
+// trois personnes portaient 30 adresses que leur propre fichier ne glosait nulle part.
+test('relevé à relire : généré, chaque identifiant glosé sur place, et une source muette le dit', () => {
+  const dir = tempDir('tizi-relecture');
+  mkdirSync(join(dir, 'brd', 'demo'), { recursive: true });
+  const etat = join(dir, 'brd', 'demo', 'state.yaml');
+  writeFileSync(etat, [
+    'document: brd', 'phase: define',
+    'initiative: { name: "Dématérialisation", slug: demo }',
+    'stakeholders:',
+    '  - { id: SH-01, name: "Samir", role: "parent d\'élève", status: interrogée }',
+    '  - { id: SH-02, name: "Dédé", role: "président", status: interrogée }',
+    'sources:',
+    '  - { id: SRC-01, type: entretien, date: "2026-10-29", stakeholders: [SH-01], quote: "Elle revient pour compléter le dossier.", understood: "Pas un refus : un retour au bureau." }',
+    '  - { id: SRC-02, type: entretien, date: "2026-10-30", stakeholders: [SH-01] }',
+    '  - { id: SRC-03, type: décision, date: "2026-11-02", stakeholders: [SH-01], quote: "« Oui. »", confirms: [BC-02] }',
+    '  - { id: SRC-04, type: entretien, date: "2026-10-28", stakeholders: [SH-02], quote: "Le dossier va dans la corbeille." }',
+    'candidate_needs:',
+    '  - { id: BC-01, text: "Ne pas refaire tout le dossier quand une pièce manque", sources: [{ ref: SRC-01 }], status: confirmé }',
+    '  - { id: BC-02, text: "Savoir que le dossier déposé a bien été reçu", sources: [{ ref: SRC-04 }], status: confirmé }',
+  ].join('\n'));
+  const run = (...a) => node(script('brd-builder', 'review-sources.mjs'), [etat, ...a], { cwd: dir });
+
+  // L'état de la relecture : la charge n'est pas la même pour tous, et c'est au demandeur de le savoir.
+  const etatOut = run('--etat');
+  assert.equal(etatOut.code, 0, etatOut.err);
+  assert.match(etatOut.out, /Samir \(SH-01\)\s*\|\s*3\s*\|\s*2\s*\|/, 'la charge par personne n\'est pas comptée');
+  assert.match(etatOut.out, /Charge la plus lourde : Samir \(SH-01\), 3 source\(s\) sur 4/);
+  assert.match(etatOut.out, /1 source\(s\) de parole ne portent pas ce qui a été dit/);
+
+  assert.equal(run('--sh', 'SH-01').code, 0);
+  const md = readFileSync(join(dir, 'brd/demo/interviews/relecture-SH-01.md'), 'utf8');
+  assert.match(md, /^# Relevé à relire — Samir \(SH-01\)/);
+  // Le verbatim mot pour mot, et ce qui en a été tiré, séparés.
+  assert.match(md, /> Elle revient pour compléter le dossier\./);
+  assert.match(md, /Ce qui en a été tiré : Pas un refus : un retour au bureau\./);
+  // Une source sans contenu le dit en creux : c'est le seul endroit où la personne peut s'apercevoir
+  // qu'on a perdu ce qu'elle a dit.
+  assert.match(md, /### Entretien du 2026-10-30 \(SRC-02\)\n\n\*Rien n'a été écrit pour cette source/);
+  // Ce qui a été construit depuis ses propos, chaque ligne avec son énoncé.
+  assert.match(md, /- Ne pas refaire tout le dossier quand une pièce manque \(BC-01\) — confirmé/);
+  // Et ce qu'elle a confirmé de vive voix, même si ce besoin ne repose pas sur ses sources : sans cette
+  // section, le relevé disait que Samir avait répondu sur cinq besoins et n'en montrait que trois.
+  assert.match(md, /## Ce que vous avez déjà confirmé de vive voix/);
+  assert.match(md, /- Savoir que le dossier déposé a bien été reçu \(BC-02\)/);
+
+  // Zéro constat S104 : chaque identifiant est glosé sur place, par construction.
+  const lint = node(script('brd-builder', 'lint.mjs'), [etat], { cwd: dir });
+  assert.doesNotMatch(lint.out, /S104/, `le relevé généré parle par adresses :\n${lint.out}`);
+
+  // Un fichier déjà écrit n'est pas remplacé : les corrections de la personne y sont peut-être.
+  writeFileSync(join(dir, 'brd/demo/interviews/relecture-SH-01.md'), 'corrigé à la main');
+  assert.match(run('--sh', 'SH-01').out, /existe déjà : non remplacé/);
+  assert.equal(readFileSync(join(dir, 'brd/demo/interviews/relecture-SH-01.md'), 'utf8'), 'corrigé à la main');
+  // Et on ne fait pas relire un relevé vide à quelqu'un qu'on n'a pas entendu.
+  assert.notEqual(run('--sh', 'SH-09').code, 0);
+});
