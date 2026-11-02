@@ -377,9 +377,14 @@ export function gateConditions(s, { actifs = null, refs = null } = {}) {
   if (!table) return null;
   const phases = PHASES[doc] ?? [];
   const rang = phases.indexOf(s.phase);
+  // Les zones d'ombre sont un mécanisme des quatre documents : l'étape « tests » n'a ni
+  // `shadow_zones`, ni `risks`, ni `hypotheses` — ni dans son gabarit, ni dans sa doctrine. Les lui
+  // ajouter donnait quatre conditions toujours tenues, sur des collections vides : quatre ✓ gratuits
+  // qui gonflaient le « n tenues sur m » et n'apprenaient rien. Une condition qui ne peut pas échouer
+  // n'est pas une condition.
   const conditions = [
     ...table(s, refs),
-    ...zonesConditions(s),
+    ...(EN_ATTENTE[doc] ? zonesConditions(s) : []),
     ...(EN_ATTENTE[doc] ? [['aucun avertissement ni corrigé ni dérogé (lint.mjs)', actifs === null ? null : actifs === 0,
       actifs === null ? 'non mesuré : catalogue de règles absent' : `${actifs} avertissement(s) actif(s)`]] : []),
   ];

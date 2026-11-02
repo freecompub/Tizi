@@ -1114,3 +1114,27 @@ test('les trois noms de l\'étape 6 sont nommés, et le point d\'étape dit où 
   assert.match(sk, /pas de quatrième nom à chercher/, 'rien ne dit qu\'il n\'y en a pas un de plus');
   for (const nom of [/`qa\/<slug>\/`/, /`document: test`/, /`test-builder`/]) assert.match(sk, nom, `un des trois noms manque : ${nom}`);
 });
+
+// La liste des règles de contrôle SE GÉNÈRE : 117 règles écrites à la main dérivent au premier
+// chantier, et une liste qui dérive est pire qu'une absence de liste — on la croit. C'est la doctrine
+// du dossier appliquée au dossier : « un document qui part se génère, il ne se rédige pas ».
+test('la documentation des règles de contrôle est à jour', async () => {
+  const r = node(join(ROOT, 'doc-regles.mjs'), ['--verifier'], { cwd: ROOT });
+  assert.equal(r.code, 0, `${r.err}${r.out}`);
+  const doc = readFileSync(join(ROOT, 'documentation', 'regles-de-controle.md'), 'utf8');
+  // Chaque règle du catalogue y figure : le document est la liste, pas un échantillon.
+  const rules = await import(join(SKILLS, 'brd-builder', 'scripts', 'lib', 'rules.mjs'));
+  const absentes = [...Object.keys(rules.STRUCT_RULES), ...rules.TEXT_RULES.map(x => x.id)]
+    .filter(c => !doc.includes('`' + c + '`'));
+  assert.deepEqual(absentes, [], `règle(s) absente(s) de la documentation : ${absentes.join(' ')}`);
+  // Et les six étapes, chacune avec ses contrôles.
+  for (let n = 1; n <= 6; n += 1) assert.match(doc, new RegExp(`^## Étape ${n} — `, 'm'), `l'étape ${n} manque`);
+  for (const bloc of [/^### Porte de PR \(\d+ conditions\)/m, /^### Porte de release \(\d+ conditions\)/m, /^## Garde-fous de l'export \(\d+\)/m]) {
+    assert.match(doc, bloc, `un bloc de contrôles manque : ${bloc}`);
+  }
+  // Les conditions de porte viennent de `gateConditions`, pas d'une copie : on en vérifie une au hasard.
+  const { gateConditions } = await import(join(SKILLS, 'brd-builder', 'scripts', 'lib', 'gates.mjs'));
+  for (const c of gateConditions({ document: 'sad', phase: 'design' }).conditions) {
+    assert.ok(doc.includes(c[0]), `condition de porte absente de la documentation : « ${c[0]} »`);
+  }
+});

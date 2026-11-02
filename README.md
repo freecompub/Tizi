@@ -21,11 +21,12 @@ Point de départ : `/tizi` dans Claude Code, ou l'agent `tizi` dans Copilot.
 
 ## documentation/
 
-Trois fichiers : le document de référence, et les notes de lecture des ouvrages dont la méthode est tirée.
+Le document de référence, la liste générée des règles de contrôle, et les notes de lecture des ouvrages dont la méthode est tirée.
 
 | Fichier | Contenu |
 |---|---|
 | `Tizi - un SDLC agentique.md` | Le document de référence ; il porte sa propre date en en-tête. Sommaire, nom et philosophie, dix étapes, construction des étapes 1 à 6, index des abréviations et identifiants, sources |
+| `regles-de-controle.md` | **Généré** par `doc-regles.mjs` : toutes les règles de contrôle, étape par étape — règles de structure et de rédaction avec leur énoncé, conditions calculées de chaque porte de phase, métriques de couverture et seuils, portes de PR et de release, garde-fous d'export, et un index. Ne pas le modifier à la main : `node doc-regles.mjs` le régénère, `--verifier` dit s'il a dérivé (un test du dépôt le vérifie) |
 | `notes-Constantinidis-et-BABOK-v3.md` | Notes de lecture de Constantinidis, *Expression des besoins pour le SI* (2010), et du *BABOK v3* (IIBA, 2015), lus en entier |
 | `notes-Patton-User-Story-Mapping.md` | Notes de lecture de Jeff Patton, *User Story Mapping* (O'Reilly, 2014), lu en entier |
 

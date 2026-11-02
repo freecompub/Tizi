@@ -883,6 +883,8 @@ Pour un logiciel comme Diabeo, ces exigences s’appliquent à toutes les étape
 
 ### Codes des vérifications et des portes
 
+La liste complète — chaque règle, chaque condition de porte, étape par étape — est dans `documentation/regles-de-controle.md`, **généré** par `doc-regles.mjs` depuis le catalogue lui-même : une liste de 117 règles écrite à la main dérive au premier changement, et une liste qui dérive est pire qu’une absence de liste, parce qu’on la croit. Le tableau ci-dessous ne donne que les familles.
+
 | Codes | Signification |
 | --- | --- |
 | `L01`–`L08` | Règles de rédaction de la vérification de forme (termes vagues, énoncé multiple, pronom sans antécédent…) |
