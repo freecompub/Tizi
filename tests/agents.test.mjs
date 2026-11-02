@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync, cpSync, mkdirSync, writeFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { FIX, ROOT, node, run, sandbox, script, tempDir } from './helpers.mjs';
+import yaml from '../skills/brd-builder/scripts/lib/vendor/js-yaml.mjs';
 
 const guard = (repo, payload) => node(script('impl-builder', 'tdd-guard.mjs'), [], { cwd: repo, input: JSON.stringify({ cwd: repo, ...payload }) });
 test('garde-fou TDD : mêmes verdicts quel que soit l\'outil', () => {
@@ -132,11 +133,11 @@ test('extrait de session : troncature annoncée, enveloppes écartées, réponse
   assert.match(md, /\*\*Réponse\*\* : Pas encore/, 'réponse non nommée par l\'hôte perdue');
 });
 
-// Le champ `condensed` de l'index est écrit par `session-capture.mjs`, qui tourne sur `Stop`, donc
-// après tout ce que l'agent a fait dans le tour — y compris le commit. Sur le premier dossier réel, le
-// condensé était écrit et commité, et l'index commité disait encore `condensed: ''` : trois outils
-// demandaient à la session suivante de rédiger un condensé qui existait déjà.
-test('condensé : cherché sur le disque, le champ d\'index n\'est qu\'un cache', async () => {
+// Le condensé se cherche SUR LE DISQUE. L'ancien champ `condensed` ne s'écrit plus — il ne pouvait que
+// mentir : écrit par la capture, qui cherchait le fichier dans son répertoire courant, il valait `''`
+// dès que ce répertoire n'était pas la racine, et trois outils demandaient alors de rédiger un condensé
+// qui existait déjà. Un index ancien qui le porte encore reste lu, pour ne pas casser ce qui est écrit.
+test('condensé : cherché sur le disque ; l\'ancien champ d\'index reste lu', async () => {
   const { condenseOf } = await import('../skills/brd-builder/scripts/lib/sessions.mjs');
   const dir = tempDir('tizi-cond');
   mkdirSync(join(dir, '.tizi/sessions'), { recursive: true });
@@ -264,4 +265,43 @@ test('extrait de session : les questions adressées à personne sont comptées',
   const md2 = buildExtract(readTranscript(avec), { date: '2026-11-02', session: 'xxxx', initiatives: ['brd/demo'], event: 'Stop', personnes });
   assert.match(md2, /1 question\(s\) sur 2 portent un identifiant/, 'les questions qui portent un identifiant ne sont pas comptées');
   assert.match(md2, /ZO-003/, 'le constat ne montre pas la question en cause');
+});
+
+// Le magasin de sessions suivait le répertoire courant. Un `cd` de l'agent dans un dossier
+// d'initiative pendant la session y créait un SECOND magasin, et chaque capture n'en mettait à jour
+// qu'un : sur le deuxième dossier réel, la même session existait deux fois, à 2 h 26 et onze messages
+// d'écart, en alternance — donc aucune des deux copies n'était fiable. Aucun test ne lançait la
+// capture depuis un sous-répertoire : tous partaient de la racine, et c'est pour ça que rien n'a été vu.
+test('capture : un seul magasin, à la racine du projet, quel que soit le répertoire de la session', () => {
+  const dir = tempDir('tizi-racine');
+  mkdirSync(join(dir, '.git'), { recursive: true });
+  mkdirSync(join(dir, 'brd', 'demo'), { recursive: true });
+  writeFileSync(join(dir, 'brd/demo/state.yaml'), 'document: brd\nphase: discover\ninitiative: { name: "Démo", slug: demo }\n');
+  // Un dépôt DÉJÀ abîmé par le défaut : un `.tizi/` parasite dans le dossier d'initiative.
+  mkdirSync(join(dir, 'brd/demo/.tizi/sessions'), { recursive: true });
+  const tr = join(dir, 't.jsonl');
+  writeFileSync(tr, [
+    JSON.stringify({ type: 'user', timestamp: '2026-11-02T10:00:00.000Z', message: { role: 'user', content: [{ type: 'text', text: 'Mets à jour brd/demo/state.yaml, pousse sur brd/une-branche-git/ et vois brd/jamais-creee/state.yaml' }] } }),
+    JSON.stringify({ type: 'assistant', timestamp: '2026-11-02T10:00:05.000Z', message: { role: 'assistant', content: [{ type: 'text', text: 'Noté.' }] } }),
+  ].join('\n') + '\n');
+  const capture = cwd => node(script('brd-builder', 'session-capture.mjs'), [],
+    { cwd: dir, input: JSON.stringify({ cwd, session_id: 'abcd1234', transcript_path: tr, hook_event_name: 'Stop' }) });
+  assert.equal(capture(dir).code, 0);
+  assert.equal(capture(join(dir, 'brd', 'demo')).code, 0, 'la capture depuis un sous-répertoire échoue');
+
+  // Un seul index, à la racine : la seconde capture a mis à jour la première, elle n'en a pas créé une autre.
+  const index = readdirSync(join(dir, '.tizi/sessions')).filter(f => f.endsWith('.index.yaml'));
+  assert.deepEqual(index, ['2026-11-02-abcd1234.index.yaml']);
+  assert.deepEqual(readdirSync(join(dir, 'brd/demo/.tizi/sessions')), [], 'un second magasin est né dans le dossier d\'initiative');
+
+  const e = yaml.load(readFileSync(join(dir, '.tizi/sessions', index[0]), 'utf8'));
+  // Une initiative touchée est une initiative qui a un état sur le disque : un nom de branche Git et un
+  // slug seulement évoqué portent le même motif `<document>/<slug>/`, et l'index en annonçait quatre
+  // pour un seul dossier réel — au redémarrage suivant, trois condensés étaient réclamés pour rien.
+  assert.deepEqual(e.initiatives, ['brd/demo']);
+  // Le champ `condensed` ne s'écrit plus : `condenseOf` trouve le fichier par la convention de nom.
+  assert.equal('condensed' in e, false, 'le champ `condensed` est encore écrit');
+  // Les chemins de l'index sont relatifs à la racine, et résolus contre elle.
+  assert.equal(e.transcript, '.tizi/sessions/2026-11-02-abcd1234.jsonl');
+  assert.ok(existsSync(join(dir, e.transcript)) && existsSync(join(dir, e.extract)));
 });

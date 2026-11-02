@@ -3,7 +3,7 @@
 // Usage : node session-search.mjs "<mots>" [--initiative brd/<slug>] [--who user|assistant] [--max 10]
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { readTranscript, loadIndex } from './lib/sessions.mjs';
+import { readTranscript, loadIndex, projectRoot } from './lib/sessions.mjs';
 
 const args = process.argv.slice(2);
 const opt = k => (args.includes(k) ? args[args.indexOf(k) + 1] : '');
@@ -13,9 +13,14 @@ const words = query.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '
 const norm = t => t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 const max = Number(opt('--max') || 10), who = opt('--who'), ini = opt('--initiative');
 const hits = [];
-for (const s of loadIndex().sessions.filter(s => !ini || (s.initiatives ?? []).includes(ini)).reverse()) {
-  if (!existsSync(s.transcript)) continue;
-  for (const t of readTranscript(s.transcript)) {
+// Les chemins de l'index sont relatifs à la racine du projet, pas au répertoire d'où l'on cherche :
+// lus depuis ailleurs, ils désignaient un fichier qui n'existe pas, et la recherche ne rendait rien
+// sans dire pourquoi.
+const root = projectRoot();
+for (const s of loadIndex(root).sessions.filter(s => !ini || (s.initiatives ?? []).includes(ini)).reverse()) {
+  const transcript = join(root, s.transcript ?? '');
+  if (!s.transcript || !existsSync(transcript)) continue;
+  for (const t of readTranscript(transcript)) {
     if (who && t.role !== who) continue;
     const n = norm(t.text ?? '');
     if (!words.every(w => n.includes(w))) continue;

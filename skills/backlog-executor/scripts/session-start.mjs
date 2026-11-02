@@ -13,11 +13,13 @@ import { dueReviews } from './due-reviews.mjs';
 // planification — et ce fichier-ci est commun aux sept. Importé statiquement, il faisait échouer le
 // module AVANT le try/catch, donc `session-start.mjs` ne démarrait pas du tout dans cinq skills sur
 // sept, alors que son dernier mot est « un rappel ne doit jamais empêcher une session de démarrer ».
-import { condenseOf, loadIndex } from './lib/sessions.mjs';
+import { condenseOf, loadIndex, projectRoot } from './lib/sessions.mjs';
 
 let raw = {};
 try { raw = JSON.parse(readFileSync(0, 'utf8') || '{}'); } catch { raw = {}; }
-const root = normalizeHookInput(raw).cwd;
+// La racine du projet, pas le répertoire courant : lancé depuis un dossier d'initiative, le rappel de
+// début de session lisait un index qui n'était pas celui du dépôt.
+const root = projectRoot(normalizeHookInput(raw).cwd);
 try {
   const lines = [];
   for (const d of dueReviews(root)) lines.push(`- Sprint review due : ${d.initiative} ${d.iteration}${d.days_since_end != null ? `, finie depuis ${d.days_since_end} jour(s)` : ''}. À lancer avec /tizi-sprint-review (Claude Code) ou l'agent tizi-sprint-review (Copilot).`);
