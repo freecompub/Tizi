@@ -78,7 +78,14 @@ stakeholders: []          # qui a parlé, et en quelle qualité — chaîné : r
 #    status: à interroger  # à interroger | interrogée | non disponible
 
 sources: []               # preuves produit (entretiens, tests utilisateurs, analytics, études, décisions)
-#  - { id: SRC-001, type: entretien, date: "", stakeholders: [SH-01], present: [], quote: "", understood: "", confirms: [], corrects: [], path: "", feedback: à envoyer, feedback_motif: "" }   # type : cadrage | entretien | observation | test | analytics | étude | décision
+#  - { id: SRC-001, type: entretien, date: "", stakeholders: [SH-01], present: [], quote: "", understood: "", confirms: [], corrects: [], path: "", feedback: à envoyer, feedback_le: "", feedback_par: "", feedback_motif: "" }   # type : cadrage | entretien | échange écrit | observation | test | analytics | étude | décision
+#                          # échange écrit : la personne a répondu PAR ÉCRIT. Recueil auprès d'elle comme
+#                          # un entretien, mais sans salle — donc pas de `present` —, et il ne se déclare
+#                          # pas `entretien` : un fil de six messages et une conversation de quarante
+#                          # minutes ne sont pas la même preuve, et le relecteur doit pouvoir les distinguer
+#                          # `feedback_le` : QUAND la demande de relecture est partie. Sans elle, `envoyé`
+#                          # ne se vérifie pas et S84 le compte comme jamais demandé ; avec elle, il vaut
+#                          # « non mesuré » — une question posée, pas un trou. `feedback_par` : par quoi
 #                          # `corrects` : les SOURCES dont celle-ci corrige la lecture (S112) — `confirms`
 #                          # ne pointe que vers des éléments, donc rien ne menait d'une source à celle
 #                          # qui l'a corrigée ; `feedback_motif` : pourquoi « sans objet » sur une parole

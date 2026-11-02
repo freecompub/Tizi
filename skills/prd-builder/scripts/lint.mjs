@@ -33,6 +33,12 @@ if (only.size) findings = findings.filter(f => only.has(f.id));
 // silencieux se propage — et une dérogation invisible est un contrôle désarmé sans trace.
 const derogees = findings.filter(f => f.waived);
 findings = findings.filter(f => !f.waived);
+// Une relecture partie et pas encore revenue n'est pas un trou : c'est une question qui vit. Elle
+// change de liste comme une dérogation, elle ne disparaît pas — et elle ne compte pas au débit de qui
+// a posé la question, sinon demander coûte autant que ne pas demander. La sortie machine les garde
+// dans le lot, avec leur drapeau : c'est un état, pas une absence de constat.
+const attente = findings.filter(f => f.pending);
+if (!args.includes('--json')) findings = findings.filter(f => !f.pending);
 
 if (args.includes('--json')) {
   console.log(JSON.stringify(findings, null, 2));
@@ -54,4 +60,9 @@ if (args.includes('--json')) {
 if (!args.includes('--json') && derogees.length) {
   console.log(`\n${derogees.length} avertissement(s) couvert(s) par une dérogation nommée :`);
   for (const f of derogees) console.log(`  · [${f.rule}] ${f.id} — ${f.waived}`);
+}
+if (!args.includes('--json') && attente.length) {
+  console.log(`\n${attente.length} question(s) posée(s) et pas encore revenue(s) :`);
+  for (const f of attente) console.log(`  … [${f.rule}] ${f.id} — ${f.message}`);
+  console.log('  Ni tenues ni en échec : non mesurées. Relancer est un geste de l\'utilisateur, pas une correction du dossier.');
 }
