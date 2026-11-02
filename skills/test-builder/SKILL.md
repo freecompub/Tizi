@@ -36,6 +36,8 @@ Un testeur qui remonte un problème suit `references/defects.md` (point d'entré
 | Execute | Lancer les suites, mener les sessions exploratoires, mesurer les NFR, collecter les rapports | `references/phase-execute.md` |
 | Prove | Matrice de couverture des exigences, porte de release, approbation, archivage des preuves | `references/phase-prove.md` |
 
+La phase en cours est dans `phase`, et chaque passage de porte s'écrit dans `phase_log` — comme pour les quatre documents amont. `status.mjs` affiche le parcours et le compte des conditions de la porte courante.
+
 ## Démarrage
 
 1. Cherche `qa/*/state.yaml`. S'il en existe, propose de reprendre.

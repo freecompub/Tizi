@@ -6,6 +6,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import yaml from './lib/vendor/js-yaml.mjs';
 import { humanReviewFooter, shLabel, PHASE_NOM } from './lib/common.mjs';
+import { porteDe } from './lib/gates.mjs';
 import { checkBrd, coverage, evidenceOf, brSources, coverageRows } from './lib/rules.mjs';
 
 const args = process.argv.slice(2);
@@ -214,13 +215,17 @@ for (const d of dds) {
 // Le parcours des phases. Un passage de phase est une décision comme les autres — il clôt ce qui
 // précède, il a un décideur et une date —, et il n'apparaissait nulle part dans le document. Faute de
 // champ, l'agent l'écrivait en commentaire de `state.yaml` : un relecteur ne lit pas le YAML.
+// Un retour en arrière s'écrit dans le même journal, avec `kind: retour` : la colonne le dit, sinon
+// un dossier qui a reculé se relit comme un dossier allé tout droit.
 const plog = arr(s.phase_log);
 if (plog.length) {
   h(3, 'Parcours des phases');
-  p(table(['Phase close', 'Vers', 'Date', 'Décidé par', 'Porte'], plog.map(e => [
+  p(table(['Passage', 'Phase close', 'Vers', 'Date', 'Décidé par', 'Porte'], plog.map(e => [
+    porteDe(e) ? 'porte' : 'retour',
     PHASE_NOM[e.from] ?? txt(e.from), PHASE_NOM[e.to] ?? txt(e.to), txt(e.date),
     e.decided_by ? shName(e.decided_by) : '—',
-    [txt(e.gate), ...arr(e.waived).map(w => `dérogation : ${txt(w.condition)} — ${txt(w.reason)}`)].filter(x => x !== '—').join(' ; ') || '—'])));
+    [porteDe(e) ? txt(e.gate) : [txt(e.zone), txt(e.reason)].filter(x => x !== '—').join(' — ') || '—',
+      ...arr(e.waived).map(w => `dérogation : ${txt(w.condition)} — ${txt(w.reason)}`)].filter(x => x !== '—').join(' ; ') || '—'])));
 }
 
 // ── 10. Périmètre ───────────────────────────────────────────

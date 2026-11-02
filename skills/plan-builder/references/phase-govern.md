@@ -39,4 +39,16 @@ Suis `references/export.md`. Tu prépares ; tu n'exécutes jamais.
 
 Une demande de changement en amont (PRD, conception) relance l'ingestion des handoffs : les stories et tâches touchées repassent en Refine.
 
+## Fin de la phase
+
+**Propose** le passage à Review, sans le décider, quand :
+
+- des relecteurs sont nommés et au moins une approbation est enregistrée ;
+- une version de référence est figée (`freeze-version.mjs --baseline`) ;
+- le handoff vers l'implémentation est produit ;
+- chaque zone d'ombre est `levée` ou `assumée`, et chaque `assumée` est emportée par un risque ou une hypothèse qui la nomme ;
+- aucun élément n'est resté `proposé` : ce que personne n'a tranché ne franchit pas la porte.
+
+Lance `status.mjs` : il compte les conditions de cette porte qui **se calculent**, et nomme ce qui manque — identifiants compris. Celles qui se jugent n'y sont pas, et le compte dit « n tenues sur m mesurées » : ce n'est pas « la porte est franchie ». Présente-le, liste ce qui manque — puis **pose la question dans tous les cas**, avec l'outil : passer la phase, ou s'arrêter là. S'il manque des conditions, les deux options sont « s'arrêter là » et « continuer sur ce qui manque », jamais « passer la porte » (`references/questions.md`). Si l'utilisateur accepte, passe `phase: review`.
+
 **Et le passage lui-même s'écrit.** Dès que l'utilisateur a tranché, ajoute l'entrée à `phase_log` : la phase qui se clôt, celle qui s'ouvre, la date, qui a décidé, la source qui le porte, l'état de la porte tel que `status.mjs` l'a dit, et chaque condition franchie par dérogation avec sa raison. Sans cette entrée, `status.mjs` affiche « passage sans trace » et le document rendu ne peut pas dire au relecteur quand la phase a été close ni par qui (S100, S101).
