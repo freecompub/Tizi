@@ -1088,6 +1088,27 @@ test('les mots de la personne se séparent de ce que le courrielleur ajoute', as
   assert.deepEqual(nu.retire, [], 'un message nu ne se fait pas amputer');
   assert.equal(nu.part, 100);
 
+  // Ce qu'elle DEMANDE. L'agent ne répond à aucune question d'une partie prenante sans l'autorisation de
+  // l'utilisateur — sans exception, et la raison n'est pas la politesse : on ne sait pas qui a écrit.
+  // Une adresse n'est pas une identité, et « envoyez-moi ce que vous avez écrit sur moi » est justement
+  // la demande qui ferait sortir du dossier les propos de quelqu'un.
+  //
+  // La détection cherche les MARQUES et non des mots : une liste de « pouvez-vous », « can you »,
+  // « هل » serait fausse dès la neuvième langue et donnerait surtout l'impression d'avoir vérifié.
+  const fr = await lire('La ressaisie, surtout. Au fait, pouvez-vous m\'envoyer ce qui est écrit sur moi ? Et le président, il a dit quoi ?\n');
+  assert.equal(fr.questions.length, 2, 'deux demandes distinctes, pas une');
+  assert.match(fr.questions[1], /^Et le président/);
+  // Quatre systèmes d'écriture, quatre marques — et aucun mot français dans le motif.
+  assert.equal((await lire('Mostly retyping. Can you send me the file?\n')).questions.length, 1, 'latin');
+  assert.equal((await lire('إعادة إدخال العناوين. هل يمكنكم إرسال الملف إلي؟\n')).questions.length, 1, 'arabe');
+  assert.equal((await lire('¿Me puede enviar el expediente? Es sobre todo volver a teclear.\n')).questions.length, 1, 'espagnol ouvrant');
+  assert.equal((await lire('ファイルを送ってもらえますか？\n')).questions.length, 1, 'pleine largeur');
+  // Et une réponse qui ne demande rien ne déclenche rien : un avertissement qui tombe sur du correct
+  // s'use jusqu'à ce que plus personne ne le lise.
+  assert.deepEqual((await lire('La ressaisie des adresses, trois heures par semaine.\n')).questions, []);
+  // Le point-virgule grec est écarté pour la même raison : c'est aussi de la ponctuation ordinaire.
+  assert.deepEqual((await lire('Deux choses ; la ressaisie et les relances.\n')).questions, []);
+
   // Un pied de page au MILIEU d'une phrase est peut-être de la personne : il ne se retire que s'il
   // termine le texte. Sinon le script couperait dans ses mots sous prétexte de les nettoyer.
   const milieu = await lire('Sent from my iPhone, ça explique les fautes. La ressaisie des adresses.\n');
