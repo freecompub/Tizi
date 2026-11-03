@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { DOCUMENTS, STRUCT_RULES, TEXT_RULES, checkState, coverage, coverageFindings, coverageRows, evidenceOf, contextFindings } from '../skills/brd-builder/scripts/lib/rules.mjs';
+import { DOCUMENTS, STRUCT_RULES, TEXT_RULES, checkState, sollicitationEtat, coverage, coverageFindings, coverageRows, evidenceOf, contextFindings } from '../skills/brd-builder/scripts/lib/rules.mjs';
 import { gateConditions } from '../skills/brd-builder/scripts/lib/gates.mjs';
 import { shellWrittenPaths } from '../skills/brd-builder/scripts/lib/agent-io.mjs';
 import { buildExtract } from '../skills/brd-builder/scripts/lib/sessions.mjs';
@@ -738,6 +738,63 @@ test('S111 et S112 : « sans objet » porte sa raison, et une source peut en cor
 // dans le dépôt, dans le handoff et dans une copie figée en lecture seule dont rien ne se reprend. Le
 // champ dit donc PAR QUOI on joint la personne, et la coordonnée vit à côté, hors de git. Ce test tient
 // les deux moitiés : l'état refuse l'adresse, et le canal annoncé se confronte au fichier voisin.
+// Écrire à quelqu'un ne valait rien tant que `sollicitée` n'existait pas : il fallait la laisser
+// `à interroger`, donc rendre le même constat que si personne ne l'avait jamais contactée. Ce test
+// tient les trois états et, surtout, ce qui change et ce qui ne change pas quand la question est en vol.
+test('S115 : « sollicitée » dit qu\'on a écrit, et sa date dit que la question vit', () => {
+  const sh = extra => ({ id: 'SH-01', end_user: true, power: 'faible', impact: 'fort', influence: 'positive', quadrant: 'consulter', joignable_par: 'courriel', ...extra });
+  const etat = extra => checkState({ document: 'brd', phase: 'discover', stakeholders: [sh(extra)] });
+  const s115 = d => d.filter(f => f.rule === 'S115').map(f => f.message);
+
+  // Les trois états.
+  assert.equal(sollicitationEtat(sh({ status: 'à interroger' })), 'absent');
+  assert.equal(sollicitationEtat(sh({ status: 'sollicitée', sollicitee_le: '2026-10-28' })), 'attente');
+  assert.equal(sollicitationEtat(sh({ status: 'sollicitée' })), 'absent', 'sans date, elle ne compte pas');
+  assert.equal(sollicitationEtat(sh({ status: 'sollicitée', sollicitee_le: '28/10/2026' })), 'absent', 'une date qui n\'est pas une date non plus');
+  assert.equal(sollicitationEtat(sh({ status: 'interrogée' })), 'fait');
+
+  // Déclarée sollicitée sans dire quand : c'est l'agent qui écrit le champ.
+  assert.match(s115(etat({ status: 'sollicitée' }))[0], /sans dire quand/);
+  // Et sans dire par quoi : une question partie sans canal ne se relance pas.
+  assert.equal(s115(etat({ status: 'sollicitée', sollicitee_le: '2026-10-28', joignable_par: '' })).length, 1);
+  assert.match(s115(etat({ status: 'sollicitée', sollicitee_le: '2026-10-28', joignable_par: '' }))[0], /sans dire par quoi/);
+  // Les deux à la fois : deux constats, pas un.
+  assert.equal(s115(etat({ status: 'sollicitée', joignable_par: '' })).length, 2);
+  // La bonne tenue.
+  assert.deepEqual(s115(etat({ status: 'sollicitée', sollicitee_le: '2026-10-28' })), []);
+  // Une date restée là sous un statut qui ne la lit plus : elle donne l'air d'une question en vol.
+  assert.match(s115(etat({ status: 'à interroger', sollicitee_le: '2026-10-28' }))[0], /la date ne se lit que sur « sollicitée »/);
+  // Sur `interrogée`, la date est la trace de quand on a écrit : elle ne se reproche pas.
+  assert.deepEqual(s115(etat({ status: 'interrogée', sollicitee_le: '2026-10-28' })), []);
+
+  // Ce qui change : le REPROCHE du silence. Le constat sur sa voix non entendue change de liste.
+  const avecBesoin = extra => checkState({ document: 'brd', phase: 'discover',
+    stakeholders: [sh({ ...extra, represented_by: 'SH-02' }), { id: 'SH-02', status: 'interrogée', represents: 'les agents', represents_source: 'SRC-1', power: 'fort', impact: 'fort', influence: 'positive', quadrant: 'impliquer' }],
+    sources: [{ id: 'SRC-1', type: 'entretien', date: '2026-10-01', stakeholders: ['SH-02'], quote: 'Je parle pour les agents.', feedback: 'confirmé' }],
+    candidate_needs: [{ id: 'BC-1', text: 'Pouvoir …', concerns: ['SH-01'], sources: [{ ref: 'SRC-1' }] }] });
+  const s94 = d => d.find(f => f.rule === 'S94' && f.id === 'SH-01');
+  assert.equal(s94(avecBesoin({ status: 'à interroger' }))?.pending, undefined, 'jamais contactée : le constat compte');
+  assert.equal(s94(avecBesoin({ status: 'sollicitée', sollicitee_le: '2026-10-28' }))?.pending, true, 'contactée : la question vit');
+  assert.equal(s94(avecBesoin({ status: 'sollicitée' }))?.pending, undefined, 'sans date, rien ne change');
+
+  // S83 aussi, au niveau de la collection : un utilisateur direct en attente nomme son attente.
+  const s83 = d => d.find(f => f.rule === 'S83');
+  assert.equal(s83(avecBesoin({ status: 'à interroger' }))?.pending, undefined);
+  const enVol = s83(avecBesoin({ status: 'sollicitée', sollicitee_le: '2026-10-28' }));
+  assert.equal(enVol?.pending, true);
+  assert.match(enVol.message, /SH-01 sollicité\(s\) et sans réponse, la question vit/);
+
+  // Ce qui NE change pas : elle reste non entendue. Une décision rendue en son nom est rapportée par
+  // un tiers, et une source à son nom reste du second degré — que la question soit en vol ou non.
+  const enNomDe = checkState({ document: 'brd', phase: 'discover',
+    stakeholders: [sh({ status: 'sollicitée', sollicitee_le: '2026-10-28' })],
+    sources: [{ id: 'SRC-1', type: 'entretien', date: '2026-10-01', stakeholders: ['SH-01'], quote: 'On fait comme ça.', feedback: 'confirmé' }],
+    decision_rights: [{ domain: 'perimetre', decider: 'SH-01', escalation: 'SH-02', confirmed_by: 'SH-02', source: 'SRC-1' }] });
+  assert.equal(enNomDe.find(f => f.rule === 'S81' && f.id === 'SRC-1')?.pending, undefined, 'une source à son nom reste du second degré');
+  assert.ok(enNomDe.some(f => f.rule === 'S90'), 'une attribution rendue en son nom reste rapportée');
+  assert.equal(enNomDe.find(f => f.rule === 'S90')?.pending, undefined);
+});
+
 test('S114 : le canal est dans l\'état, la coordonnée est à côté et hors de git', () => {
   const etat = (joignable_par, contacts) => checkState(
     { document: 'brd', phase: 'discover', stakeholders: [{ id: 'SH-01', status: 'interrogée', power: 'faible', impact: 'fort', influence: 'positive', quadrant: 'consulter', joignable_par }] },

@@ -1,8 +1,8 @@
 # Règles de contrôle, étape par étape
 
-**Ce document est généré par `doc-regles.mjs`. Ne le modifie pas à la main.** Une liste de 123 règles écrite à la main dérive au premier changement du catalogue, et une liste qui dérive est pire qu'une absence de liste : on la croit. Les énoncés ci-dessous sont ceux du catalogue (`skills/*/scripts/lib/rules.mjs`), les conditions de porte celles de `lib/gates.mjs`, les seuils ceux de `COVERAGE_DEFAULTS`. Pour le régénérer : `node doc-regles.mjs`. Pour vérifier qu'il est à jour : `node doc-regles.mjs --verifier`.
+**Ce document est généré par `doc-regles.mjs`. Ne le modifie pas à la main.** Une liste de 124 règles écrite à la main dérive au premier changement du catalogue, et une liste qui dérive est pire qu'une absence de liste : on la croit. Les énoncés ci-dessous sont ceux du catalogue (`skills/*/scripts/lib/rules.mjs`), les conditions de porte celles de `lib/gates.mjs`, les seuils ceux de `COVERAGE_DEFAULTS`. Pour le régénérer : `node doc-regles.mjs`. Pour vérifier qu'il est à jour : `node doc-regles.mjs --verifier`.
 
-Au total : **115 règles de structure** (`S00`–`S114`), **8 règles de rédaction** (`L01`–`L08`), **10 conditions** à la porte de PR, **10** à la porte de release, **6 garde-fous** d'export, et les conditions calculées des portes de phase des cinq documents à phases.
+Au total : **116 règles de structure** (`S00`–`S115`), **8 règles de rédaction** (`L01`–`L08`), **10 conditions** à la porte de PR, **10** à la porte de release, **6 garde-fous** d'export, et les conditions calculées des portes de phase des cinq documents à phases.
 
 ## Comment lire une règle
 
@@ -106,7 +106,7 @@ Hors celles qui portent sur les quatre documents, listées plus bas. La dernièr
 | `S65` | porte de synthèse | passage en Define sans porte de synthèse (cinq dimensions) · dimension « … » jugée faible sans décision de l'assumer | — |
 | `S66` | exigence de transition incomplète | exigence de transition sans type (formation, conduite du changement, reprise de données…) · exigence de transition sans partie prenante concernée · exigence de transition sans critère d'achèvement | — |
 | `S81` | source sans personne entendue | source de type « … » sans partie prenante : qui a parlé ? · source attribuée à …, que l'état déclare « … » : ce qui en vient est rapporté par un tiers, pas recueilli | aussi étape 2 |
-| `S83` | aucun utilisateur direct entendu | des besoins recueillis, et aucun utilisateur direct entendu (`end_user`) : tout passe par des représentants · utilisateur direct présent au cadrage mais jamais interrogé (…) : être dans la pièce au premier échange n'est pas avoir été entendu sur son travail | — |
+| `S83` | aucun utilisateur direct entendu | des besoins recueillis, et aucun utilisateur direct entendu (`end_user`) : tout passe par des représentants… · utilisateur direct présent au cadrage mais jamais interrogé (…) : être dans la pièce au premier échange n'est pas avoir été entendu sur son travail | — |
 | `S84` | exigence jamais relue par la source | exigence validée sur des sources dont la relecture est partie et pas encore revenue (`feedback: envoyé`) : la question vit, elle n'est pas encore tranchée · exigence validée sur des sources dites parties en relecture sans dire quand (`feedback_le` manque sur …) : « envoyé » sans date ne se vérifie pas, et c'est l'agent qui écrit le champ · exigence validée sur des sources dont aucune n'a été relue par la personne interrogée (`feedback`) : ce qui a été compris n'a jamais été vérifié auprès d'elle | aussi étape 2 |
 | `S86` | provenance d'initiative incomplète ou hors énumération | provenance sans initiative d'origine (derived_from.initiative) : elle ne désigne personne · provenance sans la décision qui l'a produite (derived_from.decision) : DD-xx chez la mère, ou sa décision d'opportunité · provenance sans raison (derived_from.reason) : … \| autre:<libellé> · raison de provenance « … » hors énumération : … \| autre:<libellé> · « autre » sans libellé : dire qu'il y a une provenance sans dire laquelle passe pour rempli · provenance « … » hors énumération, et nommée : candidate à devenir une valeur de derived_from.reason · repris par « … » mais de statut … : un besoin qui part est hors_périmètre ici | — |
 | `S87` | présent sans avoir parlé | présent… mais locuteur d'aucune source : être dans la pièce n'est pas avoir parlé, et le silence n'est pas un accord | aussi étape 2 |
@@ -462,7 +462,7 @@ Calculée par `release-matrix.mjs` depuis le plan figé et les rapports collect�
 
 Une exigence non prouvée se corrige, ou s'assume par une dérogation dans `waivers` — qui ne compte que si elle dit **pourquoi** et **qui l'a approuvée**. Le catalogue de règles ne vérifie pas cette étape (`S00`) : un état de tests se vérifie avec `release-matrix.mjs`.
 
-## Règles de structure communes aux quatre documents (26)
+## Règles de structure communes aux quatre documents (27)
 
 Elles s'appliquent au BRD, au PRD, à la conception et au plan. Les étapes 5 et 6 ne reçoivent pas ce catalogue.
 
@@ -494,6 +494,7 @@ Elles s'appliquent au BRD, au PRD, à la conception et au plan. Les étapes 5 et
 | `S111` | relecture « sans objet » sur une parole, sans raison | relecture déclarée « sans objet » sur une source de type « … » sans dire pourquoi (`feedback_motif`) : c'est la seule valeur qui éteint S84 sans que personne n'ait rien relu |
 | `S112` | correction d'une source non reliée ou laissée sans relecture | déclarée comme correction d'elle-même : une correction vient d'un autre échange · corrigée par …, et pourtant déclarée « sans objet » en relecture : une source dont on sait que ce qu'on en avait compris était faux est la première à faire relire |
 | `S114` | coordonnée dans l'état versionné, ou canal annoncé sans coordonnée | `joignable_par` porte … : ce champ dit par quoi on la joint, pas avec quoi — l'état se commite et `freeze-version.mjs` en fige une copie sous `versions/`, d'où rien ne se reprend. La coordonnée va dans `contacts.yaml`, à côté de l'état, que `.gitignore` exclut · déclarée joignable par « … » et aucun `contacts.yaml` à côté de l'état : le canal est annoncé, la coordonnée n'existe nulle part — personne ne peut la joindre · déclarée joignable par « … », et `contacts.yaml` ne porte rien à son identifiant : le canal est annoncé, la coordonnée n'y est pas |
+| `S115` | sollicitation déclarée sans sa date ou sans son canal | porte une date de sollicitation et le statut « … » : la date ne se lit que sur « sollicitée », ailleurs elle donne l'air d'une question en vol qui n'en est pas une · déclarée « sollicitée » sans dire quand (`sollicitee_le`, AAAA-MM-JJ) : c'est toi qui écris le champ, et une sollicitation qu'on ne peut pas vérifier est une case cochée — sans la date elle compte comme si personne ne lui avait jamais écrit · déclarée « sollicitée » sans dire par quoi (`joignable_par`) : une question partie sans canal ne se relance pas, et personne ne sait où aller chercher la réponse |
 
 ## Garde-fous de l'export (6)
 
@@ -629,3 +630,4 @@ Chaque règle, les étapes où elle s'applique, et la fonction du catalogue qui 
 | `S112` | 1, 2, 3, 4 | correction d'une source non reliée ou laissée sans relecture | `relectureFindings` |
 | `S113` | 1 | utilisateur direct qu'aucun besoin ne concerne | `checkBrd` |
 | `S114` | 1, 2, 3, 4 | coordonnée dans l'état versionné, ou canal annoncé sans coordonnée | `contactFindings` |
+| `S115` | 1, 2, 3, 4 | sollicitation déclarée sans sa date ou sans son canal | `sollicitationFindings` |

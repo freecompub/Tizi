@@ -98,7 +98,11 @@ export const OBSERVED_SOURCE_TYPES = ['observation', 'mesure', 'test'];
 // Types de source où personne n'est présent : un document, un ticket ou un handoff se lisent sans
 // entretien. Partout ailleurs, quelqu'un a parlé, et le dossier doit pouvoir dire qui (S81).
 export const SOURCES_SANS_PRESENCE = ['document', 'ticket', 'dt-handoff', 'code', 'configuration'];
-const NON_ENTENDU = ['à interroger', 'non disponible'];
+// `sollicitée` en fait partie, et ce n'est pas un détail : elle dit qu'on a écrit, pas qu'on a reçu.
+// Tant qu'elle n'a pas répondu, une décision rendue en son nom reste rapportée par un tiers (S90) et
+// une source à son nom reste du second degré (S81). Ce qui change avec la sollicitation, c'est le
+// REPROCHE de son silence, pas le fait qu'elle se taise.
+const NON_ENTENDU = ['à interroger', 'sollicitée', 'non disponible'];
 // Les types de source où quelqu'un a été INTERROGÉ ou REGARDÉ, et eux seuls. La liste était d'abord
 // écrite en négatif — tout sauf `cadrage` — et comptait donc comme « entendu » un document, un ticket,
 // un handoff, et `autre`, que `phase-define.md` prescrivait justement pour une décision de
@@ -129,6 +133,20 @@ export const feedbackEtat = src => {
   if (src?.feedback === 'envoyé' && JOUR.test(String(src?.feedback_le ?? '').trim())) return 'attente';
   return 'absent';
 };
+// Exactement symétrique de `feedbackEtat`, et pour la même raison. Tant qu'il n'y avait que
+// `à interroger | interrogée | non disponible`, « je lui ai écrit le 21, elle n'a pas encore
+// répondu » n'avait aucun endroit où se dire : il fallait la laisser `à interroger`, c'est-à-dire
+// rendre le même constat que si personne ne l'avait jamais contactée. Écrire à quelqu'un coûtait
+// donc autant que ne pas lui écrire, et l'autonomie n'avait pas de sens. Trois états, et le
+// troisième tient à la date — c'est l'agent qui écrit le champ, et une sollicitation qu'on DIT
+// partie sans dire quand ne se vérifie pas : « sollicitée » invérifiable est une case cochée.
+export const sollicitationEtat = sh => {
+  if (sh?.status === 'interrogée') return 'fait';
+  if (sh?.status === 'sollicitée' && JOUR.test(String(sh?.sollicitee_le ?? '').trim())) return 'attente';
+  return 'absent';
+};
+const enAttenteDeReponse = sh => sollicitationEtat(sh) === 'attente';
+
 // Les cinq motifs EARS (`references/ears.md`) et le marqueur que chacun impose à l'énoncé. La règle
 // cherche la trace de la forme déclarée, pas le style : `unwanted` ne réclame que la condition, pas le
 // « alors » que la référence met dans son tableau. Exigé, il signalait « Si un agent transmet un dossier
@@ -248,7 +266,7 @@ const checkRepresentation = (s, out, shs, { endUsersSeuls }) => {
     const concerne = endUsersSeuls ? sh.end_user : true;
     if (!concerne || !NON_ENTENDU.includes(sh.status)) continue;
     if (par && shs.has(par) && par !== sh.id && !interrogeeDansUneZone(s, sh.id)) {
-      out.push({ rule: 'S94', id: sh.id, message: citeeDansUneZone(s, sh.id)
+      out.push({ rule: 'S94', id: sh.id, ...(enAttenteDeReponse(sh) ? { pending: true } : {}), message: citeeDansUneZone(s, sh.id)
         ? `représentée par ${par} et jamais entendue : une zone ouverte la nomme, mais aucune ne lui est adressée (\`ask_to\`) — une question sur quelqu'un n'est pas une question à quelqu'un`
         : `représentée par ${par} et jamais entendue, sans qu'aucune zone ouverte ne lui soit adressée : une représentation dit qui répond pour elle, elle ne remplace pas sa voix` });
     }
@@ -490,8 +508,12 @@ export function checkBrd(s) {
       if (!RECUEIL_AUPRES_DE.includes(src.type)) continue;
       for (const id of arr(src.stakeholders)) interroges.add(id);
     }
+    // Un utilisateur direct à qui la question est PARTIE est une question qui vit : le constat change
+    // de liste au lieu de compter contre le dossier, comme un retour à la source envoyé. Sinon écrire
+    // à la bonne personne ne vaut rien jusqu'à ce qu'elle réponde, et ce qui ne vaut rien ne se fait pas.
+    const utilEnAttente = arr(s.stakeholders).filter(sh => sh.end_user && enAttenteDeReponse(sh));
     if (entendus.length && !util.length) {
-      out.push({ rule: 'S83', id: 'stakeholders', message: 'des besoins recueillis, et aucun utilisateur direct entendu (`end_user`) : tout passe par des représentants' });
+      out.push({ rule: 'S83', id: 'stakeholders', ...(utilEnAttente.length ? { pending: true } : {}), message: `des besoins recueillis, et aucun utilisateur direct entendu (\`end_user\`) : tout passe par des représentants${utilEnAttente.length ? ` — ${utilEnAttente.map(sh => sh.id).join(', ')} sollicité(s) et sans réponse, la question vit` : ''}` });
     } else if (util.length && !util.some(sh => interroges.has(sh.id))) {
       out.push({ rule: 'S83', id: 'stakeholders', message: `utilisateur direct présent au cadrage mais jamais interrogé (${util.map(sh => sh.id).join(', ')}) : être dans la pièce au premier échange n'est pas avoir été entendu sur son travail` });
     }
@@ -1605,6 +1627,31 @@ export function contactFindings(s, contacts) {
   return out;
 }
 
+// Le champ `sollicitee_le` n'a qu'un lecteur, et c'est ici. `sollicitationEtat` plus haut en tire
+// l'état ; cette règle refuse les deux manières de l'écrire pour rien : le statut sans la date, qui
+// ne se vérifie pas, et la sollicitation sans canal, qui ne dit pas par où elle serait partie.
+export function sollicitationFindings(s) {
+  const out = [];
+  for (const sh of arr(s?.stakeholders)) {
+    if (sh.status !== 'sollicitée') {
+      // Une date sans le statut qui va avec : soit la personne a répondu et le champ est un reste,
+      // soit le statut a été écrasé. Dans les deux cas la date ne se lit plus, et elle a l'air de dire
+      // quelque chose. Sur `interrogée`, c'est normal : elle garde la trace de quand on a écrit.
+      if (String(sh.sollicitee_le ?? '').trim() && !['interrogée', 'non disponible'].includes(sh.status)) {
+        out.push({ rule: 'S115', id: sh.id, message: `porte une date de sollicitation et le statut « ${sh.status ?? 'absent'} » : la date ne se lit que sur « sollicitée », ailleurs elle donne l'air d'une question en vol qui n'en est pas une` });
+      }
+      continue;
+    }
+    if (!JOUR.test(String(sh.sollicitee_le ?? '').trim())) {
+      out.push({ rule: 'S115', id: sh.id, message: 'déclarée « sollicitée » sans dire quand (`sollicitee_le`, AAAA-MM-JJ) : c\'est toi qui écris le champ, et une sollicitation qu\'on ne peut pas vérifier est une case cochée — sans la date elle compte comme si personne ne lui avait jamais écrit' });
+    }
+    if (!String(sh.joignable_par ?? '').trim()) {
+      out.push({ rule: 'S115', id: sh.id, message: 'déclarée « sollicitée » sans dire par quoi (`joignable_par`) : une question partie sans canal ne se relance pas, et personne ne sait où aller chercher la réponse' });
+    }
+  }
+  return out;
+}
+
 export function confirmationFindings(s) {
   const out = [];
   const idx = elementsIndex(s);
@@ -1635,7 +1682,7 @@ export function governanceFindings(s) {
     if (!['relecteur', 'approbateur'].includes(r.role)) continue;
     const sh = r.stakeholder && shs.get(r.stakeholder);
     if (sh && NON_ENTENDU.includes(sh.status)) {
-      out.push({ rule: 'S98', id: `reviewers:${r.stakeholder}`, message: `${r.role} que l'état déclare « ${sh.status} » : une revue demande si le document est fidèle à ce qu'on a dit, et cette personne n'a rien dit. Interroge-la d'abord, ou passe-la en « informé » — sinon son silence devient une approbation` });
+      out.push({ rule: 'S98', id: `reviewers:${r.stakeholder}`, ...(enAttenteDeReponse(sh) ? { pending: true } : {}), message: `${r.role} que l'état déclare « ${sh.status} » : une revue demande si le document est fidèle à ce qu'on a dit, et cette personne n'a rien dit. Interroge-la d'abord, ou passe-la en « informé » — sinon son silence devient une approbation` });
     }
   }
   for (const r of arr(g.review_rounds)) {
@@ -1741,7 +1788,7 @@ export function checkState(s, ctx = {}) {
     return [{ rule: 'S00', id: 'document', message: `document « ${doc} » : ce catalogue vérifie ${DOCUMENTS.join(', ')}, et rien d'autre — un état d'implémentation se vérifie avec pr-gate.mjs et trace-check.mjs, un état de tests avec release-matrix.mjs` }];
   }
   const base = doc === 'plan' ? checkPlan(s, refs) : doc === 'sad' ? checkSad(s) : doc === 'prd' ? checkPrd(s) : checkBrd(s);
-  const all = [...base, ...placeholderFindings(s), ...unsourcedNumberFindings(s), ...constitutionFindings(s, ctx.constitution), ...checklistFindings(s, ctx.checklists), ...interviewFindings(s, ctx.interviews), ...outgoingFindings(s, [...fichiersDe(ctx.interviews), ...fichiersDe(ctx.checklists)]), ...governanceFindings(s), ...coverageFindings(s, refs), ...phaseFindings(s), ...sourceContentFindings(s), ...confirmationFindings(s), ...contactFindings(s, ctx.contacts), ...riskFindings(s), ...relectureFindings(s), ...handoffFindings(ctx.handoffs), ...upstreamFindings(s, refs), ...contextFindings(ctx.cards, s.settings?.context_budget)];
+  const all = [...base, ...placeholderFindings(s), ...unsourcedNumberFindings(s), ...constitutionFindings(s, ctx.constitution), ...checklistFindings(s, ctx.checklists), ...interviewFindings(s, ctx.interviews), ...outgoingFindings(s, [...fichiersDe(ctx.interviews), ...fichiersDe(ctx.checklists)]), ...governanceFindings(s), ...coverageFindings(s, refs), ...phaseFindings(s), ...sourceContentFindings(s), ...confirmationFindings(s), ...contactFindings(s, ctx.contacts), ...sollicitationFindings(s), ...riskFindings(s), ...relectureFindings(s), ...handoffFindings(ctx.handoffs), ...upstreamFindings(s, refs), ...contextFindings(ctx.cards, s.settings?.context_budget)];
   const idx = waiverIndex(s);
   return all.map(f => {
     const raison = idx.get(`${f.id}|${f.rule}`);
@@ -1764,6 +1811,7 @@ export const STRUCT_RULES = {
   S111: 'relecture « sans objet » sur une parole, sans raison', S112: 'correction d\'une source non reliée ou laissée sans relecture',
   S113: 'utilisateur direct qu\'aucun besoin ne concerne',
   S114: 'coordonnée dans l\'état versionné, ou canal annoncé sans coordonnée',
+  S115: 'sollicitation déclarée sans sa date ou sans son canal',
   S01: 'objectif non mesurable', S02: 'exigence sans objectif', S03: 'exigence sans besoin sourcé', S04: 'exigence sans critère d\'acceptation',
   S05: 'priorité ou release manquante', S06: 'exigence sans origine', S07: 'Must sans scénario d\'erreur', S08: 'NFR incomplète',
   S09: 'référence inexistante', S10: 'référence vers un élément abandonné', S11: 'règle métier sans source', S12: 'règle sans niveau d\'application',
