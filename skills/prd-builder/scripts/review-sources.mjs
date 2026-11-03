@@ -13,10 +13,14 @@
 //
 // Usage : node review-sources.mjs <état.yaml> [--sh SH-01[,SH-02]] [--etat]
 //   sans --sh : une personne par voix entendue       --etat : la charge et l'état des retours
+//   --message : le MÊME relevé en message à envoyer sur un canal, pour une personne nommée. Le fichier
+//               et le message sortent de la même sélection : ce qu'elle doit relire ne peut pas dépendre
+//               de l'instrument par lequel on le lui demande.
 import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { arr, loadState, writeOut, fail, table, today, txt, shLabel, label } from './lib/common.mjs';
-import { feedbackEtat, sollicitationEtat, RECUEIL_DE_PAROLE } from './lib/rules.mjs';
+import { feedbackEtat, sollicitationEtat, refsDans, RECUEIL_DE_PAROLE } from './lib/rules.mjs';
+import { nomClair, nomInitiative, joindre, paragraphes, refuseLesIdentifiants, AVERTISSEMENT_COMPTE, N_ENVOIE_RIEN } from './lib/outgoing.mjs';
 
 const args = process.argv.slice(2);
 const statePath = args.find(a => !a.startsWith('--') && args[args.indexOf(a) - 1] !== '--sh');
@@ -91,6 +95,105 @@ const COLLECTIONS = [['candidate_needs', 'Besoins'], ['business_requirements', '
 const refsDe = x => arr(x.sources).map(r => r?.ref ?? r);
 const construitDepuis = (coll, ids) => arr(s[coll]).filter(x => x.status !== 'abandonné' && (
   refsDe(x).some(r => ids.has(r)) || arr(x.from_needs).some(n => arr(s.candidate_needs).some(b => b.id === n && refsDe(b).some(r => ids.has(r))))));
+
+// ── Le retour de synthèse par canal ────────────────────────────────────────
+// La promesse est déjà faite. Le premier message d'une sollicitation dit : « je vous enverrai ce que
+// j'en ai compris avant que ça serve à quoi que ce soit, et vous pourrez le corriger. » Rien ne savait
+// la tenir : le relevé se générait en FICHIER, qu'il fallait remettre en main propre.
+//
+// Et un message n'est pas un fichier réduit. Trois différences, et chacune a sa raison :
+//   · pas d'identifiant, même glosé. Le fichier porte « énoncé (BC-003) » et S104 s'en satisfait,
+//     parce que la personne y revient et peut dire « sur BC-003, vous vous trompez ». Dans un message,
+//     un numéro de liste fait le même travail sans rien apprendre à personne de notre index.
+//   · borné. Le relevé du président du troisième dossier réel portait 70 sources, les deux autres 13
+//     et 9. Un fichier de 70 verbatims se lit ; un courriel de 70 verbatims ne se lit pas, et le
+//     prétendre serait obtenir un « c'est bon » qui ne vaut rien. Au-delà du seuil, le script refuse
+//     et renvoie au fichier : c'est l'instrument qui ne convient pas, pas la personne.
+//   · il ne demande qu'une chose. Le fichier demande de chercher le faux, le déformé et le manquant,
+//     dans cet ordre. Le message garde les trois mais sans la numérotation d'un formulaire : on ne
+//     fait pas remplir un questionnaire à quelqu'un qui lit sur son téléphone.
+const MESSAGE_MAX_SOURCES = 10;
+if (args.includes('--message')) {
+  if (cibles.length !== 1) fail('`--message` écrit à UNE personne : nomme-la avec `--sh SH-xx`. Un retour de synthèse est personnel — il ne porte que ce qu\'elle a dit —, et un envoi groupé ferait lire à chacun les propos des autres.', 2);
+  const id = cibles[0];
+  const { canal, adresse } = joindre(s, statePath, id);
+  const initiative = nomInitiative(s);
+  if (!initiative) fail('L\'initiative n\'a pas de nom (`initiative.name`) : on n\'écrit pas à quelqu\'un à propos de rien.');
+  const src = sourcesDe(id);
+  const avecVerbatim = src.filter(x => dit(x));
+  if (!avecVerbatim.length) fail(`Aucune des ${src.length} source(s) de ${shLabel(s, id)} ne porte ce qui a été dit (\`quote\`) : il n'y a rien à lui faire relire, et S102 le dit déjà. Écris le verbatim avant de promettre une relecture.`);
+  // Ce qui RESTE à faire relire : ni déjà relu, ni déjà en vol. Une relecture en attente ne se
+  // redemande pas — ce serait deux demandes d'un coup, et la deuxième brouille la première.
+  const FAIT_DEJA = ['confirmé', 'corrigé', 'sans objet'];
+  const enVol = avecVerbatim.filter(x => feedbackEtat(x) === 'attente');
+  const reste = avecVerbatim.filter(x => !FAIT_DEJA.includes(x.feedback) && feedbackEtat(x) !== 'attente')
+    .sort((a, b) => String(a.date ?? '').localeCompare(String(b.date ?? '')));
+  if (!reste.length) {
+    fail(enVol.length
+      ? `Les ${enVol.length} source(s) qui restaient à faire relire par ${shLabel(s, id)} sont déjà parties et attendent sa réponse. Relancer avant qu'elle réponde, c'est deux demandes d'un coup.`
+      : `Tout ce que ${shLabel(s, id)} a dit a déjà été relu : rien à lui renvoyer.`);
+  }
+  // Le seuil était un refus, et il refusait TOUT : sur le troisième dossier réel, les trois personnes
+  // entendues portaient 11, 47 et 15 sources — personne en dessous de dix. Un garde-fou qui écarte
+  // cent pour cent des cas réels n'est pas un garde-fou, c'est une fonctionnalité morte, et le nombre
+  // n'était pas trop bas : c'est le REFUS qui était la mauvaise réponse. Le relevé part donc par lots,
+  // du plus ancien au plus récent, et le message dit où on en est. Une personne qui relit onze
+  // verbatims d'un coup ne relit rien ; la même, en deux fois, relit vraiment.
+  const aRelire = reste.slice(0, MESSAGE_MAX_SOURCES);
+  const apres = reste.length - aRelire.length;
+
+  // Les paragraphes du corps. Chaque verbatim porte un NUMÉRO, pas un identifiant : c'est ce qui lui
+  // permet de dire « le 2 est faux » sans qu'on lui apprenne comment le dossier s'appelle à l'intérieur.
+  const blocs = [`Bonjour ${nomClair(s, id) === String(arr(s.stakeholders).find(x => x.id === id)?.role ?? '').trim() ? '' : nomClair(s, id)},`.replace(' ,', ','),
+    `Je vous avais dit que je vous enverrais ce que j'avais compris de vos propos avant que ça serve. Le voici, pour « ${initiative} ».`,
+    'Ce que vous lisez ci-dessous a été écrit par moi, pas par vous : je vous rends vos mots tels que je les ai notés, et ce que j\'en ai tiré. Rien n\'est reformulé pour faire plus présentable.',
+    'Dites-moi ce qui est faux, ce qui est déformé — le propos est à vous, la conclusion ne l\'est pas — et ce qui manque. Une correction n\'a pas à être justifiée, et elle peut rouvrir des décisions déjà prises : c\'est le but.'];
+  aRelire.forEach((x, i) => {
+    blocs.push(`${i + 1}. Vous avez dit${x.date ? `, le ${x.date}` : ''} :`, `« ${dit(x).replace(/\s+/g, ' ').trim()} »`);
+    const tire = String(x.understood ?? '').trim();
+    if (tire) blocs.push(`Ce que j'en ai tiré : ${tire.replace(/\s+/g, ' ').trim()}`);
+  });
+  const muettes = src.length - avecVerbatim.length;
+  if (muettes) blocs.push(`Il y a ${muettes} autre(s) échange(s) dont je n'ai gardé aucune note : je ne peux pas vous les faire relire, et c'est un manque de mon côté.`);
+  if (apres) blocs.push(`Il en reste ${apres} après celui-ci. Je vous les enverrai quand vous aurez répondu à ceux-là : tout d'un coup, ça ne se relit pas.`);
+  blocs.push('Répondez comme vous voulez, même en une ligne. Si tout est juste, dites-le aussi : c\'est ce qui me permet de m\'en servir.');
+  // Le contrôle porte SOURCE PAR SOURCE, pour que le refus soit réparable : « réécris en clair » sur un
+  // message de dix verbatims ne dit pas où chercher. Mesuré sur le troisième dossier réel : 51 des
+  // 75 sources portent un identifiant dans `understood`, et quatre dans `quote`. Ce n'est pas un
+  // accident d'écriture, c'est que le champ a deux lecteurs — l'agent, qui y met des renvois, et la
+  // personne, à qui il est RENDU en relecture. Le gabarit est pourtant clair : `understood` est « ce
+  // qui se corrige en relecture quand la citation est juste et la conclusion fausse ». Il s'écrit donc
+  // pour elle, et un renvoi interne y est un mot qu'elle ne peut pas lire.
+  const sales = aRelire.map(x => ({ id: x.id, refs: refsDans(`${dit(x)}\n${x.understood ?? ''}`) })).filter(x => x.refs.length);
+  if (sales.length) {
+    fail(`${sales.length} source(s) de ce lot portent un identifiant interne dans ce qu'elles disent ou dans ce qu'on en a tiré :\n${sales.map(x => `  · ${x.id} → ${x.refs.join(', ')}`).join('\n')}\nLa personne au bout n'a pas l'index sous les yeux, et ne l'aura jamais — c'est la doctrine de S104, un cran plus loin. \`understood\` est ce qu'on lui REND en relecture : il s'écrit pour elle, pas comme une note à soi-même. Réécris ces ${sales.length} champ(s) en clair avant d'envoyer.`);
+  }
+  const message = paragraphes(blocs);
+  refuseLesIdentifiants(message, 'Le retour de synthèse');
+
+  const objet = `Ce que j'ai compris de vos propos — ${initiative}`;
+  if (args.includes('--json')) {
+    console.log(JSON.stringify({ stakeholder: id, canal, adresse, objet, message, sources: aRelire.map(x => x.id) }, null, 2));
+    process.exit(0);
+  }
+  console.log([
+    `Retour de synthèse — à ${shLabel(s, id)}, par ${canal} — ${adresse}`,
+    `Objet : ${objet}`,
+    `${aRelire.length} source(s) dans ce lot${apres ? ` · ${apres} après` : ''}${enVol.length ? ` · ${enVol.length} déjà en vol, écartée(s)` : ''}${muettes ? ` · ${muettes} sans note, que le message signale` : ''}`,
+    '', '── Message ──', message, '── Fin ──', '',
+    N_ENVOIE_RIEN, '', AVERTISSEMENT_COMPTE, '',
+    'Quand il est parti, et PAS avant, sur CHACUNE de ces sources :',
+    `    feedback: envoyé`, `    feedback_le: "${today()}"`, `    feedback_par: ${canal}`,
+    `  (${aRelire.map(x => x.id).join(', ')})`,
+    'Sans la date, « envoyé » compte comme si rien n\'avait été demandé (S84). Avec elle, la relecture',
+    'devient une question qui vit, et la porte ne la compte pas contre le dossier.',
+    '',
+    'À sa réponse : `confirmé` si tout est juste, `corrigé` si elle corrige — et alors la correction se',
+    'porte dans l\'état, pas seulement dans le fil. Une source qu\'elle a corrigée est la première à',
+    'faire relire ensuite, et `corrects` dit laquelle corrige laquelle (S112).',
+  ].join('\n'));
+  process.exit(0);
+}
 
 for (const id of cibles) {
   const p = fichier(id);

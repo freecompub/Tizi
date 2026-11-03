@@ -2,7 +2,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+import yaml from '../skills/brd-builder/scripts/lib/vendor/js-yaml.mjs';
+import { tempDir } from './helpers.mjs';
 import { DOCUMENTS, STRUCT_RULES, TEXT_RULES, checkState, sollicitationEtat, refsDans, coverage, coverageFindings, coverageRows, evidenceOf, contextFindings } from '../skills/brd-builder/scripts/lib/rules.mjs';
 import { gateConditions } from '../skills/brd-builder/scripts/lib/gates.mjs';
 import { shellWrittenPaths } from '../skills/brd-builder/scripts/lib/agent-io.mjs';
@@ -835,6 +837,95 @@ test('S115 : « sollicitée » dit qu\'on a écrit, et sa date dit que la questi
 // expression écrite de mémoire n'aurait eus — deux espaces en tête de la ligne d'attribution, le mois
 // abrégé à la française, aucune espace avant le chevron du courriel, et « a écrit: » SANS espace avant
 // les deux-points, alors que la typographie française en met une.
+// La promesse du premier message — « je vous enverrai ce que j'en ai compris avant que ça serve » —
+// n'avait aucun outil pour être tenue : le relevé se générait en fichier, à remettre en main propre.
+// Ce test tient ce qui distingue le message du fichier, et pourquoi chaque différence existe.
+test('le retour de synthèse part par le canal, et ce n\'est pas le fichier en plus petit', async () => {
+  const { execFileSync } = await import('node:child_process');
+  const { writeFileSync } = await import('node:fs');
+
+  const dossier = (sources, extra = {}) => {
+    const d = tempDir('tizi-synth');
+    writeFileSync(join(d, 'contacts.yaml'), 'SH-01: "nadia@exemple.fr"\n');
+    writeFileSync(join(d, 'state.yaml'), yaml.dump({
+      document: 'brd', phase: 'discover', initiative: { name: 'Dématérialiser les inscriptions', slug: 'demat' },
+      stakeholders: [{ id: 'SH-01', name: 'Nadia', role: 'Agente d\'accueil', status: 'interrogée', joignable_par: 'courriel', end_user: true, power: 'faible', impact: 'fort', influence: 'positive', quadrant: 'consulter' }],
+      sources, ...extra,
+    }));
+    return join(d, 'state.yaml');
+  };
+  const lance = (etat, args) => execFileSync('node', [join(SCRIPTS, 'review-sources.mjs'), etat, ...args], { encoding: 'utf8' });
+  const refus = (etat, args) => { try { lance(etat, args); return ''; } catch (e) { return `${e.stdout ?? ''}${e.stderr ?? ''}`; } };
+
+  const deuxEtUneMuette = [
+    { id: 'SRC-001', type: 'échange écrit', date: '2026-10-29', stakeholders: ['SH-01'], quote: 'Le plus long, c\'est de ressaisir les adresses.', understood: 'La ressaisie est le poste principal.', feedback: 'à envoyer' },
+    { id: 'SRC-002', type: 'entretien', date: '2026-10-30', stakeholders: ['SH-01'], quote: 'Je rappelle la famille, parfois trois fois.', feedback: 'à envoyer' },
+    { id: 'SRC-003', type: 'entretien', date: '2026-10-31', stakeholders: ['SH-01'], feedback: 'à envoyer' },
+  ];
+  const etat = dossier(deuxEtUneMuette);
+  const msg = JSON.parse(lance(etat, ['--sh', 'SH-01', '--message', '--json']));
+
+  // Ses mots, et ce qu'on en a tiré, mot pour mot.
+  assert.match(msg.message, /ressaisir les adresses/);
+  assert.match(msg.message, /Ce que j'en ai tiré : La ressaisie est le poste principal/);
+  // Numérotés, pour qu'elle puisse dire « le 2 est faux » — et AUCUN identifiant interne : le fichier
+  // peut écrire « énoncé (BC-003) » parce que S104 demande seulement la glose, un message non.
+  assert.match(msg.message, /^1\. Vous avez dit, le 2026-10-29 :$/m);
+  assert.match(msg.message, /^2\. Vous avez dit, le 2026-10-30 :$/m);
+  assert.doesNotMatch(msg.message, /\b[A-Z]{2,4}-\d{1,3}\b/, 'aucun identifiant ne part dans un message');
+  // La source sans note se signale comme un manque de NOTRE côté : c'est le seul endroit où elle peut
+  // s'apercevoir qu'on a perdu ses mots.
+  assert.match(msg.message, /aucune note : je ne peux pas vous les faire relire, et c'est un manque de mon côté/);
+  assert.deepEqual(msg.sources, ['SRC-001', 'SRC-002'], 'la muette ne compte pas comme relue');
+
+  // Le fichier et le message sortent de la MÊME sélection : ce qu'elle doit relire ne peut pas dépendre
+  // de l'instrument par lequel on le lui demande.
+  lance(etat, ['--sh', 'SH-01']);
+  const fichier = readFileSync(join(dirname(etat), 'interviews', 'relecture-SH-01.md'), 'utf8');
+  for (const q of ['ressaisir les adresses', 'rappelle la famille']) assert.ok(fichier.includes(q) && msg.message.includes(q), q);
+
+  // Borné, et par LOTS — pas par un refus. Le seuil était d'abord un refus, et il refusait tout : les
+  // trois personnes entendues du troisième dossier réel portaient 11, 47 et 15 sources, personne en
+  // dessous de dix. Un garde-fou qui écarte cent pour cent des cas réels n'en est pas un, et le
+  // nombre n'était pas trop bas : c'est le refus qui était la mauvaise réponse.
+  const douze = Array.from({ length: 12 }, (_, i) => ({ id: `SRC-${String(i + 1).padStart(3, '0')}`, type: 'entretien', date: `2026-10-${String(i + 1).padStart(2, '0')}`, stakeholders: ['SH-01'], quote: `Phrase ${i + 1}.`, feedback: 'à envoyer' }));
+  const lot = JSON.parse(lance(dossier(douze), ['--sh', 'SH-01', '--message', '--json']));
+  assert.equal(lot.sources.length, 10, 'dix par lot');
+  assert.deepEqual(lot.sources, douze.slice(0, 10).map(x => x.id), 'du plus ancien au plus récent');
+  assert.match(lot.message, /Il en reste 2 après celui-ci/, 'le message dit où on en est');
+
+  // Et une relecture déjà partie ne se redemande pas : ce serait deux demandes d'un coup, et la
+  // deuxième brouille la première.
+  const dixEnVol = dossier(douze.map((x, i) => (i < 10 ? { ...x, feedback: 'envoyé', feedback_le: '2026-11-01' } : x)));
+  const apres = JSON.parse(lance(dixEnVol, ['--sh', 'SH-01', '--message', '--json']));
+  assert.deepEqual(apres.sources, ['SRC-011', 'SRC-012'], 'les dix en vol sont écartées');
+  // Tout en vol : il n'y a rien à envoyer, et le dire vaut mieux que relancer.
+  const toutEnVol = dossier(douze.map(x => ({ ...x, feedback: 'envoyé', feedback_le: '2026-11-01' })));
+  assert.match(refus(toutEnVol, ['--sh', 'SH-01', '--message']), /déjà parties et attendent sa réponse/);
+  // Tout relu : rien à renvoyer non plus.
+  const toutRelu = dossier(douze.map(x => ({ ...x, feedback: 'confirmé' })));
+  assert.match(refus(toutRelu, ['--sh', 'SH-01', '--message']), /a déjà été relu : rien à lui renvoyer/);
+
+  // Une personne à la fois : un envoi groupé ferait lire à chacun les propos des autres.
+  const deuxVoix = dossier([deuxEtUneMuette[0], { ...deuxEtUneMuette[1], stakeholders: ['SH-02'] }],
+    { stakeholders: undefined });
+  assert.match(refus(deuxVoix, ['--message']), /écrit à UNE personne/);
+
+  // Et un identifiant dans ce qu'on a tiré de ses propos arrête tout.
+  const avecRef = dossier([{ ...deuxEtUneMuette[0], understood: 'Confirme BC-003 et contredit RG-012.' }]);
+  // Le refus NOMME la source : « réécris en clair » sur un lot de dix ne dit pas où chercher. Mesuré
+  // sur le troisième dossier réel : 51 des 75 sources portent un identifiant dans `understood`, et
+  // quatre dans `quote`. Le champ a deux lecteurs — l'agent, qui y met des renvois, et la personne, à
+  // qui il est RENDU en relecture — et le gabarit dit déjà lequel compte.
+  const refusRef = refus(avecRef, ['--sh', 'SH-01', '--message']);
+  assert.match(refusRef, /· SRC-001 → BC-003, RG-012/);
+  assert.match(refusRef, /s'écrit pour elle, pas comme une note à soi-même/);
+
+  // Rien à relire : S102 le dit déjà, et on ne promet pas une relecture sur du vide.
+  const sansQuote = dossier(deuxEtUneMuette.map(x => ({ ...x, quote: undefined, understood: undefined })));
+  assert.match(refus(sansQuote, ['--sh', 'SH-01', '--message']), /ne porte ce qui a été dit/);
+});
+
 test('les mots de la personne se séparent de ce que le courrielleur ajoute', async () => {
   const lire = async texte => {
     const { execFileSync } = await import('node:child_process');

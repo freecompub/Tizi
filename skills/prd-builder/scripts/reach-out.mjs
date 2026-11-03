@@ -17,10 +17,9 @@
 // condition qu'on aurait sinon découverte dans la boîte de réception de quelqu'un.
 //
 // Usage : node reach-out.mjs <état.yaml> --sh SH-xx [--json]
-import { existsSync } from 'node:fs';
-import { dirname, join } from 'node:path';
 import { arr, loadState, fail, today, shLabel } from './lib/common.mjs';
-import { sollicitationEtat, refsDans } from './lib/rules.mjs';
+import { sollicitationEtat } from './lib/rules.mjs';
+import { nomClair, nomInitiative, joindre, paragraphes, refuseLesIdentifiants, AVERTISSEMENT_COMPTE, N_ENVOIE_RIEN } from './lib/outgoing.mjs';
 
 const JOUR_RE = /^\d{4}-\d{2}-\d{2}$/;
 const jours = d => Math.floor((Date.parse(today()) - Date.parse(d)) / 86400000);
@@ -37,11 +36,7 @@ if (!sh) fail(`${id} n'est pas une partie prenante de ${statePath}.`);
 
 // Les coordonnées vivent à côté de l'état et ne se commitent pas (S114). Absentes, il n'y a rien à
 // composer : un message sans destinataire ne s'écrit pas « en attendant ».
-const contactsPath = join(dirname(statePath), 'contacts.yaml');
-const contacts = existsSync(contactsPath) ? loadState(contactsPath) : {};
-
-const canal = String(sh.joignable_par ?? '').trim();
-const adresse = String(contacts[id] ?? '').trim();
+const { canal, adresse } = joindre(s, statePath, id);
 const etat = sollicitationEtat(sh, s.sources);
 const siennes = arr(s.sources).filter(x => arr(x.stakeholders).includes(id));
 
@@ -78,8 +73,6 @@ if (sh.status === 'sollicitée' && etat !== 'attente') fail(`${shLabel(s, id)} e
 if (situation === 'repondu' && JOUR_RE.test(String(sh.sollicitee_le ?? '').trim()) && !siennes.some(x => JOUR_RE.test(String(x.date ?? '').trim()))) {
   fail(`Aucune des ${siennes.length} source(s) de ${shLabel(s, id)} ne porte de date, et on lui a écrit le ${sh.sollicitee_le} : impossible de savoir si elle a répondu depuis (S115). Date la source qui vient d'elle.`);
 }
-if (!canal) fail(`${shLabel(s, id)} n'a pas de \`joignable_par\` : on ne sait pas par quoi lui écrire. Demande-le à l'utilisateur.`);
-if (!adresse) fail(`Aucune coordonnée pour ${id} dans ${contactsPath}. Le canal est annoncé (« ${canal} »), la coordonnée n'y est pas (S114) — demande-la à l'utilisateur, et ne la recopie pas dans l'état.`);
 
 // LA question, et une seule : la zone ouverte qui lui est ADRESSÉE et qui coûte le plus cher ouverte.
 // `ask_to`, pas `related` : une question sur quelqu'un n'est pas une question à quelqu'un (S94).
@@ -109,15 +102,13 @@ const mode = situation !== 'repondu' ? situation : dejaPosee === zone.id ? 'repr
 //    l'index que l'utilisateur : lui, au moins, peut le demander. `SH-02` ne veut rien dire pour elle.
 // 3. La question elle-même est écrite par l'agent, et peut porter « BC-001 » sans que rien ne l'arrête.
 //    S104 ne peut pas le voir : elle contrôle des fichiers, et ce message n'en est pas un.
-const nomClair = id => { const x = arr(s.stakeholders).find(y => y.id === id); return String(x?.name || x?.role || '').trim(); };
-const initiative = String(s.initiative?.name ?? (typeof s.initiative === 'string' ? s.initiative : '') ?? '').trim();
+const initiative = nomInitiative(s);
 if (!initiative) fail(`L'initiative n'a pas de nom (\`initiative.name\`) : on n'écrit pas à quelqu'un « le travail de cadrage de «  » ». Nomme-la d'abord.`);
 
 const sponsor = arr(s.stakeholders).find(x => x.role && /sponsor/i.test(x.role));
-const demandeur = nomClair(s.request?.requested_by ?? sponsor?.id ?? '');
+const demandeur = nomClair(s, s.request?.requested_by ?? sponsor?.id ?? '');
 
-const refs = refsDans(zone.question);
-if (refs.length) fail(`La question de ${zone.id} porte ${refs.length > 1 ? 'des identifiants internes' : 'un identifiant interne'} (${refs.join(', ')}) : la personne au bout n'a pas l'index sous les yeux, et ne l'aura jamais — c'est la doctrine de S104, un cran plus loin. Réécris la question en clair avant de l'envoyer.`);
+refuseLesIdentifiants(zone.question, `La question de ${zone.id}`);
 
 const bonjour = `Bonjour ${sh.name || ''},`.replace(' ,', ',');
 // Trois messages, et ce qui les sépare n'est pas le ton : c'est ce que la personne sait déjà. À la
@@ -196,7 +187,7 @@ console.log([
   `${TITRE[mode]} — à ${shLabel(s, id)}, par ${canal} — ${adresse}`,
   `Zone visée : ${zone.id}${zone.reasons.length ? ` (${zone.reasons.join(', ')})` : ''}`,
   `Objet : ${objet}`,
-  ...(nomClair(id) === String(sh.role ?? '').trim() && !String(sh.name ?? '').trim()
+  ...(nomClair(s, id) === String(sh.role ?? '').trim() && !String(sh.name ?? '').trim()
     ? ['On n\'a pas son nom, seulement sa fonction : le message commence donc par « Bonjour, ». Demande-le'
        + ' à l\'utilisateur si tu l\'as — écrire à quelqu\'un dont on ignore le nom se voit, et se paie.'] : []),
   ...(zones.length > 1 ? [`${zones.length - 1} autre(s) zone(s) lui sont adressées : elles attendent sa réponse à celle-ci. Une question à la fois.`] : []),
@@ -205,15 +196,9 @@ console.log([
   message,
   '── Fin ──',
   '',
-  'Envoie-le toi-même par le canal de l\'hôte, s\'il en offre un ; sinon remets-le à l\'utilisateur. Ce script',
-  'n\'envoie rien : il ne sait pas à quoi tu es branché, et un message parti est irréversible.',
+  N_ENVOIE_RIEN,
   '',
-  'AVANT D\'ENVOYER, REGARDE DE QUEL COMPTE ÇA PART. Le corps dit « je suis un agent logiciel » ; si',
-  'l\'enveloppe porte le nom d\'une personne — « De : Prénom Nom » —, le destinataire croira l\'enveloppe,',
-  'et la déclaration devient un démenti qu\'on ne lit pas. Mesuré sur un brouillon réel : le compte était',
-  'nominatif, et rien dans ce script ne pouvait le savoir. Deux issues, et le choix n\'est pas à toi :',
-  'un compte qui ne prête pas à confusion, ou une première ligne qui dit de quelle boîte ça part et',
-  'pourquoi. Demande à l\'utilisateur — c\'est son compte, et c\'est son nom qui apparaît.',
+  AVERTISSEMENT_COMPTE,
   '',
   'Quand il est parti, et PAS avant, écris sur la partie prenante :',
   ...(mode === 'premiere'
