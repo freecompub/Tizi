@@ -7,6 +7,7 @@ import { DOCUMENTS, STRUCT_RULES, TEXT_RULES, checkState, sollicitationEtat, ref
 import { gateConditions } from '../skills/brd-builder/scripts/lib/gates.mjs';
 import { shellWrittenPaths } from '../skills/brd-builder/scripts/lib/agent-io.mjs';
 import { buildExtract } from '../skills/brd-builder/scripts/lib/sessions.mjs';
+const SCRIPTS = new URL('../skills/brd-builder/scripts/', import.meta.url).pathname;
 const codes = s => checkState(s).map(f => f.rule);
 const brd = extra => ({ document: 'brd', phase: 'discover', stakeholders: [{ id: 'SH-1', status: 'interrogée' }],
   sources: [{ id: 'SRC-1', type: 'entretien', stakeholders: ['SH-1'] }, { id: 'SRC-2', type: 'observation', stakeholders: ['SH-1'] }],
@@ -808,6 +809,52 @@ test('S115 : « sollicitée » dit qu\'on a écrit, et sa date dit que la questi
 // boîte — aucun ne se voyait depuis le dépôt, et un fixture écrit à la main en cachait deux. Le plus
 // net : `initiative` est un OBJET dans les deux gabarits, et le message disait « le travail de cadrage
 // de « [object Object] » ». Ce test tient ce qu'un message sortant ne doit JAMAIS porter.
+// Le premier aller-retour réel par courriel. Ce que la personne a écrit faisait 23 caractères sur 662 :
+// TROIS POUR CENT du message. Le reste était une réclame du fournisseur, une ligne d'attribution et
+// notre propre message cité en entier — recopier le corps dans `quote` aurait mis au dossier, comme
+// « ce qu'elle a dit », la question qu'on venait de lui poser. La fixture est le vrai message, les
+// personnes anonymisées : ce qui compte est sa STRUCTURE, et elle porte quatre détails qu'aucune
+// expression écrite de mémoire n'aurait eus — deux espaces en tête de la ligne d'attribution, le mois
+// abrégé à la française, aucune espace avant le chevron du courriel, et « a écrit: » SANS espace avant
+// les deux-points, alors que la typographie française en met une.
+test('les mots de la personne se séparent de ce que le courrielleur ajoute', async () => {
+  const lire = async texte => {
+    const { execFileSync } = await import('node:child_process');
+    return JSON.parse(execFileSync('node', [join(SCRIPTS, 'read-reply.mjs'), '--', '--json'], { input: texte, encoding: 'utf8' }));
+  };
+
+  // La vraie réponse, telle qu'elle est arrivée.
+  const reel = readFileSync(join(new URL('.', import.meta.url).pathname, 'fixtures', 'reponse-par-courriel.txt'), 'utf8');
+  const r = await lire(reel);
+  assert.equal(r.verbatim, 'J\'attends tes questions', 'ses mots, et rien d\'autre');
+  assert.ok(r.part <= 5, `3 % du message venait d'elle, pas ${r.part} %`);
+  assert.deepEqual(r.retire.map(x => x.pourquoi).sort(),
+    ['ligne d\'attribution française (« Le …, … a écrit : »)', 'réclame Yahoo Mail'].sort());
+  // Et surtout : notre propre question ne doit pas s'être glissée dans le verbatim.
+  assert.doesNotMatch(r.verbatim, /perdre le plus de temps/, 'la question posée ne devient pas sa réponse');
+  assert.doesNotMatch(r.verbatim, /agent logiciel/);
+
+  // Les deux positions de réponse. Couper à partir de la première marque jetait la réponse de qui
+  // écrit SOUS la citation : le chevron marque des lignes à retirer, pas une frontière.
+  const dessus = await lire('Trois heures par semaine.\n\nSent from my iPhone\n\nOn Tue, Nov 3, 2026 at 9:43 PM, Agent <a@b.fr> wrote:\n> Une seule question :\n');
+  assert.equal(dessus.verbatim, 'Trois heures par semaine.');
+  const dessous = await lire('Le mar., nov. 3, 2026, Agent <a@b.fr> a écrit :\n> Une seule question :\n> Quoi ?\n\nLa ressaisie, trois heures par semaine.\n');
+  assert.equal(dessous.verbatim, 'La ressaisie, trois heures par semaine.', 'celle qui répond sous la citation ne se perd pas');
+
+  // Le séparateur d'Outlook, et le message nu qui n'a rien à retirer.
+  const outlook = await lire('Surtout la ressaisie.\n\n-----Message d\'origine-----\nDe : Agent <a@b.fr>\nEnvoyé : mardi 3 novembre 2026\n');
+  assert.equal(outlook.verbatim, 'Surtout la ressaisie.');
+  const nu = await lire('Rien à ajouter.\n');
+  assert.equal(nu.verbatim, 'Rien à ajouter.');
+  assert.deepEqual(nu.retire, [], 'un message nu ne se fait pas amputer');
+  assert.equal(nu.part, 100);
+
+  // Un pied de page au MILIEU d'une phrase est peut-être de la personne : il ne se retire que s'il
+  // termine le texte. Sinon le script couperait dans ses mots sous prétexte de les nettoyer.
+  const milieu = await lire('Sent from my iPhone, ça explique les fautes. La ressaisie des adresses.\n');
+  assert.match(milieu.verbatim, /^Sent from my iPhone, ça explique/);
+});
+
 test('un message sortant ne parle qu\'en clair', () => {
   const brd = (extra = {}, zone = {}) => ({
     document: 'brd', phase: 'discover',
