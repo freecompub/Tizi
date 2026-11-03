@@ -764,8 +764,13 @@ test('S115 : « sollicitée » dit qu\'on a écrit, et sa date dit que la questi
   assert.deepEqual(s115(etat({ status: 'sollicitée', sollicitee_le: '2026-10-28' })), []);
   // Une date restée là sous un statut qui ne la lit plus : elle donne l'air d'une question en vol.
   assert.match(s115(etat({ status: 'à interroger', sollicitee_le: '2026-10-28' }))[0], /la date ne se lit que sur « sollicitée »/);
-  // Sur `interrogée`, la date est la trace de quand on a écrit : elle ne se reproche pas.
-  assert.deepEqual(s115(etat({ status: 'interrogée', sollicitee_le: '2026-10-28' })), []);
+  // Sur `interrogée`, la date devient le deuxième tour du fil — et elle n'a de sens que confrontée aux
+  // sources de la personne. Sans aucune source à son nom, le statut dit qu'elle a parlé et le dossier
+  // ne garde rien : c'est un constat, pas un silence.
+  assert.match(s115(etat({ status: 'interrogée', sollicitee_le: '2026-10-28' }))[0], /le dossier ne garde rien de ce qu'elle a dit/);
+  // Entendue en réunion, jamais passée par un canal : rien ne lui arrive, et c'est la majorité des cas.
+  assert.equal(sollicitationEtat(sh({ status: 'interrogée' })), 'fait');
+  assert.deepEqual(s115(etat({ status: 'interrogée' })), []);
 
   // Ce qui change : le REPROCHE du silence. Le constat sur sa voix non entendue change de liste.
   const avecBesoin = extra => checkState({ document: 'brd', phase: 'discover',
@@ -793,6 +798,38 @@ test('S115 : « sollicitée » dit qu\'on a écrit, et sa date dit que la questi
   assert.equal(enNomDe.find(f => f.rule === 'S81' && f.id === 'SRC-1')?.pending, undefined, 'une source à son nom reste du second degré');
   assert.ok(enNomDe.some(f => f.rule === 'S90'), 'une attribution rendue en son nom reste rapportée');
   assert.equal(enNomDe.find(f => f.rule === 'S90')?.pending, undefined);
+});
+
+// Un entretien par canal ne tient pas en un échange, et au deuxième tour la personne est déjà
+// `interrogée` : le statut ne peut plus porter l'attente, puisque la repasser `sollicitée` dirait
+// qu'elle n'a jamais parlé et éteindrait ce que sa voix avait fermé. L'attente se CALCULE donc — une
+// question vit tant que la dernière chose écrite est postérieure à la dernière chose qu'elle a dite.
+test('S115 : au deuxième tour, l\'attente se calcule au lieu de se déclarer', () => {
+  const etat = (sollicitee_le, dateSource) => ({
+    document: 'brd', phase: 'discover',
+    stakeholders: [{ id: 'SH-01', name: 'Nadia', status: 'interrogée', sollicitee_le, joignable_par: 'courriel', end_user: true, power: 'faible', impact: 'fort', influence: 'positive', quadrant: 'consulter' }],
+    sources: [{ id: 'SRC-1', type: 'échange écrit', date: dateSource, stakeholders: ['SH-01'], quote: 'Le plus long, c\'est de ressaisir les adresses.', feedback: 'confirmé' }],
+  });
+  const lire = (a, b) => sollicitationEtat(etat(a, b).stakeholders[0], etat(a, b).sources);
+
+  // Elle a répondu après qu'on a écrit : la question est retombée.
+  assert.equal(lire('2026-10-27', '2026-10-29'), 'fait');
+  // On a réécrit depuis sa dernière réponse : une question vit, sans que son statut change.
+  assert.equal(lire('2026-11-03', '2026-10-29'), 'attente');
+  // Même jour : elle a répondu le jour où on a écrit. Retombée — on ne suppose pas l'inverse.
+  assert.equal(lire('2026-10-29', '2026-10-29'), 'fait');
+
+  // Et ce qui change avec l'attente d'un deuxième tour : rien sur sa voix, parce qu'elle a parlé.
+  // S83 et S94 sont déjà éteints, et c'est le but — le calcul ne doit pas les rallumer.
+  const enVol = checkState(etat('2026-11-03', '2026-10-29'));
+  assert.deepEqual(enVol.filter(f => ['S83', 'S94'].includes(f.rule)), []);
+
+  // La source sans date rend la comparaison impossible : le dossier a peut-être la réponse, et ne peut
+  // pas le prouver. On ne devine pas — on dit que la mesure manque, et laquelle.
+  const aveugle = checkState(etat('2026-11-03', ''));
+  assert.match(aveugle.find(f => f.rule === 'S115').message, /aucune de ses 1 source\(s\) ne porte de date : on ne peut pas savoir si elle a répondu depuis/);
+  // Et l'état ne prétend pas qu'une question vit : « on ne sait pas » n'est pas « elle attend ».
+  assert.equal(sollicitationEtat(etat('2026-11-03', '').stakeholders[0], etat('2026-11-03', '').sources), 'fait');
 });
 
 test('S114 : le canal est dans l\'état, la coordonnée est à côté et hors de git', () => {

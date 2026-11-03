@@ -201,6 +201,18 @@ Le guide existe parce que la personne est absente et qu'un humain ira la voir. L
 
 Le script **n'envoie rien**. Il ne sait pas à quoi tu es branché, et un message parti est irréversible : l'envoi passe par le canal de l'hôte s'il en offre un, sinon le message revient à l'utilisateur, qui l'enverra. Ce qui part est toujours un texte qu'un humain a pu lire avant.
 
+**Un entretien par canal ne tient pas en un échange, et l'attente se calcule.** Une question, la réponse, la suivante — et au deuxième tour la personne est déjà `interrogée`. Le statut ne peut donc plus porter l'attente : la repasser `sollicitée` dirait qu'elle n'a jamais parlé, et éteindrait ce que sa voix avait fermé (`S83`, `S95`). **Une question vit tant que `sollicitee_le` est postérieure à la date de la dernière source qui vient d'elle.** Rien de neuf dans le modèle, et c'est pour ça que la date d'une source compte maintenant : sans elle, la comparaison est impossible, le dossier a la réponse sans pouvoir le prouver, et `S115` le dit.
+
+`reach-out.mjs` en tire trois modes, **déduits de l'état et jamais choisis par un drapeau** — le dossier sait où on en est, et laisser choisir, c'est risquer d'envoyer une première prise de contact à quelqu'un qu'on a déjà interrogé, qui le ferait recommencer à zéro.
+
+| L'état dit | Mode | Ce que la personne sait déjà |
+|---|---|---|
+| jamais entendue, rien en vol | première prise de contact | rien : la déclaration est entière |
+| elle a parlé, rien en vol | suite du fil | elle sait qui écrit : le redire la traiterait en inconnue |
+| une question en vol | **relance**, et seulement avec `--relance` | elle a déjà la question |
+
+**Une relance est une décision, pas l'enchaînement naturel du silence.** D'où le drapeau : sans lui, le script refuse et nomme les trois issues — attendre, relancer, renoncer. Et le message de relance dit qu'on n'insistera plus, parce que sinon « relance » veut dire « on recommencera », et c'est comme ça qu'une source se brûle. **Renoncer se dit aussi** : `status: non disponible`. Un silence laissé ouvert indéfiniment donne au dossier l'air d'attendre quelque chose qui ne viendra pas.
+
 **« Sollicitée » veut dire qu'on a écrit, pas qu'on a reçu.** Le statut d'une partie prenante porte un troisième état, avec sa date (`sollicitee_le`), construit exactement comme le `envoyé` d'un retour à la source et pour la même raison : tant qu'il n'existait pas, « je lui ai écrit le 21, elle n'a pas répondu » n'avait aucun endroit où se dire, il fallait la laisser `à interroger` — c'est-à-dire rendre le même constat que si personne ne l'avait jamais contactée. Écrire à quelqu'un coûtait autant que ne pas lui écrire.
 
 Avec la date, son silence devient une question qui **vit** : les constats sur sa voix non entendue changent de liste au lieu de compter contre le dossier, et `review-sources.mjs --etat` dit depuis combien de jours elle attend. Sans la date, « sollicitée » reste un échec (S115), parce que c'est toi qui écris le champ et qu'une sollicitation invérifiable est une case cochée. Et ce qui ne change pas : elle reste **non entendue**. Une décision rendue en son nom est toujours rapportée par un tiers (S90), une source à son nom reste du second degré (S81). Ce qui change, c'est le reproche de son silence — pas le fait qu'elle se taise.

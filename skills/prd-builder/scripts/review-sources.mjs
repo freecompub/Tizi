@@ -53,14 +53,14 @@ if (args.includes('--etat')) {
   // Les questions parties vers quelqu'un qui n'a pas encore répondu. Le tableau ci-dessus ne parle que
   // des LOCUTEURS : par construction, une personne sollicitée et muette n'y figure pas — c'est
   // exactement celle dont on perd la trace, et la seule que le dossier ne rappelait à personne.
-  const sollicitees = arr(s.stakeholders).filter(sh => sollicitationEtat(sh) === 'attente');
+  const sollicitees = arr(s.stakeholders).filter(sh => sollicitationEtat(sh, s.sources) === 'attente');
   if (sollicitees.length) {
     const vieille = sollicitees.reduce((a, b) => (jours(a.sollicitee_le) > jours(b.sollicitee_le) ? a : b));
     console.log(`\n${sollicitees.length} personne(s) sollicitée(s) et sans réponse : ${sollicitees.map(sh => `${shLabel(s, sh.id)} par ${sh.joignable_par || 'canal non dit'}, depuis ${jours(sh.sollicitee_le)} j`).join(' · ')}. La plus ancienne attend depuis ${jours(vieille.sollicitee_le)} jour(s) — relance sur le même fil, ou renonce et dis-le.`);
   }
   // Déclarées sollicitées sans date : elles ne comptent pour rien (S115), et personne ne les relancera
   // puisque rien ne dit depuis quand elles attendent.
-  const sansJour = arr(s.stakeholders).filter(sh => sh.status === 'sollicitée' && sollicitationEtat(sh) !== 'attente');
+  const sansJour = arr(s.stakeholders).filter(sh => sh.status === 'sollicitée' && sollicitationEtat(sh, s.sources) !== 'attente');
   if (sansJour.length) console.log(`${sansJour.length} personne(s) dite(s) sollicitée(s) sans date de départ (\`sollicitee_le\`, S115) : ${sansJour.map(sh => sh.id).join(', ')} — elles comptent comme si personne ne leur avait écrit.`);
   const muettes = arr(s.sources).filter(x => arr(x.stakeholders).length && !dit(x)).length;
   if (muettes) console.log(`${muettes} source(s) de parole ne portent pas ce qui a été dit : un relevé ne peut pas les rendre (S102).`);
