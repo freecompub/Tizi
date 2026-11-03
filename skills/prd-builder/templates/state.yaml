@@ -102,6 +102,9 @@ sources: []               # preuves produit (entretiens, tests utilisateurs, ana
 #                          # `feedback_le` : QUAND la demande de relecture est partie. Sans elle, `envoyé`
 #                          # ne se vérifie pas et S84 le compte comme jamais demandé ; avec elle, il vaut
 #                          # « non mesuré » — une question posée, pas un trou. `feedback_par` : par quoi
+#                          # elle est partie — oral, courriel, messagerie, ou le canal nommé. Informatif,
+#                          # rien ne le réclame ; il sert à qui relance, et à qui se demande si une trace
+#                          # existe ailleurs que dans ce fichier
 #                          # `corrects` : les SOURCES dont celle-ci corrige la lecture (S112) — `confirms`
 #                          # ne pointe que vers des éléments, donc rien ne menait d'une source à celle
 #                          # qui l'a corrigée ; `feedback_motif` : pourquoi « sans objet » sur une parole

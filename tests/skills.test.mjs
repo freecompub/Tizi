@@ -122,6 +122,37 @@ test('ni la suite ni les bancs ne laissent de dossier temporaire derrière eux',
 // deux, et `S80` fermait la porte de gouvernance du BRD sur des listes qu'aucune de ses phases ne disait
 // de produire. `block.mjs` et les deux scripts d'analyse croisée étaient dans le même cas, cinq copies
 // chacun. Même famille que le council du plan, qui avait un moment prescrit et aucun appelant.
+// Une clause ouverte puis abandonnée. Le gabarit du PRD a porté pendant une version la phrase
+// « `feedback_par` : par quoi », suivie directement d'un commentaire sur un autre champ : la phrase
+// avait été coupée en écrivant, et personne ne l'a vue — ni la relecture, ni les 262 tests, parce
+// qu'aucun ne lit la prose des gabarits. Le champ restait donc nommé et inexpliqué dans le fichier que
+// l'agent copie pour chaque dossier, et un champ qu'on nomme sans le dire se remplit au hasard.
+// La forme est reconnaissable : un mot qui ANNONCE la suite, en fin de ligne, et la ligne d'après qui
+// ouvre un autre sujet. Le motif est étroit par construction — il ne tire que sur cette forme-là, et
+// au jour où il est écrit il ne correspond nulle part ailleurs dans les sept skills.
+const CLAUSE_OUVERTE = /(par quoi|avec quoi|à qui|de qui|pour qui|dont|lequel|laquelle|c'est-à-dire|à savoir|parce que|puisque|sauf si|tandis que)\s*$/;
+const AUTRE_SUJET = /^\s*#\s*#?\s*`[a-z_]+`\s*:/;
+test('aucun commentaire de gabarit ou de référence ne laisse une clause en l\'air', () => {
+  const abandonnees = [];
+  for (const s of skills) {
+    const fichiers = [join(SKILLS, s, 'SKILL.md')];
+    for (const d of ['templates', 'references']) {
+      const dir = join(SKILLS, s, d);
+      if (existsSync(dir)) for (const f of readdirSync(dir)) fichiers.push(join(dir, f));
+    }
+    for (const f of fichiers) {
+      const lignes = readFileSync(f, 'utf8').split('\n');
+      for (let i = 0; i < lignes.length - 1; i++) {
+        if (!lignes[i].trimStart().startsWith('#')) continue;
+        if (CLAUSE_OUVERTE.test(lignes[i]) && AUTRE_SUJET.test(lignes[i + 1])) {
+          abandonnees.push(`${s}/${f.split('/').slice(-2).join('/')}:${i + 1} — « …${lignes[i].trim().slice(-40)} » puis « ${lignes[i + 1].trim().slice(0, 40)}… »`);
+        }
+      }
+    }
+  }
+  assert.deepEqual(abandonnees, [], `phrase(s) coupée(s) en écrivant :\n  ${abandonnees.join('\n  ')}`);
+});
+
 test('aucun script livré sans appelant', () => {
   const communs = [join(ROOT, 'entrypoints', 'entrypoints.yaml'), join(ROOT, 'install.mjs'),
     join(ROOT, 'hooks', 'hooks.json'), join(ROOT, 'com.github.copilot', 'hooks', 'hooks.json')]
