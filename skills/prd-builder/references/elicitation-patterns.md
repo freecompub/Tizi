@@ -201,6 +201,16 @@ Le guide existe parce que la personne est absente et qu'un humain ira la voir. L
 
 Le script **n'envoie rien**. Il ne sait pas à quoi tu es branché, et un message parti est irréversible : l'envoi passe par le canal de l'hôte s'il en offre un, sinon le message revient à l'utilisateur, qui l'enverra. Ce qui part est toujours un texte qu'un humain a pu lire avant.
 
+**Renoncer se dit, et dit lequel des quatre.** `non disponible` couvrait d'un seul mot quatre situations qui n'ont ni la même cause ni le même remède : elle n'a **jamais répondu** ; elle a **refusé**, ce que notre propre message l'invite expressément à faire ; elle est **absente**, en congé, partie ; ou **nous** avons renoncé pour nos raisons. La dernière est la seule qui soit entièrement de notre faute, et c'est celle qu'un mot unique cachait le mieux. `indisponible_motif` le dit — `silence | refus | absence | renoncement | autre:<libellé>` —, et sans lui le statut est une case cochée, comme `envoyé` sans date (`S116`).
+
+Deux conséquences, et aucune n'est une formalité.
+
+**Renoncer n'éteint rien.** Le statut reste dans les non entendues : `S94` et `S83` continuent de dire que sa voix manque. Un choix de notre part n'est pas une réussite du dossier — c'est la même règle que partout ailleurs, l'absence de mesure ne vaut jamais un succès. Et c'est ce qui empêche « non disponible » de devenir la sortie commode d'une cartographie difficile.
+
+**Un refus est sa parole, et une parole se cite.** Si elle écrit « je préfère ne pas répondre », ce sont ses mots : ils se consignent en source comme le reste, et on apprend quelque chose — peut-être que la question faisait peur, peut-être qu'elle ne se sentait pas légitime pour y répondre. Déclarer un refus sans qu'aucune source porte sa parole, c'est une affirmation d'un tiers **sur** elle, exactement ce que `S110` refuse pour une représentation et `S90` pour une décision rendue en son nom.
+
+Et le refus devient lisible dans l'autre sens : `reach-out.mjs` ne dit plus seulement « elle est non disponible », il dit **ce qu'il faudrait avoir changé** pour la recontacter. Sur un `refus`, la réponse est qu'on ne revient pas vers quelqu'un qui a dit non parce qu'on a une nouvelle question : c'est à l'utilisateur de dire si elle a changé d'avis, et à lui de le lui demander.
+
 **Un entretien par canal ne tient pas en un échange, et l'attente se calcule.** Une question, la réponse, la suivante — et au deuxième tour la personne est déjà `interrogée`. Le statut ne peut donc plus porter l'attente : la repasser `sollicitée` dirait qu'elle n'a jamais parlé, et éteindrait ce que sa voix avait fermé (`S83`, `S95`). **Une question vit tant que `sollicitee_le` est postérieure à la date de la dernière source qui vient d'elle.** Rien de neuf dans le modèle, et c'est pour ça que la date d'une source compte maintenant : sans elle, la comparaison est impossible, le dossier a la réponse sans pouvoir le prouver, et `S115` le dit.
 
 `reach-out.mjs` en tire trois modes, **déduits de l'état et jamais choisis par un drapeau** — le dossier sait où on en est, et laisser choisir, c'est risquer d'envoyer une première prise de contact à quelqu'un qu'on a déjà interrogé, qui le ferait recommencer à zéro.
