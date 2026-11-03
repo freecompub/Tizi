@@ -1,8 +1,8 @@
 # Règles de contrôle, étape par étape
 
-**Ce document est généré par `doc-regles.mjs`. Ne le modifie pas à la main.** Une liste de 122 règles écrite à la main dérive au premier changement du catalogue, et une liste qui dérive est pire qu'une absence de liste : on la croit. Les énoncés ci-dessous sont ceux du catalogue (`skills/*/scripts/lib/rules.mjs`), les conditions de porte celles de `lib/gates.mjs`, les seuils ceux de `COVERAGE_DEFAULTS`. Pour le régénérer : `node doc-regles.mjs`. Pour vérifier qu'il est à jour : `node doc-regles.mjs --verifier`.
+**Ce document est généré par `doc-regles.mjs`. Ne le modifie pas à la main.** Une liste de 123 règles écrite à la main dérive au premier changement du catalogue, et une liste qui dérive est pire qu'une absence de liste : on la croit. Les énoncés ci-dessous sont ceux du catalogue (`skills/*/scripts/lib/rules.mjs`), les conditions de porte celles de `lib/gates.mjs`, les seuils ceux de `COVERAGE_DEFAULTS`. Pour le régénérer : `node doc-regles.mjs`. Pour vérifier qu'il est à jour : `node doc-regles.mjs --verifier`.
 
-Au total : **114 règles de structure** (`S00`–`S113`), **8 règles de rédaction** (`L01`–`L08`), **10 conditions** à la porte de PR, **10** à la porte de release, **6 garde-fous** d'export, et les conditions calculées des portes de phase des cinq documents à phases.
+Au total : **115 règles de structure** (`S00`–`S114`), **8 règles de rédaction** (`L01`–`L08`), **10 conditions** à la porte de PR, **10** à la porte de release, **6 garde-fous** d'export, et les conditions calculées des portes de phase des cinq documents à phases.
 
 ## Comment lire une règle
 
@@ -462,14 +462,14 @@ Calculée par `release-matrix.mjs` depuis le plan figé et les rapports collect�
 
 Une exigence non prouvée se corrige, ou s'assume par une dérogation dans `waivers` — qui ne compte que si elle dit **pourquoi** et **qui l'a approuvée**. Le catalogue de règles ne vérifie pas cette étape (`S00`) : un état de tests se vérifie avec `release-matrix.mjs`.
 
-## Règles de structure communes aux quatre documents (25)
+## Règles de structure communes aux quatre documents (26)
 
 Elles s'appliquent au BRD, au PRD, à la conception et au plan. Les étapes 5 et 6 ne reçoivent pas ce catalogue.
 
 | Code | Objet | Ce que dit le constat |
 |---|---|---|
 | `S00` | document hors du catalogue | document « … » : ce catalogue vérifie …, et rien d'autre — un état d'implémentation se vérifie avec pr-gate.mjs et trace-check.mjs, un état de tests avec release-matrix.mjs |
-| `S09` | référence inexistante | représentée par « … », qui n'est pas une partie prenante connue · représentation appuyée sur …, qui n'existe pas dans les sources · guide d'entretien pour …, qui n'est pas dans la cartographie · déclarée comme correction de …, qui n'existe pas dans les sources · source déclarée comme confirmation de …, qui n'existe pas |
+| `S09` | référence inexistante | représentée par « … », qui n'est pas une partie prenante connue · représentation appuyée sur …, qui n'existe pas dans les sources · guide d'entretien pour …, qui n'est pas dans la cartographie · déclarée comme correction de …, qui n'existe pas dans les sources · coordonnée dans `contacts.yaml` à un identifiant qui n'est pas une partie prenante de l'état : une coordonnée qui ne désigne personne ne sert à rien, et elle a pu être recopiée de travers · source déclarée comme confirmation de …, qui n'existe pas |
 | `S53` | handoff amont altéré | empreinte du handoff non relevée à l'ingestion (lancer verify-handoff.mjs et reporter sha256 dans l'état) · handoff ingéré introuvable · le handoff a changé depuis l'ingestion : relancer l'ingestion et faire le point sur les écarts |
 | `S54` | seuil de couverture non atteint | … : … % pour un seuil de … % (manquent : …) ; corriger, ou déclarer une dérogation dans `waivers` avec sa raison et son approbateur |
 | `S68` | espace réservé resté | espace réservé resté dans … : « … » |
@@ -493,6 +493,7 @@ Elles s'appliquent au BRD, au PRD, à la conception et au plan. Les étapes 5 et
 | `S109` | risque consigné sans être apprécié | risque consigné sans être apprécié (… vide…) : un risque sans vraisemblance ni ampleur ne se priorise pas — et vide ne veut pas dire faible, ça veut dire non apprécié · risque validé sans piste de traitement (`response`) : accepter un risque sans dire ce qu'on en fait le laisse à l'état d'inquiétude consignée |
 | `S111` | relecture « sans objet » sur une parole, sans raison | relecture déclarée « sans objet » sur une source de type « … » sans dire pourquoi (`feedback_motif`) : c'est la seule valeur qui éteint S84 sans que personne n'ait rien relu |
 | `S112` | correction d'une source non reliée ou laissée sans relecture | déclarée comme correction d'elle-même : une correction vient d'un autre échange · corrigée par …, et pourtant déclarée « sans objet » en relecture : une source dont on sait que ce qu'on en avait compris était faux est la première à faire relire |
+| `S114` | coordonnée dans l'état versionné, ou canal annoncé sans coordonnée | `joignable_par` porte … : ce champ dit par quoi on la joint, pas avec quoi — l'état se commite et `freeze-version.mjs` en fige une copie sous `versions/`, d'où rien ne se reprend. La coordonnée va dans `contacts.yaml`, à côté de l'état, que `.gitignore` exclut · déclarée joignable par « … » et aucun `contacts.yaml` à côté de l'état : le canal est annoncé, la coordonnée n'existe nulle part — personne ne peut la joindre · déclarée joignable par « … », et `contacts.yaml` ne porte rien à son identifiant : le canal est annoncé, la coordonnée n'y est pas |
 
 ## Garde-fous de l'export (6)
 
@@ -522,7 +523,7 @@ Chaque règle, les étapes où elle s'applique, et la fonction du catalogue qui 
 | `S06` | 2 | exigence sans origine | `checkPrd` |
 | `S07` | 2 | Must sans scénario d'erreur | `checkPrd` |
 | `S08` | 2 | NFR incomplète | `checkPrd` |
-| `S09` | 1, 2, 3, 4 | référence inexistante | `checkPlan`, `checkPrd`, `checkRepresentation`, `checkSad`, `confirmationFindings`, `interviewFindings`, `relectureFindings` |
+| `S09` | 1, 2, 3, 4 | référence inexistante | `checkPlan`, `checkPrd`, `checkRepresentation`, `checkSad`, `confirmationFindings`, `contactFindings`, `interviewFindings`, `relectureFindings` |
 | `S10` | 1, 2 | référence vers un élément abandonné | `deadRefs` |
 | `S11` | 1 | règle métier sans source | `checkBrd` |
 | `S12` | 1 | règle sans niveau d'application | `checkBrd` |
@@ -627,3 +628,4 @@ Chaque règle, les étapes où elle s'applique, et la fonction du catalogue qui 
 | `S111` | 1, 2, 3, 4 | relecture « sans objet » sur une parole, sans raison | `relectureFindings` |
 | `S112` | 1, 2, 3, 4 | correction d'une source non reliée ou laissée sans relecture | `relectureFindings` |
 | `S113` | 1 | utilisateur direct qu'aucun besoin ne concerne | `checkBrd` |
+| `S114` | 1, 2, 3, 4 | coordonnée dans l'état versionné, ou canal annoncé sans coordonnée | `contactFindings` |

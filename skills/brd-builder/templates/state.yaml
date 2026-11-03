@@ -105,6 +105,14 @@ stakeholders: []
 #                          # du `represents` d'un autre, qui nomme un groupe qu'aucun script ne peut
 #                          # rapprocher d'un identifiant. Et ça ne ferme rien : la zone sur sa voix
 #                          # non entendue reste ouverte (S94)
+#    joignable_par: ""     # PAR QUOI on peut la joindre : vive voix | courriel | messagerie |
+#                          # téléphone | autre:<canal nommé>. Vide si on n'a pas de quoi la joindre —
+#                          # ne pas savoir est un fait, pas une faute, et rien ne le réclame.
+#                          # L'adresse, le numéro, l'identifiant N'ENTRENT PAS ICI : ce fichier se
+#                          # commite, part dans le handoff, et `freeze-version.mjs` en fige une copie
+#                          # en lecture seule sous `versions/` d'où rien ne se reprend. Ils vont dans
+#                          # `contacts.yaml`, à côté de l'état, que `.gitignore` exclut. S114 refuse
+#                          # une coordonnée ici, et signale un canal annoncé qui n'en a aucune là-bas
 #    status: à interroger  # à interroger | interrogée | non disponible. « interrogée » veut dire
 #                          # ENTENDUE AU MOINS UNE FOIS, pas « plus rien à lui demander » : la zone
 #                          # `partie_prenante_non_entendue` se ferme quand aucune zone ouverte ne la

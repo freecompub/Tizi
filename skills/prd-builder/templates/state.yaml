@@ -75,6 +75,14 @@ stakeholders: []          # qui a parlé, et en quelle qualité — chaîné : r
 #                          # établi et plus rien ne la relit
 #    represented_by: ""    # l'inverse, sur la personne REPRÉSENTÉE : le SH-xx de qui répond pour elle
 #                          # (S94). Ça enregistre qui parle en son nom, ça ne vaut pas sa voix
+#    joignable_par: ""     # PAR QUOI on peut la joindre : vive voix | courriel | messagerie |
+#                          # téléphone | autre:<canal nommé>. Vide si on n'a pas de quoi la joindre —
+#                          # ne pas savoir est un fait, pas une faute, et rien ne le réclame.
+#                          # L'adresse, le numéro, l'identifiant N'ENTRENT PAS ICI : ce fichier se
+#                          # commite, part dans le handoff, et `freeze-version.mjs` en fige une copie
+#                          # en lecture seule sous `versions/` d'où rien ne se reprend. Ils vont dans
+#                          # `contacts.yaml`, à côté de l'état, que `.gitignore` exclut. S114 refuse
+#                          # une coordonnée ici, et signale un canal annoncé qui n'en a aucune là-bas
 #    status: à interroger  # à interroger | interrogée | non disponible
 
 sources: []               # preuves produit (entretiens, tests utilisateurs, analytics, études, décisions)

@@ -361,7 +361,12 @@ jobs:
 
 // 4. .gitignore
 const gi = join(project, '.gitignore');
-const lines = plugin ? [] : ['# Tizi : état local de la tâche en cours, transcriptions brutes, rapports de test, copies téléchargées depuis la CI, rapport d\'audit de la CI (l\'archive des preuves, elle, se commite)', '.impl/', '.tizi/sessions/*.jsonl', '.tizi/sessions/*.tmp', '.tizi/ci-audit.md', 'reports/', 'qa/*/ci/*/'];
+const lines = plugin ? [] : ['# Tizi : état local de la tâche en cours, transcriptions brutes, rapports de test, copies téléchargées depuis la CI, rapport d\'audit de la CI (l\'archive des preuves, elle, se commite)', '.impl/', '.tizi/sessions/*.jsonl', '.tizi/sessions/*.tmp', '.tizi/ci-audit.md', 'reports/', 'qa/*/ci/*/',
+  // Les coordonnées des parties prenantes, à côté de l'état de chaque dossier. Sans barre oblique :
+  // le motif s'applique à toute profondeur, donc à brd/<slug>/, prd/<slug>/ et à tout dossier à venir.
+  // L'état, lui, se commite — il ne porte que le CANAL (`joignable_par`), jamais la coordonnée (S114).
+  '# Tizi : coordonnées des parties prenantes — elles restent sur la machine où elles ont été données',
+  'contacts.yaml'];
 if (lines.length) act(`.gitignore → ${gi}`, () => {
   const cur = existsSync(gi) ? readFileSync(gi, 'utf8') : '';
   const missing = lines.filter(l => !cur.split('\n').includes(l));

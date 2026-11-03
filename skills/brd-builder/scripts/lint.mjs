@@ -23,11 +23,16 @@ const refs = existsSync(refsPath) ? loadState(refsPath) : {};
 // Constitution du produit et listes de contrôle de relecture, si elles existent : la vérification les prend en compte.
 const constitution = (() => { for (const r of ['.', dirname(dirname(dirname(statePath)))]) if (existsSync(join(r, '.tizi', 'constitution.yaml'))) return loadState(join(r, '.tizi', 'constitution.yaml')); return null; })();
 const checklists = (() => { const d = join(dirname(statePath), 'checklists'); return existsSync(d) ? readdirSync(d).filter(f => f.endsWith('.md')).map(f => ({ file: f, text: readFileSync(join(d, f), 'utf8') })) : []; })();
+// Les coordonnées vivent à CÔTÉ de l'état, jamais dedans : `contacts.yaml` ne se commite pas (S114).
+// Absent, c'est `null` — le catalogue le distingue de `undefined`, qui veut dire que personne n'a
+// regardé : « on n'a pas regardé » n'est pas « il n'y a rien », et c'est le second qui se reproche.
+const contactsPath = join(dirname(statePath), 'contacts.yaml');
+const contacts = existsSync(contactsPath) ? loadState(contactsPath) : null;
 // Guides d'entretien présents sur le disque : un guide ne se périme pas tout seul quand son absent arrive.
 const interviews = (() => { const d = join(dirname(statePath), 'interviews'); return existsSync(d) ? readdirSync(d).filter(f => f.endsWith('.md')).map(f => ({ file: f, text: readFileSync(join(d, f), 'utf8') })) : []; })();
 // S53 vit dans le catalogue, comme le reste : le contrôle des handoffs ingérés était ici, et `status.mjs`
 // ne pouvait donc pas le faire — la porte annonçait moins d'avertissements que le lint.
-let findings = checkState(state, { refs, constitution, checklists, interviews, handoffs: ingestedHandoffs(state, statePath, refs) });
+let findings = checkState(state, { refs, constitution, contacts, checklists, interviews, handoffs: ingestedHandoffs(state, statePath, refs) });
 if (only.size) findings = findings.filter(f => only.has(f.id));
 // Un avertissement dérogé ne disparaît pas : il change de liste. Un trou nommé se répare, un trou
 // silencieux se propage — et une dérogation invisible est un contrôle désarmé sans trace.
