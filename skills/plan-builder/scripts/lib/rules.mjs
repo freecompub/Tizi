@@ -1635,6 +1635,35 @@ export function riskFindings(s) {
 // source : rien ne menait du tour de table à l'échange qui en a corrigé la lecture, et qui lira le
 // premier dans six mois n'a aucun chemin vers le second. Une source corrigée est par définition la
 // première à faire relire : la déclarer « sans objet » se contredit.
+// `understood` est ce qu'on REND à la personne en relecture — le gabarit le dit depuis le début : c'est
+// « ce qui se corrige quand la citation est juste et la conclusion fausse ». En pratique il a dérivé vers
+// le carnet d'analyse de l'agent. Mesuré sur le troisième dossier réel : 52 sources de parole recueillie
+// sur 91 portent un renvoi interne, et l'une d'elles explique à quoi sert `present: []` dans des sources
+// passées. Montré à la personne, c'est incompréhensible et un peu gênant ; et c'est `review-sources.mjs`
+// qui s'en aperçoit, au moment d'envoyer, quand il y a cinquante-deux champs à réécrire.
+//
+// Le constat porte sur la COLLECTION, et une seule fois. Cinquante-deux constats noieraient les vingt
+// autres du dossier, et le défaut n'est pas cinquante-deux fautes indépendantes : c'est une manière
+// d'écrire le champ. Une ligne qui dit le compte et nomme les premières, le script nomme le reste.
+//
+// Il ne porte que sur les types dont la parole REPART vers la personne. Une décision de l'utilisateur ne
+// se fait pas relire à son auteur — c'est déjà la doctrine de `S111` —, donc un renvoi interne n'y gêne
+// personne : sur le dossier réel, les dix sources de type `décision` sortent du compte, et les quatre
+// seuls renvois trouvés dans un `quote` sont toutes des décisions.
+//
+// Et le seuil est le même que celui du script, volontairement : si la règle était plus clémente que le
+// refus, le lint dirait que tout va bien et l'envoi refuserait. C'est le pire des deux mondes.
+export function understoodFindings(s) {
+  const sales = arr(s?.sources)
+    .filter(x => RECUEIL_DE_PAROLE.includes(x.type))
+    .map(x => ({ id: x.id, refs: refsDans(`${x.quote ?? ''}\n${x.understood ?? ''}`) }))
+    .filter(x => x.refs.length);
+  if (!sales.length) return [];
+  const total = arr(s?.sources).filter(x => RECUEIL_DE_PAROLE.includes(x.type)).length;
+  const montrees = sales.slice(0, 5);
+  return [{ rule: 'S118', id: 'sources', message: `${sales.length} source(s) de parole recueillie sur ${total} portent un renvoi interne dans \`quote\` ou \`understood\` (${montrees.map(x => `${x.id} → ${x.refs.slice(0, 3).join(', ')}`).join(' · ')}${sales.length > montrees.length ? ` · et ${sales.length - montrees.length} autre(s)` : ''}) : \`understood\` est ce qu'on REND à la personne en relecture, pas une note à soi-même — elle n'a pas l'index sous les yeux et ne l'aura jamais. \`review-sources.mjs --sh <id> --message\` les nomme toutes, et refuse d'envoyer tant qu'elles sont là` }];
+}
+
 export function relectureFindings(s) {
   const out = [];
   const srcs = new Map(arr(s?.sources).map(x => [x.id, x]));
@@ -1919,7 +1948,7 @@ export function checkState(s, ctx = {}) {
     return [{ rule: 'S00', id: 'document', message: `document « ${doc} » : ce catalogue vérifie ${DOCUMENTS.join(', ')}, et rien d'autre — un état d'implémentation se vérifie avec pr-gate.mjs et trace-check.mjs, un état de tests avec release-matrix.mjs` }];
   }
   const base = doc === 'plan' ? checkPlan(s, refs) : doc === 'sad' ? checkSad(s) : doc === 'prd' ? checkPrd(s) : checkBrd(s);
-  const all = [...base, ...placeholderFindings(s), ...unsourcedNumberFindings(s), ...constitutionFindings(s, ctx.constitution), ...checklistFindings(s, ctx.checklists), ...interviewFindings(s, ctx.interviews), ...outgoingFindings(s, [...fichiersDe(ctx.interviews), ...fichiersDe(ctx.checklists)]), ...governanceFindings(s), ...coverageFindings(s, refs), ...phaseFindings(s), ...sourceContentFindings(s), ...confirmationFindings(s), ...contactFindings(s, ctx.contacts), ...sollicitationFindings(s), ...riskFindings(s), ...relectureFindings(s), ...handoffFindings(ctx.handoffs), ...upstreamFindings(s, refs), ...contextFindings(ctx.cards, s.settings?.context_budget)];
+  const all = [...base, ...placeholderFindings(s), ...unsourcedNumberFindings(s), ...constitutionFindings(s, ctx.constitution), ...checklistFindings(s, ctx.checklists), ...interviewFindings(s, ctx.interviews), ...outgoingFindings(s, [...fichiersDe(ctx.interviews), ...fichiersDe(ctx.checklists)]), ...governanceFindings(s), ...coverageFindings(s, refs), ...phaseFindings(s), ...sourceContentFindings(s), ...confirmationFindings(s), ...contactFindings(s, ctx.contacts), ...sollicitationFindings(s), ...riskFindings(s), ...understoodFindings(s), ...relectureFindings(s), ...handoffFindings(ctx.handoffs), ...upstreamFindings(s, refs), ...contextFindings(ctx.cards, s.settings?.context_budget)];
   const idx = waiverIndex(s);
   return all.map(f => {
     const raison = idx.get(`${f.id}|${f.rule}`);
@@ -1945,6 +1974,7 @@ export const STRUCT_RULES = {
   S115: 'sollicitation déclarée sans sa date ou sans son canal',
   S116: 'indisponibilité déclarée sans dire laquelle',
   S117: 'question laissée en vol au-delà du seuil, sans décision',
+  S118: 'renvoi interne dans ce qu\'on rend à la personne en relecture',
   S01: 'objectif non mesurable', S02: 'exigence sans objectif', S03: 'exigence sans besoin sourcé', S04: 'exigence sans critère d\'acceptation',
   S05: 'priorité ou release manquante', S06: 'exigence sans origine', S07: 'Must sans scénario d\'erreur', S08: 'NFR incomplète',
   S09: 'référence inexistante', S10: 'référence vers un élément abandonné', S11: 'règle métier sans source', S12: 'règle sans niveau d\'application',
