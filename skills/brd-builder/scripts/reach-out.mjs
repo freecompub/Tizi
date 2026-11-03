@@ -118,11 +118,17 @@ const MESSAGES = {
     'Vous n\'avez rien demandé, et vous pouvez ne pas répondre ou demander à parler à quelqu\'un plutôt qu\'à moi.',
     '', 'Une seule question :', '', zone.question, '', 'Merci.',
   ],
+  // « Une question de plus » était faux la moitié du temps, et la première vraie réponse l'a montré :
+  // elle disait « j'attends tes questions » — un message, pas une réponse — donc la zone restait ouverte
+  // et le mode suite reposait LA MÊME question en remerciant d'y avoir répondu. Le script ne sait pas
+  // laquelle est partie la fois d'avant (rien ne l'enregistre), donc il dit ce qui est vrai dans les
+  // deux cas, et il rend l'ambiguïté à la personne au lieu de la trancher à sa place.
   suite: [
     bonjour, '',
     'Merci pour votre réponse, elle est consignée dans le dossier.', '',
-    `Une question de plus sur « ${initiative} », et une seule :`,
+    `Je reviens vers vous sur « ${initiative} », avec une seule question :`,
     '', zone.question, '',
+    'Si c\'est la même que la dernière fois, c\'est que j\'ai mal lu votre réponse — dites-le moi, et reformulez comme vous voulez.', '',
     'Comme la première fois, vous relirez ce que j\'en aurai compris avant que ça serve. Et vous pouvez arrêter là : dites-le moi, je le noterai.',
   ],
   relance: [
