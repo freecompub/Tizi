@@ -744,8 +744,12 @@ test('S111 et S112 : « sans objet » porte sa raison, et une source peut en cor
 // tient les trois états et, surtout, ce qui change et ce qui ne change pas quand la question est en vol.
 test('S115 : « sollicitée » dit qu\'on a écrit, et sa date dit que la question vit', () => {
   const sh = extra => ({ id: 'SH-01', end_user: true, power: 'faible', impact: 'fort', influence: 'positive', quadrant: 'consulter', joignable_par: 'courriel', ...extra });
-  const etat = extra => checkState({ document: 'brd', phase: 'discover', stakeholders: [sh(extra)] });
+  // `sollicitee_zone` va avec la date : sans elle, chaque cas porterait en plus le constat sur la paire
+  // incomplète, et les assertions ci-dessous ne mesureraient plus ce qu'elles visent.
+  const etat = extra => checkState({ document: 'brd', phase: 'discover', stakeholders: [sh(extra)],
+    shadow_zones: [{ id: 'ZO-001', type: 'attendu_implicite', question: 'Quoi ?', ask_to: 'SH-01', status: 'ouverte' }] });
   const s115 = d => d.filter(f => f.rule === 'S115').map(f => f.message);
+  const ZONE = { sollicitee_zone: 'ZO-001' };
 
   // Les trois états.
   assert.equal(sollicitationEtat(sh({ status: 'à interroger' })), 'absent');
@@ -757,18 +761,32 @@ test('S115 : « sollicitée » dit qu\'on a écrit, et sa date dit que la questi
   // Déclarée sollicitée sans dire quand : c'est l'agent qui écrit le champ.
   assert.match(s115(etat({ status: 'sollicitée' }))[0], /sans dire quand/);
   // Et sans dire par quoi : une question partie sans canal ne se relance pas.
-  assert.equal(s115(etat({ status: 'sollicitée', sollicitee_le: '2026-10-28', joignable_par: '' })).length, 1);
-  assert.match(s115(etat({ status: 'sollicitée', sollicitee_le: '2026-10-28', joignable_par: '' }))[0], /sans dire par quoi/);
+  assert.equal(s115(etat({ status: 'sollicitée', sollicitee_le: '2026-10-28', joignable_par: '', ...ZONE })).length, 1);
+  assert.match(s115(etat({ status: 'sollicitée', sollicitee_le: '2026-10-28', joignable_par: '', ...ZONE }))[0], /sans dire par quoi/);
   // Les deux à la fois : deux constats, pas un.
   assert.equal(s115(etat({ status: 'sollicitée', joignable_par: '' })).length, 2);
   // La bonne tenue.
-  assert.deepEqual(s115(etat({ status: 'sollicitée', sollicitee_le: '2026-10-28' })), []);
+  assert.deepEqual(s115(etat({ status: 'sollicitée', sollicitee_le: '2026-10-28', ...ZONE })), []);
   // Une date restée là sous un statut qui ne la lit plus : elle donne l'air d'une question en vol.
-  assert.match(s115(etat({ status: 'à interroger', sollicitee_le: '2026-10-28' }))[0], /la date ne se lit que sur « sollicitée »/);
+  assert.match(s115(etat({ status: 'à interroger', sollicitee_le: '2026-10-28', ...ZONE }))[0], /la date ne se lit que sur « sollicitée »/);
+  // La paire date + zone : les deux ou aucun. Sans la zone, le tour suivant ne sait pas si sa réponse
+  // portait sur la question posée — et c'est à la personne qu'on finissait par le demander.
+  assert.match(s115(etat({ status: 'sollicitée', sollicitee_le: '2026-10-28' }))[0], /sans dire sur quoi/);
+  assert.match(s115(etat({ status: 'à interroger', ...ZONE }))[0], /sans date de départ/);
+  // Une zone qui n'existe pas : S09, comme toute référence en l'air.
+  assert.equal(checkState({ document: 'brd', phase: 'discover', stakeholders: [sh({ status: 'sollicitée', sollicitee_le: '2026-10-28', sollicitee_zone: 'ZO-099' })] })
+    .filter(f => f.rule === 'S09' && /pas une zone d'ombre/.test(f.message)).length, 1);
+  // Et la question de quelqu'un d'autre, envoyée à elle : sa réponse serait consignée comme valant
+  // pour l'autre. C'est S94 pris par l'autre bout — là, on l'a carrément adressée à la mauvaise personne.
+  const ailleurs = checkState({ document: 'brd', phase: 'discover',
+    stakeholders: [sh({ status: 'sollicitée', sollicitee_le: '2026-10-28', sollicitee_zone: 'ZO-001' })],
+    shadow_zones: [{ id: 'ZO-001', type: 'attendu_implicite', question: 'Quoi ?', ask_to: 'SH-09', status: 'ouverte' }] });
+  assert.match(ailleurs.find(f => f.rule === 'S115' && /adressée à/.test(f.message)).message, /on lui a posé la question de quelqu'un d'autre/);
+
   // Sur `interrogée`, la date devient le deuxième tour du fil — et elle n'a de sens que confrontée aux
   // sources de la personne. Sans aucune source à son nom, le statut dit qu'elle a parlé et le dossier
   // ne garde rien : c'est un constat, pas un silence.
-  assert.match(s115(etat({ status: 'interrogée', sollicitee_le: '2026-10-28' }))[0], /le dossier ne garde rien de ce qu'elle a dit/);
+  assert.match(s115(etat({ status: 'interrogée', sollicitee_le: '2026-10-28', ...ZONE }))[0], /le dossier ne garde rien de ce qu'elle a dit/);
   // Entendue en réunion, jamais passée par un canal : rien ne lui arrive, et c'est la majorité des cas.
   assert.equal(sollicitationEtat(sh({ status: 'interrogée' })), 'fait');
   assert.deepEqual(s115(etat({ status: 'interrogée' })), []);
@@ -884,7 +902,8 @@ test('un message sortant ne parle qu\'en clair', () => {
 test('S115 : au deuxième tour, l\'attente se calcule au lieu de se déclarer', () => {
   const etat = (sollicitee_le, dateSource) => ({
     document: 'brd', phase: 'discover',
-    stakeholders: [{ id: 'SH-01', name: 'Nadia', status: 'interrogée', sollicitee_le, joignable_par: 'courriel', end_user: true, power: 'faible', impact: 'fort', influence: 'positive', quadrant: 'consulter' }],
+    stakeholders: [{ id: 'SH-01', name: 'Nadia', status: 'interrogée', sollicitee_le, sollicitee_zone: 'ZO-001', joignable_par: 'courriel', end_user: true, power: 'faible', impact: 'fort', influence: 'positive', quadrant: 'consulter' }],
+    shadow_zones: [{ id: 'ZO-001', type: 'attendu_implicite', question: 'Quoi ?', ask_to: 'SH-01', status: 'ouverte' }],
     sources: [{ id: 'SRC-1', type: 'échange écrit', date: dateSource, stakeholders: ['SH-01'], quote: 'Le plus long, c\'est de ressaisir les adresses.', feedback: 'confirmé' }],
   });
   const lire = (a, b) => sollicitationEtat(etat(a, b).stakeholders[0], etat(a, b).sources);
@@ -904,7 +923,7 @@ test('S115 : au deuxième tour, l\'attente se calcule au lieu de se déclarer', 
   // La source sans date rend la comparaison impossible : le dossier a peut-être la réponse, et ne peut
   // pas le prouver. On ne devine pas — on dit que la mesure manque, et laquelle.
   const aveugle = checkState(etat('2026-11-03', ''));
-  assert.match(aveugle.find(f => f.rule === 'S115').message, /aucune de ses 1 source\(s\) ne porte de date : on ne peut pas savoir si elle a répondu depuis/);
+  assert.match(aveugle.find(f => f.rule === 'S115' && /ne porte de date/.test(f.message)).message, /aucune de ses 1 source\(s\) ne porte de date : on ne peut pas savoir si elle a répondu depuis/);
   // Et l'état ne prétend pas qu'une question vit : « on ne sait pas » n'est pas « elle attend ».
   assert.equal(sollicitationEtat(etat('2026-11-03', '').stakeholders[0], etat('2026-11-03', '').sources), 'fait');
 });
