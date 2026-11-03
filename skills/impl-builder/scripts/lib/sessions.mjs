@@ -214,7 +214,7 @@ const borne = (texte, max = 3000) => {
 // les marques et on dédoublonne ; on garde le numéro du tour, parce que c'est lui qui montre que
 // plusieurs questions ouvertes ont été posées dans le même message — ce que `references/questions.md`
 // interdit, et ce qui est arrivé sur le premier dossier réel, où le coût de l'inaction a été demandé
-// trois fois sans jamais obtenir de réponse.
+// trois fois sans jamais obtenir de réponse. Ce numéro ne SORT plus de l'extrait : voir `rangDe`.
 const nettoieQuestion = q => q.replace(/\*\*/g, '').replace(/^[\s>*_#•–-]+/, '').replace(/\s+/g, ' ').trim();
 const questionsEcrites = (texte, tour) => [...String(texte ?? '').matchAll(QUESTION_RE)]
   .map(m => ({ tour, question: nettoieQuestion(m[0]) })).filter(q => q.question.length > 10);
@@ -224,6 +224,29 @@ export function buildExtract(turns, meta) {
   const users = turns.filter(t => t.role === 'user');
   const assistants = turns.filter(t => t.role === 'assistant');
   const tourDe = new Map(assistants.map((a, i) => [a, i + 1]));
+  // La réponse à une question posée EN TEXTE LIBRE, c'est le message suivant de l'utilisateur, et
+  // c'est le seul endroit où elle se lit. L'extrait ne la joignait pas : les questions de l'outil
+  // portaient leur `**Réponse**`, celles en texte libre n'en portaient aucune. Et le numéro affiché ne
+  // permettait pas de la retrouver — `tourDe` compte les RÉPONSES DE L'AGENT (177 sur le troisième
+  // dossier réel) quand la section « Messages de l'utilisateur » les numérote, elles, de 1 à 29 : deux
+  // échelles, et « (tour 13) » désignait une chose absente du document. Concrètement, le message n° 3
+  // était « C'est Dédé » — trois mots dont la question était perdue. L'extrait ne garde donc plus qu'une
+  // échelle, celle qu'il porte : le rang du message de l'utilisateur.
+  const rangDe = new Map(users.map((u, i) => [u, i + 1]));
+  // Plusieurs réponses de l'agent peuvent précéder un même message : l'utilisateur répond à la
+  // DERNIÈRE. Les précédentes n'ont pas reçu de réponse — une question posée puis recouverte par la
+  // suite du travail n'a pas été répondue, et le dire est le seul constat juste.
+  const reponduePar = new Map();
+  const recouvertes = new Set();
+  let enAttente = [];
+  for (const t of turns) {
+    if (t.role === 'assistant') enAttente.push(t);
+    else if (t.role === 'user' && enAttente.length) {
+      reponduePar.set(enAttente[enAttente.length - 1], t);
+      for (const a of enAttente.slice(0, -1)) recouvertes.add(a);
+      enAttente = [];
+    }
+  }
 
   // Fichiers touchés. Les outils d'écriture nomment leur cible ; au shell, seules la redirection et
   // `tee` la nomment. Le reste n'est pas devinable : on le compte au lieu de conclure qu'il n'y a rien.
@@ -253,17 +276,27 @@ export function buildExtract(turns, meta) {
     return { tour: tourDe.get(a), questions, reponse: rattachees ? '' : brut };
   })).filter(c => c.questions.length);
 
-  // Questions en texte libre, dédoublonnées, avec le tour qui les portait.
+  // Questions en texte libre, dédoublonnées, chacune avec la réponse qui a suivi.
   const ecrites = [];
   const vues = new Set();
-  for (const a of assistants) for (const q of questionsEcrites(a.text, tourDe.get(a))) {
-    const cle = q.question.toLowerCase();
-    if (vues.has(cle)) continue;
-    vues.add(cle); ecrites.push(q);
+  for (const a of assistants) {
+    const u = reponduePar.get(a);
+    for (const q of questionsEcrites(a.text, tourDe.get(a))) {
+      const cle = q.question.toLowerCase();
+      if (vues.has(cle)) continue;
+      vues.add(cle);
+      ecrites.push({ ...q, rang: u ? rangDe.get(u) : 0, reponse: u ? u.text : '', recouverte: recouvertes.has(a) });
+    }
   }
+  // Le groupement compte par RÉPONSE DE L'AGENT — c'est bien un message qui porte trois questions
+  // ouvertes à la fois —, mais il se dit par le rang du message qui a répondu : le seul repère que le
+  // lecteur de l'extrait puisse suivre.
   const parTour = new Map();
-  for (const e of ecrites) parTour.set(e.tour, (parTour.get(e.tour) ?? 0) + 1);
-  const groupes = [...parTour].filter(([, n]) => n > 1);
+  for (const e of ecrites) {
+    const g = parTour.get(e.tour) ?? { n: 0, rang: e.rang };
+    parTour.set(e.tour, { n: g.n + 1, rang: g.rang });
+  }
+  const groupes = [...parTour.values()].filter(g => g.n > 1);
 
   // Questions adressées à personne. La mesure n'a de sens qu'à partir de deux personnes connues :
   // seul à répondre, on n'a pas besoin d'être nommé. Les deux formes comptent — une question à choix
@@ -282,10 +315,13 @@ export function buildExtract(turns, meta) {
     ...c.questions.map(q => `${ligneQuestion(q)}${q.reponse ? `\n  **Réponse** : ${maskSecrets(q.reponse)}` : ''}`),
     ...(c.reponse ? [`  **${c.questions.length > 1 ? 'Réponses' : 'Réponse'}** : ${maskSecrets(c.reponse)}`] : []),
   ];
-  // Une question posée par l'outil et restée sans réponse est en suspens, comme celles de la dernière réponse.
+  // Une question posée par l'outil et restée sans réponse est en suspens, comme celles de la dernière
+  // réponse — à condition que cette dernière réponse n'ait justement rien reçu. Quand la transcription
+  // se termine sur un message de l'utilisateur, la dernière réponse de l'agent a été répondue, et ses
+  // questions figuraient quand même ici : l'appariement permet enfin de le savoir.
   const enSuspens = [...new Set([
     ...appels.flatMap(c => c.questions.filter(q => !q.reponse && !c.reponse).map(q => q.question)),
-    ...(lastAssistant ? questionsEcrites(lastAssistant.text, 0).map(q => q.question) : []),
+    ...(lastAssistant && !reponduePar.has(lastAssistant) ? questionsEcrites(lastAssistant.text, 0).map(q => q.question) : []),
   ])];
 
   const md = [
@@ -298,8 +334,13 @@ export function buildExtract(turns, meta) {
     '### Avec l\'outil de questions', '',
     ...(appels.length ? appels.flatMap(blocAppel) : ['_Aucune._']), '',
     '### En texte libre', '',
-    ...(ecrites.length ? ecrites.map(e => `- (tour ${e.tour}) ${maskSecrets(e.question)}`) : ['_Aucune._']), '',
-    ...(groupes.length ? [`> ${groupes.length} tour(s) portent plus d'une question en texte libre : ${groupes.map(([t, n]) => `tour ${t} (${n})`).join(', ')}. Une question ouverte se pose seule.`, ''] : []),
+    // La réponse est citée en bribe, pas en entier : elle est déjà mot pour mot plus haut, et le rang
+    // y mène. Un extrait qui la recopierait deux fois grossirait sans rien apprendre.
+    ...(ecrites.length ? ecrites.flatMap(e => [`- ${maskSecrets(e.question)}`,
+      e.rang ? `  **Réponse** (message n° ${e.rang}) : ${bribe(e.reponse, 400)}`
+        : e.recouverte ? '  _Sans réponse : l\'agent a poursuivi avant qu\'un message de l\'utilisateur n\'arrive._'
+          : '  _Sans réponse : fin de session (voir « Questions en suspens »)._']) : ['_Aucune._']), '',
+    ...(groupes.length ? [`> ${groupes.length} message(s) de l'agent portent plus d'une question en texte libre : ${groupes.map(g => (g.rang ? `avant le message n° ${g.rang} (${g.n} questions)` : `en fin de session (${g.n} questions)`)).join(', ')}. Une question ouverte se pose seule.`, ''] : []),
     ...(avecId.length ? [`> ${avecId.length} question(s) sur ${posees.length} portent un identifiant : une question n'en porte pas — celui à qui on demande n'a pas besoin de l'adresse de la chose, il a besoin de la chose. ${avecId.map(q => `« ${bribe(q, 90)} »`).join(' ; ')}`, ''] : []),
     ...(sansNom ? [`> ${sansNom} question(s) sur ${posees.length} ne nomment personne, alors que le dossier connaît ${personnes.length} personnes (${personnes.join(', ')}) : une question dit à qui elle est posée, à la deuxième personne, et son destinataire est l'\`ask_to\` de la zone qu'elle sert à lever.`, ''] : []),
     '## Dernière réponse de l\'assistant', '',

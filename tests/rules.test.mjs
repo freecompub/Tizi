@@ -1171,6 +1171,64 @@ test('un heredoc est une donnée : pas de fichier nommé « 40 »', () => {
   assert.deepEqual(shellWrittenPaths('node x.mjs > /dev/null'), []);
 });
 
+// L'extrait gardait les réponses de l'outil de questions avec leurs questions, et laissait celles en
+// texte libre sans aucune réponse — alors que la réponse est le message suivant de l'utilisateur, et
+// que c'est le seul endroit où elle se lit. Le numéro affiché ne permettait pas de la retrouver : il
+// comptait les RÉPONSES DE L'AGENT (177 au troisième dossier réel) quand la section des messages les
+// numérote de 1 à 29. « (tour 13) » désignait une chose absente du document.
+test('une question en texte libre sort avec la réponse qui l\'a suivie, sur l\'échelle du document', () => {
+  const tour = (role, text, at) => ({ role, text, at, tools: [] });
+  const extrait = turns => buildExtract(turns, { date: '2026-11-03', session: 'abc', initiatives: [], event: 'Stop', personnes: [] });
+  const libresDe = md => md.split('### En texte libre')[1].split('## Dernière')[0];
+
+  const md = extrait([
+    tour('user', 'On reprend le cadrage', '2026-11-03T10:00:00Z'),
+    tour('assistant', 'Qui, dans l\'association, décide du périmètre ?', '2026-11-03T10:01:00Z'),
+    tour('user', 'C\'est Dédé', '2026-11-03T10:02:00Z'),
+    tour('assistant', 'Et sur quoi verra-t-on que c\'est réussi ?', '2026-11-03T10:03:00Z'),
+    tour('user', 'Plus aucun écart entre les virements et les dossiers', '2026-11-03T10:04:00Z'),
+  ]);
+  const libres = libresDe(md);
+  // La réponse est joignable : son rang est celui de la section « Messages de l'utilisateur ».
+  assert.match(libres, /- Qui, dans l'association, décide du périmètre \?\n  \*\*Réponse\*\* \(message n° 2\) : C'est Dédé$/m);
+  assert.match(libres, /\*\*Réponse\*\* \(message n° 3\) : Plus aucun écart/);
+  assert.doesNotMatch(libres, /\(tour \d+\)/, 'le numéro de tour de l\'agent est sorti de l\'extrait');
+  // Et le rang désigne bien un titre que le document porte.
+  assert.match(md, /^### 2\. /m);
+
+  // L'agent poursuit sans attendre : la question d'avant n'a pas été répondue, celle d'après l'a été.
+  const recouverte = libresDe(extrait([
+    tour('user', 'vas-y', '2026-11-03T10:00:00Z'),
+    tour('assistant', 'Qui tranche le périmètre, dans l\'association ?', '2026-11-03T10:01:00Z'),
+    tour('assistant', 'Et qui tranche les priorités, alors ?', '2026-11-03T10:02:00Z'),
+    tour('user', 'Dédé pour les deux', '2026-11-03T10:03:00Z'),
+  ]));
+  assert.match(recouverte, /Qui tranche le périmètre.*\n  _Sans réponse : l'agent a poursuivi/);
+  assert.match(recouverte, /Et qui tranche les priorités.*\n  \*\*Réponse\*\* \(message n° 2\) : Dédé pour les deux/);
+
+  // Un message qui porte trois questions ouvertes à la fois se dit par le rang de ce qui a répondu.
+  const groupe = extrait([
+    tour('user', 'ok', '2026-11-03T10:00:00Z'),
+    tour('assistant', 'Qui décide du périmètre ? Et des priorités ? Et qui est le recours si personne ne tranche ?', '2026-11-03T10:01:00Z'),
+    tour('user', 'Dédé, et pas de recours', '2026-11-03T10:02:00Z'),
+  ]);
+  assert.match(groupe, /1 message\(s\) de l'agent portent plus d'une question en texte libre : avant le message n° 2 \(3 questions\)/);
+
+  // La dernière réponse de l'agent a reçu un message : ses questions ne sont plus « en suspens ».
+  const repondue = extrait([
+    tour('user', 'ok', '2026-11-03T10:00:00Z'),
+    tour('assistant', 'Combien de familles sont concernées, cette année ?', '2026-11-03T10:01:00Z'),
+    tour('user', 'cent quarante-cinq', '2026-11-03T10:02:00Z'),
+  ]);
+  assert.match(repondue.split('## Questions en suspens')[1], /_Aucune question dans la dernière réponse\._/);
+  // Alors que sans réponse, elle y reste.
+  const suspens = extrait([
+    tour('user', 'ok', '2026-11-03T10:00:00Z'),
+    tour('assistant', 'Combien de familles sont concernées, cette année ?', '2026-11-03T10:01:00Z'),
+  ]);
+  assert.match(suspens.split('## Questions en suspens')[1], /- Combien de familles sont concernées/);
+});
+
 test('un fragment cité dans une phrase ne casse pas son bloc de citation', () => {
   // `borne` ajoute sa marque de troncature après DEUX retours à la ligne — juste pour un bloc, et
   // destructeur dans « … » : le bloc de citation du markdown se fermait et le guillemet fermant

@@ -6,7 +6,7 @@ Un fichier d'état dit où l'on en est, pas comment on y est arrivé. Pour repre
 |---|---|---|---|
 | État | `<document>/<slug>/state.yaml` | Ce qui est vrai maintenant : la référence | L'agent, après chaque échange validé |
 | Condensé | `.tizi/sessions/<date>-<session>.condense.md` | Le fil de la discussion | L'agent, à la pause ou à la reprise |
-| Extrait | `.tizi/sessions/<date>-<session>.extrait.md` | Vos messages mot pour mot, les questions posées — celles de l'outil de questions avec leurs réponses proposées et la réponse de chacune, celles écrites en texte libre avec le numéro du tour —, les fichiers et les identifiants touchés | Le hook, automatiquement |
+| Extrait | `.tizi/sessions/<date>-<session>.extrait.md` | Vos messages mot pour mot, les questions posées — celles de l'outil de questions avec leurs réponses proposées et la réponse de chacune, celles écrites en texte libre avec la réponse qui les a suivies —, les fichiers et les identifiants touchés | Le hook, automatiquement |
 | Transcription | `.tizi/sessions/<date>-<session>.jsonl` | L'échange complet, consultable par recherche | Le hook, automatiquement |
 | Entrée d'index | `.tizi/sessions/<date>-<session>.index.yaml` | Dates, initiatives touchées, tâche, tokens, chemins des trois fichiers ci-dessus | Le hook, automatiquement |
 
@@ -15,6 +15,10 @@ Les quatre fichiers de session vivent **à la racine du projet** — le dépôt 
 Les **initiatives touchées** que porte l'entrée d'index sont celles qui ont un état sur le disque. Le motif `<document>/<slug>/` se trouve aussi dans un nom de branche Git et dans un slug simplement évoqué en conversation : sans ce filtre, l'index annonçait quatre initiatives là où le dépôt en contenait une, et le rappel de début de session réclamait un condensé pour trois dossiers qui n'existaient pas.
 
 La transcription seule ne suffirait pas : elle contient des affirmations que la suite a corrigées. L'état reste la référence ; les sessions servent à retrouver le pourquoi.
+
+**Une question sort de l'extrait avec sa réponse, ou avec le fait qu'elle n'en a pas.** Un extrait qui montre des réponses sans leurs questions est pire qu'un extrait vide — et l'inverse est vrai aussi. Pour une question posée avec l'outil de questions, la réponse revient dans le résultat de l'appel et se lit là. Pour une question **en texte libre**, la réponse est le message suivant de l'utilisateur : c'est le seul endroit où elle se lit, et l'extrait les joint. Le rang affiché (`**Réponse** (message n° 7)`) est celui de la section « Messages de l'utilisateur » du même fichier, donc le lecteur peut y aller. Il y avait avant un numéro de tour qui comptait les **réponses de l'agent** — 177 au troisième dossier réel —, alors que la section des messages les numérote, eux, de 1 à 29 : deux échelles dans le même document, dont une absente. « (tour 13) » ne désignait rien, et le message n° 3, « C'est Dédé », était trois mots dont la question était perdue.
+
+Quand plusieurs réponses de l'agent précèdent un même message, l'utilisateur répond à la dernière : les précédentes portent « sans réponse : l'agent a poursuivi ». Une question posée puis recouverte par la suite du travail n'a pas été répondue, et c'est le seul constat juste.
 
 ## Installer la capture
 
