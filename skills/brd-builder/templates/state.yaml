@@ -94,6 +94,12 @@ stakeholders: []
 #    decision_domains: []  # domaines de decision_rights sur lesquels elle a autorité
 #    end_user: false       # utilisatrice directe du futur processus ou système
 #    represents: ""        # si elle parle au nom d'un groupe : lequel (les représentants ne remplacent pas les vrais utilisateurs)
+#    represents_source: ""  # LA source où elle le dit elle-même : SRC-xxx, et elle doit y être locutrice
+#                          # (S110). Au troisième dossier réel, un représentant des parents s'est trouvé
+#                          # enregistré représentant « des membres du bureau », déduit de la dernière
+#                          # proposition d'un tour de table où le « je » final revenait à lui. La valeur
+#                          # était renseignée, donc conforme : rien ne pouvait la relire. Ce qu'un tiers
+#                          # dit d'elle ne la mandate pas
 #    represented_by: ""    # l'inverse, sur la personne REPRÉSENTÉE : le SH-xx de qui répond pour elle.
 #                          # « Chaque fonction a un représentant » s'enregistre ici — pas dans la prose
 #                          # du `represents` d'un autre, qui nomme un groupe qu'aucun script ne peut
@@ -139,7 +145,16 @@ sources: []
 #                          # confirmation existe sans rattacher, l'élément reste à source unique et jamais
 #                          # relu, et le relevé de relecture ne la montre pas
 #    path: ""              # fichier dans brd/<slug>/sources/ si fourni
+#    corrects: []          # les SOURCES dont cette source corrige la lecture : [SRC-001]. `confirms`
+#                          # ci-dessus pointe vers des ÉLÉMENTS — BC, BR, RG — jamais vers une source :
+#                          # rien ne menait du tour de table à l'échange qui en a corrigé la lecture, et
+#                          # qui lira le premier dans six mois n'avait aucun chemin vers le second
+#                          # (S112). Une source corrigée est la première à faire relire
 #    feedback: à envoyer   # retour à la source : à envoyer | envoyé | confirmé | corrigé | sans objet
+#    feedback_motif: ""    # POURQUOI « sans objet », sur une source de parole recueillie — cadrage,
+#                          # entretien, atelier, revue (S111). C'est la seule valeur qui éteint S84 sans
+#                          # que personne n'ait rien relu : sur une décision de l'utilisateur elle va de
+#                          # soi, sur un échange où quelqu'un a parlé elle s'explique
 
 candidate_needs: []
 #  - id: BC-001
@@ -268,9 +283,15 @@ risks: []
 #    text: ""
 #    origin: ZO-003        # zone d'ombre assumée, hypothèse, source, partie prenante
 #    related: []           # parties prenantes ou éléments concernés
-#    likelihood: ""        # faible | moyenne | forte
-#    impact: ""            # faible | moyen | fort
-#    response: ""          # piste de traitement côté métier
+#    likelihood: ""        # faible | moyenne | forte — dû dès que le risque est consigné (S109) :
+#                          # vide ne veut pas dire faible, ça veut dire non apprécié. Un risque sans
+#                          # vraisemblance ni ampleur ne se priorise pas, et c'est lui qui porte une
+#                          # zone d'ombre assumée : un porteur creux rend la zone au silence
+#    impact: ""            # faible | moyen | fort — ce que le risque coûterait s'il se produisait. Rien
+#                          # à voir avec l'`impact` d'une partie prenante, qui dit à quel point le
+#                          # changement la touche : deux échelles, deux questions
+#    response: ""          # piste de traitement côté métier — due dès que le risque est validé (S109),
+#                          # sinon ce qu'on accepte reste une inquiétude consignée
 #    status: proposé       # proposé | validé
 
 dependencies: []           # - { text: "", owner: "" }
