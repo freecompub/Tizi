@@ -20,6 +20,20 @@ export const nomClair = (s, id) => {
 // Le nom de l'initiative. `initiative` est un OBJET dans les deux gabarits — `{ name, slug, trigger }` —
 // et interpolé tel quel il donnait « le travail de cadrage de « [object Object] » ». Un fixture écrit à
 // la main avec une chaîne le cachait ; le troisième dossier réel l'a montré du premier coup.
+// La langue dans laquelle une personne se lit et s'écrit. Tizi est en français par choix — ses skills,
+// ses règles, ses documents, que l'équipe lit. Mais la personne au bout d'un canal n'est pas de
+// l'équipe, et rien ne dit qu'elle lit le français : sur le terrain de cet utilisateur, les dossiers
+// sont français et arabes. Le défaut est donc `settings.langue` et non « français » en dur, pour que
+// le couplage soit DÉCLARÉ et surchargeable au lieu d'être invisible dans le code.
+// La racine l'emporte sur `settings`, comme `seuilsDe` et `seuilsRelance` : les deux emplacements se
+// lisent, et c'est le même ordre partout — sinon un dossier qui déclare les deux se comporte autrement
+// selon le réglage, et personne ne saurait lequel gagne.
+export const langueDuDossier = s => String(s?.langue ?? s?.settings?.langue ?? 'français').trim().toLowerCase();
+export const langueDe = (s, id) => {
+  const sh = arr(s?.stakeholders).find(x => x.id === id);
+  return String(sh?.langue ?? '').trim().toLowerCase() || langueDuDossier(s);
+};
+
 export const nomInitiative = s => String(s.initiative?.name ?? (typeof s.initiative === 'string' ? s.initiative : '') ?? '').trim();
 
 // Par quoi et avec quoi joindre la personne. La coordonnée vit dans `contacts.yaml`, à côté de l'état

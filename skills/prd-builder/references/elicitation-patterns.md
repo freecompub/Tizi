@@ -242,6 +242,14 @@ Et le refus devient lisible dans l'autre sens : `reach-out.mjs` ne dit plus seul
 
 **Une relance est une décision, pas l'enchaînement naturel du silence.** D'où le drapeau : sans lui, le script refuse et nomme les trois issues — attendre, relancer, renoncer. Et le message de relance dit qu'on n'insistera plus, parce que sinon « relance » veut dire « on recommencera », et c'est comme ça qu'une source se brûle. **Renoncer se dit aussi** : `status: non disponible`. Un silence laissé ouvert indéfiniment donne au dossier l'air d'attendre quelque chose qui ne viendra pas.
 
+**La personne au bout n'est pas de l'équipe, et rien ne dit qu'elle lit le français.** Tizi est en français par choix — ses skills, ses règles, ses documents, que l'**équipe** lit. Une partie prenante, non : elle porte sa `langue` quand ce n'est pas celle du dossier (`langue` à la racine de l'état, « français » par défaut, et le défaut est **déclaré** dans le gabarit au lieu d'être en dur dans les scripts, pour que le couplage soit visible et surchargeable). Vide, elle hérite de celle du dossier, et c'est le cas courant.
+
+**Quand elle diffère, `reach-out.mjs` ne traduit pas.** Il énumère ce que le message doit dire et **pourquoi chaque élément existe**, puis donne la version française de référence pour ce qu'elle dit et l'ordre où elle le dit. L'agent écrit, l'utilisateur relit avant l'envoi.
+
+Deux raisons, et la seconde est la vraie. Une déclaration de consentement mal traduite peut se tromper sur **ce à quoi** la personne consent : c'est le seul endroit de ce travail où l'échec n'est pas un dossier moins bon, mais quelqu'un qui répond sans savoir à quoi. Et un script qui rendrait une traduction donnerait l'impression que la question est réglée, alors que personne ne l'aurait relue. Ce que le script sait faire, et qui ne dépend d'aucune langue, c'est **empêcher qu'un élément obligatoire soit oublié** : c'est là toute sa valeur, et elle est intacte.
+
+Si tu n'écris pas cette langue avec assez de sûreté pour une déclaration de consentement, **dis-le à l'utilisateur** plutôt que d'essayer. Et la règle d'une question à la fois ne s'assouplit pas avec la langue : elle vaut partout.
+
 **Ce qui part vers quelqu'un ne parle qu'en clair, et l'enveloppe compte autant que le corps.** Cinq règles, et les cinq viennent d'un brouillon réel composé puis relu dans une vraie boîte — aucune ne se voyait depuis le dépôt.
 
 - **Regarde de quel compte ça part.** Le corps dit « je suis un agent logiciel ». Si l'enveloppe porte le nom d'une personne — « De : Prénom Nom » —, le destinataire croira l'enveloppe, et la déclaration devient un démenti que personne ne lit. Le script ne peut pas le savoir : c'est le compte de l'utilisateur, et c'est son nom qui apparaît. Demande-lui, et choisis avec lui : un compte qui ne prête pas à confusion, ou une première ligne qui dit de quelle boîte ça part et pourquoi.
