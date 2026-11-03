@@ -1496,6 +1496,38 @@ test('un heredoc est une donnée : pas de fichier nommé « 40 »', () => {
 // que c'est le seul endroit où elle se lit. Le numéro affiché ne permettait pas de la retrouver : il
 // comptait les RÉPONSES DE L'AGENT (177 au troisième dossier réel) quand la section des messages les
 // numérote de 1 à 29. « (tour 13) » désignait une chose absente du document.
+// Tout le dispositif des coordonnées — l'état qui ne porte que le canal, `contacts.yaml` exclu du
+// dépôt, `freeze-version.mjs` qui ne le copie pas, le handoff qui ne retient que cinq champs — était
+// contourné par le chemin le plus probable de tous. `reach-out.mjs` dit « demande-la à l'utilisateur » ;
+// l'utilisateur la tape dans la conversation ; l'extrait reprend ses messages MOT POUR MOT ; et
+// l'extrait se commite, puisque le `.gitignore` n'exclut que le `.jsonl` et les `.tmp`. Mesuré avant
+// correction : l'adresse ET le numéro ressortaient intacts de `buildExtract`.
+test('une coordonnée ne sort pas par l\'extrait de session', () => {
+  const extrait = texte => buildExtract([{ role: 'user', text: texte, at: '2026-11-03T10:00' }, { role: 'assistant', text: 'Noté.' }],
+    { date: '2026-11-03', session: 'test', initiatives: ['brd/demo'], event: 'Stop' });
+
+  // Les trois formes qu'une coordonnée prend dans une conversation française.
+  for (const v of ['nadia.benali@ecole-exemple.fr', '06 12 34 56 78', '06.12.34.56.78', '0612345678', '+33 1 23 45 67 89']) {
+    const md = extrait(`Tu peux la joindre : ${v}, elle répond vite.`);
+    assert.doesNotMatch(md, new RegExp(v.replace(/[.+]/g, '\\$&')), `« ${v} » ressort de l'extrait`);
+    assert.match(md, /\[coordonnée masquée — voir contacts\.yaml\]/, 'la marque dit où chercher');
+    // Le reste du message survit : masquer n'est pas tronquer, et l'extrait reste lisible.
+    assert.match(md, /elle répond vite/);
+  }
+
+  // Et ce qui n'est pas une coordonnée n'est pas masqué : un montant, une date, une version, un
+  // identifiant d'élément. Un filtre qui mange de la prose rend l'extrait inutilisable.
+  const sain = extrait('BC-012 coûte 1 200 €, décidé le 2026-10-28, en version 0.8.0, sur 06 dossiers — soit 12 34 56 pièces.');
+  assert.doesNotMatch(sain, /coordonnée masquée/, 'un faux positif rendrait l\'extrait illisible');
+  assert.match(sain, /BC-012 coûte 1 200 €/);
+
+  // Les jetons restent masqués par leur propre motif, avec leur propre marque : les deux ne se
+  // confondent pas, parce qu'un secret compromis et une donnée personnelle ne se traitent pas pareil.
+  const jeton = extrait('Le jeton est ghp_abcdefghijklmnopqrstuvwxyz0123456789 si tu en as besoin.');
+  assert.match(jeton, /\[secret masqué\]/);
+  assert.doesNotMatch(jeton, /coordonnée masquée/);
+});
+
 test('une question en texte libre sort avec la réponse qui l\'a suivie, sur l\'échelle du document', () => {
   const tour = (role, text, at) => ({ role, text, at, tools: [] });
   const extrait = turns => buildExtract(turns, { date: '2026-11-03', session: 'abc', initiatives: [], event: 'Stop', personnes: [] });
