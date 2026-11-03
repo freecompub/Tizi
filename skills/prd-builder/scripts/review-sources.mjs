@@ -16,7 +16,7 @@
 import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { arr, loadState, writeOut, fail, table, today, txt, shLabel, label } from './lib/common.mjs';
-import { feedbackEtat, RECUEIL_DE_PAROLE } from './lib/rules.mjs';
+import { feedbackEtat, sollicitationEtat, RECUEIL_DE_PAROLE } from './lib/rules.mjs';
 
 const args = process.argv.slice(2);
 const statePath = args.find(a => !a.startsWith('--') && args[args.indexOf(a) - 1] !== '--sh');
@@ -50,6 +50,18 @@ if (args.includes('--etat')) {
   // président relisait 70 sources quand les deux autres en relisaient 13 et 9.
   const max = rows.length ? rows.reduce((a, b) => (b[1] > a[1] ? b : a)) : null;
   if (max && rows.length > 1) console.log(`\nCharge la plus lourde : ${max[0]}, ${max[1]} source(s) sur ${arr(s.sources).length}.`);
+  // Les questions parties vers quelqu'un qui n'a pas encore répondu. Le tableau ci-dessus ne parle que
+  // des LOCUTEURS : par construction, une personne sollicitée et muette n'y figure pas — c'est
+  // exactement celle dont on perd la trace, et la seule que le dossier ne rappelait à personne.
+  const sollicitees = arr(s.stakeholders).filter(sh => sollicitationEtat(sh) === 'attente');
+  if (sollicitees.length) {
+    const vieille = sollicitees.reduce((a, b) => (jours(a.sollicitee_le) > jours(b.sollicitee_le) ? a : b));
+    console.log(`\n${sollicitees.length} personne(s) sollicitée(s) et sans réponse : ${sollicitees.map(sh => `${shLabel(s, sh.id)} par ${sh.joignable_par || 'canal non dit'}, depuis ${jours(sh.sollicitee_le)} j`).join(' · ')}. La plus ancienne attend depuis ${jours(vieille.sollicitee_le)} jour(s) — relance sur le même fil, ou renonce et dis-le.`);
+  }
+  // Déclarées sollicitées sans date : elles ne comptent pour rien (S115), et personne ne les relancera
+  // puisque rien ne dit depuis quand elles attendent.
+  const sansJour = arr(s.stakeholders).filter(sh => sh.status === 'sollicitée' && sollicitationEtat(sh) !== 'attente');
+  if (sansJour.length) console.log(`${sansJour.length} personne(s) dite(s) sollicitée(s) sans date de départ (\`sollicitee_le\`, S115) : ${sansJour.map(sh => sh.id).join(', ')} — elles comptent comme si personne ne leur avait écrit.`);
   const muettes = arr(s.sources).filter(x => arr(x.stakeholders).length && !dit(x)).length;
   if (muettes) console.log(`${muettes} source(s) de parole ne portent pas ce qui a été dit : un relevé ne peut pas les rendre (S102).`);
   // « Retours reçus » ne compte que `confirmé` et `corrigé` — et c'est juste. Mais `sans objet` éteint

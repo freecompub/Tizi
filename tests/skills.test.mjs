@@ -529,7 +529,9 @@ test('un champ qu\'une référence ordonne de remplir est lu par un script', () 
 test('le PRD a un registre de parties prenantes, et la chaîne le remplit', () => {
   const tpl = readFileSync(join(SKILLS, 'prd-builder', 'templates', 'state.yaml'), 'utf8');
   assert.match(tpl, /^stakeholders: \[\]/m, 'le PRD n\'a pas de registre de parties prenantes');
-  assert.match(tpl, /status: à interroger\s+# à interroger \| interrogée/, 'le registre ne dit pas qui a été entendu');
+  // `sollicitée` s'est glissé entre les deux : on a écrit, on n'a pas reçu. La propriété que ce garde
+  // tient est inchangée — le registre dit qui a été entendu —, et le troisième état en fait partie.
+  assert.match(tpl, /status: à interroger\s+# à interroger \| sollicitée \| interrogée/, 'le registre ne dit pas qui a été entendu');
   assert.match(tpl, /represents: ""/, 'le registre ne porte pas la qualité de celui qui parle pour un autre');
   assert.match(tpl, /stakeholders: \[SH-01\]/, 'une source du PRD ne nomme pas qui a parlé');
   assert.doesNotMatch(tpl, /SRC-001[^}]*who:/, 'une source garde un champ libre concurrent de `stakeholders`');

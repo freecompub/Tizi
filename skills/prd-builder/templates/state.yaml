@@ -83,7 +83,15 @@ stakeholders: []          # qui a parlé, et en quelle qualité — chaîné : r
 #                          # en lecture seule sous `versions/` d'où rien ne se reprend. Ils vont dans
 #                          # `contacts.yaml`, à côté de l'état, que `.gitignore` exclut. S114 refuse
 #                          # une coordonnée ici, et signale un canal annoncé qui n'en a aucune là-bas
-#    status: à interroger  # à interroger | interrogée | non disponible
+#    sollicitee_le: ""     # AAAA-MM-JJ — QUAND la question lui est partie, sur le canal ci-dessus.
+#                          # Elle ne se lit que sur le statut « sollicitée ». Sans elle, « sollicitée »
+#                          # compte comme si personne n'avait jamais écrit (S115) : c'est toi qui écris
+#                          # le champ, et une sollicitation invérifiable est une case cochée. Avec elle,
+#                          # le silence de la personne devient une question qui VIT — les constats sur
+#                          # sa voix non entendue changent de liste au lieu de compter contre le dossier,
+#                          # et `review-sources.mjs --etat` dit depuis combien de jours elle est en vol
+#    status: à interroger  # à interroger | sollicitée | interrogée | non disponible. « sollicitée »
+#                          # veut dire qu'on a écrit, pas qu'on a reçu : elle reste non entendue
 
 sources: []               # preuves produit (entretiens, tests utilisateurs, analytics, études, décisions)
 #  - { id: SRC-001, type: entretien, date: "", stakeholders: [SH-01], present: [], quote: "", understood: "", confirms: [], corrects: [], path: "", feedback: à envoyer, feedback_le: "", feedback_par: "", feedback_motif: "" }   # type : cadrage | entretien | échange écrit | observation | test | analytics | étude | décision

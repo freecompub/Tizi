@@ -113,10 +113,21 @@ stakeholders: []
 #                          # en lecture seule sous `versions/` d'où rien ne se reprend. Ils vont dans
 #                          # `contacts.yaml`, à côté de l'état, que `.gitignore` exclut. S114 refuse
 #                          # une coordonnée ici, et signale un canal annoncé qui n'en a aucune là-bas
-#    status: à interroger  # à interroger | interrogée | non disponible. « interrogée » veut dire
-#                          # ENTENDUE AU MOINS UNE FOIS, pas « plus rien à lui demander » : la zone
-#                          # `partie_prenante_non_entendue` se ferme quand aucune zone ouverte ne la
-#                          # nomme en `ask_to`, jamais sur le seul changement de statut
+#    sollicitee_le: ""     # AAAA-MM-JJ — QUAND la question lui est partie, sur le canal ci-dessus.
+#                          # Elle ne se lit que sur le statut « sollicitée ». Sans elle, « sollicitée »
+#                          # compte comme si personne n'avait jamais écrit (S115) : c'est toi qui écris
+#                          # le champ, et une sollicitation invérifiable est une case cochée. Avec elle,
+#                          # le silence de la personne devient une question qui VIT — les constats sur
+#                          # sa voix non entendue changent de liste au lieu de compter contre le dossier,
+#                          # et `review-sources.mjs --etat` dit depuis combien de jours elle est en vol
+#    status: à interroger  # à interroger | sollicitée | interrogée | non disponible. « interrogée »
+#                          # veut dire ENTENDUE AU MOINS UNE FOIS, pas « plus rien à lui demander » :
+#                          # la zone `partie_prenante_non_entendue` se ferme quand aucune zone ouverte
+#                          # ne la nomme en `ask_to`, jamais sur le seul changement de statut.
+#                          # « sollicitée » veut dire QU'ON A ÉCRIT, pas qu'on a reçu : elle reste non
+#                          # entendue — une décision rendue en son nom reste rapportée par un tiers
+#                          # (S90), une source à son nom reste du second degré (S81). Ce qui change,
+#                          # c'est le reproche de son silence, pas le fait qu'elle se taise
 
 decision_rights: []      # qui tranche quoi, établi au cadrage et validé par le sponsor
 #  - domain: perimetre     # perimetre | objectifs | priorites | donnees_securite | processus:<nom> | regles:<domaine> | autre:<libellé>
