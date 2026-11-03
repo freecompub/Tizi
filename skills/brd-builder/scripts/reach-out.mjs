@@ -20,7 +20,7 @@
 import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { arr, loadState, fail, today, shLabel } from './lib/common.mjs';
-import { sollicitationEtat } from './lib/rules.mjs';
+import { sollicitationEtat, refsDans } from './lib/rules.mjs';
 
 const JOUR_RE = /^\d{4}-\d{2}-\d{2}$/;
 const jours = d => Math.floor((Date.parse(today()) - Date.parse(d)) / 86400000);
@@ -80,26 +80,47 @@ if (!zones.length) fail(`Aucune zone d'ombre ouverte ne lui est adressée (\`ask
 // ce qu'il est : `ask-five.mjs` trie par impact puis par ancienneté, jamais au hasard.
 const zone = zones[0];
 
+// Ce qui part vers quelqu'un ne parle QUE en clair. Trois pièges, les trois trouvés en composant un
+// vrai message plutôt qu'en relisant le code.
+//
+// 1. `initiative` est un OBJET dans les deux gabarits — `{ name, slug, trigger }`. Interpolé tel quel,
+//    il donnait « le travail de cadrage de « [object Object] » », et un fixture écrit à la main avec une
+//    chaîne le cachait. Mesuré sur le troisième dossier réel : c'est exactement ce qui sortait.
+// 2. `shLabel` rend « Karim (SH-02) ». C'est l'outil des rapports INTERNES. La doctrine de S104 dit
+//    qu'un document qui part ne parle pas par adresses, et une partie prenante est encore plus loin de
+//    l'index que l'utilisateur : lui, au moins, peut le demander. `SH-02` ne veut rien dire pour elle.
+// 3. La question elle-même est écrite par l'agent, et peut porter « BC-001 » sans que rien ne l'arrête.
+//    S104 ne peut pas le voir : elle contrôle des fichiers, et ce message n'en est pas un.
+const nomClair = id => { const x = arr(s.stakeholders).find(y => y.id === id); return String(x?.name || x?.role || '').trim(); };
+const initiative = String(s.initiative?.name ?? (typeof s.initiative === 'string' ? s.initiative : '') ?? '').trim();
+if (!initiative) fail(`L'initiative n'a pas de nom (\`initiative.name\`) : on n'écrit pas à quelqu'un « le travail de cadrage de «  » ». Nomme-la d'abord.`);
+
 const sponsor = arr(s.stakeholders).find(x => x.role && /sponsor/i.test(x.role));
-const demandeur = s.request?.requested_by ?? sponsor?.id ?? '';
-const initiative = s.initiative ?? s.title ?? '(initiative sans nom)';
+const demandeur = nomClair(s.request?.requested_by ?? sponsor?.id ?? '');
+
+const refs = refsDans(zone.question);
+if (refs.length) fail(`La question de ${zone.id} porte ${refs.length > 1 ? 'des identifiants internes' : 'un identifiant interne'} (${refs.join(', ')}) : la personne au bout n'a pas l'index sous les yeux, et ne l'aura jamais — c'est la doctrine de S104, un cran plus loin. Réécris la question en clair avant de l'envoyer.`);
 
 const bonjour = `Bonjour ${sh.name || ''},`.replace(' ,', ',');
 // Trois messages, et ce qui les sépare n'est pas le ton : c'est ce que la personne sait déjà. À la
 // première, elle ne sait rien, donc la déclaration est entière. À la suite, elle sait, et la redire la
 // traiterait en inconnue. À la relance, elle a déjà la question : ce qui change, c'est qu'on dit qu'on
 // n'insistera pas — sinon « relance » veut dire « on recommencera », et une source se brûle comme ça.
+// Les paragraphes sont séparés par des LIGNES VIDES, jamais par un simple retour. Un courriel part en
+// `text/plain; format=flowed` : les retours simples y sont des coupures DOUCES, que certains clients
+// recollent en un bloc. Vu sur le brouillon réel — les trois phrases de la déclaration, séparées par un
+// seul retour, pouvaient se retrouver en un paragraphe où la phrase qui compte le plus se noie.
 const MESSAGES = {
   premiere: [
     bonjour, '',
-    `Je suis un agent logiciel, et j'écris pour le travail de cadrage de « ${initiative} »${demandeur ? `, à la demande de ${shLabel(s, demandeur)}` : ''}.`,
-    'Ce que vous répondrez sera consigné dans un dossier que vous pourrez relire : je vous enverrai ce que j\'en ai compris avant que ça serve à quoi que ce soit, et vous pourrez le corriger.',
+    `Je suis un agent logiciel, et j'écris pour le travail de cadrage de « ${initiative} »${demandeur ? `, à la demande de ${demandeur}` : ''}.`, '',
+    'Ce que vous répondrez sera consigné dans un dossier que vous pourrez relire : je vous enverrai ce que j\'en ai compris avant que ça serve à quoi que ce soit, et vous pourrez le corriger.', '',
     'Vous n\'avez rien demandé, et vous pouvez ne pas répondre ou demander à parler à quelqu\'un plutôt qu\'à moi.',
     '', 'Une seule question :', '', zone.question, '', 'Merci.',
   ],
   suite: [
     bonjour, '',
-    'Merci pour votre réponse, elle est consignée dans le dossier.',
+    'Merci pour votre réponse, elle est consignée dans le dossier.', '',
     `Une question de plus sur « ${initiative} », et une seule :`,
     '', zone.question, '',
     'Comme la première fois, vous relirez ce que j\'en aurai compris avant que ça serve. Et vous pouvez arrêter là : dites-le moi, je le noterai.',
@@ -112,12 +133,22 @@ const MESSAGES = {
   ],
 };
 const message = MESSAGES[mode].join('\n');
+// L'objet. Un courriel en exige un, une messagerie n'en a pas : c'est donc un champ que le script
+// PROPOSE, et que l'agent ignore si le canal n'en veut pas. En relance il est identique à celui de la
+// première fois, parce qu'une relance reste dans le MÊME fil : un objet neuf ouvre une conversation
+// neuve, et la personne reçoit deux fois la même question sans voir qu'il s'agit de la même.
+const OBJETS = {
+  premiere: `Une question — ${initiative}`,
+  suite: `Suite de notre échange — ${initiative}`,
+  relance: `Une question — ${initiative}`,
+};
+const objet = OBJETS[mode];
 
 // Ce qu'il faudra écrire quand le message sera parti. En suite et en relance, le statut ne bouge pas :
 // elle a parlé, elle reste `interrogée`, et c'est la DATE qui porte l'attente. La repasser `sollicitée`
 // éteindrait faussement ce que sa voix avait fermé.
 const sortie = {
-  stakeholder: id, mode, canal, adresse, zone: zone.id, question: zone.question, message,
+  stakeholder: id, mode, canal, adresse, zone: zone.id, question: zone.question, objet, message,
   etat: mode === 'premiere'
     ? { status: 'sollicitée', sollicitee_le: today(), joignable_par: canal }
     : { sollicitee_le: today() },
@@ -128,6 +159,10 @@ const TITRE = { premiere: 'Première prise de contact', suite: 'Suite du fil', r
 console.log([
   `${TITRE[mode]} — à ${shLabel(s, id)}, par ${canal} — ${adresse}`,
   `Zone visée : ${zone.id}${zone.reasons.length ? ` (${zone.reasons.join(', ')})` : ''}`,
+  `Objet : ${objet}`,
+  ...(nomClair(id) === String(sh.role ?? '').trim() && !String(sh.name ?? '').trim()
+    ? ['On n\'a pas son nom, seulement sa fonction : le message commence donc par « Bonjour, ». Demande-le'
+       + ' à l\'utilisateur si tu l\'as — écrire à quelqu\'un dont on ignore le nom se voit, et se paie.'] : []),
   ...(zones.length > 1 ? [`${zones.length - 1} autre(s) zone(s) lui sont adressées : elles attendent sa réponse à celle-ci. Une question à la fois.`] : []),
   '',
   '── Message ──',
@@ -136,6 +171,13 @@ console.log([
   '',
   'Envoie-le toi-même par le canal de l\'hôte, s\'il en offre un ; sinon remets-le à l\'utilisateur. Ce script',
   'n\'envoie rien : il ne sait pas à quoi tu es branché, et un message parti est irréversible.',
+  '',
+  'AVANT D\'ENVOYER, REGARDE DE QUEL COMPTE ÇA PART. Le corps dit « je suis un agent logiciel » ; si',
+  'l\'enveloppe porte le nom d\'une personne — « De : Prénom Nom » —, le destinataire croira l\'enveloppe,',
+  'et la déclaration devient un démenti qu\'on ne lit pas. Mesuré sur un brouillon réel : le compte était',
+  'nominatif, et rien dans ce script ne pouvait le savoir. Deux issues, et le choix n\'est pas à toi :',
+  'un compte qui ne prête pas à confusion, ou une première ligne qui dit de quelle boîte ça part et',
+  'pourquoi. Demande à l\'utilisateur — c\'est son compte, et c\'est son nom qui apparaît.',
   '',
   'Quand il est parti, et PAS avant, écris sur la partie prenante :',
   ...(mode === 'premiere'

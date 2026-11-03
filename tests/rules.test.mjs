@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { DOCUMENTS, STRUCT_RULES, TEXT_RULES, checkState, sollicitationEtat, coverage, coverageFindings, coverageRows, evidenceOf, contextFindings } from '../skills/brd-builder/scripts/lib/rules.mjs';
+import { DOCUMENTS, STRUCT_RULES, TEXT_RULES, checkState, sollicitationEtat, refsDans, coverage, coverageFindings, coverageRows, evidenceOf, contextFindings } from '../skills/brd-builder/scripts/lib/rules.mjs';
 import { gateConditions } from '../skills/brd-builder/scripts/lib/gates.mjs';
 import { shellWrittenPaths } from '../skills/brd-builder/scripts/lib/agent-io.mjs';
 import { buildExtract } from '../skills/brd-builder/scripts/lib/sessions.mjs';
@@ -804,6 +804,36 @@ test('S115 : « sollicitée » dit qu\'on a écrit, et sa date dit que la questi
 // `interrogée` : le statut ne peut plus porter l'attente, puisque la repasser `sollicitée` dirait
 // qu'elle n'a jamais parlé et éteindrait ce que sa voix avait fermé. L'attente se CALCULE donc — une
 // question vit tant que la dernière chose écrite est postérieure à la dernière chose qu'elle a dite.
+// Cinq défauts d'un message sortant, et les cinq trouvés en composant un VRAI brouillon dans une vraie
+// boîte — aucun ne se voyait depuis le dépôt, et un fixture écrit à la main en cachait deux. Le plus
+// net : `initiative` est un OBJET dans les deux gabarits, et le message disait « le travail de cadrage
+// de « [object Object] » ». Ce test tient ce qu'un message sortant ne doit JAMAIS porter.
+test('un message sortant ne parle qu\'en clair', () => {
+  const brd = (extra = {}, zone = {}) => ({
+    document: 'brd', phase: 'discover',
+    initiative: { name: 'Dématérialiser les inscriptions', slug: 'demat', trigger: 'priorité du directeur' },
+    request: { requested_by: 'SH-02' },
+    stakeholders: [
+      { id: 'SH-01', name: 'Nadia', role: 'Agente d\'accueil', status: 'à interroger', joignable_par: 'courriel', end_user: true, power: 'faible', impact: 'fort', influence: 'positive', quadrant: 'consulter' },
+      { id: 'SH-02', name: 'Karim', role: 'Sponsor', status: 'interrogée', power: 'fort', impact: 'fort', influence: 'positive', quadrant: 'impliquer' },
+    ],
+    shadow_zones: [{ id: 'ZO-001', type: 'attendu_implicite', question: 'Qu\'est-ce qui vous fait perdre le plus de temps ?', ask_to: 'SH-01', status: 'ouverte', related: [], ...zone }],
+    ...extra,
+  });
+
+  // Le nom de l'initiative se lit dans `initiative.name`, jamais par interpolation de l'objet.
+  assert.equal(String(brd().initiative), '[object Object]', 'le piège est bien là : l\'objet s\'interpole en [object Object]');
+  assert.equal(brd().initiative.name, 'Dématérialiser les inscriptions');
+
+  // Aucun identifiant interne ne doit survivre dans un texte qui part. `refsDans` est le même motif
+  // que S104, et il sert de point d'arrêt au script parce qu'un message n'est pas un fichier.
+  assert.deepEqual(refsDans('Pouvez-vous confirmer ce que dit BC-003 et le lien avec SRC-010 ?'), ['BC-003', 'SRC-010']);
+  assert.deepEqual(refsDans('Karim (SH-02) a demandé'), ['SH-02']);
+  assert.deepEqual(refsDans('Qu\'est-ce qui vous fait perdre le plus de temps ?'), [], 'une question en clair passe');
+  // Et le motif ne tire pas sur de la prose : ni une date, ni une version, ni un mot en capitales.
+  assert.deepEqual(refsDans('Le 2026-10-28, en version 0.8.0, pour la CAF et le RGPD'), []);
+});
+
 test('S115 : au deuxième tour, l\'attente se calcule au lieu de se déclarer', () => {
   const etat = (sollicitee_le, dateSource) => ({
     document: 'brd', phase: 'discover',

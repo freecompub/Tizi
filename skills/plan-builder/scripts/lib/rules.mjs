@@ -1451,6 +1451,10 @@ const reduit = x => String(x ?? '').toLowerCase().normalize('NFD').replace(/[\u0
   .replace(/[^a-z0-9]+/g, ' ').trim().split(' ').filter(m => m.length > 3);
 const motsClefs = texte => reduit(texte).slice(0, 4);
 const REF_RE = /\b[A-Z]{2,4}-\d{1,3}\b/g;
+// Les identifiants internes d'un texte. S104 s'en sert sur les FICHIERS qui partent ; un message
+// composé pour un canal ne passe par aucun fichier, et ne peut donc pas être contrôlé par une règle
+// de l'état. `reach-out.mjs` s'en sert pour refuser de composer : même doctrine, autre point d'arrêt.
+export const refsDans = texte => [...new Set(String(texte ?? '').match(REF_RE) ?? [])];
 export function outgoingFindings(s, fichiers = []) {
   const out = [];
   const index = new Map();
