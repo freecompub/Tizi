@@ -1219,16 +1219,28 @@ test('une relecture partie sort du décompte, dans les deux scripts, et se dit �
   assert.equal(muet.porte, muet.lint, 'le point d\'étape et le lint annoncent deux nombres différents');
 
   // Demandé, et daté : un avertissement de moins dans les deux, et la question se dit à part.
-  ecrire('{ id: SRC-01, type: entretien, stakeholders: [SH-01], quote: "je perds une heure", feedback: envoyé, feedback_le: "2026-10-21" }');
+  // La date se compte depuis AUJOURD'HUI : l'attente se périme au-delà de `relance.agir` (5 jours), donc
+  // une date en dur finit par mesurer le calendrier au lieu du filtrage des deux scripts.
+  const hier = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  ecrire(`{ id: SRC-01, type: entretien, stakeholders: [SH-01], quote: "je perds une heure", feedback: envoyé, feedback_le: "${hier}" }`);
   const vol = compte();
   assert.equal(vol.lint, muet.lint - 1, 'la relecture partie reste dans le décompte du lint');
   assert.equal(vol.porte, vol.lint, 'les deux scripts ne filtrent pas pareil');
+
   assert.match(vol.lt.out, /question\(s\) posée\(s\) et pas encore revenue\(s\)/, 'la question posée ne se dit nulle part');
   assert.match(vol.lt.out, /… \[S84\] BR-01/, 'la question posée n\'est pas nommée');
   // Elle ne disparaît pas : la sortie machine la garde, avec son drapeau.
   const js = node(script('brd-builder', 'lint.mjs'), [etat, '--json'], { cwd: dir });
   assert.equal(JSON.parse(js.out).find(f => f.rule === 'S84')?.pending, true, 'la sortie machine perd l\'état');
 
+  // Partie il y a six semaines : ce n'est plus une question qui vit, c'est une relecture oubliée. Le
+  // constat redevient actif, et les deux scripts restent d'accord — c'est ce point-là qui s'était déjà
+  // désaccordé une fois, quand `status.mjs` ne recevait pas le même contexte que `lint.mjs`.
+  const vieux = new Date(Date.now() - 42 * 86400000).toISOString().slice(0, 10);
+  ecrire(`{ id: SRC-01, type: entretien, stakeholders: [SH-01], quote: "je perds une heure", feedback: envoyé, feedback_le: "${vieux}" }`);
+  const perime = compte();
+  assert.equal(perime.lint, muet.lint, 'au-delà du seuil, l\'attente ne protège plus le dossier');
+  assert.equal(perime.porte, perime.lint, 'les deux scripts ne filtrent pas pareil sur une attente périmée');
   // Dite partie sans date : elle retombe au débit du dossier, c'est l'agent qui écrit le champ.
   ecrire('{ id: SRC-01, type: entretien, stakeholders: [SH-01], quote: "je perds une heure", feedback: envoyé }');
   const cochee = compte();
