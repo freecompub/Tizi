@@ -144,8 +144,9 @@ const MESSAGES = {
   suite: [
     bonjour, '',
     'Merci pour votre réponse, elle est consignée dans le dossier.', '',
-    `Une question de plus sur « ${initiative} », et une seule :`,
+    `Je reviens vers vous sur « ${initiative} », avec une seule question :`,
     '', zone.question, '',
+    'Si c\'est la même que la dernière fois, c\'est que j\'ai mal lu votre réponse — dites-le moi, et reformulez comme vous voulez.', '',
     'Comme la première fois, vous relirez ce que j\'en aurai compris avant que ça serve. Et vous pouvez arrêter là : dites-le moi, je le noterai.',
   ],
   reprise: [
