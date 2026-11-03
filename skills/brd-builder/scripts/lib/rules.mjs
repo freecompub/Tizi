@@ -154,6 +154,9 @@ const ENUMS = {
   // là, à quel point le changement touche quelqu'un ; ici, ce que coûterait le risque s'il se produisait.
   vraisemblance: { valeurs: ['faible', 'moyenne', 'forte'] },
   'ampleur du risque': { valeurs: ['faible', 'moyen', 'fort'] },
+  // PAR QUOI on peut joindre quelqu'un, jamais AVEC QUOI : le canal, pas la coordonnée (S114).
+  // `autre:<libellé>` couvre un canal nommé — un fil d'équipe, un outil interne.
+  'canal de contact': { valeurs: ['vive voix', 'courriel', 'messagerie', 'téléphone'] },
 };
 // `phase-discover.md` : le quadrant d'implication SE DÉDUIT du pouvoir et de l'impact. Il ne s'affirme
 // pas — et `phase-govern.md` en fait un rôle de revue (« impliquer » → approbateur), donc une déduction
@@ -1530,6 +1533,41 @@ export function relectureFindings(s) {
   return out;
 }
 
+// Une coordonnée n'a rien à faire dans `state.yaml`. Ce fichier se commite, `freeze-version.mjs` en
+// fige une copie en lecture seule sous `versions/`, et d'une version figée rien ne se reprend : une
+// adresse écrite là y reste. Le champ dit donc par quoi la personne se joint ; l'adresse, le numéro ou
+// l'identifiant vivent dans `contacts.yaml`, à côté de l'état, que `.gitignore` exclut. Le handoff est
+// déjà hors de danger — `build-handoff.mjs` ne retient que `id`, `name`, `role`, `represents`, `status`.
+const COORDONNEE = [[/@/, 'une adresse'], [/(?:\+|\b0)[\d .\-()]{8,}/, 'un numéro'], [/https?:\/\//, 'un lien']];
+// `contacts` porte les trois états, comme partout ailleurs : `undefined`, personne n'a regardé le
+// disque — on ne conclut rien ; `null`, regardé et aucun fichier ; un objet, regardé et le voici.
+// « On n'a pas regardé » n'est pas « il n'y a rien », et c'est le second qui se reproche.
+export function contactFindings(s, contacts) {
+  const out = [];
+  for (const sh of arr(s?.stakeholders)) {
+    const canal = String(sh.joignable_par ?? '').trim();
+    if (!canal) continue;              // ne pas savoir joindre quelqu'un est un fait, pas une faute
+    const porte = COORDONNEE.find(([re]) => re.test(canal));
+    if (porte) {
+      out.push({ rule: 'S114', id: sh.id, message: `\`joignable_par\` porte ${porte[1]} : ce champ dit par quoi on la joint, pas avec quoi — l'état se commite et \`freeze-version.mjs\` en fige une copie sous \`versions/\`, d'où rien ne se reprend. La coordonnée va dans \`contacts.yaml\`, à côté de l'état, que \`.gitignore\` exclut` });
+      continue;                        // le canal est illisible : le confronter à `contacts.yaml` n'apprendrait rien
+    }
+    checkEnum(out, sh.id, 'canal de contact', canal);
+    if (contacts === undefined) continue;
+    if (contacts === null) {
+      out.push({ rule: 'S114', id: sh.id, message: `déclarée joignable par « ${canal} » et aucun \`contacts.yaml\` à côté de l'état : le canal est annoncé, la coordonnée n'existe nulle part — personne ne peut la joindre` });
+    } else if (!String(contacts[sh.id] ?? '').trim()) {
+      out.push({ rule: 'S114', id: sh.id, message: `déclarée joignable par « ${canal} », et \`contacts.yaml\` ne porte rien à son identifiant : le canal est annoncé, la coordonnée n'y est pas` });
+    }
+  }
+  for (const id of Object.keys(contacts ?? {})) {
+    if (!arr(s?.stakeholders).some(sh => sh.id === id)) {
+      out.push({ rule: 'S09', id, message: 'coordonnée dans `contacts.yaml` à un identifiant qui n\'est pas une partie prenante de l\'état : une coordonnée qui ne désigne personne ne sert à rien, et elle a pu être recopiée de travers' });
+    }
+  }
+  return out;
+}
+
 export function confirmationFindings(s) {
   const out = [];
   const idx = elementsIndex(s);
@@ -1666,7 +1704,7 @@ export function checkState(s, ctx = {}) {
     return [{ rule: 'S00', id: 'document', message: `document « ${doc} » : ce catalogue vérifie ${DOCUMENTS.join(', ')}, et rien d'autre — un état d'implémentation se vérifie avec pr-gate.mjs et trace-check.mjs, un état de tests avec release-matrix.mjs` }];
   }
   const base = doc === 'plan' ? checkPlan(s, refs) : doc === 'sad' ? checkSad(s) : doc === 'prd' ? checkPrd(s) : checkBrd(s);
-  const all = [...base, ...placeholderFindings(s), ...unsourcedNumberFindings(s), ...constitutionFindings(s, ctx.constitution), ...checklistFindings(s, ctx.checklists), ...interviewFindings(s, ctx.interviews), ...outgoingFindings(s, [...fichiersDe(ctx.interviews), ...fichiersDe(ctx.checklists)]), ...governanceFindings(s), ...coverageFindings(s, refs), ...phaseFindings(s), ...sourceContentFindings(s), ...confirmationFindings(s), ...riskFindings(s), ...relectureFindings(s), ...handoffFindings(ctx.handoffs), ...upstreamFindings(s, refs), ...contextFindings(ctx.cards, s.settings?.context_budget)];
+  const all = [...base, ...placeholderFindings(s), ...unsourcedNumberFindings(s), ...constitutionFindings(s, ctx.constitution), ...checklistFindings(s, ctx.checklists), ...interviewFindings(s, ctx.interviews), ...outgoingFindings(s, [...fichiersDe(ctx.interviews), ...fichiersDe(ctx.checklists)]), ...governanceFindings(s), ...coverageFindings(s, refs), ...phaseFindings(s), ...sourceContentFindings(s), ...confirmationFindings(s), ...contactFindings(s, ctx.contacts), ...riskFindings(s), ...relectureFindings(s), ...handoffFindings(ctx.handoffs), ...upstreamFindings(s, refs), ...contextFindings(ctx.cards, s.settings?.context_budget)];
   const idx = waiverIndex(s);
   return all.map(f => {
     const raison = idx.get(`${f.id}|${f.rule}`);
@@ -1688,6 +1726,7 @@ export const STRUCT_RULES = {
   S109: 'risque consigné sans être apprécié', S110: 'représentation sans la source où elle se dit',
   S111: 'relecture « sans objet » sur une parole, sans raison', S112: 'correction d\'une source non reliée ou laissée sans relecture',
   S113: 'utilisateur direct qu\'aucun besoin ne concerne',
+  S114: 'coordonnée dans l\'état versionné, ou canal annoncé sans coordonnée',
   S01: 'objectif non mesurable', S02: 'exigence sans objectif', S03: 'exigence sans besoin sourcé', S04: 'exigence sans critère d\'acceptation',
   S05: 'priorité ou release manquante', S06: 'exigence sans origine', S07: 'Must sans scénario d\'erreur', S08: 'NFR incomplète',
   S09: 'référence inexistante', S10: 'référence vers un élément abandonné', S11: 'règle métier sans source', S12: 'règle sans niveau d\'application',

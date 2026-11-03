@@ -659,6 +659,54 @@ test('S111 et S112 : « sans objet » porte sa raison, et une source peut en cor
 // L'inverse de S95 : un utilisateur direct qu'aucun besoin ne concerne. Au troisième dossier réel,
 // celle qui faisait la saisie — le geste même que le changement remplaçait — n'était nommée dans les
 // `concerns` d'aucun des huit besoins.
+// Un champ de coordonnées dans un fichier versionné est un piège : il se remplit une fois, et il part
+// dans le dépôt, dans le handoff et dans une copie figée en lecture seule dont rien ne se reprend. Le
+// champ dit donc PAR QUOI on joint la personne, et la coordonnée vit à côté, hors de git. Ce test tient
+// les deux moitiés : l'état refuse l'adresse, et le canal annoncé se confronte au fichier voisin.
+test('S114 : le canal est dans l\'état, la coordonnée est à côté et hors de git', () => {
+  const etat = (joignable_par, contacts) => checkState(
+    { document: 'brd', phase: 'discover', stakeholders: [{ id: 'SH-01', status: 'interrogée', power: 'faible', impact: 'fort', influence: 'positive', quadrant: 'consulter', joignable_par }] },
+    contacts === 'rien regardé' ? {} : { contacts });
+  const codes = (d, r) => d.filter(f => f.rule === r).map(f => f.message);
+
+  // Le canal seul, et la coordonnée en face : la bonne tenue.
+  assert.deepEqual(codes(etat('courriel', { 'SH-01': 'a.b@exemple.fr' }), 'S114'), []);
+  // Vide : ne pas savoir joindre quelqu'un est un fait, pas une faute — et rien ne le réclame.
+  assert.deepEqual(codes(etat('', null), 'S114'), []);
+
+  // Une coordonnée écrite dans le champ du canal : les trois formes qu'elle prend.
+  for (const [v, quoi] of [['a.b@exemple.fr', 'une adresse'], ['+33 6 12 34 56 78', 'un numéro'],
+    ['06 12 34 56 78', 'un numéro'], ['https://chat.exemple.fr/u/42', 'un lien']]) {
+    const m = codes(etat(v, null), 'S114');
+    assert.equal(m.length, 1, `une coordonnée « ${v} » se voit`);
+    assert.match(m[0], new RegExp(`porte ${quoi}`), v);
+    assert.match(m[0], /contacts\.yaml/, 'le message dit où elle va');
+    // Et la règle s'arrête là : confronter un canal illisible au fichier voisin n'apprendrait rien.
+    assert.deepEqual(codes(etat(v, null), 'S88'), []);
+  }
+
+  // Un canal annoncé, et aucun fichier à côté de l'état : personne ne peut la joindre.
+  assert.match(codes(etat('messagerie', null), 'S114')[0], /aucun `contacts\.yaml` à côté de l'état/);
+  // Le fichier existe, et il ne porte rien à son identifiant.
+  assert.match(codes(etat('messagerie', { 'SH-09': 'x' }), 'S114')[0], /ne porte rien à son identifiant/);
+  // Une entrée qui ne désigne personne : une coordonnée recopiée de travers.
+  assert.deepEqual(etat('courriel', { 'SH-01': 'a@b.fr', 'SH-09': 'x@y.fr' }).filter(f => f.rule === 'S09').map(f => f.id), ['SH-09']);
+
+  // Les trois états de `contacts`, et le seul qui ne se reproche pas : personne n'a regardé le disque.
+  // Un contexte incomplet ne vaut pas un constat — sinon tout appelant qui ne lit pas le fichier
+  // ferait apparaître des avertissements que `lint.mjs` ne montre pas.
+  assert.deepEqual(codes(etat('messagerie', 'rien regardé'), 'S114'), []);
+
+  // Le canal reste une énumération, avec la convention de toutes les autres : un canal nommé se
+  // déclare `autre:<libellé>`, il est permis, et il ressort comme candidat à devenir une valeur —
+  // c'est par là qu'une valeur se promeut, et c'est pourquoi un canal nommé n'est pas silencieux.
+  assert.match(codes(etat('autre:fil #inscriptions', { 'SH-01': '#inscriptions' }), 'S88')[0],
+    /« fil #inscriptions » hors énumération, et nommé : candidat à devenir une valeur/);
+  // Mais il ne vaut aucun reproche sur le fond : la coordonnée est en face.
+  assert.deepEqual(codes(etat('autre:fil #inscriptions', { 'SH-01': '#inscriptions' }), 'S114'), []);
+  assert.match(etat('Teams', { 'SH-01': 'x' }).find(f => f.rule === 'S88').message, /canal de contact « Teams » hors énumération/);
+});
+
 test('S113 : un utilisateur direct sans besoin, à la porte de Define', () => {
   const etat = (phase, besoins) => checkState({ document: 'brd', phase,
     stakeholders: [{ id: 'SH-01', status: 'interrogée', end_user: true, power: 'faible', impact: 'fort', influence: 'positive', quadrant: 'consulter' },

@@ -1,0 +1,18 @@
+# Coordonnées des parties prenantes — à côté de `state.yaml`, dans le dossier, et JAMAIS COMMITÉ.
+#
+# Ce fichier existe parce que `state.yaml` ne peut pas porter une adresse. L'état se commite, part
+# dans le handoff vers l'étape suivante, et `freeze-version.mjs` en fige une copie en lecture seule
+# sous `versions/` — d'où rien ne se reprend. Une coordonnée écrite là y reste, pour tout le monde,
+# indéfiniment. Ici, elle reste sur la machine : `.gitignore` exclut `contacts.yaml`, et
+# `freeze-version.mjs` ne copie que `state.yaml`, `refs.yaml` et les dossiers générés.
+#
+# L'état dit PAR QUOI chaque personne se joint (`joignable_par` : vive voix | courriel | messagerie |
+# téléphone | autre:<canal nommé>). Ce fichier dit AVEC QUOI. S114 vérifie que les deux concordent :
+# un canal annoncé sans entrée ici, c'est une personne que personne ne peut joindre ; et une entrée
+# ici à un identifiant inconnu de l'état ne désigne personne.
+#
+# Une clé par identifiant de partie prenante. Rien d'autre : pas de notes, pas de verbatim — ce qui
+# a été dit appartient à la source, qui se relit.
+
+# SH-01: "prenom.nom@exemple.fr"
+# SH-03: "+33 6 12 34 56 78"
