@@ -354,6 +354,20 @@ prd_sections:             # à rédiger | proposé | validé
   risks: à rédiger
   glossary: à rédiger
 
+relance: {}                 # deux horloges, en jours, pour une question partie à quelqu'un et restée
+                            # sans réponse : { signaler: 1, agir: 5 } par défaut. DIRE à l'utilisateur
+                            # qu'il n'y a pas de réponse ne coûte rien et ne sort pas du dossier — un
+                            # jour suffit. RELANCER ou RENONCER sort vers quelqu'un qui n'a rien demandé,
+                            # et c'est irréversible : relancer au bout d'un jour, c'est harceler, et une
+                            # source brûlée ne se rouvre pas là où un avertissement se corrige. Les
+                            # confondre fait l'un au rythme de l'autre. Au-delà de `agir`, l'attente
+                            # cesse de protéger le dossier : « non mesuré » n'est plus une réponse
+                            # acceptable, et S117 le dit. Une association de parents et un service
+                            # hospitalier n'ont pas le même tempo, d'où le réglage.
+                            # Et aucune horloge ne tourne : rien ne se déclenche, le seuil QUALIFIE ce
+                            # qu'on voit en arrivant sur le dossier. Trois semaines sans y revenir, et
+                            # l'alerte arrive à trois semaines
+
 thresholds: {}              # seuils en %, par métrique ; vide = valeurs par défaut (lib/rules.mjs, COVERAGE_DEFAULTS).
                             # Un seuil à 0 ne compare rien : c'est une mise hors périmètre, et elle passe
                             # par une dérogation nommée ci-dessous (S105), sinon la mesure se dit « non

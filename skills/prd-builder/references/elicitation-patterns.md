@@ -201,6 +201,21 @@ Le guide existe parce que la personne est absente et qu'un humain ira la voir. L
 
 Le script **n'envoie rien**. Il ne sait pas à quoi tu es branché, et un message parti est irréversible : l'envoi passe par le canal de l'hôte s'il en offre un, sinon le message revient à l'utilisateur, qui l'enverra. Ce qui part est toujours un texte qu'un humain a pu lire avant.
 
+**Deux horloges, et aucune ne tourne.** Une question partie et restée sans réponse appelle deux gestes qui n'ont ni le même coût ni le même rythme, et les confondre fait l'un au tempo de l'autre.
+
+| Geste | Seuil par défaut | Pourquoi ce rythme |
+|---|---|---|
+| **signaler** à l'utilisateur qu'il n'y a pas de réponse | 1 jour | c'est interne, ça ne sort pas du dossier, ça ne coûte rien |
+| **relancer ou renoncer** | 5 jours | ça sort vers quelqu'un qui n'a rien demandé, et c'est irréversible |
+
+Relancer au bout d'un jour, c'est harceler : quelqu'un à qui on écrit une question par courriel répond en deux à cinq jours, et le coût n'est pas symétrique — une relance trop tôt perd la personne pour de bon, une relance trop tard perd quelques jours. Les deux seuils se règlent (`relance: { signaler, agir }`, à la racine de l'état ou sous `settings`), parce qu'une association de parents et un service hospitalier n'ont pas le même tempo.
+
+**Aucune horloge ne tourne.** Il n'y a pas de démon : l'agent ne travaille que quand on le lance. Le seuil ne **déclenche** donc rien — il **qualifie** ce qu'on voit en arrivant sur le dossier. Si personne n'y revient pendant trois semaines, l'alerte arrive à trois semaines. C'est moins joli qu'une alarme, et c'est vrai.
+
+**Et l'attente n'est pas éternelle : c'est le vrai apport du seuil.** `sollicitée` + date vaut « non mesuré » — une question qui vit, que la porte ne compte pas contre le dossier. Mais une question en vol depuis quarante jours ne vit plus : elle est abandonnée sans que personne l'ait dit, et la faire passer pour vivante est exactement le mensonge que les trois états existaient pour éviter. Au-delà de `agir`, le constat redevient un constat, la protection tombe, et `S117` nomme les trois issues — attendre encore **en le disant**, relancer une fois, ou renoncer avec son motif. C'est l'utilisateur qui tranche : écrire à quelqu'un qui ne répond pas, ou renoncer sur lui, n'est pas une décision d'outil.
+
+`review-sources.mjs --etat` qualifie chaque attente au lieu de se contenter de son âge : *vient de partir*, *à signaler*, *à trancher*.
+
 **Renoncer se dit, et dit lequel des quatre.** `non disponible` couvrait d'un seul mot quatre situations qui n'ont ni la même cause ni le même remède : elle n'a **jamais répondu** ; elle a **refusé**, ce que notre propre message l'invite expressément à faire ; elle est **absente**, en congé, partie ; ou **nous** avons renoncé pour nos raisons. La dernière est la seule qui soit entièrement de notre faute, et c'est celle qu'un mot unique cachait le mieux. `indisponible_motif` le dit — `silence | refus | absence | renoncement | autre:<libellé>` —, et sans lui le statut est une case cochée, comme `envoyé` sans date (`S116`).
 
 Deux conséquences, et aucune n'est une formalité.

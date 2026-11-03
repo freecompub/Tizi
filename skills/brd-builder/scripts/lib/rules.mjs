@@ -162,7 +162,30 @@ export const sollicitationEtat = (sh, sources = []) => {
   if (!dites.length) return 'fait';
   return ecrit > dites[dites.length - 1] ? 'attente' : 'fait';
 };
-const enAttenteDeReponse = (sh, s) => sollicitationEtat(sh, s?.sources) === 'attente';
+// Deux horloges, et pas une. DIRE à l'utilisateur qu'il n'y a pas de réponse ne coûte rien et ne sort
+// pas du dossier : vingt-quatre heures suffisent. RELANCER ou RENONCER sort vers quelqu'un qui n'a rien
+// demandé, et c'est irréversible — relancer au bout d'un jour, c'est harceler, et une source brûlée ne
+// se rouvre pas là où un avertissement se corrige. Les confondre fait l'un au rythme de l'autre.
+//
+// Et rien ne tient d'horloge : aucun démon ne tourne, l'agent ne travaille que quand on le lance. Le
+// seuil ne DÉCLENCHE donc rien — il qualifie ce qu'on voit en arrivant sur le dossier. Si personne n'y
+// revient pendant trois semaines, l'alerte arrive à trois semaines. C'est moins joli, et c'est vrai.
+//
+// Réglables, parce qu'une association de parents et un service hospitalier n'ont pas le même tempo.
+const RELANCE = { signaler: 1, agir: 5 };
+// Les deux emplacements, comme `seuilsDe` : le plan range ses réglages sous `settings`, le BRD et le
+// PRD à la racine. Lire les deux évite d'imposer une forme à un gabarit qui en a déjà une autre.
+export const seuilsRelance = s => ({ ...RELANCE, ...(s?.settings?.relance ?? {}), ...(s?.relance ?? {}) });
+const JOURS = 86400000;
+const joursDepuis = d => Math.floor((Date.parse(new Date().toISOString().slice(0, 10)) - Date.parse(d)) / JOURS);
+
+// L'attente n'est pas éternelle, et c'est le vrai apport du seuil. `sollicitée` + date vaut
+// « non mesuré » — une question qui vit, que la porte ne compte pas contre le dossier. Mais une
+// question en vol depuis quarante jours ne vit plus : elle est abandonnée sans que personne l'ait dit,
+// et la faire passer pour vivante est précisément le mensonge que les trois états existaient pour
+// éviter. Au-delà de `agir`, le constat redevient un constat.
+const enAttenteDeReponse = (sh, s) => sollicitationEtat(sh, s?.sources) === 'attente'
+  && joursDepuis(sh.sollicitee_le) <= seuilsRelance(s).agir;
 
 // Les cinq motifs EARS (`references/ears.md`) et le marqueur que chacun impose à l'énoncé. La règle
 // cherche la trace de la forme déclarée, pas le style : `unwanted` ne réclame que la condition, pas le
@@ -1675,6 +1698,17 @@ export function sollicitationFindings(s) {
       out.push({ rule: 'S115', id: sh.id, message: 'déclarée « sollicitée » sans dire par quoi (`joignable_par`) : une question partie sans canal ne se relance pas, et personne ne sait où aller chercher la réponse' });
     }
   }
+  // Une question qu'on a laissée en vol au-delà du seuil. Ce n'est pas un reproche sur le délai — c'est
+  // qu'au-delà, « non mesuré » cesse d'être une réponse acceptable : il faut relancer, ou renoncer en
+  // le disant. Trois issues et pas deux, et c'est l'utilisateur qui tranche, pas l'agent : écrire à
+  // quelqu'un qui ne répond pas, ou renoncer sur lui, n'est pas une décision d'outil.
+  for (const sh of arr(s?.stakeholders)) {
+    if (sollicitationEtat(sh, s?.sources) !== 'attente') continue;
+    const { signaler, agir } = seuilsRelance(s);
+    const jours = joursDepuis(sh.sollicitee_le);
+    if (jours <= agir) continue;
+    out.push({ rule: 'S117', id: sh.id, message: `question en vol depuis ${jours} jour(s), au-delà du seuil de ${agir} (\`settings.relance.agir\`) : ce n'est plus une question qui vit, c'est une question que personne ne suit, et la porte cessait de la compter. Trois issues, et c'est l'utilisateur qui tranche : attendre encore en le disant, relancer une fois (\`reach-out.mjs --relance\`), ou renoncer — \`non disponible\` avec son motif. Le premier seuil, celui qui dit seulement de le signaler, est à ${signaler} jour(s)` });
+  }
   // Renoncer sur quelqu'un se dit, et dit lequel des quatre. Même famille que `envoyé` sans date : c'est
   // l'agent qui écrit le champ, et `non disponible` sans raison est une case cochée. Deux conséquences
   // que le catalogue tient ailleurs et qu'il faut rappeler ici : le statut reste dans `NON_ENTENDU`,
@@ -1897,6 +1931,7 @@ export const STRUCT_RULES = {
   S114: 'coordonnée dans l\'état versionné, ou canal annoncé sans coordonnée',
   S115: 'sollicitation déclarée sans sa date ou sans son canal',
   S116: 'indisponibilité déclarée sans dire laquelle',
+  S117: 'question laissée en vol au-delà du seuil, sans décision',
   S01: 'objectif non mesurable', S02: 'exigence sans objectif', S03: 'exigence sans besoin sourcé', S04: 'exigence sans critère d\'acceptation',
   S05: 'priorité ou release manquante', S06: 'exigence sans origine', S07: 'Must sans scénario d\'erreur', S08: 'NFR incomplète',
   S09: 'référence inexistante', S10: 'référence vers un élément abandonné', S11: 'règle métier sans source', S12: 'règle sans niveau d\'application',
