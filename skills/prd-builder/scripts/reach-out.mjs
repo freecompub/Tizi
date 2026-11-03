@@ -51,12 +51,23 @@ const siennes = arr(s.sources).filter(x => arr(x.stakeholders).includes(id));
 //   attente → une question vit : rien de neuf ne part, on relance la même ou on renonce ;
 //   a parlé → la suite du fil, courte, sans redire qui on est ;
 //   sinon   → la première prise de contact, avec la déclaration en entier.
-const mode = etat === 'attente' ? 'relance' : siennes.length ? 'suite' : 'premiere';
+// Quatre modes, pas trois. `sollicitee_zone` dit QUELLE question est partie la fois d'avant, donc on
+// sait enfin si celle qu'on s'apprête à poser est la même. C'était l'ambiguïté que le message rendait
+// à la personne — « si c'est la même que la dernière fois, c'est que j'ai mal lu votre réponse » —, et
+// la rendre à la personne était un aveu d'impuissance déguisé en politesse.
+//   reprise : elle a répondu, et sa réponse n'a pas fermé la question. C'est le cas réel du premier
+//             aller-retour : « j'attends tes questions » est un message, pas une réponse. Ce qui se
+//             reformule alors, c'est la QUESTION — et peut-être qu'elle n'était pas pour elle.
+// Trois situations se décident AVANT de connaître la question — ce sont elles qui commandent les refus
+// ci-dessous. La quatrième a besoin de la zone, donc elle se décide plus bas : séparer les deux est ce
+// qui évite de lire `zone` avant qu'elle existe, ce que le court-circuit d'un ternaire cachait.
+const dejaPosee = String(sh.sollicitee_zone ?? '').trim();
+const situation = etat === 'attente' ? 'relance' : siennes.length ? 'repondu' : 'premiere';
 
 if (sh.status === 'non disponible') fail(`${shLabel(s, id)} est déclarée « non disponible » : dis d'abord pourquoi elle redevient joignable, sinon le statut ne veut rien dire.`);
 // Une relance est une DÉCISION, pas l'enchaînement naturel du silence : on écrit une deuxième fois à
 // quelqu'un qui n'a pas répondu à la première, et ça se fait les yeux ouverts. D'où le drapeau.
-if (mode === 'relance' && !args.includes('--relance')) {
+if (situation === 'relance' && !args.includes('--relance')) {
   fail(`Une question est partie à ${shLabel(s, id)} le ${sh.sollicitee_le} — ${jours(sh.sollicitee_le)} jour(s) — et ${siennes.length ? 'rien n\'est venu d\'elle depuis' : 'elle n\'a pas répondu'}. Une deuxième question avant la réponse à la première, c'est deux questions d'un coup. Trois issues : attendre ; relancer la même question, et c'est \`--relance\` ; renoncer, et c'est \`status: non disponible\` en disant pourquoi.`);
 }
 // `sollicitée` sans date : on ne sait pas si une question vit. Composer là-dessus, c'est écrire à
@@ -64,7 +75,7 @@ if (mode === 'relance' && !args.includes('--relance')) {
 if (sh.status === 'sollicitée' && etat !== 'attente') fail(`${shLabel(s, id)} est déclarée « sollicitée » sans date de départ (\`sollicitee_le\`, S115) : on ne sait pas si une question est en vol. Écris la date, ou repasse-la « à interroger » si rien n'est parti.`);
 // Et le cas où le dossier a la réponse sans pouvoir le prouver : la comparaison des dates est le seul
 // moyen de savoir si elle a répondu depuis, et une source sans date la rend impossible.
-if (mode === 'suite' && JOUR_RE.test(String(sh.sollicitee_le ?? '').trim()) && !siennes.some(x => JOUR_RE.test(String(x.date ?? '').trim()))) {
+if (situation === 'repondu' && JOUR_RE.test(String(sh.sollicitee_le ?? '').trim()) && !siennes.some(x => JOUR_RE.test(String(x.date ?? '').trim()))) {
   fail(`Aucune des ${siennes.length} source(s) de ${shLabel(s, id)} ne porte de date, et on lui a écrit le ${sh.sollicitee_le} : impossible de savoir si elle a répondu depuis (S115). Date la source qui vient d'elle.`);
 }
 if (!canal) fail(`${shLabel(s, id)} n'a pas de \`joignable_par\` : on ne sait pas par quoi lui écrire. Demande-le à l'utilisateur.`);
@@ -74,11 +85,18 @@ if (!adresse) fail(`Aucune coordonnée pour ${id} dans ${contactsPath}. Le canal
 // `ask_to`, pas `related` : une question sur quelqu'un n'est pas une question à quelqu'un (S94).
 const zones = rank(arr(s.shadow_zones)).filter(z => z.ask_to === id);
 if (!zones.length) fail(`Aucune zone d'ombre ouverte ne lui est adressée (\`ask_to: ${id}\`). Écrire à quelqu'un sans question précise dépense la seule prise de contact qu'on a.`);
-// En relance, c'est la MÊME question qui repart. On ne sait pas laquelle est partie — rien ne
-// l'enregistre —, mais on sait laquelle on a envoyée : la mieux classée, et elle est encore ouverte,
-// sinon la réponse serait arrivée. Le raisonnement vaut tant que le classement est déterministe,
-// ce qu'il est : `ask-five.mjs` trie par impact puis par ancienneté, jamais au hasard.
-const zone = zones[0];
+// En relance, c'est la MÊME question qui repart, et `sollicitee_zone` dit laquelle : on ne la devine
+// plus par le classement, comme il fallait le faire avant que le champ existe. Si elle n'est plus
+// ouverte, il n'y a rien à relancer — l'état se contredit, et le dire vaut mieux que d'envoyer une
+// autre question sous couvert de relance, ce qui ferait croire à la personne qu'on l'a déjà interrogée.
+let zone = zones[0];
+if (situation === 'relance' && dejaPosee) {
+  zone = zones.find(z => z.id === dejaPosee);
+  if (!zone) fail(`La question partie le ${sh.sollicitee_le} était ${dejaPosee}, qui n'est plus une zone ouverte adressée à ${shLabel(s, id)} : il n'y a rien à relancer. Soit elle a été levée — retire alors \`sollicitee_le\` et \`sollicitee_zone\` —, soit elle a changé de destinataire (\`ask_to\`).`);
+}
+// La quatrième situation, celle qui a besoin de la question : sa réponse a-t-elle fermé celle qu'on
+// lui avait posée ? `sollicitee_zone` le dit. Avant lui, le message rendait la question à la personne.
+const mode = situation !== 'repondu' ? situation : dejaPosee === zone.id ? 'reprise' : 'suite';
 
 // Ce qui part vers quelqu'un ne parle QUE en clair. Trois pièges, les trois trouvés en composant un
 // vrai message plutôt qu'en relisant le code.
@@ -126,10 +144,16 @@ const MESSAGES = {
   suite: [
     bonjour, '',
     'Merci pour votre réponse, elle est consignée dans le dossier.', '',
-    `Je reviens vers vous sur « ${initiative} », avec une seule question :`,
+    `Une question de plus sur « ${initiative} », et une seule :`,
     '', zone.question, '',
-    'Si c\'est la même que la dernière fois, c\'est que j\'ai mal lu votre réponse — dites-le moi, et reformulez comme vous voulez.', '',
     'Comme la première fois, vous relirez ce que j\'en aurai compris avant que ça serve. Et vous pouvez arrêter là : dites-le moi, je le noterai.',
+  ],
+  reprise: [
+    bonjour, '',
+    'Merci pour votre réponse. Je reviens sur la même question, parce que je l\'ai mal posée — la faute est de mon côté.', '',
+    zone.question, '',
+    'Reformulez comme vous voulez, même en quelques mots. Et si ce n\'est pas à vous qu\'il faut la poser, dites-le moi : je la porterai à qui de droit plutôt que de vous la reposer.', '',
+    'Vous pouvez aussi arrêter là : dites-le moi, je le noterai.',
   ],
   relance: [
     bonjour, '',
@@ -146,6 +170,9 @@ const message = MESSAGES[mode].join('\n');
 const OBJETS = {
   premiere: `Une question — ${initiative}`,
   suite: `Suite de notre échange — ${initiative}`,
+  // La reprise et la relance portent l'objet de la première fois : c'est la même question, et un objet
+  // neuf ferait croire à un sujet neuf.
+  reprise: `Une question — ${initiative}`,
   relance: `Une question — ${initiative}`,
 };
 const objet = OBJETS[mode];
@@ -156,12 +183,14 @@ const objet = OBJETS[mode];
 const sortie = {
   stakeholder: id, mode, canal, adresse, zone: zone.id, question: zone.question, objet, message,
   etat: mode === 'premiere'
-    ? { status: 'sollicitée', sollicitee_le: today(), joignable_par: canal }
-    : { sollicitee_le: today() },
+    ? { status: 'sollicitée', sollicitee_le: today(), sollicitee_zone: zone.id, joignable_par: canal }
+    : { sollicitee_le: today(), sollicitee_zone: zone.id },
 };
 if (args.includes('--json')) { console.log(JSON.stringify(sortie, null, 2)); process.exit(0); }
 
-const TITRE = { premiere: 'Première prise de contact', suite: 'Suite du fil', relance: `Relance — sans réponse depuis ${JOUR_RE.test(String(sh.sollicitee_le ?? '')) ? `${jours(sh.sollicitee_le)} j` : 'une date inconnue'}` };
+const TITRE = { premiere: 'Première prise de contact', suite: 'Suite du fil',
+  reprise: `Reprise de ${zone.id} — elle a répondu, la question est restée ouverte`,
+  relance: `Relance — sans réponse depuis ${JOUR_RE.test(String(sh.sollicitee_le ?? '')) ? `${jours(sh.sollicitee_le)} j` : 'une date inconnue'}` };
 console.log([
   `${TITRE[mode]} — à ${shLabel(s, id)}, par ${canal} — ${adresse}`,
   `Zone visée : ${zone.id}${zone.reasons.length ? ` (${zone.reasons.join(', ')})` : ''}`,

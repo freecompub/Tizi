@@ -223,6 +223,21 @@ Le script **n'envoie rien**. Il ne sait pas à quoi tu es branché, et un messag
 
 Et un signal, pas une règle : quand on n'a que la fonction de la personne et pas son nom, le message commence par « Bonjour, ». Ça se voit, et ça se paie. Demande son nom à l'utilisateur s'il l'a.
 
+**La question partie dit laquelle : `sollicitee_zone`, avec `sollicitee_le`, les deux ou aucun.** Sans elle, au tour suivant, rien ne disait si la réponse portait sur la question posée — alors le message de suite remerciait d'avoir répondu puis reposait la même question, et finissait par écrire « si c'est la même que la dernière fois, c'est que j'ai mal lu votre réponse ». C'était rendre à la personne une ambiguïté dont elle n'est pas responsable, et la politesse n'y changeait rien : un aveu d'impuissance reste un aveu d'impuissance.
+
+Avec elle, `reach-out.mjs` a **quatre** modes au lieu de trois, et le quatrième est le cas réel du premier aller-retour :
+
+| L'état dit | Mode | Ce que le message fait |
+|---|---|---|
+| jamais entendue | première prise de contact | la déclaration en entier |
+| elle a répondu, la zone posée est **levée** | suite du fil | une question de plus |
+| elle a répondu, la zone posée est **toujours ouverte** | **reprise** | la même question, et la faute est de notre côté |
+| une question en vol | relance (`--relance`) | la question partie, pas celle que le classement remettrait en tête |
+
+La **reprise** dit « je l'ai mal posée », pas « vous avez mal répondu », parce que c'est le cas de loin le plus probable : une question qu'on ne comprend pas est une question mal écrite. Et elle offre une sortie que rien n'offrait : *si ce n'est pas à vous qu'il faut la poser, dites-le moi* — une réponse qui ne répond pas veut parfois dire que la question n'était pas pour cette personne, et c'est une information précieuse sur la cartographie.
+
+La **relance** repart désormais sur la question enregistrée. Avant, elle reprenait la mieux classée en supposant que c'était la même ; si une zone plus urgente était apparue entre-temps, la personne recevait une autre question **sous couvert de relance** — et croyait qu'on l'avait déjà interrogée là-dessus. Et si la question en vol n'est plus ouverte, le script refuse : l'état se contredit, et le dire vaut mieux qu'envoyer n'importe quoi.
+
 **Une réponse n'est pas une réponse à la question, et c'est le piège le plus coûteux du canal.** Sur le premier aller-retour réel, la personne a répondu « j'attends tes questions » : elle n'avait pas pris la question posée pour une question. Ce qu'il faut en faire — et ne pas en faire : la source **s'enregistre** (une voix a parlé, elle a écrit, `status: interrogée`), et la **zone d'ombre reste ouverte**. La lever sur un message qui ne répond pas écrit dans le dossier qu'on sait quelque chose qu'on ne sait pas, et plus rien ne le rattrapera : la zone fermée ne se rouvre pas d'elle-même, et le besoin qui en dépend se validera sur du vide.
 
 **Ses mots se séparent de tout ce que le courrielleur ajoute : `read-reply.mjs <fichier | -->`.** Sur ce même aller-retour, les mots de la personne faisaient **23 caractères sur 662, soit 3 %** du message reçu. Le reste était une réclame du fournisseur, une ligne d'attribution, et notre propre message cité en entier — recopier le corps dans `quote` aurait mis au dossier, comme « ce qu'elle a dit », la question qu'on venait de lui poser. Le script rend ses mots, dit ce qu'il a retiré et pourquoi, et avertit quand la part qui vient d'elle est faible : il reste peut-être une marque qu'il ne connaît pas.

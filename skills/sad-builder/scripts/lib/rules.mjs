@@ -1670,6 +1670,27 @@ export function sollicitationFindings(s) {
       out.push({ rule: 'S115', id: sh.id, message: 'déclarée « sollicitée » sans dire par quoi (`joignable_par`) : une question partie sans canal ne se relance pas, et personne ne sait où aller chercher la réponse' });
     }
   }
+  // `sollicitee_le` dit QUAND, `sollicitee_zone` dit QUOI. Les deux ou aucun : une sollicitation qui ne
+  // dit pas ce qu'elle demandait est inexploitable au tour suivant — c'est ce qui forçait le message de
+  // suite à dire « si c'est la même question que la dernière fois, c'est que j'ai mal lu votre réponse »,
+  // faute de pouvoir le savoir. L'ambiguïté était rendue à la personne, qui n'a rien à voir là-dedans.
+  for (const sh of arr(s?.stakeholders)) {
+    const quand = String(sh.sollicitee_le ?? '').trim();
+    const quoi = String(sh.sollicitee_zone ?? '').trim();
+    if (quand && !quoi) {
+      out.push({ rule: 'S115', id: sh.id, message: `sollicitée le ${quand} sans dire sur quoi (\`sollicitee_zone\`) : au tour suivant, rien ne permet de savoir si sa réponse portait sur la question posée — et c'est à elle qu'on finit par demander de le deviner` });
+    } else if (quoi && !quand) {
+      out.push({ rule: 'S115', id: sh.id, message: `porte \`sollicitee_zone: ${quoi}\` sans date de départ (\`sollicitee_le\`) : une question qu'on dit partie sans dire quand ne se relance pas et ne compte pour rien` });
+    }
+    if (!quoi) continue;
+    const zone = arr(s?.shadow_zones).find(z => z.id === quoi);
+    if (!zone) { out.push({ rule: 'S09', id: sh.id, message: `sollicitée sur ${quoi}, qui n'est pas une zone d'ombre de l'état` }); continue; }
+    // Une question posée à quelqu'un d'autre, envoyée à elle : la zone dit à qui elle s'adresse, et
+    // c'est tout l'objet de S94 — une question SUR quelqu'un n'est pas une question À quelqu'un.
+    if (zone.ask_to && zone.ask_to !== sh.id) {
+      out.push({ rule: 'S115', id: sh.id, message: `sollicitée sur ${quoi}, qui est adressée à ${zone.ask_to} (\`ask_to\`) : on lui a posé la question de quelqu'un d'autre, et sa réponse sera consignée comme si elle valait pour l'autre` });
+    }
+  }
   // Le deuxième tour d'un entretien par canal. La personne est `interrogée` et porte une date d'écrit :
   // l'état se lit en comparant cette date à celle de sa dernière source. Si aucune de ses sources ne
   // porte de date, la comparaison est impossible — et c'est le seul cas où le dossier contient la
