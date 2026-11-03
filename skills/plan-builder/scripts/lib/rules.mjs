@@ -140,12 +140,29 @@ export const feedbackEtat = src => {
 // donc autant que ne pas lui écrire, et l'autonomie n'avait pas de sens. Trois états, et le
 // troisième tient à la date — c'est l'agent qui écrit le champ, et une sollicitation qu'on DIT
 // partie sans dire quand ne se vérifie pas : « sollicitée » invérifiable est une case cochée.
-export const sollicitationEtat = sh => {
-  if (sh?.status === 'interrogée') return 'fait';
-  if (sh?.status === 'sollicitée' && JOUR.test(String(sh?.sollicitee_le ?? '').trim())) return 'attente';
-  return 'absent';
+// `sollicitee_le` suffisait tant que l'échange tenait en un tour : sur quelqu'un de jamais entendu, une
+// date écrite veut dire qu'une question vit. Mais un entretien par canal ne tient PAS en un tour — une
+// question, la réponse, la suivante — et au deuxième tour la personne est `interrogée`. Le statut ne peut
+// plus porter l'attente : la repasser `sollicitée` dirait qu'elle n'a jamais parlé, et éteindrait
+// faussement ce que sa voix avait fermé (S83, S95). L'état se CALCULE donc au lieu de se déclarer : une
+// question est en vol si la dernière chose qu'on lui a écrite est POSTÉRIEURE à la dernière chose qu'elle
+// a dite. Rien de neuf dans le modèle — et c'est le premier lecteur du `date` d'une source, écrit dans le
+// gabarit depuis le début et que rien ne lisait.
+export const sollicitationEtat = (sh, sources = []) => {
+  const ecrit = String(sh?.sollicitee_le ?? '').trim();
+  if (sh?.status === 'sollicitée') return JOUR.test(ecrit) ? 'attente' : 'absent';
+  if (sh?.status !== 'interrogée') return 'absent';
+  // Entendue, et rien d'écrit depuis : c'est tenu. Le cas d'une personne rencontrée en réunion, qui
+  // n'est jamais passée par un canal — la majorité des dossiers, et il ne doit rien lui arriver.
+  if (!JOUR.test(ecrit)) return 'fait';
+  const dites = arr(sources).filter(x => arr(x.stakeholders).includes(sh.id))
+    .map(x => String(x.date ?? '').trim()).filter(d => JOUR.test(d)).sort();
+  // Aucune de ses sources ne porte de date : on ne peut pas comparer, donc on ne conclut pas qu'une
+  // question vit. C'est S115 qui le dit, parce qu'un silence qu'on ne sait pas lire se signale.
+  if (!dites.length) return 'fait';
+  return ecrit > dites[dites.length - 1] ? 'attente' : 'fait';
 };
-const enAttenteDeReponse = sh => sollicitationEtat(sh) === 'attente';
+const enAttenteDeReponse = (sh, s) => sollicitationEtat(sh, s?.sources) === 'attente';
 
 // Les cinq motifs EARS (`references/ears.md`) et le marqueur que chacun impose à l'énoncé. La règle
 // cherche la trace de la forme déclarée, pas le style : `unwanted` ne réclame que la condition, pas le
@@ -266,7 +283,7 @@ const checkRepresentation = (s, out, shs, { endUsersSeuls }) => {
     const concerne = endUsersSeuls ? sh.end_user : true;
     if (!concerne || !NON_ENTENDU.includes(sh.status)) continue;
     if (par && shs.has(par) && par !== sh.id && !interrogeeDansUneZone(s, sh.id)) {
-      out.push({ rule: 'S94', id: sh.id, ...(enAttenteDeReponse(sh) ? { pending: true } : {}), message: citeeDansUneZone(s, sh.id)
+      out.push({ rule: 'S94', id: sh.id, ...(enAttenteDeReponse(sh, s) ? { pending: true } : {}), message: citeeDansUneZone(s, sh.id)
         ? `représentée par ${par} et jamais entendue : une zone ouverte la nomme, mais aucune ne lui est adressée (\`ask_to\`) — une question sur quelqu'un n'est pas une question à quelqu'un`
         : `représentée par ${par} et jamais entendue, sans qu'aucune zone ouverte ne lui soit adressée : une représentation dit qui répond pour elle, elle ne remplace pas sa voix` });
     }
@@ -511,7 +528,7 @@ export function checkBrd(s) {
     // Un utilisateur direct à qui la question est PARTIE est une question qui vit : le constat change
     // de liste au lieu de compter contre le dossier, comme un retour à la source envoyé. Sinon écrire
     // à la bonne personne ne vaut rien jusqu'à ce qu'elle réponde, et ce qui ne vaut rien ne se fait pas.
-    const utilEnAttente = arr(s.stakeholders).filter(sh => sh.end_user && enAttenteDeReponse(sh));
+    const utilEnAttente = arr(s.stakeholders).filter(sh => sh.end_user && enAttenteDeReponse(sh, s));
     if (entendus.length && !util.length) {
       out.push({ rule: 'S83', id: 'stakeholders', ...(utilEnAttente.length ? { pending: true } : {}), message: `des besoins recueillis, et aucun utilisateur direct entendu (\`end_user\`) : tout passe par des représentants${utilEnAttente.length ? ` — ${utilEnAttente.map(sh => sh.id).join(', ')} sollicité(s) et sans réponse, la question vit` : ''}` });
     } else if (util.length && !util.some(sh => interroges.has(sh.id))) {
@@ -1649,6 +1666,19 @@ export function sollicitationFindings(s) {
       out.push({ rule: 'S115', id: sh.id, message: 'déclarée « sollicitée » sans dire par quoi (`joignable_par`) : une question partie sans canal ne se relance pas, et personne ne sait où aller chercher la réponse' });
     }
   }
+  // Le deuxième tour d'un entretien par canal. La personne est `interrogée` et porte une date d'écrit :
+  // l'état se lit en comparant cette date à celle de sa dernière source. Si aucune de ses sources ne
+  // porte de date, la comparaison est impossible — et c'est le seul cas où le dossier contient la
+  // réponse sans pouvoir le prouver. On ne devine pas : on dit que la mesure manque et laquelle.
+  for (const sh of arr(s?.stakeholders)) {
+    if (sh.status !== 'interrogée' || !JOUR.test(String(sh.sollicitee_le ?? '').trim())) continue;
+    const siennes = arr(s?.sources).filter(x => arr(x.stakeholders).includes(sh.id));
+    if (!siennes.length) {
+      out.push({ rule: 'S115', id: sh.id, message: `déclarée « interrogée » et écrite le ${sh.sollicitee_le}, et aucune source ne la porte comme locutrice : le statut dit qu'elle a parlé, le dossier ne garde rien de ce qu'elle a dit` });
+    } else if (!siennes.some(x => JOUR.test(String(x.date ?? '').trim()))) {
+      out.push({ rule: 'S115', id: sh.id, message: `écrite le ${sh.sollicitee_le}, et aucune de ses ${siennes.length} source(s) ne porte de date : on ne peut pas savoir si elle a répondu depuis — donc ni relancer, ni enchaîner. Date la source qui vient d'elle` });
+    }
+  }
   return out;
 }
 
@@ -1682,7 +1712,7 @@ export function governanceFindings(s) {
     if (!['relecteur', 'approbateur'].includes(r.role)) continue;
     const sh = r.stakeholder && shs.get(r.stakeholder);
     if (sh && NON_ENTENDU.includes(sh.status)) {
-      out.push({ rule: 'S98', id: `reviewers:${r.stakeholder}`, ...(enAttenteDeReponse(sh) ? { pending: true } : {}), message: `${r.role} que l'état déclare « ${sh.status} » : une revue demande si le document est fidèle à ce qu'on a dit, et cette personne n'a rien dit. Interroge-la d'abord, ou passe-la en « informé » — sinon son silence devient une approbation` });
+      out.push({ rule: 'S98', id: `reviewers:${r.stakeholder}`, ...(enAttenteDeReponse(sh, s) ? { pending: true } : {}), message: `${r.role} que l'état déclare « ${sh.status} » : une revue demande si le document est fidèle à ce qu'on a dit, et cette personne n'a rien dit. Interroge-la d'abord, ou passe-la en « informé » — sinon son silence devient une approbation` });
     }
   }
   for (const r of arr(g.review_rounds)) {
