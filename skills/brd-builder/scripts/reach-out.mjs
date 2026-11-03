@@ -59,7 +59,18 @@ const siennes = arr(s.sources).filter(x => arr(x.stakeholders).includes(id));
 const dejaPosee = String(sh.sollicitee_zone ?? '').trim();
 const situation = etat === 'attente' ? 'relance' : siennes.length ? 'repondu' : 'premiere';
 
-if (sh.status === 'non disponible') fail(`${shLabel(s, id)} est déclarée « non disponible » : dis d'abord pourquoi elle redevient joignable, sinon le statut ne veut rien dire.`);
+// Le refus sait enfin de quoi il parle : `non disponible` couvrait quatre situations, et la plus
+// grave — elle a refusé — demandait de ne PAS la recontacter sur notre seule initiative.
+if (sh.status === 'non disponible') {
+  const motif = String(sh.indisponible_motif ?? '').trim();
+  const RAISON = {
+    refus: 'elle a refusé de répondre, et le message qu\'on lui a envoyé l\'y invitait expressément. On ne revient pas vers quelqu\'un qui a dit non parce qu\'on a une nouvelle question : c\'est à l\'utilisateur de dire si elle a changé d\'avis, et à lui de le lui demander.',
+    silence: 'on a renoncé après son silence. Dis ce qui a changé depuis — un canal qui marche, quelqu\'un qui la prévient —, sinon la même question partira au même endroit.',
+    absence: 'elle était absente ou injoignable. Dis ce qui a changé : son retour, un autre canal.',
+    renoncement: 'c\'est NOUS qui avons renoncé, pour nos raisons. Celles-là se reprennent : dis pourquoi elles ne valent plus, et repasse-la « à interroger ».',
+  };
+  fail(`${shLabel(s, id)} est déclarée « non disponible »${motif ? ` — ${RAISON[motif.split(':')[0]] ?? `motif « ${motif} »`}` : ' sans dire pourquoi (`indisponible_motif`, S116), donc on ne sait même pas ce qu\'il faudrait avoir changé'}`);
+}
 // Une relance est une DÉCISION, pas l'enchaînement naturel du silence : on écrit une deuxième fois à
 // quelqu'un qui n'a pas répondu à la première, et ça se fait les yeux ouverts. D'où le drapeau.
 if (situation === 'relance' && !args.includes('--relance')) {

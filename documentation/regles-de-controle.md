@@ -1,8 +1,8 @@
 # Règles de contrôle, étape par étape
 
-**Ce document est généré par `doc-regles.mjs`. Ne le modifie pas à la main.** Une liste de 124 règles écrite à la main dérive au premier changement du catalogue, et une liste qui dérive est pire qu'une absence de liste : on la croit. Les énoncés ci-dessous sont ceux du catalogue (`skills/*/scripts/lib/rules.mjs`), les conditions de porte celles de `lib/gates.mjs`, les seuils ceux de `COVERAGE_DEFAULTS`. Pour le régénérer : `node doc-regles.mjs`. Pour vérifier qu'il est à jour : `node doc-regles.mjs --verifier`.
+**Ce document est généré par `doc-regles.mjs`. Ne le modifie pas à la main.** Une liste de 125 règles écrite à la main dérive au premier changement du catalogue, et une liste qui dérive est pire qu'une absence de liste : on la croit. Les énoncés ci-dessous sont ceux du catalogue (`skills/*/scripts/lib/rules.mjs`), les conditions de porte celles de `lib/gates.mjs`, les seuils ceux de `COVERAGE_DEFAULTS`. Pour le régénérer : `node doc-regles.mjs`. Pour vérifier qu'il est à jour : `node doc-regles.mjs --verifier`.
 
-Au total : **116 règles de structure** (`S00`–`S115`), **8 règles de rédaction** (`L01`–`L08`), **10 conditions** à la porte de PR, **10** à la porte de release, **6 garde-fous** d'export, et les conditions calculées des portes de phase des cinq documents à phases.
+Au total : **117 règles de structure** (`S00`–`S116`), **8 règles de rédaction** (`L01`–`L08`), **10 conditions** à la porte de PR, **10** à la porte de release, **6 garde-fous** d'export, et les conditions calculées des portes de phase des cinq documents à phases.
 
 ## Comment lire une règle
 
@@ -462,7 +462,7 @@ Calculée par `release-matrix.mjs` depuis le plan figé et les rapports collect�
 
 Une exigence non prouvée se corrige, ou s'assume par une dérogation dans `waivers` — qui ne compte que si elle dit **pourquoi** et **qui l'a approuvée**. Le catalogue de règles ne vérifie pas cette étape (`S00`) : un état de tests se vérifie avec `release-matrix.mjs`.
 
-## Règles de structure communes aux quatre documents (27)
+## Règles de structure communes aux quatre documents (28)
 
 Elles s'appliquent au BRD, au PRD, à la conception et au plan. Les étapes 5 et 6 ne reçoivent pas ce catalogue.
 
@@ -495,6 +495,7 @@ Elles s'appliquent au BRD, au PRD, à la conception et au plan. Les étapes 5 et
 | `S112` | correction d'une source non reliée ou laissée sans relecture | déclarée comme correction d'elle-même : une correction vient d'un autre échange · corrigée par …, et pourtant déclarée « sans objet » en relecture : une source dont on sait que ce qu'on en avait compris était faux est la première à faire relire |
 | `S114` | coordonnée dans l'état versionné, ou canal annoncé sans coordonnée | `joignable_par` porte … : ce champ dit par quoi on la joint, pas avec quoi — l'état se commite et `freeze-version.mjs` en fige une copie sous `versions/`, d'où rien ne se reprend. La coordonnée va dans `contacts.yaml`, à côté de l'état, que `.gitignore` exclut · déclarée joignable par « … » et aucun `contacts.yaml` à côté de l'état : le canal est annoncé, la coordonnée n'existe nulle part — personne ne peut la joindre · déclarée joignable par « … », et `contacts.yaml` ne porte rien à son identifiant : le canal est annoncé, la coordonnée n'y est pas |
 | `S115` | sollicitation déclarée sans sa date ou sans son canal | porte une date de sollicitation et le statut « … » : la date ne se lit que sur « sollicitée », ailleurs elle donne l'air d'une question en vol qui n'en est pas une · déclarée « sollicitée » sans dire quand (`sollicitee_le`, AAAA-MM-JJ) : c'est toi qui écris le champ, et une sollicitation qu'on ne peut pas vérifier est une case cochée — sans la date elle compte comme si personne ne lui avait jamais écrit · déclarée « sollicitée » sans dire par quoi (`joignable_par`) : une question partie sans canal ne se relance pas, et personne ne sait où aller chercher la réponse · sollicitée le … sans dire sur quoi (`sollicitee_zone`) : au tour suivant, rien ne permet de savoir si sa réponse portait sur la question posée — et c'est à elle qu'on finit par demander de le deviner · porte `sollicitee_zone: …` sans date de départ (`sollicitee_le`) : une question qu'on dit partie sans dire quand ne se relance pas et ne compte pour rien · sollicitée sur …, qui est adressée à … (`ask_to`) : on lui a posé la question de quelqu'un d'autre, et sa réponse sera consignée comme si elle valait pour l'autre · déclarée « interrogée » et écrite le …, et aucune source ne la porte comme locutrice : le statut dit qu'elle a parlé, le dossier ne garde rien de ce qu'elle a dit · écrite le …, et aucune de ses … source(s) ne porte de date : on ne peut pas savoir si elle a répondu depuis — donc ni relancer, ni enchaîner. Date la source qui vient d'elle |
+| `S116` | indisponibilité déclarée sans dire laquelle | déclarée « non disponible » sans dire pourquoi (`indisponible_motif`) : le mot couvre quatre situations — elle n'a jamais répondu, elle a refusé, elle est absente, ou nous avons renoncé —, et seule la dernière est de notre faute. Les confondre efface celle qui nous concerne · porte un motif d'indisponibilité et le statut « … » : le motif ne se lit que sur « non disponible », ailleurs il donne l'air d'un renoncement qui n'a pas eu lieu · déclarée avoir refusé, et aucune source ne porte sa parole : un refus est ce qu'elle a dit, et ça se cite. Rapporté par un tiers, c'est une affirmation sur elle — consigne ses mots, ou dis que le refus est rapporté |
 
 ## Garde-fous de l'export (6)
 
@@ -631,3 +632,4 @@ Chaque règle, les étapes où elle s'applique, et la fonction du catalogue qui 
 | `S113` | 1 | utilisateur direct qu'aucun besoin ne concerne | `checkBrd` |
 | `S114` | 1, 2, 3, 4 | coordonnée dans l'état versionné, ou canal annoncé sans coordonnée | `contactFindings` |
 | `S115` | 1, 2, 3, 4 | sollicitation déclarée sans sa date ou sans son canal | `sollicitationFindings` |
+| `S116` | 1, 2, 3, 4 | indisponibilité déclarée sans dire laquelle | `sollicitationFindings` |

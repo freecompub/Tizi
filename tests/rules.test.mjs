@@ -744,6 +744,47 @@ test('S111 et S112 : « sans objet » porte sa raison, et une source peut en cor
 // Écrire à quelqu'un ne valait rien tant que `sollicitée` n'existait pas : il fallait la laisser
 // `à interroger`, donc rendre le même constat que si personne ne l'avait jamais contactée. Ce test
 // tient les trois états et, surtout, ce qui change et ce qui ne change pas quand la question est en vol.
+// `non disponible` couvrait quatre situations d'un seul mot, et la quatrième — NOUS avons renoncé — est
+// la seule qui soit de notre faute, donc celle qu'un mot unique cachait le mieux. Ce test tient les
+// deux propriétés qui empêchent le motif de devenir une sortie commode : renoncer n'éteint rien, et un
+// refus est la parole de la personne, pas une affirmation d'un tiers sur elle.
+test('S116 : renoncer se dit, et dit lequel des quatre', () => {
+  const sh = extra => ({ id: 'SH-01', name: 'Nadia', end_user: true, power: 'faible', impact: 'fort', influence: 'positive', quadrant: 'consulter', ...extra });
+  const etat = (extra, reste = {}) => checkState({ document: 'brd', phase: 'discover', stakeholders: [sh(extra)], ...reste });
+  const s116 = d => d.filter(f => f.rule === 'S116').map(f => f.message);
+
+  // Le statut sans la raison : une case cochée, comme `envoyé` sans date.
+  assert.match(s116(etat({ status: 'non disponible' }))[0], /sans dire pourquoi/);
+  // Les trois motifs qui ne demandent pas sa parole.
+  for (const motif of ['silence', 'absence', 'renoncement']) {
+    assert.deepEqual(s116(etat({ status: 'non disponible', indisponible_motif: motif })), [], motif);
+  }
+  // Le motif sous un statut qui ne le lit pas : il donne l'air d'un renoncement qui n'a pas eu lieu.
+  assert.match(s116(etat({ status: 'à interroger', indisponible_motif: 'silence' }))[0], /ne se lit que sur « non disponible »/);
+  // L'énumération, avec la convention de toutes les autres : `autre:<libellé>` ressort comme candidat.
+  assert.match(etat({ status: 'non disponible', indisponible_motif: 'parti à la retraite' }).find(f => f.rule === 'S88').message,
+    /motif d'indisponibilité « parti à la retraite » hors énumération/);
+  assert.deepEqual(s116(etat({ status: 'non disponible', indisponible_motif: 'autre:parti à la retraite' })), []);
+
+  // Un REFUS est sa parole. Sans aucune source où elle parle, c'est une affirmation d'un tiers sur
+  // elle — ce que S110 refuse pour une représentation et S90 pour une décision rendue en son nom.
+  assert.match(s116(etat({ status: 'non disponible', indisponible_motif: 'refus' }))[0], /un refus est ce qu'elle a dit, et ça se cite/);
+  // Ses mots consignés : plus rien à reprocher.
+  const avecSesMots = { sources: [{ id: 'SRC-1', type: 'échange écrit', date: '2026-11-01', stakeholders: ['SH-01'], quote: 'Je préfère ne pas répondre.', feedback: 'sans objet', feedback_motif: 'elle a refusé' }] };
+  assert.deepEqual(s116(etat({ status: 'non disponible', indisponible_motif: 'refus' }, avecSesMots)), []);
+
+  // Et la propriété qui empêche le motif d'être une sortie commode : RENONCER N'ÉTEINT RIEN. Sa voix
+  // manque toujours, et les règles qui le disaient continuent de le dire.
+  const besoins = { candidate_needs: [{ id: 'BC-1', text: 'Pouvoir …', concerns: ['SH-01'], sources: [{ ref: 'SRC-1' }] }],
+    sources: [{ id: 'SRC-1', type: 'entretien', date: '2026-10-01', stakeholders: ['SH-02'], quote: 'Elle fait la saisie.', feedback: 'confirmé' }],
+    stakeholders: [sh({ status: 'non disponible', indisponible_motif: 'renoncement' }),
+      { id: 'SH-02', status: 'interrogée', power: 'fort', impact: 'fort', influence: 'positive', quadrant: 'impliquer' }] };
+  const apresRenoncement = checkState({ document: 'brd', phase: 'discover', ...besoins });
+  assert.ok(apresRenoncement.some(f => f.rule === 'S83'), 'sa voix manque encore, et le dossier le dit');
+  assert.equal(apresRenoncement.find(f => f.rule === 'S83').pending, undefined, 'renoncer n\'est pas une question qui vit');
+  assert.deepEqual(apresRenoncement.filter(f => f.rule === 'S116'), [], 'et le renoncement lui-même est en règle');
+});
+
 test('S115 : « sollicitée » dit qu\'on a écrit, et sa date dit que la question vit', () => {
   const sh = extra => ({ id: 'SH-01', end_user: true, power: 'faible', impact: 'fort', influence: 'positive', quadrant: 'consulter', joignable_par: 'courriel', ...extra });
   // `sollicitee_zone` va avec la date : sans elle, chaque cas porterait en plus le constat sur la paire

@@ -206,6 +206,11 @@ const ENUMS = {
   // PAR QUOI on peut joindre quelqu'un, jamais AVEC QUOI : le canal, pas la coordonnée (S114).
   // `autre:<libellé>` couvre un canal nommé — un fil d'équipe, un outil interne.
   'canal de contact': { valeurs: ['vive voix', 'courriel', 'messagerie', 'téléphone'] },
+  // POURQUOI quelqu'un n'est pas joignable. `non disponible` couvrait quatre situations d'un seul mot :
+  // elle n'a jamais répondu ; elle a REFUSÉ, ce que notre propre message l'invite à faire ; elle est
+  // absente, en congé, partie ; ou NOUS avons renoncé pour nos raisons. La dernière est la seule où la
+  // faute est entièrement de notre côté, et c'est celle qu'un mot unique cachait le mieux.
+  'motif d\'indisponibilité': { valeurs: ['silence', 'refus', 'absence', 'renoncement'] },
 };
 // `phase-discover.md` : le quadrant d'implication SE DÉDUIT du pouvoir et de l'impact. Il ne s'affirme
 // pas — et `phase-govern.md` en fait un rôle de revue (« impliquer » → approbateur), donc une déduction
@@ -1670,6 +1675,30 @@ export function sollicitationFindings(s) {
       out.push({ rule: 'S115', id: sh.id, message: 'déclarée « sollicitée » sans dire par quoi (`joignable_par`) : une question partie sans canal ne se relance pas, et personne ne sait où aller chercher la réponse' });
     }
   }
+  // Renoncer sur quelqu'un se dit, et dit lequel des quatre. Même famille que `envoyé` sans date : c'est
+  // l'agent qui écrit le champ, et `non disponible` sans raison est une case cochée. Deux conséquences
+  // que le catalogue tient ailleurs et qu'il faut rappeler ici : le statut reste dans `NON_ENTENDU`,
+  // donc renoncer N'ÉTEINT RIEN — S94 et S83 continuent de dire que sa voix manque, parce qu'un choix
+  // de notre part n'est pas une réussite du dossier. Et un REFUS est lui-même une parole : si elle
+  // écrit « je préfère ne pas répondre », ce sont ses mots, et ils se consignent comme tels.
+  for (const sh of arr(s?.stakeholders)) {
+    const motif = String(sh.indisponible_motif ?? '').trim();
+    if (sh.status === 'non disponible' && !motif) {
+      out.push({ rule: 'S116', id: sh.id, message: 'déclarée « non disponible » sans dire pourquoi (`indisponible_motif`) : le mot couvre quatre situations — elle n\'a jamais répondu, elle a refusé, elle est absente, ou nous avons renoncé —, et seule la dernière est de notre faute. Les confondre efface celle qui nous concerne' });
+    }
+    if (!motif) continue;
+    if (sh.status !== 'non disponible') {
+      out.push({ rule: 'S116', id: sh.id, message: `porte un motif d'indisponibilité et le statut « ${sh.status ?? 'absent'} » : le motif ne se lit que sur « non disponible », ailleurs il donne l'air d'un renoncement qui n'a pas eu lieu` });
+      continue;
+    }
+    checkEnum(out, sh.id, 'motif d\'indisponibilité', motif);
+    // Un refus est SA parole, et une parole se cite. Sans aucune source où elle parle, « elle a refusé »
+    // est une affirmation d'un tiers sur elle — exactement ce que S110 refuse pour une représentation,
+    // et S90 pour une décision rendue en son nom.
+    if (motif === 'refus' && !arr(s?.sources).some(x => arr(x.stakeholders).includes(sh.id))) {
+      out.push({ rule: 'S116', id: sh.id, message: 'déclarée avoir refusé, et aucune source ne porte sa parole : un refus est ce qu\'elle a dit, et ça se cite. Rapporté par un tiers, c\'est une affirmation sur elle — consigne ses mots, ou dis que le refus est rapporté' });
+    }
+  }
   // `sollicitee_le` dit QUAND, `sollicitee_zone` dit QUOI. Les deux ou aucun : une sollicitation qui ne
   // dit pas ce qu'elle demandait est inexploitable au tour suivant — c'est ce qui forçait le message de
   // suite à dire « si c'est la même question que la dernière fois, c'est que j'ai mal lu votre réponse »,
@@ -1867,6 +1896,7 @@ export const STRUCT_RULES = {
   S113: 'utilisateur direct qu\'aucun besoin ne concerne',
   S114: 'coordonnée dans l\'état versionné, ou canal annoncé sans coordonnée',
   S115: 'sollicitation déclarée sans sa date ou sans son canal',
+  S116: 'indisponibilité déclarée sans dire laquelle',
   S01: 'objectif non mesurable', S02: 'exigence sans objectif', S03: 'exigence sans besoin sourcé', S04: 'exigence sans critère d\'acceptation',
   S05: 'priorité ou release manquante', S06: 'exigence sans origine', S07: 'Must sans scénario d\'erreur', S08: 'NFR incomplète',
   S09: 'référence inexistante', S10: 'référence vers un élément abandonné', S11: 'règle métier sans source', S12: 'règle sans niveau d\'application',

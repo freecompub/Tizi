@@ -90,6 +90,16 @@ stakeholders: []          # qui a parlé, et en quelle qualité — chaîné : r
 #                          # le silence de la personne devient une question qui VIT — les constats sur
 #                          # sa voix non entendue changent de liste au lieu de compter contre le dossier,
 #                          # et `review-sources.mjs --etat` dit depuis combien de jours elle est en vol
+#    indisponible_motif: ""  # POURQUOI elle n'est pas joignable, sur le statut « non disponible » et
+#                          # nulle part ailleurs (S116) : silence | refus | absence | renoncement |
+#                          # autre:<libellé>. Le mot seul couvrait quatre situations — elle n'a jamais
+#                          # répondu ; elle a REFUSÉ, ce que le message de sollicitation l'invite à
+#                          # faire ; elle est absente, en congé, partie ; ou NOUS avons renoncé pour
+#                          # nos raisons. La dernière est la seule qui soit de notre faute, et c'est
+#                          # celle qu'un mot unique cachait le mieux. Renoncer N'ÉTEINT RIEN : le
+#                          # statut reste « non entendue », donc S94 et S83 continuent de dire que sa
+#                          # voix manque — un choix de notre part n'est pas une réussite du dossier.
+#                          # Et un refus est SA parole : consigne ses mots en source avant de l'écrire
 #    sollicitee_zone: ""   # LA zone d'ombre sur laquelle la question est partie : ZO-xxx. Avec
 #                          # `sollicitee_le` — les deux ou aucun (S115). Sans elle, au tour suivant,
 #                          # rien ne dit si sa réponse portait sur la question posée : le message de
