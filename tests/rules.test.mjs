@@ -1094,6 +1094,60 @@ test('les mots de la personne se séparent de ce que le courrielleur ajoute', as
   assert.match(milieu.verbatim, /^Sent from my iPhone, ça explique/);
 });
 
+// Tizi est en français par choix, pour l'équipe. La personne au bout d'un canal n'est pas de l'équipe,
+// et sur le terrain de cet utilisateur les dossiers sont français ET arabes. Ce test tient la propriété
+// qui compte : le script n'est pas lié à une langue — ni à celle du dossier, ni au français.
+test('la langue de la personne n\'est pas celle du dossier, et le script ne traduit pas', async () => {
+  const { execFileSync } = await import('node:child_process');
+  const { writeFileSync } = await import('node:fs');
+  const dossier = (extra, shExtra) => {
+    const d = tempDir('tizi-langue');
+    writeFileSync(join(d, 'contacts.yaml'), 'SH-01: "nadia@exemple.fr"\n');
+    writeFileSync(join(d, 'state.yaml'), yaml.dump({
+      document: 'brd', phase: 'discover', initiative: { name: 'Dématérialiser les inscriptions', slug: 'demat' },
+      request: { requested_by: 'SH-02' },
+      stakeholders: [
+        { id: 'SH-01', name: 'Nadia', role: 'Agente', status: 'à interroger', joignable_par: 'courriel', end_user: true, power: 'faible', impact: 'fort', influence: 'positive', quadrant: 'consulter', ...shExtra },
+        { id: 'SH-02', name: 'Karim', role: 'Sponsor', status: 'interrogée', power: 'fort', impact: 'fort', influence: 'positive', quadrant: 'impliquer' }],
+      shadow_zones: [{ id: 'ZO-001', type: 'attendu_implicite', question: 'Qu\'est-ce qui vous fait perdre le plus de temps ?', ask_to: 'SH-01', status: 'ouverte' }],
+      ...extra,
+    }));
+    return join(d, 'state.yaml');
+  };
+  const lire = (etat) => JSON.parse(execFileSync('node', [join(SCRIPTS, 'reach-out.mjs'), etat, '--sh', 'SH-01', '--json'], { encoding: 'utf8' }));
+
+  // Par défaut, le dossier est en français et la personne en hérite : rien ne change.
+  const defaut = lire(dossier({}, {}));
+  assert.equal(defaut.langue, 'français');
+  assert.equal(defaut.meme_langue, true);
+  assert.match(defaut.message, /^Bonjour Nadia,/, 'le message composé reste celui de référence');
+
+  // Sa langue déclarée et différente : le script rend le CONTRAT, et le message de référence avec.
+  const arabe = lire(dossier({}, { langue: 'Arabe' }));
+  assert.equal(arabe.langue, 'arabe', 'normalisé, pour qu\'« Arabe » et « arabe » ne soient pas deux langues');
+  assert.equal(arabe.meme_langue, false);
+  assert.equal(arabe.obligatoire.length, 5, 'les cinq éléments d\'une première prise de contact');
+  // Et chaque élément porte SA RAISON : c'est ce qui permet de l'écrire dans une autre langue sans le
+  // trahir. Une liste de phrases à traduire se trahit ; une liste d'intentions, non.
+  for (const [quoi, pourquoi] of arabe.obligatoire) {
+    assert.ok(quoi && pourquoi, `l'élément « ${quoi} » n'a pas de raison`);
+  }
+  assert.match(arabe.obligatoire.map(x => x[0]).join(' | '), /qui écrit.*qu'elle est libre.*UNE question/);
+
+  // LA propriété qui prouve l'absence de couplage : un dossier en arabe dont une personne lit le
+  // FRANÇAIS doit se comporter pareil. Si le français était privilégié quelque part, c'est ici que
+  // ça se verrait — et c'est ici que la première version annonçait « version arabe » en montrant du
+  // français.
+  const inverse = lire(dossier({ langue: 'arabe' }, { langue: 'français' }));
+  assert.equal(inverse.langue, 'français');
+  assert.equal(inverse.meme_langue, false, 'le français n\'est pas un cas particulier');
+  assert.equal(inverse.obligatoire.length, 5);
+
+  // Et les deux emplacements se lisent, la racine l'emportant comme pour tous les autres réglages.
+  assert.equal(lire(dossier({ settings: { langue: 'arabe' } }, {})).meme_langue, true, 'sous settings');
+  assert.equal(lire(dossier({ langue: 'anglais', settings: { langue: 'arabe' } }, { langue: 'anglais' })).meme_langue, true, 'la racine gagne');
+});
+
 test('un message sortant ne parle qu\'en clair', () => {
   const brd = (extra = {}, zone = {}) => ({
     document: 'brd', phase: 'discover',

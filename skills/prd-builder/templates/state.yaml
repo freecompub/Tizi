@@ -75,6 +75,17 @@ stakeholders: []          # qui a parlé, et en quelle qualité — chaîné : r
 #                          # établi et plus rien ne la relit
 #    represented_by: ""    # l'inverse, sur la personne REPRÉSENTÉE : le SH-xx de qui répond pour elle
 #                          # (S94). Ça enregistre qui parle en son nom, ça ne vaut pas sa voix
+#    langue: ""            # la langue dans laquelle elle se lit et s'écrit, si ce n'est pas celle du
+#                          # dossier (`settings.langue`, « français » par défaut). Vide = celle du
+#                          # dossier, et c'est le cas courant. Tizi est en français par choix — ses
+#                          # skills, ses règles, ses documents, que l'ÉQUIPE lit. La personne au bout
+#                          # d'un canal n'est pas de l'équipe, et rien ne dit qu'elle lit le français.
+#                          # Renseigné et différent, `reach-out.mjs` ne traduit PAS : il énumère ce que
+#                          # le message doit dire et pourquoi, et l'agent écrit. Une déclaration de
+#                          # consentement mal traduite peut se tromper sur CE À QUOI elle consent, et
+#                          # c'est le seul endroit où l'échec n'est pas un dossier moins bon mais
+#                          # quelqu'un qui répond sans savoir à quoi. Ta version se fait relire par
+#                          # l'utilisateur avant l'envoi : c'est le seul contrôle disponible
 #    joignable_par: ""     # PAR QUOI on peut la joindre : vive voix | courriel | messagerie |
 #                          # téléphone | autre:<canal nommé>. Vide si on n'a pas de quoi la joindre —
 #                          # ne pas savoir est un fait, pas une faute, et rien ne le réclame.
@@ -353,6 +364,13 @@ prd_sections:             # à rédiger | proposé | validé
   metrics: à rédiger
   risks: à rédiger
   glossary: à rédiger
+
+langue: français            # la langue de CE dossier : celle dans laquelle l'équipe le lit et l'écrit.
+                            # Tizi est en français par choix, mais le défaut se déclare ici au lieu
+                            # d'être en dur dans les scripts, pour que le couplage soit visible et
+                            # surchargeable. Une partie prenante qui ne la lit pas porte sa propre
+                            # `langue` ; `reach-out.mjs` énumère alors ce que le message doit dire au
+                            # lieu de le traduire lui-même
 
 relance: {}                 # deux horloges, en jours, pour une question partie à quelqu'un et restée
                             # sans réponse : { signaler: 1, agir: 5 } par défaut. DIRE à l'utilisateur

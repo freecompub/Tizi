@@ -19,7 +19,7 @@
 // Usage : node reach-out.mjs <état.yaml> --sh SH-xx [--json]
 import { arr, loadState, fail, today, shLabel } from './lib/common.mjs';
 import { sollicitationEtat } from './lib/rules.mjs';
-import { nomClair, nomInitiative, joindre, paragraphes, refuseLesIdentifiants, AVERTISSEMENT_COMPTE, N_ENVOIE_RIEN } from './lib/outgoing.mjs';
+import { nomClair, nomInitiative, langueDe, langueDuDossier, joindre, paragraphes, refuseLesIdentifiants, AVERTISSEMENT_COMPTE, N_ENVOIE_RIEN } from './lib/outgoing.mjs';
 
 const JOUR_RE = /^\d{4}-\d{2}-\d{2}$/;
 const jours = d => Math.floor((Date.parse(today()) - Date.parse(d)) / 86400000);
@@ -180,6 +180,51 @@ const OBJETS = {
 };
 const objet = OBJETS[mode];
 
+// ── La langue de la personne ────────────────────────────────────────────────
+// Tizi est en français par choix, pour l'équipe. La personne au bout d'un canal n'est pas de l'équipe,
+// et rien ne dit qu'elle lit le français. Le texte ci-dessus est donc la version française DE RÉFÉRENCE
+// — celle qui a été écrite, relue et mesurée — et non « le » message.
+//
+// Si sa langue n'est pas celle du dossier, le script ne traduit pas. Deux raisons, et la seconde est la
+// vraie. D'abord parce qu'une déclaration de consentement mal traduite peut se tromper sur CE À QUOI
+// elle consent, et que c'est le seul endroit de ce chantier où l'échec n'est pas un dossier moins bon
+// mais quelqu'un qui répond sans savoir à quoi. Ensuite parce qu'un script qui rendrait une traduction
+// donnerait l'impression que la question est réglée, alors que personne n'aurait relu le résultat.
+//
+// Ce qu'il fait à la place : il énumère ce que le message DOIT dire, et pourquoi chaque élément existe.
+// C'est là toute sa valeur — empêcher qu'un élément obligatoire soit oublié —, et cette valeur ne
+// dépend d'aucune langue. L'agent écrit, l'utilisateur relit avant l'envoi.
+const OBLIGATOIRE = {
+  premiere: [
+    ['qui écrit', 'qu\'un agent logiciel écrit, pas un humain — et le compte d\'envoi porte peut-être un nom de personne, qui dira le contraire'],
+    ['pour quoi', `le travail de cadrage de « ${initiative} »${demandeur ? `, à la demande de ${demandeur}` : ''}`],
+    ['où va sa réponse', 'dans un dossier qu\'elle pourra relire, et on lui enverra ce qu\'on en a compris avant que ça serve'],
+    ['qu\'elle est libre', 'elle n\'a rien demandé ; elle peut ne pas répondre, ou demander à parler à quelqu\'un plutôt qu\'à un agent'],
+    ['UNE question', zone.question],
+  ],
+  suite: [
+    ['un remerciement', 'sa réponse précédente est consignée'],
+    ['UNE question de plus', zone.question],
+    ['le rappel de la relecture', 'elle relira ce qu\'on en aura compris avant que ça serve'],
+    ['la sortie', 'elle peut arrêter là, et il suffit de le dire'],
+  ],
+  reprise: [
+    ['que la faute est de notre côté', 'la question a été mal posée — pas mal répondue'],
+    ['LA MÊME question', zone.question],
+    ['l\'invitation à reformuler', 'dans ses mots, même en quelques mots'],
+    ['la redirection possible', 'si ce n\'est pas à elle qu\'il faut la poser, elle peut le dire — on la portera à qui de droit'],
+    ['la sortie', 'elle peut arrêter là'],
+  ],
+  relance: [
+    ['quand on a écrit', `le ${sh.sollicitee_le}, et qu\'on n\'a pas eu de retour — sans reproche`],
+    ['qu\'on ne relance qu\'une fois', 'au cas où le message serait passé inaperçu'],
+    ['LA MÊME question', zone.question],
+    ['qu\'on n\'insistera plus', 'si elle préfère ne pas répondre, il suffit de le dire'],
+  ],
+};
+const langue = langueDe(s, id);
+const memeLangue = langue === langueDuDossier(s);
+
 // Ce qu'il faudra écrire quand le message sera parti. En suite et en relance, le statut ne bouge pas :
 // elle a parlé, elle reste `interrogée`, et c'est la DATE qui porte l'attente. La repasser `sollicitée`
 // éteindrait faussement ce que sa voix avait fermé.
@@ -189,7 +234,48 @@ const sortie = {
     ? { status: 'sollicitée', sollicitee_le: today(), sollicitee_zone: zone.id, joignable_par: canal }
     : { sollicitee_le: today(), sollicitee_zone: zone.id },
 };
-if (args.includes('--json')) { console.log(JSON.stringify(sortie, null, 2)); process.exit(0); }
+if (args.includes('--json')) {
+  console.log(JSON.stringify({ ...sortie, langue, meme_langue: memeLangue, obligatoire: OBLIGATOIRE[mode] }, null, 2));
+  process.exit(0);
+}
+
+// Sa langue n'est pas celle du dossier : on rend le contrat, pas une traduction.
+if (!memeLangue) {
+  console.log([
+    `${mode === 'premiere' ? 'Première prise de contact' : mode} — à ${shLabel(s, id)}, par ${canal} — ${adresse}`,
+    `Zone visée : ${zone.id} · sa langue : ${langue} (celle du dossier : ${langueDuDossier(s)})`,
+    '',
+    `CE MESSAGE EST À ÉCRIRE EN ${langue.toUpperCase()}, et ce script ne le fait pas.`,
+    'Il ne traduit pas, pour deux raisons. Une déclaration de consentement mal traduite peut se tromper',
+    'sur CE À QUOI la personne consent — c\'est le seul endroit de ce travail où l\'échec n\'est pas un',
+    'dossier moins bon, mais quelqu\'un qui répond sans savoir à quoi. Et un script qui rendrait une',
+    'traduction donnerait l\'impression que la question est réglée, alors que personne ne l\'aurait relue.',
+    '',
+    `── Ce que le message doit dire, et pourquoi (${OBLIGATOIRE[mode].length} éléments) ──`,
+    ...OBLIGATOIRE[mode].flatMap(([quoi, pourquoi]) => [`  ${quoi}`, `      ${pourquoi}`]),
+    '── Fin ──',
+    '',
+    'Une seule question, comme partout : la règle ne s\'assouplit pas avec la langue.',
+    'Et aucun identifiant interne — ni `SH-`, ni `ZO-`, ni `BC-` : elle n\'a pas l\'index sous les yeux.',
+    '',
+    // Les gabarits de ce script sont écrits en français, et le dire est plus honnête que d'annoncer
+    // « version <langue du dossier> » en montrant du français — ce que faisait la première version, et
+    // qui ne s'est vu qu'en essayant un dossier en arabe dont une personne lit le français.
+    '── Version française de référence (la langue de ce script), pour ce qu\'elle dit et l\'ordre où elle le dit ──',
+    message,
+    '── Fin ──',
+    '',
+    `FAIS RELIRE TA VERSION ${langue.toUpperCase()} PAR L'UTILISATEUR AVANT L'ENVOI. Tu ne peux pas vérifier`,
+    'toi-même qu\'une déclaration écrite dans une langue dit bien ce qu\'elle doit dire : c\'est le seul',
+    'contrôle disponible, et il appartient à un humain. Si tu n\'écris pas cette langue avec assez de',
+    'sûreté pour une déclaration de consentement, dis-le à l\'utilisateur plutôt que d\'essayer.',
+    '',
+    N_ENVOIE_RIEN, '', AVERTISSEMENT_COMPTE,
+    '',
+    `Objet proposé, à traduire aussi : ${objet}`,
+  ].join('\n'));
+  process.exit(0);
+}
 
 const TITRE = { premiere: 'Première prise de contact', suite: 'Suite du fil',
   reprise: `Reprise de ${zone.id} — elle a répondu, la question est restée ouverte`,
