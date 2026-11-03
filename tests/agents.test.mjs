@@ -88,12 +88,16 @@ test('capture de session : transcriptions Claude Code et Copilot', () => {
   // Une notification de tâche arrive par le canal « utilisateur » : ce n'est pas une parole.
   assert.doesNotMatch(claude, /task-notification/, 'enveloppe de l\'hôte comptée comme parole');
 
-  // Les questions en texte libre portent leur tour, sans leur markdown, et un tour qui en porte
-  // plusieurs est signalé : une question ouverte se pose seule.
+  // Les questions en texte libre sortent sans leur markdown, chacune avec ce qu'elle a reçu, et un
+  // message qui en porte plusieurs est signalé : une question ouverte se pose seule.
   const libres = claude.split('### En texte libre')[1].split('##')[0];
-  assert.match(libres, /- \(tour \d+\) Et pour finir : qu'est-ce qui change/, 'markdown non retiré, ou tour non attribué');
-  assert.match(libres, /- \(tour \d+\) Et qui s'en aperçoit le premier \?/, 'citation non nettoyée');
-  assert.match(claude, /tour\(s\) portent plus d'une question en texte libre/, 'questions ouvertes groupées non signalées');
+  assert.match(libres, /- Et pour finir : qu'est-ce qui change/, 'markdown non retiré');
+  assert.match(libres, /- Et qui s'en aperçoit le premier \?/, 'citation non nettoyée');
+  // Aucune n'a reçu de réponse dans cette transcription, et chacune le dit : le numéro de tour ne sort
+  // plus de l'extrait — il comptait les réponses de l'agent, que le document ne numérote pas.
+  assert.doesNotMatch(libres, /\(tour \d+\)/, 'le numéro de tour de l\'agent désigne une échelle absente du document');
+  assert.equal(libres.match(/_Sans réponse : fin de session/g)?.length, 4, 'une question sans réponse ne dit pas qu\'elle n\'en a pas');
+  assert.match(claude, /message\(s\) de l'agent portent plus d'une question en texte libre/, 'questions ouvertes groupées non signalées');
   // Côté Copilot, aucun événement ne relie un résultat à son appel : la question est conservée, sa
   // réponse ne l'est pas. Mieux vaut une question sans réponse qu'une réponse sans question.
   const copilot = extracts.find(e => e.includes('US-002'));
