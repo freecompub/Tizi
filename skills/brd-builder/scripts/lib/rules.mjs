@@ -128,10 +128,23 @@ const FEEDBACK_FAIT = ['confirmé', 'corrigé', 'sans objet'];
 // une question qui vit, pas un trou. Mais une demande qu'on DIT partie sans dire quand ne se vérifie
 // pas, et c'est l'agent qui écrit le champ : d'où trois états, et le troisième tient à la date.
 const JOUR = /^\d{4}-\d{2}-\d{2}$/;
-export const feedbackEtat = src => {
+// `s` est optionnel et c'est volontaire : sans lui, l'attente ne se périme pas, et tous les appelants du
+// dépôt le passent. La raison de la périmer est celle du jumeau `sollicitationEtat` — une demande de
+// relecture partie il y a six semaines ne vit plus, elle est oubliée, et la faire passer pour vivante
+// est le mensonge que les trois états existaient pour éviter. Les deux seuils sont les mêmes :
+// `relance: { signaler, agir }`.
+//
+// Ce que la mesure prouve, et ce qu'elle ne prouve pas. Le seul dossier réel disponible porte
+// 84 sources dont ZÉRO en `envoyé` — 74 `à envoyer`, 10 `sans objet` — donc la péremption n'y produit
+// aucun constat. Le « 93 sources passées à envoyé+date » du commit qui a créé ces trois états venait du
+// DEUXIÈME dossier réel, qui n'est plus là : je n'ai pas pu mesurer sur lui. L'absence d'impact est donc
+// établie sur un dossier où le champ n'est pas utilisé, pas sur un dossier qui s'en sert.
+export const feedbackEtat = (src, s) => {
   if (FEEDBACK_FAIT.includes(src?.feedback)) return 'fait';
-  if (src?.feedback === 'envoyé' && JOUR.test(String(src?.feedback_le ?? '').trim())) return 'attente';
-  return 'absent';
+  if (src?.feedback !== 'envoyé') return 'absent';
+  const le = String(src?.feedback_le ?? '').trim();
+  if (!JOUR.test(le)) return 'absent';
+  return !s || joursDepuis(le) <= seuilsRelance(s).agir ? 'attente' : 'absent';
 };
 // Exactement symétrique de `feedbackEtat`, et pour la même raison. Tant qu'il n'y avait que
 // `à interroger | interrogée | non disponible`, « je lui ai écrit le 21, elle n'a pas encore
@@ -500,13 +513,13 @@ export function checkBrd(s) {
     const vu = confirmes(s);
     if (ids.length && !vu.has(b.id) && !arr(b.from_needs).some(n => vu.has(n))) {
       const lot = ids.map(id => srcs.get(id)).filter(Boolean);
-      const etats = lot.map(feedbackEtat);
+      const etats = lot.map(x => feedbackEtat(x, s));
       // Une seule relecture faite suffit — c'est la règle d'origine. Sinon, le lot est soit en attente
       // (au moins une demande partie et datée), soit muet. Les deux ne se disent pas pareil : la
       // première est une question qu'on a posée, la seconde une question qu'on n'a pas posée.
       if (!etats.includes('fait')) {
         const attente = etats.includes('attente');
-        const sansDate = lot.filter(x => x.feedback === 'envoyé' && feedbackEtat(x) === 'absent').map(x => x.id);
+        const sansDate = lot.filter(x => x.feedback === 'envoyé' && !JOUR.test(String(x.feedback_le ?? '').trim())).map(x => x.id);
         out.push({ rule: 'S84', id: b.id, ...(attente ? { pending: true } : {}),
           message: attente
             ? 'exigence validée sur des sources dont la relecture est partie et pas encore revenue (`feedback: envoyé`) : la question vit, elle n\'est pas encore tranchée'
@@ -771,7 +784,7 @@ export function checkPrd(s) {
       // PRD depuis toujours, et `S84` ne vivait que dans `checkBrd` — invisible au garde-fou, qui lisait
       // `rules.mjs` en entier alors qu'il est copié dans quatre skills.
       const src = srcs.get(f.origin);
-      const etat = src ? feedbackEtat(src) : 'fait';
+      const etat = src ? feedbackEtat(src, s) : 'fait';
       if (etat !== 'fait' && !confirmes(s).has(f.id)) {
         out.push({ rule: 'S84', id: f.id, ...(etat === 'attente' ? { pending: true } : {}),
           message: etat === 'attente'

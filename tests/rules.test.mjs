@@ -266,7 +266,7 @@ test('S84 : trois états — une demande partie n\'est pas une demande jamais fa
   const s84 = src => checkState(etat(src)).filter(f => f.rule === 'S84');
 
   // Partie et datée : la question vit. Non mesurée — ni tenue, ni en échec.
-  const attente = s84({ feedback: 'envoyé', feedback_le: '2026-10-21' });
+  const attente = s84({ feedback: 'envoyé', feedback_le: ilYA(2) });
   assert.equal(attente.length, 1);
   assert.equal(attente[0].pending, true, 'une relecture partie et datée est comptée comme un trou');
   assert.match(attente[0].message, /pas encore tranchée/);
@@ -292,9 +292,9 @@ test('S84 : trois états — une demande partie n\'est pas une demande jamais fa
     stakeholders: [{ id: 'SH-01', name: 'x', role: 'r', status: 'interrogée' }],
     functional_requirements: [{ id: 'FR-001', statement: 'Le système doit lister les dossiers', origin: 'SRC-001' }],
   }).filter(f => f.rule === 'S84');
-  const enVol = prdS84({ feedback: 'envoyé', feedback_le: '2026-10-21' });
+  const enVol = prdS84({ feedback: 'envoyé', feedback_le: ilYA(2) });
   assert.equal(enVol[0].pending, true);
-  assert.match(enVol[0].message, /partie le 2026-10-21/);
+  assert.match(enVol[0].message, new RegExp(`partie le ${ilYA(2)}`), 'le constat dit QUAND, pas seulement qu\'elle est partie');
   assert.ok(!prdS84({ feedback: 'envoyé' })[0].pending);
 });
 
@@ -987,11 +987,11 @@ test('le retour de synthèse part par le canal, et ce n\'est pas le fichier en p
 
   // Et une relecture déjà partie ne se redemande pas : ce serait deux demandes d'un coup, et la
   // deuxième brouille la première.
-  const dixEnVol = dossier(douze.map((x, i) => (i < 10 ? { ...x, feedback: 'envoyé', feedback_le: '2026-11-01' } : x)));
+  const dixEnVol = dossier(douze.map((x, i) => (i < 10 ? { ...x, feedback: 'envoyé', feedback_le: ilYA(1) } : x)));
   const apres = JSON.parse(lance(dixEnVol, ['--sh', 'SH-01', '--message', '--json']));
   assert.deepEqual(apres.sources, ['SRC-011', 'SRC-012'], 'les dix en vol sont écartées');
   // Tout en vol : il n'y a rien à envoyer, et le dire vaut mieux que relancer.
-  const toutEnVol = dossier(douze.map(x => ({ ...x, feedback: 'envoyé', feedback_le: '2026-11-01' })));
+  const toutEnVol = dossier(douze.map(x => ({ ...x, feedback: 'envoyé', feedback_le: ilYA(1) })));
   assert.match(refus(toutEnVol, ['--sh', 'SH-01', '--message']), /déjà parties et attendent sa réponse/);
   // Tout relu : rien à renvoyer non plus.
   const toutRelu = dossier(douze.map(x => ({ ...x, feedback: 'confirmé' })));

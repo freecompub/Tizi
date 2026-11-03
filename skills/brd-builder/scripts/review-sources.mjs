@@ -42,7 +42,7 @@ if (args.includes('--etat')) {
   const FAIT = ['confirmé', 'corrigé'];
   const rows = locuteurs.map(id => {
     const src = sourcesDe(id);
-    const attente = src.filter(x => feedbackEtat(x) === 'attente');
+    const attente = src.filter(x => feedbackEtat(x, s) === 'attente');
     // La plus vieille des demandes en vol : c'est elle qui dit s'il est temps de relancer.
     const age = attente.length ? Math.max(...attente.map(x => jours(x.feedback_le))) : null;
     return [shLabel(s, id), src.length, src.filter(x => dit(x)).length,
@@ -88,8 +88,17 @@ if (args.includes('--etat')) {
   const sansRaison = sansObjet.filter(x => !String(x.feedback_motif ?? '').trim());
   if (sansObjet.length) console.log(`${sansObjet.length} source(s) de parole recueillie déclarée(s) « sans objet » : elles éteignent le contrôle de relecture sans qu'un relevé soit parti${sansRaison.length ? `, et ${sansRaison.length} sans dire pourquoi (\`feedback_motif\`, S111) : ${sansRaison.map(x => x.id).join(', ')}` : ''}.`);
   // « Envoyé » sans date ne se vérifie pas et ne se relance pas : c'est une case cochée, pas un fait.
-  const sansDate = arr(s.sources).filter(x => x.feedback === 'envoyé' && feedbackEtat(x) !== 'attente');
+  // Le test porte sur la DATE, pas sur l'état : depuis que l'attente se périme, `feedbackEtat` rend
+  // « absent » aussi bien pour une demande sans date que pour une demande datée mais oubliée. Les
+  // confondre ferait dire « sans date de départ » à une source qui en porte une, et un relevé qui se
+  // trompe sur ce qu'il reproche est pire qu'un relevé muet.
+  const sansDate = arr(s.sources).filter(x => x.feedback === 'envoyé' && !/^\d{4}-\d{2}-\d{2}$/.test(String(x.feedback_le ?? '').trim()));
   if (sansDate.length) console.log(`${sansDate.length} source(s) dites envoyées sans date de départ (\`feedback_le\`) : ${sansDate.slice(0, 8).map(x => x.id).join(', ')}${sansDate.length > 8 ? '…' : ''} — on ne sait pas s'il faut relancer (S84).`);
+  // Et les demandes datées que personne ne suit plus : même seuil que pour une question posée à
+  // quelqu'un, parce que c'est la même chose — une question partie et laissée sans décision.
+  const { agir } = seuilsRelance(s);
+  const oubliees = arr(s.sources).filter(x => x.feedback === 'envoyé' && /^\d{4}-\d{2}-\d{2}$/.test(String(x.feedback_le ?? '').trim()) && jours(x.feedback_le) > agir);
+  if (oubliees.length) console.log(`${oubliees.length} relecture(s) parties depuis plus de ${agir} j et jamais revenues : ${oubliees.slice(0, 8).map(x => `${x.id} (${jours(x.feedback_le)} j)`).join(', ')}${oubliees.length > 8 ? '…' : ''}. Au-delà du seuil elles cessent de compter comme des questions qui vivent : relance, ou dis que la relecture n'aura pas lieu (\`sans objet\` avec son motif).`);
   process.exit(0);
 }
 
@@ -136,8 +145,8 @@ if (args.includes('--message')) {
   // Ce qui RESTE à faire relire : ni déjà relu, ni déjà en vol. Une relecture en attente ne se
   // redemande pas — ce serait deux demandes d'un coup, et la deuxième brouille la première.
   const FAIT_DEJA = ['confirmé', 'corrigé', 'sans objet'];
-  const enVol = avecVerbatim.filter(x => feedbackEtat(x) === 'attente');
-  const reste = avecVerbatim.filter(x => !FAIT_DEJA.includes(x.feedback) && feedbackEtat(x) !== 'attente')
+  const enVol = avecVerbatim.filter(x => feedbackEtat(x, s) === 'attente');
+  const reste = avecVerbatim.filter(x => !FAIT_DEJA.includes(x.feedback) && feedbackEtat(x, s) !== 'attente')
     .sort((a, b) => String(a.date ?? '').localeCompare(String(b.date ?? '')));
   if (!reste.length) {
     fail(enVol.length
