@@ -2,7 +2,7 @@
 // Génère `documentation/regles-de-controle.md` : toutes les règles de contrôle, étape par étape.
 //
 // Ce document SE GÉNÈRE. C'est la doctrine du dossier appliquée au dossier lui-même : « un document
-// qui part se génère, il ne se rédige pas » (references/questions.md). Une liste de 117 règles écrite
+// qui part se génère, il ne se rédige pas » (references/questions.md). Une liste de cent et quelques règles écrite
 // à la main dérive au premier chantier — et une liste de règles qui dérive est pire qu'une absence de
 // liste, parce qu'on la croit. Rien n'est recopié ici : les énoncés sont ceux du catalogue, les
 // conditions de porte celles de `lib/gates.mjs`, les seuils ceux de `COVERAGE_DEFAULTS`.
@@ -223,7 +223,7 @@ const h = (n, t) => out.push(`${'#'.repeat(n)} ${t}`, '');
 const p = t => out.push(t, '');
 
 h(1, "Règles de contrôle, étape par étape");
-p("**Ce document est généré par `doc-regles.mjs`. Ne le modifie pas à la main.** Une liste de 117 règles écrite à la main dérive au premier changement du catalogue, et une liste qui dérive est pire qu'une absence de liste : on la croit. Les énoncés ci-dessous sont ceux du catalogue (`skills/*/scripts/lib/rules.mjs`), les conditions de porte celles de `lib/gates.mjs`, les seuils ceux de `COVERAGE_DEFAULTS`. Pour le régénérer : `node doc-regles.mjs`. Pour vérifier qu'il est à jour : `node doc-regles.mjs --verifier`.");
+p(`**Ce document est généré par \`doc-regles.mjs\`. Ne le modifie pas à la main.** Une liste de ${codes.length + TEXT_RULES.length} règles écrite à la main dérive au premier changement du catalogue, et une liste qui dérive est pire qu'une absence de liste : on la croit. Les énoncés ci-dessous sont ceux du catalogue (\`skills/*/scripts/lib/rules.mjs\`), les conditions de porte celles de \`lib/gates.mjs\`, les seuils ceux de \`COVERAGE_DEFAULTS\`. Pour le régénérer : \`node doc-regles.mjs\`. Pour vérifier qu'il est à jour : \`node doc-regles.mjs --verifier\`.`);
 p(`Au total : **${codes.length} règles de structure** (\`S00\`–\`S${maxCode}\`), **${TEXT_RULES.length} règles de rédaction** (\`L01\`–\`L0${TEXT_RULES.length}\`), **${PORTE_PR.length} conditions** à la porte de PR, **${PORTE_RELEASE.length}** à la porte de release, **${GARDE_FOUS.length} garde-fous** d'export, et les conditions calculées des portes de phase des cinq documents à phases.`);
 
 h(2, "Comment lire une règle");

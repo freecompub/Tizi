@@ -1,8 +1,8 @@
 # Règles de contrôle, étape par étape
 
-**Ce document est généré par `doc-regles.mjs`. Ne le modifie pas à la main.** Une liste de 117 règles écrite à la main dérive au premier changement du catalogue, et une liste qui dérive est pire qu'une absence de liste : on la croit. Les énoncés ci-dessous sont ceux du catalogue (`skills/*/scripts/lib/rules.mjs`), les conditions de porte celles de `lib/gates.mjs`, les seuils ceux de `COVERAGE_DEFAULTS`. Pour le régénérer : `node doc-regles.mjs`. Pour vérifier qu'il est à jour : `node doc-regles.mjs --verifier`.
+**Ce document est généré par `doc-regles.mjs`. Ne le modifie pas à la main.** Une liste de 122 règles écrite à la main dérive au premier changement du catalogue, et une liste qui dérive est pire qu'une absence de liste : on la croit. Les énoncés ci-dessous sont ceux du catalogue (`skills/*/scripts/lib/rules.mjs`), les conditions de porte celles de `lib/gates.mjs`, les seuils ceux de `COVERAGE_DEFAULTS`. Pour le régénérer : `node doc-regles.mjs`. Pour vérifier qu'il est à jour : `node doc-regles.mjs --verifier`.
 
-Au total : **109 règles de structure** (`S00`–`S108`), **8 règles de rédaction** (`L01`–`L08`), **10 conditions** à la porte de PR, **10** à la porte de release, **6 garde-fous** d'export, et les conditions calculées des portes de phase des cinq documents à phases.
+Au total : **114 règles de structure** (`S00`–`S113`), **8 règles de rédaction** (`L01`–`L08`), **10 conditions** à la porte de PR, **10** à la porte de release, **6 garde-fous** d'export, et les conditions calculées des portes de phase des cinq documents à phases.
 
 ## Comment lire une règle
 
@@ -79,7 +79,7 @@ Un passage de porte s'écrit dans `phase_log` — la phase qui se clôt, celle q
 - chaque zone d'ombre assumée dit pourquoi
 - aucun avertissement ni corrigé ni dérogé (lint.mjs)
 
-### Règles de structure de l'étape 1 (34)
+### Règles de structure de l'étape 1 (35)
 
 Hors celles qui portent sur les quatre documents, listées plus bas. La dernière colonne dit quand une règle vaut aussi ailleurs — son énoncé y est souvent différent.
 
@@ -110,15 +110,16 @@ Hors celles qui portent sur les quatre documents, listées plus bas. La dernièr
 | `S84` | exigence jamais relue par la source | exigence validée sur des sources dont aucune n'a été relue par la personne interrogée (`feedback`) : ce qui a été compris n'a jamais été vérifié auprès d'elle | aussi étape 2 |
 | `S86` | provenance d'initiative incomplète ou hors énumération | provenance sans initiative d'origine (derived_from.initiative) : elle ne désigne personne · provenance sans la décision qui l'a produite (derived_from.decision) : DD-xx chez la mère, ou sa décision d'opportunité · provenance sans raison (derived_from.reason) : … \| autre:<libellé> · raison de provenance « … » hors énumération : … \| autre:<libellé> · « autre » sans libellé : dire qu'il y a une provenance sans dire laquelle passe pour rempli · provenance « … » hors énumération, et nommée : candidate à devenir une valeur de derived_from.reason · repris par « … » mais de statut … : un besoin qui part est hors_périmètre ici | — |
 | `S87` | présent sans avoir parlé | présent… mais locuteur d'aucune source : être dans la pièce n'est pas avoir parlé, et le silence n'est pas un accord | aussi étape 2 |
-| `S88` | valeur hors énumération ou « autre » sans libellé | … « … » hors énumération : … · … « … » sans libellé : un genre qu'on ne nomme pas passe pour renseigné · … « … » hors énumération, et nommé : candidat à devenir une valeur | aussi étape 2, 3 |
 | `S89` | droit de décision sans décideur ou confirmé par lui-même | domaine « … » déclaré sans décideur · « … » confirmé par son propre décideur : s'attribuer le droit de trancher n'est pas une confirmation, elle revient au sponsor · « … » attribué sans confirmation (confirmed_by) : l'attribution se valide par le sponsor, pas par celui qui en bénéficie · recours identique au décideur sur « … » : un recours vers soi-même n'en est pas un · personne ne tranche « … » : la fin de Discover en demande un décideur au moins pour le périmètre, les objectifs et les priorités | — |
 | `S90` | décision rendue au nom de quelqu'un qu'on n'a pas entendu | … au nom de …, que l'état déclare « … » : elle est rapportée par un tiers, pas rendue | aussi étape 2 |
 | `S91` | locuteur absent de la salle qu'il a fait parler | … est locuteur de cette source mais absent de « present » : on ne parle pas depuis l'extérieur de la pièce — « present » est la salle entière, silencieux ET locuteurs | aussi étape 2 |
 | `S92` | quadrant d'implication affirmé au lieu d'être déduit | quadrant « … » affirmé alors que pouvoir (…) × impact (…) ne le donne pas : il se déduit, il ne s'affirme pas — laisse-le vide et pose la question · quadrant « … » alors que pouvoir … × impact … donne « … » · quadrant absent alors que pouvoir … × impact … le donne (« … ») : la gouvernance en tire un rôle de revue | — |
 | `S93` | influence inconnue à fort pouvoir, sans attitude notée | fort pouvoir, influence inconnue et aucune attitude notée : le sens dans lequel elle pèsera est la seule appréciation qui ne se déduit pas — elle se demande, et son absence est une zone d'ombre | — |
-| `S94` | représentation non déclarée, ou tenue pour une voix | déclarée représentée par elle-même : la représentation désigne quelqu'un d'autre · représentée par … et jamais entendue, sans qu'aucune zone ouverte ne la nomme : une représentation dit qui répond pour elle, elle ne remplace pas sa voix · jamais entendue et aucune représentation déclarée, alors qu'une autre partie prenante se dit représentante d'un groupe : si c'est d'elle qu'il s'agit, dis-le en `represented_by` | aussi étape 2 |
+| `S94` | représentation non déclarée, ou tenue pour une voix | déclarée représentée par elle-même : la représentation désigne quelqu'un d'autre · représentée par … et jamais entendue : une zone ouverte la nomme, mais aucune ne lui est adressée (`ask_to`) — une question sur quelqu'un n'est pas une question à quelqu'un · représentée par … et jamais entendue, sans qu'aucune zone ouverte ne lui soit adressée : une représentation dit qui répond pour elle, elle ne remplace pas sa voix · jamais entendue et aucune représentation déclarée, alors qu'une autre partie prenante se dit représentante d'un groupe : si c'est d'elle qu'il s'agit, dis-le en `represented_by` | aussi étape 2 |
 | `S95` | besoin sans porteur, ou porté par une voix jamais entendue | ne dit pas de qui il est le besoin (`concerns`) : un besoin sans porteur se défend tout seul en revue · besoin de …, dont aucune source recueillie ne porte la voix : il est formulé pour quelqu'un qu'on n'a pas entendu | — |
 | `S97` | hypothèse à vérifier sans moyen de vérification | à vérifier, sans dire comment (`verification`) : une hypothèse dont le moyen n'est pas écrit ne se priorise pas, et attend la session où quelqu'un y repense | — |
+| `S110` | représentation sans la source où elle se dit | déclaré représentant de « … » sans dire où il le dit (`represents_source`) : une représentation se lit dans une source, sinon elle se déduit — et une déduction fausse fait parler quelqu'un au nom d'un groupe qui ne l'a pas mandaté · représentation de « … » appuyée sur …, où il n'est pas locuteur : ce qu'un tiers dit de lui ne le mandate pas — cite la source où il le dit lui-même | aussi étape 2 |
+| `S113` | utilisateur direct qu'aucun besoin ne concerne | utilisateur direct qu'aucun besoin candidat ne concerne (`concerns`) : soit un besoin manque, soit l'usage direct n'en est pas un | — |
 
 ### Métriques de couverture et seuils par défaut
 
@@ -200,10 +201,10 @@ Hors celles qui portent sur les quatre documents, listées plus bas. La dernièr
 | `S84` | exigence jamais relue par la source | exigence tirée de …, que la personne interrogée n'a jamais relue (`feedback`) : ce qui a été compris n'a pas été vérifié auprès d'elle | aussi étape 1 |
 | `S85` | motif EARS absent ou désaccordé | exigence sans motif EARS (`pattern`) : … (`references/ears.md`) · motif « … » inconnu : … · motif « … » déclaré, mais l'énoncé ne porte pas … : l'un des deux est faux · déclarée invariante, mais l'énoncé porte la forme … : un invariant n'a pas de condition | — |
 | `S87` | présent sans avoir parlé | présent… mais locuteur d'aucune source : être dans la pièce n'est pas avoir parlé, et le silence n'est pas un accord | aussi étape 1 |
-| `S88` | valeur hors énumération ou « autre » sans libellé | … « … » hors énumération : … · … « … » sans libellé : un genre qu'on ne nomme pas passe pour renseigné · … « … » hors énumération, et nommé : candidat à devenir une valeur | aussi étape 1, 3 |
 | `S90` | décision rendue au nom de quelqu'un qu'on n'a pas entendu | … au nom de …, que l'état déclare « … » : elle est rapportée par un tiers, pas rendue | aussi étape 1 |
 | `S91` | locuteur absent de la salle qu'il a fait parler | … est locuteur de cette source mais absent de « present » : on ne parle pas depuis l'extérieur de la pièce — « present » est la salle entière, silencieux ET locuteurs | aussi étape 1 |
-| `S94` | représentation non déclarée, ou tenue pour une voix | déclarée représentée par elle-même : la représentation désigne quelqu'un d'autre · représentée par … et jamais entendue, sans qu'aucune zone ouverte ne la nomme : une représentation dit qui répond pour elle, elle ne remplace pas sa voix · jamais entendue et aucune représentation déclarée, alors qu'une autre partie prenante se dit représentante d'un groupe : si c'est d'elle qu'il s'agit, dis-le en `represented_by` | aussi étape 1 |
+| `S94` | représentation non déclarée, ou tenue pour une voix | déclarée représentée par elle-même : la représentation désigne quelqu'un d'autre · représentée par … et jamais entendue : une zone ouverte la nomme, mais aucune ne lui est adressée (`ask_to`) — une question sur quelqu'un n'est pas une question à quelqu'un · représentée par … et jamais entendue, sans qu'aucune zone ouverte ne lui soit adressée : une représentation dit qui répond pour elle, elle ne remplace pas sa voix · jamais entendue et aucune représentation déclarée, alors qu'une autre partie prenante se dit représentante d'un groupe : si c'est d'elle qu'il s'agit, dis-le en `represented_by` | aussi étape 1 |
+| `S110` | représentation sans la source où elle se dit | déclaré représentant de « … » sans dire où il le dit (`represents_source`) : une représentation se lit dans une source, sinon elle se déduit — et une déduction fausse fait parler quelqu'un au nom d'un groupe qui ne l'a pas mandaté · représentation de « … » appuyée sur …, où il n'est pas locuteur : ce qu'un tiers dit de lui ne le mandate pas — cite la source où il le dit lui-même | aussi étape 1 |
 
 ### Métriques de couverture et seuils par défaut
 
@@ -260,7 +261,7 @@ Un passage de porte s'écrit dans `phase_log` — la phase qui se clôt, celle q
 - chaque zone d'ombre assumée dit pourquoi
 - aucun avertissement ni corrigé ni dérogé (lint.mjs)
 
-### Règles de structure de l'étape 3 (20)
+### Règles de structure de l'étape 3 (19)
 
 Hors celles qui portent sur les quatre documents, listées plus bas. La dernière colonne dit quand une règle vaut aussi ailleurs — son énoncé y est souvent différent.
 
@@ -285,7 +286,6 @@ Hors celles qui portent sur les quatre documents, listées plus bas. La dernièr
 | `S36` | remplacé sans remplaçant | élément remplacé sans remplaçant désigné | — |
 | `S55` | mesure de sécurité sans contrôle de référence | mesure sans contrôle de référence (…) | — |
 | `S71` | ADR sans règle | ADR accepté sans divergence empêchée : que feraient différemment deux parties construites sans lui ? · ADR accepté sans règle vérifiable : la décision ne guidera ni un développeur ni un agent | — |
-| `S88` | valeur hors énumération ou « autre » sans libellé | … « … » hors énumération : … · … « … » sans libellé : un genre qu'on ne nomme pas passe pour renseigné · … « … » hors énumération, et nommé : candidat à devenir une valeur | aussi étape 1, 2 |
 
 ### Métriques de couverture et seuils par défaut
 
@@ -462,14 +462,14 @@ Calculée par `release-matrix.mjs` depuis le plan figé et les rapports collect�
 
 Une exigence non prouvée se corrige, ou s'assume par une dérogation dans `waivers` — qui ne compte que si elle dit **pourquoi** et **qui l'a approuvée**. Le catalogue de règles ne vérifie pas cette étape (`S00`) : un état de tests se vérifie avec `release-matrix.mjs`.
 
-## Règles de structure communes aux quatre documents (21)
+## Règles de structure communes aux quatre documents (25)
 
 Elles s'appliquent au BRD, au PRD, à la conception et au plan. Les étapes 5 et 6 ne reçoivent pas ce catalogue.
 
 | Code | Objet | Ce que dit le constat |
 |---|---|---|
 | `S00` | document hors du catalogue | document « … » : ce catalogue vérifie …, et rien d'autre — un état d'implémentation se vérifie avec pr-gate.mjs et trace-check.mjs, un état de tests avec release-matrix.mjs |
-| `S09` | référence inexistante | représentée par « … », qui n'est pas une partie prenante connue · guide d'entretien pour …, qui n'est pas dans la cartographie · source déclarée comme confirmation de …, qui n'existe pas |
+| `S09` | référence inexistante | représentée par « … », qui n'est pas une partie prenante connue · représentation appuyée sur …, qui n'existe pas dans les sources · guide d'entretien pour …, qui n'est pas dans la cartographie · déclarée comme correction de …, qui n'existe pas dans les sources · source déclarée comme confirmation de …, qui n'existe pas |
 | `S53` | handoff amont altéré | empreinte du handoff non relevée à l'ingestion (lancer verify-handoff.mjs et reporter sha256 dans l'état) · handoff ingéré introuvable · le handoff a changé depuis l'ingestion : relancer l'ingestion et faire le point sur les écarts · ; |
 | `S54` | seuil de couverture non atteint | … : … % pour un seuil de … % (manquent : …) ; corriger, ou déclarer une dérogation dans `waivers` avec sa raison et son approbateur |
 | `S68` | espace réservé resté | espace réservé resté dans … : « … » |
@@ -477,6 +477,7 @@ Elles s'appliquent au BRD, au PRD, à la conception et au plan. Les étapes 5 et
 | `S70` | fiche de contexte trop longue | fiche de contexte à ≈ … tokens pour un budget de … : au-delà, l'agent qui implémente perd en précision. Découper la tâche, ou alléger la story |
 | `S79` | constitution | principe inconnu de la constitution · la constitution compte … principe(s) actif(s) : dire lesquels s'appliquent à cette initiative (liste vide si aucun) · conception en gouvernance sans vérification de la constitution après conception · conflit avec un principe inconnu · conflit avec … sans résolution : corriger la conception, ou dérogation enregistrée (constitution.mjs --deroger), ou amendement |
 | `S80` | liste de contrôle de relecture | … : coché sans relecteur nommé (« — <nom> » en fin de ligne) ; l'agent ne coche jamais · … : écarté sans relecteur ni raison (« — <nom> : raison ») · … point(s) de relecture non traité(s) avant la gouvernance |
+| `S88` | valeur hors énumération ou « autre » sans libellé | … « … » hors énumération : … · … « … » sans libellé : un genre qu'on ne nomme pas passe pour renseigné · … « … » hors énumération, et nommé : candidat à devenir une valeur |
 | `S96` | guide d'entretien pour quelqu'un qui est dans la salle | guide d'entretien pour …, qui a depuis parlé dans … source(s), et aucune ne vient de ce fichier : l'entretien s'est fait ailleurs, le guide n'a rien reçu et ne porte rien que les zones d'ombre n'aient. Retire-le, et réécris la prochaine action |
 | `S98` | relecteur ou approbateur jamais entendu | … que l'état déclare « … » : une revue demande si le document est fidèle à ce qu'on a dit, et cette personne n'a rien dit. Interroge-la d'abord, ou passe-la en « informé » — sinon son silence devient une approbation |
 | `S99` | cycle de revue sans échéance, ou retour non tranché | cycle de revue envoyé sans échéance : sans date, un cycle ne se clôt pas — il s'interrompt quand quelqu'un s'impatiente · … commentaire(s) de revue sans décision (…) alors que le document est approuvé ou figé : un retour qu'on n'a pas tranché n'est pas un retour qu'on a traité |
@@ -489,6 +490,9 @@ Elles s'appliquent au BRD, au PRD, à la conception et au plan. Les étapes 5 et
 | `S106` | dérogation de seuil sans raison ou sans approbateur | dérogation de seuil sur « … » qui ne dit pas … : une dérogation nommée porte sa raison ET son approbateur, sinon c'est un silence qui éteint une mesure |
 | `S107` | ancien nom de champ pour les seuils ou les dérogations | `…` est l'ancien nom : les seuils et les dérogations s'écrivent dans `…`, au niveau de l'état, pour les cinq documents. L'ancien nom reste lu — rien ne casse — mais deux noms pour la même chose finissent par porter deux valeurs différentes |
 | `S108` | construit sur un handoff amont qui n'était pas une baseline | construit sur un handoff du … qui n'était pas une baseline (…) : « intègre » veut dire « non altéré », pas « approuvé ». Faire figer le document amont et régénérer son handoff, ou nommer la dérogation |
+| `S109` | risque consigné sans être apprécié | risque consigné sans être apprécié (… vide…) : un risque sans vraisemblance ni ampleur ne se priorise pas — et vide ne veut pas dire faible, ça veut dire non apprécié · risque validé sans piste de traitement (`response`) : accepter un risque sans dire ce qu'on en fait le laisse à l'état d'inquiétude consignée |
+| `S111` | relecture « sans objet » sur une parole, sans raison | relecture déclarée « sans objet » sur une source de type « … » sans dire pourquoi (`feedback_motif`) : c'est la seule valeur qui éteint S84 sans que personne n'ait rien relu |
+| `S112` | correction d'une source non reliée ou laissée sans relecture | déclarée comme correction d'elle-même : une correction vient d'un autre échange · corrigée par …, et pourtant déclarée « sans objet » en relecture : une source dont on sait que ce qu'on en avait compris était faux est la première à faire relire |
 
 ## Garde-fous de l'export (6)
 
@@ -518,7 +522,7 @@ Chaque règle, les étapes où elle s'applique, et la fonction du catalogue qui 
 | `S06` | 2 | exigence sans origine | `checkPrd` |
 | `S07` | 2 | Must sans scénario d'erreur | `checkPrd` |
 | `S08` | 2 | NFR incomplète | `checkPrd` |
-| `S09` | 1, 2, 3, 4 | référence inexistante | `checkPlan`, `checkPrd`, `checkRepresentation`, `checkSad`, `confirmationFindings`, `interviewFindings` |
+| `S09` | 1, 2, 3, 4 | référence inexistante | `checkPlan`, `checkPrd`, `checkRepresentation`, `checkSad`, `confirmationFindings`, `interviewFindings`, `relectureFindings` |
 | `S10` | 1, 2 | référence vers un élément abandonné | `deadRefs` |
 | `S11` | 1 | règle métier sans source | `checkBrd` |
 | `S12` | 1 | règle sans niveau d'application | `checkBrd` |
@@ -597,7 +601,7 @@ Chaque règle, les étapes où elle s'applique, et la fonction du catalogue qui 
 | `S85` | 2 | motif EARS absent ou désaccordé | `checkPrd` |
 | `S86` | 1 | provenance d'initiative incomplète ou hors énumération | `checkBrd` |
 | `S87` | 1, 2 | présent sans avoir parlé | `checkSources` |
-| `S88` | 1, 2, 3 | valeur hors énumération ou « autre » sans libellé | `checkEnum` |
+| `S88` | 1, 2, 3, 4 | valeur hors énumération ou « autre » sans libellé | `checkEnum` |
 | `S89` | 1 | droit de décision sans décideur ou confirmé par lui-même | `checkBrd` |
 | `S90` | 1, 2 | décision rendue au nom de quelqu'un qu'on n'a pas entendu | `rendueParAbsent` |
 | `S91` | 1, 2 | locuteur absent de la salle qu'il a fait parler | `checkSources` |
@@ -618,3 +622,8 @@ Chaque règle, les étapes où elle s'applique, et la fonction du catalogue qui 
 | `S106` | 1, 2, 3, 4 | dérogation de seuil sans raison ou sans approbateur | `coverageFindings` |
 | `S107` | 1, 2, 3, 4 | ancien nom de champ pour les seuils ou les dérogations | `coverageFindings` |
 | `S108` | 1, 2, 3, 4 | construit sur un handoff amont qui n'était pas une baseline | `upstreamFindings` |
+| `S109` | 1, 2, 3, 4 | risque consigné sans être apprécié | `riskFindings` |
+| `S110` | 1, 2 | représentation sans la source où elle se dit | `checkRepresentation` |
+| `S111` | 1, 2, 3, 4 | relecture « sans objet » sur une parole, sans raison | `relectureFindings` |
+| `S112` | 1, 2, 3, 4 | correction d'une source non reliée ou laissée sans relecture | `relectureFindings` |
+| `S113` | 1 | utilisateur direct qu'aucun besoin ne concerne | `checkBrd` |

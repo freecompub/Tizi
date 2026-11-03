@@ -149,6 +149,11 @@ const ENUMS = {
   pouvoir: { valeurs: ['fort', 'faible', 'inconnu'] },
   influence: { valeurs: ['positive', 'négative', 'neutre', 'inconnue'] },
   quadrant: { valeurs: ['impliquer', 'satisfaire', 'consulter', 'informer'] },
+  // Les deux échelles d'appréciation d'un risque. Elles portent des noms distincts de l'`impact` de la
+  // cartographie, qui n'a pas la même échelle (`fort | faible | inconnu`) et ne mesure pas la même chose :
+  // là, à quel point le changement touche quelqu'un ; ici, ce que coûterait le risque s'il se produisait.
+  vraisemblance: { valeurs: ['faible', 'moyenne', 'forte'] },
+  'ampleur du risque': { valeurs: ['faible', 'moyen', 'fort'] },
 };
 // `phase-discover.md` : le quadrant d'implication SE DÉDUIT du pouvoir et de l'impact. Il ne s'affirme
 // pas — et `phase-govern.md` en fait un rôle de revue (« impliquer » → approbateur), donc une déduction
@@ -192,17 +197,43 @@ const rendueParAbsent = (out, s, shs, id, qui, quoi) => {
 // SH-xx. `represented_by` est le champ inverse, sur la personne représentée. Et il ne ferme rien : une
 // représentation enregistre qui répond pour quelqu'un, elle ne remplace pas un utilisateur direct
 // (`phase-discover.md` point 4, et S83).
-const nommeeDansUneZone = (s, id) => arr(s.shadow_zones).some(z => z.status === 'ouverte' && (z.ask_to === id || arr(z.related).includes(id)));
+// Une zone qui la NOMME suffisait à fermer S94. Au troisième dossier réel, l'utilisatrice directe du
+// futur système — celle qui fait la saisie des dossiers, `end_user: true`, jamais entendue, déclarée
+// représentée par le directeur — était nommée dans une seule zone ouverte : « combien de personnes
+// font la saisie ? », posée AU DIRECTEUR, elle en `related`. Une question sur quelqu'un n'est pas une
+// question à quelqu'un : sa voix restait non entendue, aucune question ne lui était adressée, et la
+// règle se taisait. C'est `ask_to` qui dit à qui on demande.
+const interrogeeDansUneZone = (s, id) => arr(s.shadow_zones).some(z => z.status === 'ouverte' && z.ask_to === id);
+const citeeDansUneZone = (s, id) => arr(s.shadow_zones).some(z => z.status === 'ouverte' && arr(z.related).includes(id));
 const checkRepresentation = (s, out, shs, { endUsersSeuls }) => {
   const porte = arr(s.stakeholders).some(sh => String(sh.represents ?? '').trim());
   for (const sh of arr(s.stakeholders)) {
     const par = sh.represented_by;
     if (par && !shs.has(par)) out.push({ rule: 'S09', id: sh.id, message: `représentée par « ${par} », qui n'est pas une partie prenante connue` });
     else if (par === sh.id) out.push({ rule: 'S94', id: sh.id, message: 'déclarée représentée par elle-même : la représentation désigne quelqu\'un d\'autre' });
+    // `represents` n'avait qu'un lecteur, S94, et seulement comme test de présence : rien n'exigeait
+    // qu'une représentation repose sur quelque chose. Au troisième dossier réel, un représentant des
+    // parents d'élèves s'est trouvé enregistré représentant « des membres du bureau » — déduit de la
+    // dernière proposition d'un tour de table où trois personnes se présentent à la file et où le « je »
+    // final revient grammaticalement à lui. Rien ne pouvait le voir : la valeur était renseignée, donc
+    // conforme, et c'est passé devant l'utilisateur par hasard, dans une question posée à l'outil. Une
+    // représentation fausse coûte plus cher qu'une absente : elle fait répondre quelqu'un au nom d'un
+    // groupe qui ne l'a pas mandaté. D'où la source — et d'où la condition qu'il y ait parlé : une
+    // représentation déduite des mots d'un tiers n'est pas déclarée, elle est supposée.
+    const groupe = String(sh.represents ?? '').trim();
+    if (groupe) {
+      const ref = String(sh.represents_source ?? '').trim();
+      const src = ref && arr(s.sources).find(x => x.id === ref);
+      if (!ref) out.push({ rule: 'S110', id: sh.id, message: `déclaré représentant de « ${groupe} » sans dire où il le dit (\`represents_source\`) : une représentation se lit dans une source, sinon elle se déduit — et une déduction fausse fait parler quelqu'un au nom d'un groupe qui ne l'a pas mandaté` });
+      else if (!src) out.push({ rule: 'S09', id: sh.id, message: `représentation appuyée sur ${ref}, qui n'existe pas dans les sources` });
+      else if (!arr(src.stakeholders).includes(sh.id)) out.push({ rule: 'S110', id: sh.id, message: `représentation de « ${groupe} » appuyée sur ${ref}, où il n'est pas locuteur : ce qu'un tiers dit de lui ne le mandate pas — cite la source où il le dit lui-même` });
+    }
     const concerne = endUsersSeuls ? sh.end_user : true;
     if (!concerne || !NON_ENTENDU.includes(sh.status)) continue;
-    if (par && shs.has(par) && par !== sh.id && !nommeeDansUneZone(s, sh.id)) {
-      out.push({ rule: 'S94', id: sh.id, message: `représentée par ${par} et jamais entendue, sans qu'aucune zone ouverte ne la nomme : une représentation dit qui répond pour elle, elle ne remplace pas sa voix` });
+    if (par && shs.has(par) && par !== sh.id && !interrogeeDansUneZone(s, sh.id)) {
+      out.push({ rule: 'S94', id: sh.id, message: citeeDansUneZone(s, sh.id)
+        ? `représentée par ${par} et jamais entendue : une zone ouverte la nomme, mais aucune ne lui est adressée (\`ask_to\`) — une question sur quelqu'un n'est pas une question à quelqu'un`
+        : `représentée par ${par} et jamais entendue, sans qu'aucune zone ouverte ne lui soit adressée : une représentation dit qui répond pour elle, elle ne remplace pas sa voix` });
     }
     if (!par && porte) {
       out.push({ rule: 'S94', id: sh.id, message: 'jamais entendue et aucune représentation déclarée, alors qu\'une autre partie prenante se dit représentante d\'un groupe : si c\'est d\'elle qu\'il s\'agit, dis-le en `represented_by`' });
@@ -519,6 +550,19 @@ export function checkBrd(s) {
     }
   }
   checkRepresentation(s, out, shs, { endUsersSeuls: true });
+  // S95 part du besoin et demande de qui il est. L'inverse n'avait pas de lecteur : un utilisateur
+  // direct qu'AUCUN besoin ne concerne. Au troisième dossier réel, celle qui fait la saisie — le geste
+  // même que le changement remplace — n'était nommée dans les `concerns` d'aucun des huit besoins,
+  // alors que deux d'entre eux portent sur des professeurs qui ne recopieront plus ce qu'elle recopie.
+  // Rien à vérifier avant Define : les besoins s'y forment encore. À Define, un utilisateur direct sans
+  // besoin est soit un besoin qui manque, soit un usage direct qui n'en est pas un — et les deux se
+  // tranchent, aucun ne se laisse vide.
+  if (['define', 'govern'].includes(s.phase)) {
+    const portes = new Set(arr(s.candidate_needs).filter(live).flatMap(b => arr(b.concerns)));
+    for (const sh of arr(s.stakeholders).filter(x => x.end_user && !portes.has(x.id))) {
+      out.push({ rule: 'S113', id: sh.id, message: 'utilisateur direct qu\'aucun besoin candidat ne concerne (`concerns`) : soit un besoin manque, soit l\'usage direct n\'en est pas un' });
+    }
+  }
   // Une hypothèse BRD n'avait aucun champ pour dire COMMENT la trancher : `text`, `basis`, `status`. Au
   // deuxième dossier réel, les huit hypothèses ouvertes portaient le moyen dans leur `basis`, en prose
   // — « l'historique des remboursements, que le comptable détient, permettrait de le vérifier sans
@@ -1402,6 +1446,9 @@ export function phaseFindings(s) {
 // échoué — « SRC-004 : aucun relevé écrit pour cette source ». Après un effacement de contexte, 93.
 // Le constat porte sur la collection : nommer 92 sources une par une ne se lit pas.
 const PAROLE = ['cadrage', 'entretien', 'atelier', 'revue', 'décision'];
+// Les sources où quelqu'un a PARLÉ et où ce qu'on en a tiré est une interprétation. `décision` en est
+// retirée : une décision de l'utilisateur est son propre dernier mot, on ne la lui fait pas relire.
+const RECUEIL_DE_PAROLE = PAROLE.filter(t => t !== 'décision');
 export function sourceContentFindings(s) {
   const toutes = arr(s.sources);
   // `note` est le nom que porte déjà le contenu dans le modèle de la conception : on n'impose pas un
@@ -1425,6 +1472,64 @@ function elementsIndex(s) {
   }
   return idx;
 }
+// Un risque porte trois champs d'appréciation depuis l'origine — `likelihood`, `impact`, `response` —
+// et AUCUNE règle, dans aucun des quatre documents, ne les lisait. `risks` n'avait qu'un seul lecteur,
+// S19, qui vérifie qu'un opposant puissant en a un, pas ce qu'il dit. Au troisième dossier réel, les
+// quatre risques étaient écrits avec soin — un texte long et juste, une origine, les éléments liés — et
+// les trois champs vides sur les quatre. Un risque sans vraisemblance ni ampleur ne se priorise pas, et
+// vide ne veut pas dire faible : ça veut dire non apprécié. Sans piste de traitement, un risque validé
+// est une inquiétude consignée. Et ces risques sont les porteurs désignés des zones d'ombre assumées :
+// un porteur creux rend la zone au silence qu'elle devait quitter.
+export function riskFindings(s) {
+  const out = [];
+  for (const r of arr(s?.risks).filter(live)) {
+    const id = r.id ?? 'risks';
+    const manque = [];
+    if (!String(r.likelihood ?? '').trim()) manque.push('`likelihood`');
+    if (!String(r.impact ?? '').trim()) manque.push('`impact`');
+    if (manque.length) {
+      out.push({ rule: 'S109', id, message: `risque consigné sans être apprécié (${manque.join(' et ')} vide${manque.length > 1 ? 's' : ''}) : un risque sans vraisemblance ni ampleur ne se priorise pas — et vide ne veut pas dire faible, ça veut dire non apprécié` });
+    }
+    checkEnum(out, id, 'vraisemblance', r.likelihood);
+    checkEnum(out, id, 'ampleur du risque', r.impact);
+    if (isValid(r) && !String(r.response ?? '').trim()) {
+      out.push({ rule: 'S109', id, message: 'risque validé sans piste de traitement (`response`) : accepter un risque sans dire ce qu\'on en fait le laisse à l\'état d\'inquiétude consignée' });
+    }
+  }
+  return out;
+}
+
+// `sans objet` sur le retour à la source veut dire « il n'y a rien à faire relire ici ». Sur un document
+// ou une mesure, c'est vrai sans qu'on l'écrive. Sur une décision de l'utilisateur aussi : il ne se fait
+// pas relire son propre choix. Sur un échange où quelqu'un a parlé, c'est une affirmation — et elle dit
+// que la synthèse qu'on en a tirée ne sera jamais vérifiée auprès de la personne. Au troisième dossier
+// réel, dix sources portaient `sans objet` : six décisions, légitimes, et quatre cadrages, dont le tour
+// de table qui contenait la phrase mal attribuée ET la source qui l'a corrigée. C'est la seule valeur
+// qui éteint S84 sans que personne n'ait rien relu : elle reste permise, et elle porte sa raison.
+//
+// `corrects` est l'autre moitié. `confirms` pointe vers des ÉLÉMENTS — BC, BR, RG — jamais vers une
+// source : rien ne menait du tour de table à l'échange qui en a corrigé la lecture, et qui lira le
+// premier dans six mois n'a aucun chemin vers le second. Une source corrigée est par définition la
+// première à faire relire : la déclarer « sans objet » se contredit.
+export function relectureFindings(s) {
+  const out = [];
+  const srcs = new Map(arr(s?.sources).map(x => [x.id, x]));
+  for (const src of arr(s?.sources)) {
+    if (src.feedback === 'sans objet' && RECUEIL_DE_PAROLE.includes(src.type) && !String(src.feedback_motif ?? '').trim()) {
+      out.push({ rule: 'S111', id: src.id, message: `relecture déclarée « sans objet » sur une source de type « ${src.type} » sans dire pourquoi (\`feedback_motif\`) : c'est la seule valeur qui éteint S84 sans que personne n'ait rien relu` });
+    }
+    for (const ref of arr(src.corrects)) {
+      if (ref === src.id) { out.push({ rule: 'S112', id: src.id, message: 'déclarée comme correction d\'elle-même : une correction vient d\'un autre échange' }); continue; }
+      const cible = srcs.get(ref);
+      if (!cible) { out.push({ rule: 'S09', id: src.id, message: `déclarée comme correction de ${ref}, qui n'existe pas dans les sources` }); continue; }
+      if (cible.feedback === 'sans objet') {
+        out.push({ rule: 'S112', id: ref, message: `corrigée par ${src.id}, et pourtant déclarée « sans objet » en relecture : une source dont on sait que ce qu'on en avait compris était faux est la première à faire relire` });
+      }
+    }
+  }
+  return out;
+}
+
 export function confirmationFindings(s) {
   const out = [];
   const idx = elementsIndex(s);
@@ -1561,7 +1666,7 @@ export function checkState(s, ctx = {}) {
     return [{ rule: 'S00', id: 'document', message: `document « ${doc} » : ce catalogue vérifie ${DOCUMENTS.join(', ')}, et rien d'autre — un état d'implémentation se vérifie avec pr-gate.mjs et trace-check.mjs, un état de tests avec release-matrix.mjs` }];
   }
   const base = doc === 'plan' ? checkPlan(s, refs) : doc === 'sad' ? checkSad(s) : doc === 'prd' ? checkPrd(s) : checkBrd(s);
-  const all = [...base, ...placeholderFindings(s), ...unsourcedNumberFindings(s), ...constitutionFindings(s, ctx.constitution), ...checklistFindings(s, ctx.checklists), ...interviewFindings(s, ctx.interviews), ...outgoingFindings(s, [...fichiersDe(ctx.interviews), ...fichiersDe(ctx.checklists)]), ...governanceFindings(s), ...coverageFindings(s, refs), ...phaseFindings(s), ...sourceContentFindings(s), ...confirmationFindings(s), ...handoffFindings(ctx.handoffs), ...upstreamFindings(s, refs), ...contextFindings(ctx.cards, s.settings?.context_budget)];
+  const all = [...base, ...placeholderFindings(s), ...unsourcedNumberFindings(s), ...constitutionFindings(s, ctx.constitution), ...checklistFindings(s, ctx.checklists), ...interviewFindings(s, ctx.interviews), ...outgoingFindings(s, [...fichiersDe(ctx.interviews), ...fichiersDe(ctx.checklists)]), ...governanceFindings(s), ...coverageFindings(s, refs), ...phaseFindings(s), ...sourceContentFindings(s), ...confirmationFindings(s), ...riskFindings(s), ...relectureFindings(s), ...handoffFindings(ctx.handoffs), ...upstreamFindings(s, refs), ...contextFindings(ctx.cards, s.settings?.context_budget)];
   const idx = waiverIndex(s);
   return all.map(f => {
     const raison = idx.get(`${f.id}|${f.rule}`);
@@ -1580,6 +1685,9 @@ export const STRUCT_RULES = {
   S105: 'seuil qui éteint une mesure sans dérogation nommée', S106: 'dérogation de seuil sans raison ou sans approbateur',
   S107: 'ancien nom de champ pour les seuils ou les dérogations',
   S108: 'construit sur un handoff amont qui n\'était pas une baseline',
+  S109: 'risque consigné sans être apprécié', S110: 'représentation sans la source où elle se dit',
+  S111: 'relecture « sans objet » sur une parole, sans raison', S112: 'correction d\'une source non reliée ou laissée sans relecture',
+  S113: 'utilisateur direct qu\'aucun besoin ne concerne',
   S01: 'objectif non mesurable', S02: 'exigence sans objectif', S03: 'exigence sans besoin sourcé', S04: 'exigence sans critère d\'acceptation',
   S05: 'priorité ou release manquante', S06: 'exigence sans origine', S07: 'Must sans scénario d\'erreur', S08: 'NFR incomplète',
   S09: 'référence inexistante', S10: 'référence vers un élément abandonné', S11: 'règle métier sans source', S12: 'règle sans niveau d\'application',

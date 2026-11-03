@@ -517,13 +517,23 @@ test('S94 : la représentation s\'écrit, et elle ne vaut pas une voix', () => {
   assert.equal(ferme.length, 1, JSON.stringify(ferme));
   assert.match(ferme[0].message, /elle ne remplace pas sa voix/);
 
-  // Déclarée, et la zone sur sa voix reste ouverte : c'est la bonne tenue.
-  const tenu = checkState({
+  // Déclarée, et la zone sur sa voix lui est ADRESSÉE : c'est la bonne tenue.
+  const zone = z => checkState({
     document: 'brd', phase: 'discover', candidate_needs: [{ id: 'BC-1' }],
     stakeholders: [rep, { id: 'SH-06', status: 'à interroger', end_user: true, represented_by: 'SH-01' }],
-    shadow_zones: [{ id: 'ZO-01', type: 'partie_prenante_non_entendue', status: 'ouverte', ask_to: 'SH-01', related: ['SH-06'] }],
+    shadow_zones: [{ id: 'ZO-01', type: 'partie_prenante_non_entendue', status: 'ouverte', ...z }],
   });
-  assert.equal(s94(tenu).length, 0, JSON.stringify(s94(tenu)));
+  assert.equal(s94(zone({ ask_to: 'SH-06' })).length, 0, JSON.stringify(s94(zone({ ask_to: 'SH-06' }))));
+
+  // Ce cas-là était écrit ici comme la bonne tenue, et c'était le défaut : la zone la NOMME, mais elle
+  // est posée à son représentant. Une question sur quelqu'un n'est pas une question à quelqu'un — et
+  // c'est exactement la forme qu'a prise le troisième dossier réel, « combien de personnes font la
+  // saisie ? » posée au directeur, l'intéressée en `related`.
+  const surElle = s94(zone({ ask_to: 'SH-01', related: ['SH-06'] }));
+  assert.equal(surElle.length, 1, JSON.stringify(surElle));
+  assert.match(surElle[0].message, /une zone ouverte la nomme, mais aucune ne lui est adressée/);
+  // Et quand rien ne la nomme non plus, le constat ne prétend pas qu'une zone existe.
+  assert.match(s94(zone({ ask_to: 'SH-01' }))[0].message, /sans qu'aucune zone ouverte ne lui soit adressée/);
 
   // Un représentant de lui-même, et un représentant qui n'existe pas.
   assert.match(s94(carte([rep, { id: 'SH-06', status: 'à interroger', end_user: true, represented_by: 'SH-06' }]))[0].message, /par elle-même/);
@@ -533,6 +543,136 @@ test('S94 : la représentation s\'écrit, et elle ne vaut pas une voix', () => {
   const seuls = s94(carte([{ id: 'SH-01', status: 'interrogée', end_user: true, power: 'faible', impact: 'fort', influence: 'positive', quadrant: 'consulter' },
     { id: 'SH-06', status: 'à interroger', end_user: true }]));
   assert.equal(seuls.length, 0, JSON.stringify(seuls));
+});
+
+// `represents` n'avait qu'un lecteur, S94, et seulement comme test de présence. Au troisième dossier
+// réel, un représentant des parents d'élèves s'est trouvé enregistré représentant « des membres du
+// bureau » : la valeur était renseignée, donc conforme, et c'est passé devant l'utilisateur par hasard.
+test('S110 : une représentation se lit dans une source où la personne parle', () => {
+  const etat = (sh, sources = []) => checkState({ document: 'brd', phase: 'discover', candidate_needs: [{ id: 'BC-1' }],
+    stakeholders: [{ id: 'SH-01', status: 'interrogée', end_user: true, power: 'faible', impact: 'fort', influence: 'positive', quadrant: 'consulter', ...sh }], sources });
+  const s110 = d => d.filter(f => f.rule === 'S110');
+
+  // Rien à signaler sans représentation : la règle ne réclame pas un champ qu'on n'a pas rempli.
+  assert.deepEqual(s110(etat({})), []);
+
+  // Affirmée, sans dire où.
+  const nu = s110(etat({ represents: 'les parents d\'élèves' }));
+  assert.equal(nu.length, 1, JSON.stringify(nu));
+  assert.match(nu[0].message, /sans dire où il le dit/);
+
+  // La source citée n'existe pas : c'est une référence morte, pas une représentation sans source.
+  const mort = etat({ represents: 'les parents', represents_source: 'SRC-099' });
+  assert.deepEqual(s110(mort), []);
+  assert.ok(mort.some(f => f.rule === 'S09' && /n'existe pas dans les sources/.test(f.message)), JSON.stringify(mort));
+
+  // La source existe, mais il n'y est pas locuteur : ce qu'un tiers dit de lui ne le mandate pas.
+  const tiers = s110(etat({ represents: 'les parents', represents_source: 'SRC-001' },
+    [{ id: 'SRC-001', type: 'cadrage', stakeholders: ['SH-02'], quote: 'Samir parle pour les parents', feedback: 'confirmé' }]));
+  assert.equal(tiers.length, 1, JSON.stringify(tiers));
+  assert.match(tiers[0].message, /où il n'est pas locuteur/);
+
+  // Il le dit lui-même : rien à signaler.
+  assert.deepEqual(s110(etat({ represents: 'les parents', represents_source: 'SRC-001' },
+    [{ id: 'SRC-001', type: 'cadrage', stakeholders: ['SH-01'], quote: 'je représente les parents d\'élèves', feedback: 'confirmé' }])), []);
+});
+
+// Trois champs d'appréciation depuis l'origine, aucun lecteur dans aucun des quatre documents. Au
+// troisième dossier réel, quatre risques écrits avec soin et les trois champs vides sur les quatre.
+test('S109 : un risque consigné s\'apprécie, et vide ne veut pas dire faible', () => {
+  const etat = (r, doc = 'brd') => checkState({ document: doc, phase: doc === 'brd' ? 'define' : 'govern', risks: [{ id: 'R-01', text: 'une échéance ferme', ...r }] });
+  const s109 = d => d.filter(f => f.rule === 'S109');
+
+  const vide = s109(etat({ status: 'proposé' }));
+  assert.equal(vide.length, 1, JSON.stringify(vide));
+  assert.deepEqual(vide[0].id, 'R-01');
+  assert.match(vide[0].message, /`likelihood` et `impact` vides/);
+  assert.match(vide[0].message, /vide ne veut pas dire faible/);
+
+  // Un seul des deux manque : le constat nomme celui qui manque, au singulier.
+  assert.match(s109(etat({ likelihood: 'forte', status: 'proposé' }))[0].message, /\(`impact` vide\) /);
+
+  // Apprécié, et proposé : `response` n'est pas encore due — un risque se jauge avant de se traiter.
+  assert.deepEqual(s109(etat({ likelihood: 'forte', impact: 'fort', status: 'proposé' })), []);
+
+  // Validé sans piste de traitement : ce qu'on accepte sans dire ce qu'on en fait reste une inquiétude.
+  const sansReponse = s109(etat({ likelihood: 'forte', impact: 'fort', status: 'validé' }));
+  assert.equal(sansReponse.length, 1, JSON.stringify(sansReponse));
+  assert.match(sansReponse[0].message, /sans piste de traitement/);
+  assert.deepEqual(s109(etat({ likelihood: 'forte', impact: 'fort', response: 'avancer la campagne d\'un mois', status: 'validé' })), []);
+
+  // Une valeur hors échelle est une valeur hors énumération, comme partout ailleurs (S88). Et les deux
+  // échelles sont distinctes : `moyenne` pour la vraisemblance, `moyen` pour l'ampleur.
+  const hors = etat({ likelihood: 'moyen', impact: 'moyenne', status: 'proposé' });
+  assert.deepEqual(hors.filter(f => f.rule === 'S88').map(f => f.message.replace(/ hors énumération.*/, '')),
+    ['vraisemblance « moyen »', 'ampleur du risque « moyenne »']);
+  assert.deepEqual(etat({ likelihood: 'moyenne', impact: 'moyen', status: 'proposé' }).filter(f => f.rule === 'S88'), []);
+
+  // Les quatre documents portent des risques, et la règle est partagée.
+  for (const doc of ['prd', 'sad', 'plan']) assert.equal(s109(etat({ status: 'proposé' }, doc)).length, 1, doc);
+  // Un risque abandonné ne se fait plus apprécier.
+  assert.deepEqual(s109(etat({ status: 'abandonné' })), []);
+});
+
+// `sans objet` est la seule valeur qui éteint S84 sans que personne n'ait rien relu, et `confirms` ne
+// pointait que vers des éléments : rien ne menait d'une source à celle qui en a corrigé la lecture.
+test('S111 et S112 : « sans objet » porte sa raison, et une source peut en corriger une autre', () => {
+  const etat = sources => checkState({ document: 'brd', phase: 'discover', sources });
+  const r = (d, rule) => d.filter(f => f.rule === rule);
+  const src = (id, x) => ({ id, type: 'cadrage', stakeholders: ['SH-01'], quote: 'dit', ...x });
+
+  // Sur une parole recueillie, « sans objet » s'explique.
+  const nu = r(etat([src('SRC-001', { feedback: 'sans objet' })]), 'S111');
+  assert.equal(nu.length, 1, JSON.stringify(nu));
+  assert.match(nu[0].message, /sans dire pourquoi \(`feedback_motif`\)/);
+  assert.deepEqual(r(etat([src('SRC-001', { feedback: 'sans objet', feedback_motif: 'la personne a quitté l\'association' })]), 'S111'), []);
+
+  // Sur une décision de l'utilisateur, elle va de soi : il ne se fait pas relire son propre choix.
+  assert.deepEqual(r(etat([src('SRC-001', { type: 'décision', feedback: 'sans objet' })]), 'S111'), []);
+  // Sur un document non plus : personne n'y a parlé.
+  assert.deepEqual(r(etat([src('SRC-001', { type: 'document', feedback: 'sans objet' })]), 'S111'), []);
+  // Et les autres états de `feedback` ne sont pas concernés.
+  assert.deepEqual(r(etat([src('SRC-001', { feedback: 'à envoyer' })]), 'S111'), []);
+
+  // Une correction vers une source qui n'existe pas est une référence morte.
+  const mort = etat([src('SRC-002', { corrects: ['SRC-099'], feedback: 'confirmé' })]);
+  assert.deepEqual(r(mort, 'S112'), []);
+  assert.ok(mort.some(f => f.rule === 'S09' && /correction de SRC-099/.test(f.message)), JSON.stringify(mort));
+  // Une source ne se corrige pas elle-même.
+  assert.match(r(etat([src('SRC-001', { corrects: ['SRC-001'], feedback: 'confirmé' })]), 'S112')[0].message, /d'elle-même/);
+
+  // Le cœur de la règle : la source corrigée est la première à faire relire.
+  const contradiction = r(etat([
+    src('SRC-001', { feedback: 'sans objet', feedback_motif: 'tour de table, rien de personnel' }),
+    src('SRC-033', { corrects: ['SRC-001'], feedback: 'confirmé' }),
+  ]), 'S112');
+  assert.equal(contradiction.length, 1, JSON.stringify(contradiction));
+  assert.equal(contradiction[0].id, 'SRC-001');
+  assert.match(contradiction[0].message, /corrigée par SRC-033/);
+  // Corrigée et remise en relecture : plus rien à dire.
+  assert.deepEqual(r(etat([
+    src('SRC-001', { feedback: 'à envoyer' }),
+    src('SRC-033', { corrects: ['SRC-001'], feedback: 'confirmé' }),
+  ]), 'S112'), []);
+});
+
+// L'inverse de S95 : un utilisateur direct qu'aucun besoin ne concerne. Au troisième dossier réel,
+// celle qui faisait la saisie — le geste même que le changement remplaçait — n'était nommée dans les
+// `concerns` d'aucun des huit besoins.
+test('S113 : un utilisateur direct sans besoin, à la porte de Define', () => {
+  const etat = (phase, besoins) => checkState({ document: 'brd', phase,
+    stakeholders: [{ id: 'SH-01', status: 'interrogée', end_user: true, power: 'faible', impact: 'fort', influence: 'positive', quadrant: 'consulter' },
+      { id: 'SH-02', status: 'interrogée', end_user: false, power: 'faible', impact: 'fort', influence: 'positive', quadrant: 'consulter' }],
+    candidate_needs: besoins });
+  const s113 = d => d.filter(f => f.rule === 'S113').map(f => f.id);
+
+  // En Discover, les besoins se forment encore : rien à reprocher.
+  assert.deepEqual(s113(etat('discover', [{ id: 'BC-1', concerns: [] }])), []);
+  // À Define, l'utilisateur direct qu'aucun besoin ne concerne se nomme — et lui seul.
+  assert.deepEqual(s113(etat('define', [{ id: 'BC-1', concerns: [] }])), ['SH-01']);
+  assert.deepEqual(s113(etat('define', [{ id: 'BC-1', concerns: ['SH-01'] }])), []);
+  // Un besoin abandonné ne porte plus personne.
+  assert.deepEqual(s113(etat('define', [{ id: 'BC-1', concerns: ['SH-01'], status: 'abandonné' }])), ['SH-01']);
 });
 
 // S83 ne voit que l'absence TOTALE : un utilisateur direct entendu sur quatre, et elle est verte pour

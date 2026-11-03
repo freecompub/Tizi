@@ -69,12 +69,20 @@ stakeholders: []          # qui a parlé, et en quelle qualité — chaîné : r
 #    represents: ""        # si elle parle au nom d'un groupe ou d'un absent : lequel. C'est une QUALITÉ,
 #                          # que tu déduis et fais corriger — un représentant ne remplace pas les vrais
 #                          # utilisateurs, et laisse ouverte une zone `persona_non_fonde` sur eux
+#    represents_source: ""  # LA source où elle le dit elle-même : SRC-xxx, et elle doit y être locutrice
+#                          # (S110). « Déduis et fais corriger » tenait tant que la déduction restait
+#                          # visible ; une fois écrite dans un champ renseigné, elle passe pour un fait
+#                          # établi et plus rien ne la relit
 #    represented_by: ""    # l'inverse, sur la personne REPRÉSENTÉE : le SH-xx de qui répond pour elle
 #                          # (S94). Ça enregistre qui parle en son nom, ça ne vaut pas sa voix
 #    status: à interroger  # à interroger | interrogée | non disponible
 
 sources: []               # preuves produit (entretiens, tests utilisateurs, analytics, études, décisions)
-#  - { id: SRC-001, type: entretien, date: "", stakeholders: [SH-01], present: [], quote: "", understood: "", confirms: [], path: "", feedback: à envoyer }   # type : cadrage | entretien | observation | test | analytics | étude | décision
+#  - { id: SRC-001, type: entretien, date: "", stakeholders: [SH-01], present: [], quote: "", understood: "", confirms: [], corrects: [], path: "", feedback: à envoyer, feedback_motif: "" }   # type : cadrage | entretien | observation | test | analytics | étude | décision
+#                          # `corrects` : les SOURCES dont celle-ci corrige la lecture (S112) — `confirms`
+#                          # ne pointe que vers des éléments, donc rien ne menait d'une source à celle
+#                          # qui l'a corrigée ; `feedback_motif` : pourquoi « sans objet » sur une parole
+#                          # recueillie (S111), la seule valeur qui éteint S84 sans que rien n'ait été relu
 #                          # `quote` : CE QUI A ÉTÉ DIT, mot pour mot, dû pour une source de parole (S102)
 #                          # sauf si un fichier le porte ; `understood` : ce qu'on en a tiré, séparé, parce
 #                          # que c'est lui qui se corrige quand la citation est juste et la conclusion
@@ -243,6 +251,12 @@ hypotheses: []
 #      observations: []
 #      source: SRC-xxx
 risks: []                 # - { id: R-01, text: "", likelihood: "", impact: "", response: "", origin: "", status: proposé }
+                          # `likelihood` (faible | moyenne | forte) et `impact` (faible | moyen | fort)
+                          # sont dus dès que le risque est consigné, `response` dès qu'il est validé
+                          # (S109) : vide ne veut pas dire faible, ça veut dire non apprécié. Et
+                          # l'`impact` d'un risque est ce qu'il coûterait s'il se produisait — pas
+                          # l'`impact` d'une partie prenante, qui dit à quel point le changement la
+                          # touche : deux échelles, deux questions
 glossary: []              # - { term: "", definition: "" }
 
 shadow_zones: []

@@ -44,6 +44,14 @@ if (args.includes('--etat')) {
   if (max && rows.length > 1) console.log(`\nCharge la plus lourde : ${max[0]}, ${max[1]} source(s) sur ${arr(s.sources).length}.`);
   const muettes = arr(s.sources).filter(x => arr(x.stakeholders).length && !dit(x)).length;
   if (muettes) console.log(`${muettes} source(s) de parole ne portent pas ce qui a été dit : un relevé ne peut pas les rendre (S102).`);
+  // « Retours reçus » ne compte que `confirmé` et `corrigé` — et c'est juste. Mais `sans objet` éteint
+  // S84 comme un retour reçu, sans qu'aucun relevé soit parti : la colonne et le contrôle ne disaient
+  // donc pas la même chose, et rien ne le montrait ici. Au troisième dossier réel, quatre cadrages la
+  // portaient, dont le tour de table qui contenait une phrase mal attribuée.
+  const RECUEIL = ['cadrage', 'entretien', 'atelier', 'revue'];
+  const sansObjet = arr(s.sources).filter(x => x.feedback === 'sans objet' && RECUEIL.includes(x.type));
+  const sansRaison = sansObjet.filter(x => !String(x.feedback_motif ?? '').trim());
+  if (sansObjet.length) console.log(`${sansObjet.length} source(s) de parole recueillie déclarée(s) « sans objet » : elles éteignent le contrôle de relecture sans qu'un relevé soit parti${sansRaison.length ? `, et ${sansRaison.length} sans dire pourquoi (\`feedback_motif\`, S111) : ${sansRaison.map(x => x.id).join(', ')}` : ''}.`);
   process.exit(0);
 }
 

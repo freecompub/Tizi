@@ -11,6 +11,8 @@
   "S100 la phase Discover est passée et rien ne dit comment : une porte s'écrit dans `phase_log` avec sa date, qui l'a décidée et la source qui le porte — sans quoi on découvre trois sessions plus tard qu'on a changé d'étape sans le savoir (passage vers Define)",
   "S102 1 source(s) de parole sur 2 ne portent pas ce qui a été dit, ni dans `quote` ni dans un fichier (`path`) : SRC-001 — une source dont le contenu n'est écrit nulle part ne se relit pas, et ce qu'elle disait ne survit qu'à la conversation",
   "S11 règle métier sans source (texte, procédure ou personne qui la détient)",
+  "S110 déclaré représentant de « agents d'accueil » sans dire où il le dit (`represents_source`) : une représentation se lit dans une source, sinon elle se déduit — et une déduction fausse fait parler quelqu'un au nom d'un groupe qui ne l'a pas mandaté",
+  "S113 utilisateur direct qu'aucun besoin candidat ne concerne (`concerns`) : soit un besoin manque, soit l'usage direct n'en est pas un",
   "S12 règle de comportement sans niveau d'application (stricte, dérogation autorisée, dérogation justifiée, indicative)",
   "S13 règle métier sans responsable métier (qui peut la modifier ?)",
   "S14 contradiction non qualifiée (factuelle, vocabulaire, réglementaire ou intérêts)",
