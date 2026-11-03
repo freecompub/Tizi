@@ -759,6 +759,45 @@ test('S111 et S112 : « sans objet » porte sa raison, et une source peut en cor
 // le dossier. `sollicitée` + date vaut « non mesuré » — mais une question en vol depuis quarante jours
 // ne vit plus, elle est abandonnée sans que personne l'ait dit, et la faire passer pour vivante est
 // exactement le mensonge que les trois états existaient pour éviter.
+// `understood` est ce qu'on REND à la personne en relecture, et le gabarit le dit depuis le début :
+// « ce qui se corrige quand la citation est juste et la conclusion fausse ». En pratique il a dérivé vers
+// le carnet d'analyse de l'agent. Mesuré sur le troisième dossier réel : 52 sources de parole recueillie
+// sur 74 portent un renvoi interne, et l'une d'elles explique à quoi sert `present: []` dans des sources
+// passées — montré à la personne, c'est incompréhensible et un peu gênant.
+test('S118 : un renvoi interne dans ce qu\'on rend à la personne', () => {
+  const etat = sources => checkState({ document: 'brd', phase: 'discover', sources,
+    stakeholders: [{ id: 'SH-01', status: 'interrogée', power: 'faible', impact: 'fort', influence: 'positive', quadrant: 'consulter' }] });
+  const s118 = d => d.filter(f => f.rule === 'S118');
+  const src = (extra) => ({ id: 'SRC-001', type: 'entretien', date: '2026-10-29', stakeholders: ['SH-01'], quote: 'Trois heures par semaine.', feedback: 'à envoyer', ...extra });
+
+  // En clair : rien à dire.
+  assert.deepEqual(s118(etat([src({ understood: 'La ressaisie est le poste de temps principal.' })])), []);
+  // Un renvoi interne : le constat tombe.
+  assert.match(s118(etat([src({ understood: 'Reprend ses attendus de SRC-007.' })]))[0].message, /SRC-001 → SRC-007/);
+  // Dans le verbatim aussi, parce que le verbatim repart tel quel.
+  assert.equal(s118(etat([src({ quote: 'Comme dit dans BC-003.' })])).length, 1);
+
+  // UN SEUL constat pour toute la collection : cinquante-deux noieraient les vingt autres du dossier, et
+  // le défaut n'est pas cinquante-deux fautes indépendantes — c'est une manière d'écrire le champ.
+  const dix = Array.from({ length: 10 }, (_, i) => src({ id: `SRC-${String(i + 1).padStart(3, '0')}`, understood: `Reprend SRC-0${i + 20}.` }));
+  const groupe = s118(etat(dix));
+  assert.equal(groupe.length, 1, 'un constat, pas dix');
+  assert.equal(groupe[0].id, 'sources', 'il porte sur la collection, et se déroge donc à la racine');
+  assert.match(groupe[0].message, /^10 source\(s\) de parole recueillie sur 10/);
+  assert.match(groupe[0].message, /et 5 autre\(s\)/, 'il nomme les premières et compte le reste');
+
+  // Une DÉCISION de l'utilisateur ne se fait pas relire à son auteur — c'est déjà la doctrine de S111 —
+  // donc un renvoi interne n'y gêne personne. Sur le dossier réel, les quatre seuls renvois trouvés dans
+  // un `quote` sont tous des décisions, et les dix sources de ce type sortent du compte.
+  for (const type of ['décision', 'document', 'mesure', 'analytics']) {
+    assert.deepEqual(s118(etat([src({ type, understood: 'Arbitrage DD-01, trois options soumises.' })])), [], type);
+  }
+  // Et les types dont la parole repart y entrent tous.
+  for (const type of ['cadrage', 'entretien', 'échange écrit', 'atelier', 'revue']) {
+    assert.equal(s118(etat([src({ type, understood: 'Reprend SRC-007.' })])).length, 1, type);
+  }
+});
+
 test('S117 : l\'attente n\'est pas éternelle, et aucune horloge ne tourne', () => {
   const etat = (jours, reglage) => ({
     document: 'brd', phase: 'discover', ...reglage,
