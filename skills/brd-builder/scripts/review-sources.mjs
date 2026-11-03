@@ -19,7 +19,7 @@
 import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { arr, loadState, writeOut, fail, table, today, txt, shLabel, label } from './lib/common.mjs';
-import { feedbackEtat, sollicitationEtat, refsDans, RECUEIL_DE_PAROLE } from './lib/rules.mjs';
+import { feedbackEtat, sollicitationEtat, seuilsRelance, refsDans, RECUEIL_DE_PAROLE } from './lib/rules.mjs';
 import { nomClair, nomInitiative, joindre, paragraphes, refuseLesIdentifiants, AVERTISSEMENT_COMPTE, N_ENVOIE_RIEN } from './lib/outgoing.mjs';
 
 const args = process.argv.slice(2);
@@ -59,8 +59,19 @@ if (args.includes('--etat')) {
   // exactement celle dont on perd la trace, et la seule que le dossier ne rappelait à personne.
   const sollicitees = arr(s.stakeholders).filter(sh => sollicitationEtat(sh, s.sources) === 'attente');
   if (sollicitees.length) {
-    const vieille = sollicitees.reduce((a, b) => (jours(a.sollicitee_le) > jours(b.sollicitee_le) ? a : b));
-    console.log(`\n${sollicitees.length} personne(s) sollicitée(s) et sans réponse : ${sollicitees.map(sh => `${shLabel(s, sh.id)} par ${sh.joignable_par || 'canal non dit'}, depuis ${jours(sh.sollicitee_le)} j`).join(' · ')}. La plus ancienne attend depuis ${jours(vieille.sollicitee_le)} jour(s) — relance sur le même fil, ou renonce et dis-le.`);
+    // Deux seuils, deux gestes. En dessous du premier, il n'y a rien à dire : la question vient de
+    // partir. Entre les deux, on le SIGNALE — ça ne coûte rien et ça ne sort pas du dossier. Au-delà du
+    // second, il faut TRANCHER, et c'est l'utilisateur qui tranche : relancer sort vers quelqu'un qui
+    // n'a rien demandé. Le relevé qualifie donc chaque attente au lieu de se contenter de son âge.
+    const { signaler, agir } = seuilsRelance(s);
+    const etiquette = n => (n > agir ? 'À TRANCHER' : n >= signaler ? 'à signaler' : 'vient de partir');
+    console.log(`\n${sollicitees.length} personne(s) sollicitée(s) et sans réponse (seuils : signaler à ${signaler} j, trancher à ${agir} j) :`);
+    for (const sh of [...sollicitees].sort((a, b) => jours(b.sollicitee_le) - jours(a.sollicitee_le))) {
+      const n = jours(sh.sollicitee_le);
+      console.log(`  ${etiquette(n).padEnd(16)} ${shLabel(s, sh.id)} — ${n} j, par ${sh.joignable_par || 'canal non dit'}${sh.sollicitee_zone ? `, sur ${sh.sollicitee_zone}` : ', sans dire sur quoi'}`);
+    }
+    const aTrancher = sollicitees.filter(sh => jours(sh.sollicitee_le) > agir).length;
+    if (aTrancher) console.log(`  ${aTrancher} au-delà du seuil (S117) : attendre encore en le disant, relancer une fois (\`reach-out.mjs --relance\`), ou renoncer — \`non disponible\` avec son motif. Aucune horloge ne tourne : ce constat date de maintenant, pas du jour du seuil.`);
   }
   // Déclarées sollicitées sans date : elles ne comptent pour rien (S115), et personne ne les relancera
   // puisque rien ne dit depuis quand elles attendent.

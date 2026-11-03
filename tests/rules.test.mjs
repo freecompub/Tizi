@@ -5,11 +5,16 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import yaml from '../skills/brd-builder/scripts/lib/vendor/js-yaml.mjs';
 import { tempDir } from './helpers.mjs';
-import { DOCUMENTS, STRUCT_RULES, TEXT_RULES, checkState, sollicitationEtat, refsDans, coverage, coverageFindings, coverageRows, evidenceOf, contextFindings } from '../skills/brd-builder/scripts/lib/rules.mjs';
+import { DOCUMENTS, STRUCT_RULES, TEXT_RULES, checkState, sollicitationEtat, seuilsRelance, refsDans, coverage, coverageFindings, coverageRows, evidenceOf, contextFindings } from '../skills/brd-builder/scripts/lib/rules.mjs';
 import { gateConditions } from '../skills/brd-builder/scripts/lib/gates.mjs';
 import { shellWrittenPaths } from '../skills/brd-builder/scripts/lib/agent-io.mjs';
 import { buildExtract } from '../skills/brd-builder/scripts/lib/sessions.mjs';
 const SCRIPTS = new URL('../skills/brd-builder/scripts/', import.meta.url).pathname;
+// Les dates des sollicitations se comptent depuis AUJOURD'HUI, jamais en dur : le seuil de relance
+// (`settings.relance.agir`, 5 jours par défaut) retire la protection de l'attente au-delà, donc une
+// date fixe finit par mesurer le calendrier au lieu de la règle. Vu en direct : `2026-10-28` était
+// « une question qui vit » le jour où le test a été écrit, et six jours plus tard elle ne l'était plus.
+const ilYA = n => new Date(Date.now() - n * 86400000).toISOString().slice(0, 10);
 const codes = s => checkState(s).map(f => f.rule);
 const brd = extra => ({ document: 'brd', phase: 'discover', stakeholders: [{ id: 'SH-1', status: 'interrogée' }],
   sources: [{ id: 'SRC-1', type: 'entretien', stakeholders: ['SH-1'] }, { id: 'SRC-2', type: 'observation', stakeholders: ['SH-1'] }],
@@ -748,6 +753,51 @@ test('S111 et S112 : « sans objet » porte sa raison, et une source peut en cor
 // la seule qui soit de notre faute, donc celle qu'un mot unique cachait le mieux. Ce test tient les
 // deux propriétés qui empêchent le motif de devenir une sortie commode : renoncer n'éteint rien, et un
 // refus est la parole de la personne, pas une affirmation d'un tiers sur elle.
+// Deux horloges, parce que deux gestes qui n'ont ni le même coût ni le même rythme : DIRE qu'il n'y a
+// pas de réponse est interne et gratuit, RELANCER sort vers quelqu'un qui n'a rien demandé et ne se
+// reprend pas. Et le vrai apport du seuil n'est pas l'alerte : c'est que l'attente CESSE de protéger
+// le dossier. `sollicitée` + date vaut « non mesuré » — mais une question en vol depuis quarante jours
+// ne vit plus, elle est abandonnée sans que personne l'ait dit, et la faire passer pour vivante est
+// exactement le mensonge que les trois états existaient pour éviter.
+test('S117 : l\'attente n\'est pas éternelle, et aucune horloge ne tourne', () => {
+  const etat = (jours, reglage) => ({
+    document: 'brd', phase: 'discover', ...reglage,
+    stakeholders: [
+      { id: 'SH-01', name: 'Nadia', status: 'sollicitée', sollicitee_le: ilYA(jours), sollicitee_zone: 'ZO-001', joignable_par: 'courriel', end_user: true, power: 'faible', impact: 'fort', influence: 'positive', quadrant: 'consulter' },
+      { id: 'SH-02', status: 'interrogée', power: 'fort', impact: 'fort', influence: 'positive', quadrant: 'impliquer' }],
+    sources: [{ id: 'SRC-1', type: 'entretien', date: ilYA(30), stakeholders: ['SH-02'], quote: 'Elle fait la saisie.', feedback: 'confirmé' }],
+    candidate_needs: [{ id: 'BC-1', text: 'Pouvoir …', concerns: ['SH-01'], sources: [{ ref: 'SRC-1' }] }],
+    shadow_zones: [{ id: 'ZO-001', type: 'attendu_implicite', question: 'Quoi ?', ask_to: 'SH-01', status: 'ouverte' }],
+  });
+  const s117 = (j, r) => checkState(etat(j, r)).filter(f => f.rule === 'S117');
+
+  // En dessous du seuil, rien : la question vit, et le dossier n'a rien à se reprocher.
+  for (const j of [0, 1, 3, 5]) assert.deepEqual(s117(j), [], `${j} jour(s)`);
+  // Au-delà, le constat tombe et nomme les TROIS issues — c'est l'utilisateur qui tranche.
+  assert.match(s117(6)[0].message, /question en vol depuis 6 jour\(s\), au-delà du seuil de 5/);
+  assert.match(s117(40)[0].message, /attendre encore en le disant, relancer une fois .* ou renoncer/);
+  // Et il rappelle le premier seuil, celui qui ne demande que de le signaler.
+  assert.match(s117(40)[0].message, /celui qui dit seulement de le signaler, est à 1 jour/);
+
+  // Réglable aux deux emplacements : le plan range ses réglages sous `settings`, le BRD à la racine.
+  assert.deepEqual(s117(40, { settings: { relance: { agir: 60 } } }), [], 'sous settings');
+  assert.deepEqual(s117(40, { relance: { agir: 60 } }), [], 'à la racine');
+  assert.equal(s117(3, { relance: { agir: 2 } }).length, 1, 'un seuil plus court mord plus tôt');
+
+  // LA propriété : au-delà du seuil, l'attente ne protège plus. S83 était `pending` — hors du décompte
+  // de la porte — et redevient un constat actif, parce que « non mesuré » a cessé d'être une réponse.
+  const dansLeSeuil = checkState(etat(2));
+  const horsSeuil = checkState(etat(40));
+  assert.equal(dansLeSeuil.find(f => f.rule === 'S83')?.pending, true, 'dans le seuil : la question vit');
+  assert.equal(horsSeuil.find(f => f.rule === 'S83')?.pending, undefined, 'au-delà : elle ne vit plus');
+  assert.ok(horsSeuil.filter(f => !f.pending).length > dansLeSeuil.filter(f => !f.pending).length,
+    'le dossier cesse d\'être protégé par une attente que personne ne suit');
+
+  // Les deux seuils par défaut, lus depuis le catalogue : un pour dire, cinq pour agir.
+  assert.deepEqual(seuilsRelance({}), { signaler: 1, agir: 5 });
+  assert.deepEqual(seuilsRelance({ relance: { agir: 7 } }), { signaler: 1, agir: 7 }, 'un seuil se règle sans l\'autre');
+});
+
 test('S116 : renoncer se dit, et dit lequel des quatre', () => {
   const sh = extra => ({ id: 'SH-01', name: 'Nadia', end_user: true, power: 'faible', impact: 'fort', influence: 'positive', quadrant: 'consulter', ...extra });
   const etat = (extra, reste = {}) => checkState({ document: 'brd', phase: 'discover', stakeholders: [sh(extra)], ...reste });
@@ -796,7 +846,7 @@ test('S115 : « sollicitée » dit qu\'on a écrit, et sa date dit que la questi
 
   // Les trois états.
   assert.equal(sollicitationEtat(sh({ status: 'à interroger' })), 'absent');
-  assert.equal(sollicitationEtat(sh({ status: 'sollicitée', sollicitee_le: '2026-10-28' })), 'attente');
+  assert.equal(sollicitationEtat(sh({ status: 'sollicitée', sollicitee_le: ilYA(2) })), 'attente');
   assert.equal(sollicitationEtat(sh({ status: 'sollicitée' })), 'absent', 'sans date, elle ne compte pas');
   assert.equal(sollicitationEtat(sh({ status: 'sollicitée', sollicitee_le: '28/10/2026' })), 'absent', 'une date qui n\'est pas une date non plus');
   assert.equal(sollicitationEtat(sh({ status: 'interrogée' })), 'fait');
@@ -804,32 +854,32 @@ test('S115 : « sollicitée » dit qu\'on a écrit, et sa date dit que la questi
   // Déclarée sollicitée sans dire quand : c'est l'agent qui écrit le champ.
   assert.match(s115(etat({ status: 'sollicitée' }))[0], /sans dire quand/);
   // Et sans dire par quoi : une question partie sans canal ne se relance pas.
-  assert.equal(s115(etat({ status: 'sollicitée', sollicitee_le: '2026-10-28', joignable_par: '', ...ZONE })).length, 1);
-  assert.match(s115(etat({ status: 'sollicitée', sollicitee_le: '2026-10-28', joignable_par: '', ...ZONE }))[0], /sans dire par quoi/);
+  assert.equal(s115(etat({ status: 'sollicitée', sollicitee_le: ilYA(2), joignable_par: '', ...ZONE })).length, 1);
+  assert.match(s115(etat({ status: 'sollicitée', sollicitee_le: ilYA(2), joignable_par: '', ...ZONE }))[0], /sans dire par quoi/);
   // Les deux à la fois : deux constats, pas un.
   assert.equal(s115(etat({ status: 'sollicitée', joignable_par: '' })).length, 2);
   // La bonne tenue.
-  assert.deepEqual(s115(etat({ status: 'sollicitée', sollicitee_le: '2026-10-28', ...ZONE })), []);
+  assert.deepEqual(s115(etat({ status: 'sollicitée', sollicitee_le: ilYA(2), ...ZONE })), []);
   // Une date restée là sous un statut qui ne la lit plus : elle donne l'air d'une question en vol.
-  assert.match(s115(etat({ status: 'à interroger', sollicitee_le: '2026-10-28', ...ZONE }))[0], /la date ne se lit que sur « sollicitée »/);
+  assert.match(s115(etat({ status: 'à interroger', sollicitee_le: ilYA(2), ...ZONE }))[0], /la date ne se lit que sur « sollicitée »/);
   // La paire date + zone : les deux ou aucun. Sans la zone, le tour suivant ne sait pas si sa réponse
   // portait sur la question posée — et c'est à la personne qu'on finissait par le demander.
-  assert.match(s115(etat({ status: 'sollicitée', sollicitee_le: '2026-10-28' }))[0], /sans dire sur quoi/);
+  assert.match(s115(etat({ status: 'sollicitée', sollicitee_le: ilYA(2) }))[0], /sans dire sur quoi/);
   assert.match(s115(etat({ status: 'à interroger', ...ZONE }))[0], /sans date de départ/);
   // Une zone qui n'existe pas : S09, comme toute référence en l'air.
-  assert.equal(checkState({ document: 'brd', phase: 'discover', stakeholders: [sh({ status: 'sollicitée', sollicitee_le: '2026-10-28', sollicitee_zone: 'ZO-099' })] })
+  assert.equal(checkState({ document: 'brd', phase: 'discover', stakeholders: [sh({ status: 'sollicitée', sollicitee_le: ilYA(2), sollicitee_zone: 'ZO-099' })] })
     .filter(f => f.rule === 'S09' && /pas une zone d'ombre/.test(f.message)).length, 1);
   // Et la question de quelqu'un d'autre, envoyée à elle : sa réponse serait consignée comme valant
   // pour l'autre. C'est S94 pris par l'autre bout — là, on l'a carrément adressée à la mauvaise personne.
   const ailleurs = checkState({ document: 'brd', phase: 'discover',
-    stakeholders: [sh({ status: 'sollicitée', sollicitee_le: '2026-10-28', sollicitee_zone: 'ZO-001' })],
+    stakeholders: [sh({ status: 'sollicitée', sollicitee_le: ilYA(2), sollicitee_zone: 'ZO-001' })],
     shadow_zones: [{ id: 'ZO-001', type: 'attendu_implicite', question: 'Quoi ?', ask_to: 'SH-09', status: 'ouverte' }] });
   assert.match(ailleurs.find(f => f.rule === 'S115' && /adressée à/.test(f.message)).message, /on lui a posé la question de quelqu'un d'autre/);
 
   // Sur `interrogée`, la date devient le deuxième tour du fil — et elle n'a de sens que confrontée aux
   // sources de la personne. Sans aucune source à son nom, le statut dit qu'elle a parlé et le dossier
   // ne garde rien : c'est un constat, pas un silence.
-  assert.match(s115(etat({ status: 'interrogée', sollicitee_le: '2026-10-28', ...ZONE }))[0], /le dossier ne garde rien de ce qu'elle a dit/);
+  assert.match(s115(etat({ status: 'interrogée', sollicitee_le: ilYA(2), ...ZONE }))[0], /le dossier ne garde rien de ce qu'elle a dit/);
   // Entendue en réunion, jamais passée par un canal : rien ne lui arrive, et c'est la majorité des cas.
   assert.equal(sollicitationEtat(sh({ status: 'interrogée' })), 'fait');
   assert.deepEqual(s115(etat({ status: 'interrogée' })), []);
@@ -841,20 +891,20 @@ test('S115 : « sollicitée » dit qu\'on a écrit, et sa date dit que la questi
     candidate_needs: [{ id: 'BC-1', text: 'Pouvoir …', concerns: ['SH-01'], sources: [{ ref: 'SRC-1' }] }] });
   const s94 = d => d.find(f => f.rule === 'S94' && f.id === 'SH-01');
   assert.equal(s94(avecBesoin({ status: 'à interroger' }))?.pending, undefined, 'jamais contactée : le constat compte');
-  assert.equal(s94(avecBesoin({ status: 'sollicitée', sollicitee_le: '2026-10-28' }))?.pending, true, 'contactée : la question vit');
+  assert.equal(s94(avecBesoin({ status: 'sollicitée', sollicitee_le: ilYA(2) }))?.pending, true, 'contactée : la question vit');
   assert.equal(s94(avecBesoin({ status: 'sollicitée' }))?.pending, undefined, 'sans date, rien ne change');
 
   // S83 aussi, au niveau de la collection : un utilisateur direct en attente nomme son attente.
   const s83 = d => d.find(f => f.rule === 'S83');
   assert.equal(s83(avecBesoin({ status: 'à interroger' }))?.pending, undefined);
-  const enVol = s83(avecBesoin({ status: 'sollicitée', sollicitee_le: '2026-10-28' }));
+  const enVol = s83(avecBesoin({ status: 'sollicitée', sollicitee_le: ilYA(2) }));
   assert.equal(enVol?.pending, true);
   assert.match(enVol.message, /SH-01 sollicité\(s\) et sans réponse, la question vit/);
 
   // Ce qui NE change pas : elle reste non entendue. Une décision rendue en son nom est rapportée par
   // un tiers, et une source à son nom reste du second degré — que la question soit en vol ou non.
   const enNomDe = checkState({ document: 'brd', phase: 'discover',
-    stakeholders: [sh({ status: 'sollicitée', sollicitee_le: '2026-10-28' })],
+    stakeholders: [sh({ status: 'sollicitée', sollicitee_le: ilYA(2) })],
     sources: [{ id: 'SRC-1', type: 'entretien', date: '2026-10-01', stakeholders: ['SH-01'], quote: 'On fait comme ça.', feedback: 'confirmé' }],
     decision_rights: [{ domain: 'perimetre', decider: 'SH-01', escalation: 'SH-02', confirmed_by: 'SH-02', source: 'SRC-1' }] });
   assert.equal(enNomDe.find(f => f.rule === 'S81' && f.id === 'SRC-1')?.pending, undefined, 'une source à son nom reste du second degré');
