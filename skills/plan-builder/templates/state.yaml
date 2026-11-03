@@ -169,6 +169,12 @@ release_tracking: []       # maturité et outcomes par release
 
 hypotheses: []
 risks: []                  # - { id: R-01, text: "", likelihood: "", impact: "", response: "", status: proposé }
+                          # `likelihood` (faible | moyenne | forte) et `impact` (faible | moyen | fort)
+                          # sont dus dès que le risque est consigné, `response` dès qu'il est validé
+                          # (S109) : vide ne veut pas dire faible, ça veut dire non apprécié. Et
+                          # l'`impact` d'un risque est ce qu'il coûterait s'il se produisait — pas
+                          # l'`impact` d'une partie prenante, qui dit à quel point le changement la
+                          # touche : deux échelles, deux questions
 shadow_zones: []
 #  - { id: ZO-001, type: question_story, question: "", story: US-001, ask_to: "", blocking: true, status: ouverte, resolution: "" }
 questions: []

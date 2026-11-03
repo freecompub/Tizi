@@ -12,6 +12,15 @@ faire. Et une piste écartée reste écrite : sans ça elle revient dans six moi
 Dernière vérification de ce registre : **25 octobre 2026**, en exécutant les scripts — depuis le
 24 octobre, sur un dossier réel autant que sur les exemples.
 
+Le troisième dossier réel est
+[`freecompub/TestTizi`, branche `brd/inscriptions-soutien`](https://github.com/freecompub/TestTizi/tree/brd%2Finscriptions-soutien) :
+BRD de la dématérialisation des inscriptions de la même association, phase Discover, 40 sources
+**toutes porteuses de leur verbatim**, 57 zones d'ombre dont 29 levées, 4 risques, 8 besoins candidats
+tous sourcés et portant leur `concerns`, un council de 37 questions proposées et 29 arbitrées sans
+qu'aucune soit écartée sans raison. C'est le dossier le plus sain des trois — 5 avertissements, contre
+16 puis 11 — et c'est pour cela qu'il est utile : ce qui reste n'est plus du bâclage, c'est ce que le
+catalogue ne regardait pas. Les pistes marquées « troisième dossier réel » en viennent.
+
 Le deuxième dossier réel est
 [`freecompub/TestTizi`, branche `prd/soutien-scolaire-langues`](https://github.com/freecompub/TestTizi/tree/prd%2Fsoutien-scolaire-langues) :
 PRD **autonome** de la même association, phase Frame, 13 sources dont neuf d'un entretien du directeur
@@ -168,6 +177,14 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
 | Le commentaire de `condenseOf` donnait une cause fausse — « il tourne sur Stop, donc après tout ce que l'agent a fait dans le tour » : si c'était la cause, le champ serait rempli. J'avais affirmé une cause au lieu de la mesurer, puis écrit un repli qui a rendu la question sans objet, donc personne n'y est revenu. Un contournement qui masque un défaut masque aussi le fait que le diagnostic était faux | 2 novembre 2026 | `racine-unique` |
 | Une initiative touchée est une initiative qui a un état sur le disque (`surLeDisque`) : `brd/demat-inscriptions-relecture` était un nom de BRANCHE dans un `git push`, et l'index annonçait quatre initiatives pour un seul dossier réel — au redémarrage, `session-start.mjs` réclamait un condensé pour trois dossiers inexistants. Les mentions restent ce qui décide si la session a affaire au SDLC : confondre les deux listes supprimait la capture entière | 2 novembre 2026 | `racine-unique` |
 | Un test lance la capture **depuis un sous-répertoire** et vérifie qu'il n'y a qu'un magasin : tous partaient de la racine, et c'est exactement pour ça que rien n'avait été vu | 2 novembre 2026 | `racine-unique` |
+| `S109` : un risque porte `likelihood`, `impact` et `response` depuis l'origine, et **aucune règle, dans aucun des quatre documents, ne les lisait** — `risks` n'avait qu'un lecteur, `S19`, qui vérifie qu'un opposant puissant en a un, pas ce qu'il dit. Au troisième dossier réel, quatre risques écrits avec soin, longs et justes, et les trois champs vides sur les quatre. Vide ne veut pas dire faible, ça veut dire non apprécié — et c'est le risque qui emporte une zone d'ombre assumée | 3 novembre 2026 | `defauts-que-personne-ne-lisait` |
+| `S94` : une question **sur** quelqu'un n'est pas une question **à** quelqu'un. `nommeeDansUneZone` fermait la règle sur une zone qui la nomme en `related` ; au troisième dossier réel, l'utilisatrice directe jamais entendue — celle qui fait la saisie — était nommée dans une seule zone ouverte, « combien de personnes font la saisie ? », posée au directeur. Le cas était écrit **dans le test** comme la bonne tenue | 3 novembre 2026 | `defauts-que-personne-ne-lisait` |
+| `S110` : une représentation se lit dans une source où la personne parle (`represents_source`). `represents` n'avait qu'un lecteur, `S94`, et seulement comme test de présence : une représentation **fausse** était invisible. Un représentant des parents d'élèves s'est trouvé enregistré représentant « des membres du bureau », déduit d'un tour de table où le « je » final revenait à lui — rattrapé par hasard, parce que la question est passée devant l'utilisateur | 3 novembre 2026 | `defauts-que-personne-ne-lisait` |
+| `S111` : `feedback: sans objet` porte sa raison sur une parole recueillie (`feedback_motif`). C'est la seule valeur qui éteint `S84` sans que personne n'ait rien relu. Dix l'avaient au troisième dossier réel : six décisions de l'utilisateur — légitimes, il ne se fait pas relire son propre choix — et quatre cadrages, dont le tour de table qui contenait la phrase mal attribuée **et** l'échange qui l'avait corrigée | 3 novembre 2026 | `defauts-que-personne-ne-lisait` |
+| `S112` : une source peut corriger une autre source, et le dossier peut le dire (`corrects`). `confirms` ne pointe que vers des éléments — BC, BR, RG : rien ne menait du tour de table à l'échange qui en avait corrigé la lecture, et une source corrigée déclarée « sans objet » se contredit | 3 novembre 2026 | `defauts-que-personne-ne-lisait` |
+| `S113` : l'inverse de `S95`. Un `end_user` qu'aucun besoin ne concerne, à la porte de Define : soit un besoin manque, soit l'usage direct n'en est pas un. Celle qui faisait la saisie — le geste même que le changement remplaçait — n'était dans les `concerns` d'aucun des huit besoins | 3 novembre 2026 | `defauts-que-personne-ne-lisait` |
+| Un signal de succès se relit comme un besoin : `solution_deguisee` ne visait que les besoins. « Plus de dossier papier », `measurable: true`, dans une demande classée `fluide` — classée ainsi précisément pour garder une solution hors du but. C'est une consigne de conduite, pas un contrôle : rien ne distingue lexicalement un moyen d'un résultat | 3 novembre 2026 | `defauts-que-personne-ne-lisait` |
+| Le nombre de règles annoncé dans l'en-tête du document généré était écrit en dur — 117 pendant que le catalogue en comptait 122. Une liste qui dérive est pire qu'une absence de liste, et c'est la phrase même qui le disait | 3 novembre 2026 | `defauts-que-personne-ne-lisait` |
 
 ## Ouvert
 

@@ -220,6 +220,12 @@ hypotheses: []
 #  - { id: H-001, text: "", basis: "", status: à vérifier, validation: spike, spike: "" }   # validation : spike | mesure | document | expert
 
 risks: []                  # - { id: R-01, text: "", likelihood: "", impact: "", response: "", origin: "", status: proposé }
+                          # `likelihood` (faible | moyenne | forte) et `impact` (faible | moyen | fort)
+                          # sont dus dès que le risque est consigné, `response` dès qu'il est validé
+                          # (S109) : vide ne veut pas dire faible, ça veut dire non apprécié. Et
+                          # l'`impact` d'un risque est ce qu'il coûterait s'il se produisait — pas
+                          # l'`impact` d'une partie prenante, qui dit à quel point le changement la
+                          # touche : deux échelles, deux questions
 dependencies: []           # - { text: "", owner: "" }
 glossary: []               # aligné sur le PRD et le BRD
 
