@@ -16,6 +16,7 @@
 import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { arr, loadState, writeOut, fail, table, today, txt, shLabel, label } from './lib/common.mjs';
+import { feedbackEtat, RECUEIL_DE_PAROLE } from './lib/rules.mjs';
 
 const args = process.argv.slice(2);
 const statePath = args.find(a => !a.startsWith('--') && args[args.indexOf(a) - 1] !== '--sh');
@@ -30,14 +31,21 @@ const locuteurs = [...new Set(arr(s.sources).flatMap(x => arr(x.stakeholders)))]
 const fichier = id => join(dir, `relecture-${id}.md`);
 const dit = x => String(x.quote ?? x.note ?? '').trim();
 
+// Depuis quand la demande est partie. La colonne existe parce que « envoyé » tout court ne disait pas
+// s'il fallait relancer : une demande de la veille et une demande de six semaines se lisaient pareil.
+const jours = d => Math.floor((Date.parse(today()) - Date.parse(d)) / 86400000);
 if (args.includes('--etat')) {
   const FAIT = ['confirmé', 'corrigé'];
   const rows = locuteurs.map(id => {
     const src = sourcesDe(id);
+    const attente = src.filter(x => feedbackEtat(x) === 'attente');
+    // La plus vieille des demandes en vol : c'est elle qui dit s'il est temps de relancer.
+    const age = attente.length ? Math.max(...attente.map(x => jours(x.feedback_le))) : null;
     return [shLabel(s, id), src.length, src.filter(x => dit(x)).length,
-      src.filter(x => FAIT.includes(x.feedback)).length, existsSync(fichier(id)) ? 'écrit' : '—'];
+      src.filter(x => FAIT.includes(x.feedback)).length,
+      attente.length ? `${attente.length} (depuis ${age} j)` : '—', existsSync(fichier(id)) ? 'écrit' : '—'];
   });
-  console.log(table(['Personne', 'Sources', 'Dont relevées', 'Retours reçus', 'Relevé'], rows));
+  console.log(table(['Personne', 'Sources', 'Dont relevées', 'Retours reçus', 'En attente', 'Relevé'], rows));
   // La charge n'est pas la même pour tous, et c'est au demandeur de le savoir : sur le dossier réel, le
   // président relisait 70 sources quand les deux autres en relisaient 13 et 9.
   const max = rows.length ? rows.reduce((a, b) => (b[1] > a[1] ? b : a)) : null;
@@ -47,11 +55,14 @@ if (args.includes('--etat')) {
   // « Retours reçus » ne compte que `confirmé` et `corrigé` — et c'est juste. Mais `sans objet` éteint
   // S84 comme un retour reçu, sans qu'aucun relevé soit parti : la colonne et le contrôle ne disaient
   // donc pas la même chose, et rien ne le montrait ici. Au troisième dossier réel, quatre cadrages la
-  // portaient, dont le tour de table qui contenait une phrase mal attribuée.
-  const RECUEIL = ['cadrage', 'entretien', 'atelier', 'revue'];
-  const sansObjet = arr(s.sources).filter(x => x.feedback === 'sans objet' && RECUEIL.includes(x.type));
+  // portaient, dont le tour de table qui contenait une phrase mal attribuée. La liste des types
+  // vient de `rules.mjs` : elle y est déjà, et une seconde copie ici dériverait au premier type ajouté.
+  const sansObjet = arr(s.sources).filter(x => x.feedback === 'sans objet' && RECUEIL_DE_PAROLE.includes(x.type));
   const sansRaison = sansObjet.filter(x => !String(x.feedback_motif ?? '').trim());
   if (sansObjet.length) console.log(`${sansObjet.length} source(s) de parole recueillie déclarée(s) « sans objet » : elles éteignent le contrôle de relecture sans qu'un relevé soit parti${sansRaison.length ? `, et ${sansRaison.length} sans dire pourquoi (\`feedback_motif\`, S111) : ${sansRaison.map(x => x.id).join(', ')}` : ''}.`);
+  // « Envoyé » sans date ne se vérifie pas et ne se relance pas : c'est une case cochée, pas un fait.
+  const sansDate = arr(s.sources).filter(x => x.feedback === 'envoyé' && feedbackEtat(x) !== 'attente');
+  if (sansDate.length) console.log(`${sansDate.length} source(s) dites envoyées sans date de départ (\`feedback_le\`) : ${sansDate.slice(0, 8).map(x => x.id).join(', ')}${sansDate.length > 8 ? '…' : ''} — on ne sait pas s'il faut relancer (S84).`);
   process.exit(0);
 }
 
@@ -131,3 +142,4 @@ for (const id of cibles) {
 // Publier n'est pas transmettre : c'est l'utilisateur qui sait quand la personne a le document, et
 // l'agent ne décide pas d'un envoi à sa place.
 console.log('Les sources passent à `feedback: envoyé` quand la personne a reçu le relevé — pas à sa génération.');
+console.log('Avec `feedback_le` (la date de départ) et `feedback_par` (par quoi il est parti) : sans la date, « envoyé » ne se vérifie pas.');

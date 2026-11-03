@@ -77,13 +77,27 @@ function messagesDe(texte) {
     }
     return t;
   };
+  // Les littéraux de la CONDITION d'un ternaire ne sont pas des messages. `etat === 'attente' ? … : …`
+  // rendait « attente » comme un message de la règle, à côté des vrais — la documentation de S84 a
+  // affiché « attente · exigence tirée de … » le temps d'un commit. On accumule donc les littéraux
+  // depuis le dernier séparateur : un `?` de profondeur zéro jette ce qui précède (c'était le test),
+  // un `:` verse ce qui précède (c'était une branche). `?.` et `??` ne séparent rien.
+  let tampon = [];
+  let p = 0;
   while (i < texte.length) {
     const c = texte[i];
-    if (c === '`') { i += 1; out.push(litteral('`', true)); continue; }
-    if (c === "'") { i += 1; out.push(litteral("'", false)); continue; }
+    if (c === '`') { i += 1; tampon.push(litteral('`', true)); continue; }
+    if (c === "'") { i += 1; tampon.push(litteral("'", false)); continue; }
+    if ('([{'.includes(c)) p += 1;
+    else if (')]}'.includes(c)) p -= 1;
+    else if (p === 0 && c === '?' && texte[i + 1] !== '.' && texte[i + 1] !== '?') tampon = [];
+    else if (p === 0 && c === ':') { out.push(...tampon); tampon = []; }
     i += 1;
   }
-  return out.map(t => t.replace(/…{2,}/g, '…').replace(/\s+/g, ' ').trim()).filter(Boolean);
+  out.push(...tampon);
+  // Un littéral sans aucune lettre n'est pas un message : `arr(h.problems).join(' ; ')` construit le
+  // sien à partir des données, et le document affichait « · ; » au bout de la ligne de S53.
+  return out.map(t => t.replace(/…{2,}/g, '…').replace(/\s+/g, ' ').trim()).filter(t => /\p{L}/u.test(t));
 }
 // La portée d'un `push` : du code de règle à la fermeture de l'objet, accolades équilibrées.
 function porteeDuPush(src, depart) {

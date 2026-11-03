@@ -242,6 +242,81 @@ test('S84 : une exigence validée sur des sources que personne n\'a relues', () 
   assert.ok(!codes(prd('confirmé')).includes('S84'), 'source relue et confirmée');
 });
 
+// `envoyé` existait dans le gabarit depuis le début et S84 ne le lisait pas : la règle testait
+// l'appartenance à « confirmé | corrigé | sans objet », donc « demandé le 21, pas encore de réponse »
+// et « jamais rien demandé à personne » rendaient le même constat, avec le même message. L'état ne
+// servait à rien, et une relance oubliée depuis six semaines était indiscernable d'une demande de la
+// veille — on ne pouvait pas savoir laquelle relancer. Trois états, et le troisième tient à la date.
+test('S84 : trois états — une demande partie n\'est pas une demande jamais faite', () => {
+  const etat = src => ({
+    document: 'brd', phase: 'define',
+    sources: [{ id: 'SRC-001', type: 'entretien', stakeholders: ['SH-01'], quote: 'je perds une heure par dossier', ...src }],
+    stakeholders: [{ id: 'SH-01', name: 'x', role: 'r', status: 'interrogée', end_user: true }],
+    candidate_needs: [{ id: 'BC-001', statement: 'pouvoir suivre un dossier', sources: ['SRC-001'], concerns: ['SH-01'] }],
+    business_requirements: [{ id: 'BR-001', statement: 'Le service doit pouvoir suivre un dossier', status: 'validé', priority: 'must', from_needs: ['BC-001'] }],
+  });
+  const s84 = src => checkState(etat(src)).filter(f => f.rule === 'S84');
+
+  // Partie et datée : la question vit. Non mesurée — ni tenue, ni en échec.
+  const attente = s84({ feedback: 'envoyé', feedback_le: '2026-10-21' });
+  assert.equal(attente.length, 1);
+  assert.equal(attente[0].pending, true, 'une relecture partie et datée est comptée comme un trou');
+  assert.match(attente[0].message, /pas encore tranchée/);
+
+  // Dite partie sans dire quand : c'est l'agent qui écrit le champ, et personne ne peut le contredire.
+  const sansDate = s84({ feedback: 'envoyé' });
+  assert.equal(sansDate.length, 1);
+  assert.ok(!sansDate[0].pending, 'une demande sans date passe pour une demande en vol');
+  assert.match(sansDate[0].message, /sans dire quand/);
+  // Une date qui n'est pas une date ne vaut pas mieux qu'aucune.
+  assert.ok(!s84({ feedback: 'envoyé', feedback_le: 'la semaine dernière' })[0].pending);
+
+  // Jamais demandé : le constat d'origine, inchangé.
+  assert.match(s84({ feedback: 'à envoyer' })[0].message, /jamais été vérifié/);
+  assert.ok(!s84({ feedback: 'à envoyer' })[0].pending);
+  for (const fb of ['confirmé', 'corrigé', 'sans objet']) assert.equal(s84({ feedback: fb }).length, 0, `${fb} clôt le retour`);
+
+  // Côté PRD, où l'exigence tient à UNE source nommée par `origin` : la date est dans le message,
+  // parce que c'est elle qui dit s'il est temps de relancer.
+  const prdS84 = src => checkState({
+    document: 'prd', phase: 'specify',
+    sources: [{ id: 'SRC-001', type: 'entretien', stakeholders: ['SH-01'], quote: 'x', ...src }],
+    stakeholders: [{ id: 'SH-01', name: 'x', role: 'r', status: 'interrogée' }],
+    functional_requirements: [{ id: 'FR-001', statement: 'Le système doit lister les dossiers', origin: 'SRC-001' }],
+  }).filter(f => f.rule === 'S84');
+  const enVol = prdS84({ feedback: 'envoyé', feedback_le: '2026-10-21' });
+  assert.equal(enVol[0].pending, true);
+  assert.match(enVol[0].message, /partie le 2026-10-21/);
+  assert.ok(!prdS84({ feedback: 'envoyé' })[0].pending);
+});
+
+// Un canal de messagerie permet de poser la question à la personne elle-même. Sa réponse est une voix
+// entendue — elle doit éteindre S83 et S95 comme un entretien, sinon un dossier mené par écrit se
+// ferait reprocher de n'avoir entendu personne. Mais elle n'a pas de salle, et elle ne se déclare pas
+// `entretien` : six messages et une conversation de quarante minutes ne sont pas la même preuve, et le
+// mot perdrait son sens dans tous les dossiers, y compris ceux qui n'ont jamais branché de canal.
+test('échange écrit : une voix entendue, sans salle, et qui doit dire ce qui a été dit', () => {
+  const base = {
+    document: 'brd', phase: 'discover',
+    stakeholders: [{ id: 'SH-1', name: 'x', role: 'r', status: 'interrogée', end_user: true }],
+    candidate_needs: [{ id: 'BC-1', statement: 'pouvoir suivre un dossier', sources: ['SRC-1'], concerns: ['SH-1'] }],
+  };
+  const ecrit = extra => ({ ...base, sources: [{ id: 'SRC-1', type: 'échange écrit', stakeholders: ['SH-1'], quote: 'je perds une heure par dossier', ...extra }] });
+  const codesDe = s => checkState(s).map(f => f.rule);
+
+  assert.ok(!codesDe(ecrit({})).includes('S88'), 'le type n\'est pas dans l\'énumération des types de source');
+  assert.ok(!codesDe(ecrit({})).includes('S83'), 'une réponse écrite ne compte pas comme un utilisateur direct entendu');
+  assert.ok(!codesDe(ecrit({})).includes('S95'), 'le besoin paraît porté par quelqu\'un qu\'on n\'a pas entendu');
+  assert.ok(!codesDe(ecrit({})).includes('S81'), 'la personne qui a répondu est nommée et entendue');
+  // Déclaratif, comme un entretien : ce n'est pas une observation.
+  assert.equal(evidenceOf(ecrit({}), ['SRC-1']).class, 'rapporté');
+  // Pas de salle : S91 parle d'une pièce, et il n'y en a pas.
+  assert.ok(!codesDe(ecrit({ present: ['SH-9'] })).includes('S91'), 'un échange écrit se voit reprocher un tour de table');
+  assert.ok(codesDe({ ...base, sources: [{ id: 'SRC-1', type: 'entretien', stakeholders: ['SH-1'], quote: 'x', present: ['SH-9'] }] }).includes('S91'), 'un entretien, lui, garde sa salle');
+  // Mais c'est de la parole : les mots existent déjà, il n'y a qu'à les recopier (S102).
+  assert.ok(codesDe(ecrit({ quote: '' })).includes('S102'), 'une réponse écrite sans verbatim passe');
+});
+
 // `prd-builder/references/shadow-zones.md` prescrit « Renseigne `parties` et `arbiter` (…, jamais partie
 // au conflit) » et rien ne le vérifiait : S15 et S16 n'existaient que dans `checkBrd`, où le conflit est
 // une `contradiction` de sous-type `interets` et non un type à lui seul.

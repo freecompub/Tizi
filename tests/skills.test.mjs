@@ -1132,9 +1132,73 @@ test('la documentation des règles de contrôle est à jour', async () => {
   for (const bloc of [/^### Porte de PR \(\d+ conditions\)/m, /^### Porte de release \(\d+ conditions\)/m, /^## Garde-fous de l'export \(\d+\)/m]) {
     assert.match(doc, bloc, `un bloc de contrôles manque : ${bloc}`);
   }
+  // Un message est une phrase. Le scanner lisait aussi les littéraux de la CONDITION d'un ternaire, et
+  // S84 a affiché « attente · exigence tirée de … » — le test d'un `etat === 'attente'` promu au rang
+  // de message. Un mot seul dans une cellule de messages est la signature de cette fuite.
+  const fuites = [];
+  // L'index, en fin de document, a une autre forme : sa troisième colonne est un libellé, pas des
+  // messages. On s'arrête avant lui.
+  const tables = doc.slice(0, doc.indexOf('## Index des règles'));
+  for (const ligne of tables.split('\n').filter(l => /^\| `[A-Z]\d{2,3}` \|/.test(l))) {
+    const cellule = ligne.split('|')[3] ?? '';
+    for (const msg of cellule.split(' · ').map(x => x.trim()).filter(Boolean)) {
+      if (!/\s/.test(msg) && msg !== '—') fuites.push(`${ligne.split('|')[1].trim()} : « ${msg} »`);
+    }
+  }
+  assert.deepEqual(fuites, [], `message(s) d'un seul mot — un test de ternaire lu comme un message :\n${fuites.join('\n')}`);
   // Les conditions de porte viennent de `gateConditions`, pas d'une copie : on en vérifie une au hasard.
   const { gateConditions } = await import(join(SKILLS, 'brd-builder', 'scripts', 'lib', 'gates.mjs'));
   for (const c of gateConditions({ document: 'sad', phase: 'design' }).conditions) {
     assert.ok(doc.includes(c[0]), `condition de porte absente de la documentation : « ${c[0]} »`);
   }
+});
+
+// Une relecture partie et pas encore revenue n'est pas un trou du dossier : c'est une question posée.
+// Elle change de liste comme une dérogation, et elle sort du décompte des avertissements actifs — sinon
+// poser la question coûte autant que ne pas la poser, et la porte reproche à l'utilisateur ce qu'il
+// attend de quelqu'un d'autre. Les deux scripts doivent filtrer pareil : `lint.mjs` l'écartait et
+// `status.mjs` la comptait, ils annonçaient deux nombres différents sur le même fichier.
+test('une relecture partie sort du décompte, dans les deux scripts, et se dit à part', () => {
+  const dir = tempDir('tizi-relecture');
+  mkdirSync(join(dir, 'brd', 'demo'), { recursive: true });
+  const etat = join(dir, 'brd', 'demo', 'state.yaml');
+  const ecrire = source => writeFileSync(etat, [
+    'document: brd', 'phase: define',
+    'stakeholders:', '  - { id: SH-01, name: Durand, role: référente, status: interrogée, end_user: true }',
+    'sources:', `  - ${source}`,
+    'candidate_needs:', '  - { id: BC-01, text: "Pouvoir suivre un dossier", sources: [{ ref: SRC-01 }], concerns: [SH-01], status: confirmé }',
+    'business_requirements:', '  - { id: BR-01, statement: "Le service doit pouvoir suivre un dossier", status: validé, priority: must, from_needs: [BC-01], objectives: [OBJ-01] }',
+    'objectives:', '  - { id: OBJ-01, statement: "Réduire les rejets", indicator: taux, target: "5 %", status: validé }',
+  ].join('\n'));
+  const compte = () => {
+    const st = node(script('brd-builder', 'status.mjs'), [etat], { cwd: dir });
+    const lt = node(script('brd-builder', 'lint.mjs'), [etat], { cwd: dir });
+    assert.equal(st.code, 0, st.err);
+    return { st, lt,
+      porte: Number(st.out.match(/(\d+) avertissement\(s\) actif\(s\)/)?.[1]),
+      lint: Number(lt.out.match(/Vérification : (\d+) avertissement/)?.[1]) || 0 };
+  };
+
+  // Jamais demandé : S84 compte, dans les deux.
+  ecrire('{ id: SRC-01, type: entretien, stakeholders: [SH-01], quote: "je perds une heure", feedback: à envoyer }');
+  const muet = compte();
+  assert.ok(/S84/.test(muet.lt.out), 'S84 ne sort pas sur une source jamais relue');
+  assert.equal(muet.porte, muet.lint, 'le point d\'étape et le lint annoncent deux nombres différents');
+
+  // Demandé, et daté : un avertissement de moins dans les deux, et la question se dit à part.
+  ecrire('{ id: SRC-01, type: entretien, stakeholders: [SH-01], quote: "je perds une heure", feedback: envoyé, feedback_le: "2026-10-21" }');
+  const vol = compte();
+  assert.equal(vol.lint, muet.lint - 1, 'la relecture partie reste dans le décompte du lint');
+  assert.equal(vol.porte, vol.lint, 'les deux scripts ne filtrent pas pareil');
+  assert.match(vol.lt.out, /question\(s\) posée\(s\) et pas encore revenue\(s\)/, 'la question posée ne se dit nulle part');
+  assert.match(vol.lt.out, /… \[S84\] BR-01/, 'la question posée n\'est pas nommée');
+  // Elle ne disparaît pas : la sortie machine la garde, avec son drapeau.
+  const js = node(script('brd-builder', 'lint.mjs'), [etat, '--json'], { cwd: dir });
+  assert.equal(JSON.parse(js.out).find(f => f.rule === 'S84')?.pending, true, 'la sortie machine perd l\'état');
+
+  // Dite partie sans date : elle retombe au débit du dossier, c'est l'agent qui écrit le champ.
+  ecrire('{ id: SRC-01, type: entretien, stakeholders: [SH-01], quote: "je perds une heure", feedback: envoyé }');
+  const cochee = compte();
+  assert.equal(cochee.lint, muet.lint, 'une case cochée sans date vaut une demande en vol');
+  assert.match(cochee.lt.out, /sans dire quand/);
 });

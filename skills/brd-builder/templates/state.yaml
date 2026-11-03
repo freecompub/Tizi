@@ -127,7 +127,13 @@ decision_rights: []      # qui tranche quoi, établi au cadrage et validé par l
 
 sources: []
 #  - id: SRC-001
-#    type: entretien       # cadrage | entretien | observation | mesure | test | document | atelier | ticket | revue | dt-handoff | décision | autre:<libellé>
+#    type: entretien       # cadrage | entretien | échange écrit | observation | mesure | test | document | atelier | ticket | revue | dt-handoff | décision | autre:<libellé>
+#                          # échange écrit : la personne a répondu PAR ÉCRIT — messagerie, courriel, fil
+#                          # d'équipe. C'est un recueil auprès d'elle comme un entretien : sa voix compte
+#                          # pour S83 et S95. Mais il n'a pas de salle, donc pas de `present` (S91), et
+#                          # il ne se déclare pas `entretien` : celui qui relit six mois plus tard ne
+#                          # peut plus distinguer une conversation de quarante minutes d'un fil de six
+#                          # messages, et le mot « entretien » perd son sens dans tous les dossiers
 #                          # décision : un choix de l'utilisateur, pas un recueil — il ne vaut pas une voix entendue (S83)
 #                          # cadrage : l'échange qui ouvre l'initiative, avec qui porte la demande. Déclaratif,
 #                          # et souvent rapporté au nom d'un tiers : la partie prenante nommée doit être
@@ -159,10 +165,21 @@ sources: []
 #                          # qui lira le premier dans six mois n'avait aucun chemin vers le second
 #                          # (S112). Une source corrigée est la première à faire relire
 #    feedback: à envoyer   # retour à la source : à envoyer | envoyé | confirmé | corrigé | sans objet
+#    feedback_le: ""       # AAAA-MM-JJ — QUAND la demande est partie. `envoyé` et `à envoyer` tombaient
+#                          # dans le même sac : S84 ne lisait que « confirmé | corrigé | sans objet », donc
+#                          # « demandé le 21, pas encore de réponse » et « jamais rien demandé à personne »
+#                          # rendaient le même constat. L'état `envoyé` ne servait à rien. Avec la date, il
+#                          # vaut « non mesuré » — une question qui vit, que la porte ne compte pas contre
+#                          # vous — et le relevé dit depuis combien de jours. Sans la date, il reste un
+#                          # échec : c'est l'agent qui écrit le champ, et « envoyé » qu'on ne peut pas
+#                          # vérifier est une case cochée, pas un fait
+#    feedback_par: ""      # par quoi elle est partie : oral | courriel | messagerie | <canal nommé>.
+#                          # Informatif — rien ne le réclame. Il sert à qui relance, et à qui se demande
+#                          # si une trace existe ailleurs que dans ce fichier
 #    feedback_motif: ""    # POURQUOI « sans objet », sur une source de parole recueillie — cadrage,
-#                          # entretien, atelier, revue (S111). C'est la seule valeur qui éteint S84 sans
-#                          # que personne n'ait rien relu : sur une décision de l'utilisateur elle va de
-#                          # soi, sur un échange où quelqu'un a parlé elle s'explique
+#                          # entretien, échange écrit, atelier, revue (S111). C'est la seule valeur qui
+#                          # éteint S84 sans que personne n'ait rien relu : sur une décision de
+#                          # l'utilisateur elle va de soi, sur un échange où quelqu'un a parlé elle s'explique
 
 candidate_needs: []
 #  - id: BC-001

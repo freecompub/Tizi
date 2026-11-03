@@ -114,7 +114,10 @@ const actifs = regles ? regles.checkState(s, {
   refs: refs ?? {}, constitution, contacts, handoffs: ingestedHandoffs(s, statePath, refs ?? {}),
   checklists: voisins('checklists', f => ({ file: f, text: readFileSync(join(dirname(statePath), 'checklists', f), 'utf8') })),
   interviews: voisins('interviews', f => ({ file: f, text: readFileSync(join(dirname(statePath), 'interviews', f), 'utf8') })),
-}).filter(f => !f.waived).length : null;
+// `pending` sort du décompte avec `waived`, et pour la même raison : la porte compte ce qui manque au
+// dossier, pas ce qu'on attend de quelqu'un d'autre. Les deux scripts filtrent pareil, sinon ils
+// annoncent deux nombres différents — ce que le commentaire ci-dessus interdit.
+}).filter(f => !f.waived && !f.pending).length : null;
 // La porte de sortie, avec ses conditions comptées — pour les cinq documents à phases.
 const porte = gateConditions(s, { actifs, refs });
 if (porte) {
