@@ -66,7 +66,21 @@ export function questionsOf(input) {
 
 // Masquage des secrets probables avant toute copie (les transcriptions peuvent contenir des jetons collés par erreur).
 const SECRET_RE = /(gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|xox[abpr]-[A-Za-z0-9-]{10,}|AKIA[0-9A-Z]{16}|sk-[A-Za-z0-9_-]{20,}|-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z ]*PRIVATE KEY-----)/g;
-export const maskSecrets = text => String(text).replace(SECRET_RE, '[secret masqué]');
+// Les coordonnées, pour une raison différente et un chemin que tout le reste du dispositif avait fermé.
+// L'état ne porte que le CANAL (`joignable_par`), la coordonnée vit dans `contacts.yaml` que `.gitignore`
+// exclut, `freeze-version.mjs` ne la copie pas et le handoff ne retient que cinq champs — et pourtant :
+// `reach-out.mjs` dit « demande-la à l'utilisateur », l'utilisateur la tape dans la conversation,
+// l'extrait reprend ses messages MOT POUR MOT, et l'extrait se commite. Le chemin le plus probable de
+// tous était le seul ouvert. Ce n'est pas un secret au sens du motif ci-dessus — rien n'est compromis —
+// mais c'est une donnée personnelle qui ne doit pas quitter la machine où elle a été donnée, et la
+// marque le dit en propres termes pour que celui qui relit sache qu'il manque quelque chose et où le
+// chercher. Vérifié sur tout le dépôt avant d'être posé : les seules correspondances sont les exemples
+// du gabarit `contacts.yaml` et ceux des tests. Le `.jsonl` passe par la même fonction, donc il est
+// couvert aussi — il est ignoré par git, mais il reste sur le disque et se lit.
+const COORDONNEE_RE = /([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}|\+\d{1,3}(?:[ .\-]?\d){9,10}|\b0\d(?:[ .\-]?\d{2}){4}\b)/g;
+export const maskSecrets = text => String(text)
+  .replace(SECRET_RE, '[secret masqué]')
+  .replace(COORDONNEE_RE, '[coordonnée masquée — voir contacts.yaml]');
 
 const textOf = content => {
   if (typeof content === 'string') return content;
