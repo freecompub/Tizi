@@ -5,7 +5,7 @@
 import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { arr, loadState, fail, shLabel } from './common.mjs';
-import { refsDans } from './rules.mjs';
+import { refsDans, formeDuCanal } from './rules.mjs';
 
 // Le nom d'une personne tel qu'on l'écrit DANS un message : son nom, sinon sa fonction, jamais son
 // identifiant. `shLabel` rend « Karim (SH-02) » — c'est l'outil des rapports internes, et il était
@@ -36,6 +36,54 @@ export const langueDe = (s, id) => {
 
 export const nomInitiative = s => String(s.initiative?.name ?? (typeof s.initiative === 'string' ? s.initiative : '') ?? '').trim();
 
+// À LA DEMANDE DE QUI. C'est l'élément le plus important d'une première prise de contact, et c'était le
+// plus facile à perdre : il se lisait à `request.requested_by` — un chemin qui n'existe dans aucun des
+// deux gabarits —, avec un rattrapage par expression régulière sur les rôles, `/sponsor/i`. Sur le
+// dossier réel, le chemin était vide et aucun des quatre rôles ne contenait le mot : la clause
+// « à la demande de … » DISPARAISSAIT, sans trace, et le message partait sans dire au nom de qui on
+// écrit. Un champ absent du gabarit ne se remplit jamais, et un rattrapage par mot-clé sur un rôle
+// écrit en français libre est un tirage au sort.
+//
+// Il est devenu OBLIGATOIRE le jour où le consentement est passé du côté de l'utilisateur : si la
+// personne est censée attendre notre message, c'est que quelqu'un lui en a parlé, et ce quelqu'un est
+// la seule chose qui rattache ce qu'elle reçoit à ce qu'on lui a annoncé. Sans lui, un agent inconnu
+// écrit à quelqu'un qui n'a rien demandé — exactement ce que le reste du dispositif prétend éviter.
+// Et le deviner serait pire que l'omettre : nommer la mauvaise personne comme commanditaire, c'est
+// faire dire à quelqu'un qu'il a demandé une démarche dont il n'a pas entendu parler.
+export function demandeur(s) {
+  const ref = String(s?.initiative?.requested_by ?? '').trim();
+  if (!ref) {
+    fail('`initiative.requested_by` n\'est pas renseigné : on ne sait pas au nom de qui on écrit. C\'est la '
+      + 'ligne qui rattache le message à ce que la personne attend — « je vous écris suite à votre entretien avec… » —, '
+      + 'et c\'est ce qui rend le contact légitime maintenant que le consentement est du côté de l\'utilisateur. '
+      + 'Demande-lui qui a demandé cette initiative, et écris son identifiant (`SH-xx`) dans `initiative.requested_by`. '
+      + 'Ne le devine pas : nommer la mauvaise personne lui fait dire qu\'elle a demandé une démarche dont elle n\'a pas entendu parler.');
+  }
+  const nom = nomClair(s, ref);
+  if (!nom) {
+    fail(`\`initiative.requested_by: ${ref}\` ne désigne personne qui ait un nom ou une fonction dans l'état : `
+      + 'soit l\'identifiant est faux, soit la partie prenante n\'a ni `name` ni `role`. On n\'écrit pas '
+      + '« à la demande de  » à quelqu\'un.');
+  }
+  return nom;
+}
+
+// Le canal gouverne la FORME du message, jamais le nombre de questions qu'il porte. La table vit dans
+// `rules.mjs`, à côté de l'énumération qu'elle doit suivre ; elle est reprise ici parce que c'est ici
+// qu'on compose. Un canal qui ne porte pas d'écrit — téléphone, vive voix — n'est pas un canal de
+// message : c'est une conversation, et une conversation se mène avec un guide d'entretien.
+export function formeEcrite(canal, ou) {
+  const forme = formeDuCanal(canal);
+  if (!forme.ecrit) {
+    fail(`${ou} par « ${canal} », qui n'est pas un canal d'écriture : on ne compose pas un message pour une `
+      + 'conversation. Un échange de vive voix ou au téléphone se mène avec un guide d\'entretien — huit à douze '
+      + 'questions dans les mains d\'un humain qui conduit l\'échange et relance (`references/questions.md`) —, '
+      + 'et ce n\'est pas le même objet qu\'un message. Si c\'est bien par écrit qu\'on veut lui écrire, corrige '
+      + '`joignable_par`.');
+  }
+  return forme;
+}
+
 // Par quoi et avec quoi joindre la personne. La coordonnée vit dans `contacts.yaml`, à côté de l'état
 // et hors du dépôt (S114) : absente, il n'y a rien à composer, et un message sans destinataire ne
 // s'écrit pas « en attendant ».
@@ -61,6 +109,26 @@ export const paragraphes = blocs => blocs.filter(b => b !== null && b !== undefi
 export function refuseLesIdentifiants(texte, ou) {
   const refs = refsDans(texte);
   if (refs.length) fail(`${ou} porte ${refs.length > 1 ? 'des identifiants internes' : 'un identifiant interne'} (${refs.join(', ')}) : la personne au bout n'a pas l'index sous les yeux, et ne l'aura jamais — c'est la doctrine de S104, un cran plus loin. Réécris en clair avant d'envoyer.`);
+}
+
+// Une question ÉCRITE SUR quelqu'un, envoyée À cette personne. Trouvé sur le dossier réel, dans la
+// question de tête du premier message groupé : « Le formulaire porte-t-il une case pour le niveau
+// scolaire ? Dédé l'affirme, le relevé fait du document ne la mentionne pas. » C'est juste, c'est utile,
+// et c'est écrit pour le dossier — à Dédé, ça dit « Dédé prétend », à la troisième personne, en face.
+// Les zones d'ombre sont rédigées pour l'index, pas pour la boîte de réception de qui elles nomment, et
+// rien ne faisait la différence : `refuseLesIdentifiants` attrape `SH-03`, pas « Dédé ».
+// Le signal est son NOM dans le texte, et il est fiable : une question à quelqu'un dit « vous ». Si elle
+// a besoin de le citer, c'est « vous avez dit ». Son nom en clair veut dire que la phrase parle de lui à
+// quelqu'un d'autre. Sous trois lettres, on ne cherche pas : un nom court attrape des mots ordinaires.
+export function refuseLaTroisiemePersonne(s, id, texte, ou) {
+  const nom = String(arr(s?.stakeholders).find(x => x.id === id)?.name ?? '').trim();
+  if (nom.length < 3) return;
+  const motif = new RegExp(`(^|[^\\p{L}])${nom.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}([^\\p{L}]|$)`, 'iu');
+  if (!motif.test(String(texte ?? ''))) return;
+  fail(`${ou} nomme « ${nom} » — c'est-à-dire la personne à qui le message part — à la troisième personne : `
+    + 'elle a été écrite pour le dossier, pas pour elle. Lue dans sa boîte, elle dit « untel prétend » en '
+    + 'face de lui. Réécris-la à la deuxième personne (« vous avez dit… ») avant d\'envoyer : ce n\'est pas '
+    + 'la zone d\'ombre qu\'on change, c\'est la formulation du message.');
 }
 
 // Ce qu'aucun script ne peut vérifier, et qui annule tout le reste quand on l'oublie. Le corps d'un

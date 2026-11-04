@@ -185,10 +185,50 @@ export const sollicitationEtat = (sh, sources = []) => {
 // revient pendant trois semaines, l'alerte arrive à trois semaines. C'est moins joli, et c'est vrai.
 //
 // Réglables, parce qu'une association de parents et un service hospitalier n'ont pas le même tempo.
-const RELANCE = { signaler: 1, agir: 5 };
+//
+// Et dépendants du CANAL, parce que cinq jours ne veulent pas dire la même chose partout : un courriel
+// sans réponse au bout de cinq jours est un courriel qu'on n'a pas lu, un message instantané sans
+// réponse au bout de cinq jours est un message qu'on a décidé de ne pas lire. Le même nombre y qualifie
+// deux situations différentes, et c'était le même nombre.
+const FORMES = {
+  courriel: { objet: true, ecrit: true, groupe: 5, declaration: 'longue', relance: { signaler: 1, agir: 5 } },
+  messagerie: { objet: false, ecrit: true, groupe: 3, declaration: 'courte', relance: { signaler: 1, agir: 2 } },
+  // Ni le téléphone ni la vive voix ne portent de message : ce sont des conversations, et une
+  // conversation a son guide d'entretien — huit à douze questions dans les mains d'un humain qui mène
+  // l'échange (`references/questions.md`). `reach-out.mjs` compose un TEXTE : il refuse ces deux-là
+  // plutôt que d'en rendre un qu'il faudrait lire à voix haute.
+  'téléphone': { objet: false, ecrit: false, groupe: 3, declaration: 'courte', relance: { signaler: 1, agir: 2 } },
+  'vive voix': { objet: false, ecrit: false, groupe: 3, declaration: 'courte', relance: { signaler: 1, agir: 5 } },
+};
+// Ce que le canal gouverne, et il ne gouverne que ça : la FORME. Le nombre de questions qu'un message
+// porte ne dépend pas du tuyau mais de ce que les questions ont entre elles — c'est `reach-out.mjs` qui
+// le décide, et sur un autre critère. La table vit ici parce que l'énumération `canal de contact` est
+// ici : séparées, elles dériveraient au premier canal ajouté, et un canal sans forme composerait un
+// message par défaut sans que rien ne le dise.
+//   objet        un courriel en exige un, une messagerie n'en a pas — l'y mettre pose un titre au
+//                milieu d'un fil de discussion ;
+//   ecrit        si le canal porte un texte du tout ;
+//   groupe       la place, en nombre de questions : un écran de téléphone n'est pas une page ;
+//   declaration  l'ouverture, longue ou courte. Ce qu'elle DIT ne change jamais — qui écrit, où va la
+//                réponse, qu'elle est libre —, seule sa longueur change ;
+//   relance      au bout de combien de jours le silence se signale, puis se tranche.
+// Le défaut d'un canal inconnu — un `autre:<libellé>`, un outil maison — est la MESSAGERIE et non le
+// courriel : la forme la plus étroite passe partout, alors qu'un objet collé dans un fil de discussion
+// se voit tout de suite. Se tromper vers le court ne coûte rien ; se tromper vers le long, oui.
+export const formeDuCanal = canal => FORMES[String(canal ?? '').trim()] ?? FORMES.messagerie;
+const RELANCE = FORMES.courriel.relance;
 // Les deux emplacements, comme `seuilsDe` : le plan range ses réglages sous `settings`, le BRD et le
 // PRD à la racine. Lire les deux évite d'imposer une forme à un gabarit qui en a déjà une autre.
-export const seuilsRelance = s => ({ ...RELANCE, ...(s?.settings?.relance ?? {}), ...(s?.relance ?? {}) });
+// Le canal se glisse SOUS les deux : ce que le dossier déclare l'emporte sur ce que le canal suggère,
+// parce qu'un réglage écrit est un choix et qu'une table est un défaut.
+export const seuilsRelance = (s, canal) => ({ ...RELANCE, ...(canal ? formeDuCanal(canal).relance : {}),
+  ...(s?.settings?.relance ?? {}), ...(s?.relance ?? {}) });
+// Les zones sur lesquelles une sollicitation est partie. Une seule au départ, d'où le champ au
+// singulier ; plusieurs depuis qu'un message peut porter une liste de précisions indépendantes. Le
+// champ accepte donc les deux formes — `ZO-001` ou `[ZO-001, ZO-034]` —, et c'est ici que la tolérance
+// vit, une fois, plutôt que chez chaque lecteur.
+export const zonesSollicitees = sh => (Array.isArray(sh?.sollicitee_zone) ? sh.sollicitee_zone : [sh?.sollicitee_zone])
+  .map(x => String(x ?? '').trim()).filter(Boolean);
 const JOURS = 86400000;
 const joursDepuis = d => Math.floor((Date.parse(new Date().toISOString().slice(0, 10)) - Date.parse(d)) / JOURS);
 
@@ -1746,7 +1786,9 @@ export function sollicitationFindings(s) {
   // quelqu'un qui ne répond pas, ou renoncer sur lui, n'est pas une décision d'outil.
   for (const sh of arr(s?.stakeholders)) {
     if (sollicitationEtat(sh, s?.sources) !== 'attente') continue;
-    const { signaler, agir } = seuilsRelance(s);
+    // Les seuils du canal par lequel la question est PARTIE : une question laissée deux jours sur une
+    // messagerie est déjà en souffrance là où un courriel vient d'arriver.
+    const { signaler, agir } = seuilsRelance(s, sh.joignable_par);
     const jours = joursDepuis(sh.sollicitee_le);
     if (jours <= agir) continue;
     out.push({ rule: 'S117', id: sh.id, message: `question en vol depuis ${jours} jour(s), au-delà du seuil de ${agir} (\`settings.relance.agir\`) : ce n'est plus une question qui vit, c'est une question que personne ne suit, et la porte cessait de la compter. Trois issues, et c'est l'utilisateur qui tranche : attendre encore en le disant, relancer une fois (\`reach-out.mjs --relance\`), ou renoncer — \`non disponible\` avec son motif. Le premier seuil, celui qui dit seulement de le signaler, est à ${signaler} jour(s)` });
@@ -1779,21 +1821,25 @@ export function sollicitationFindings(s) {
   // dit pas ce qu'elle demandait est inexploitable au tour suivant — c'est ce qui forçait le message de
   // suite à dire « si c'est la même question que la dernière fois, c'est que j'ai mal lu votre réponse »,
   // faute de pouvoir le savoir. L'ambiguïté était rendue à la personne, qui n'a rien à voir là-dedans.
+  // Le champ porte une zone ou plusieurs : un message peut emporter une liste de précisions
+  // indépendantes, et chacune se vérifie comme si elle était partie seule — exister, et être adressée
+  // à elle. Grouper ne relâche aucun des deux contrôles.
   for (const sh of arr(s?.stakeholders)) {
     const quand = String(sh.sollicitee_le ?? '').trim();
-    const quoi = String(sh.sollicitee_zone ?? '').trim();
-    if (quand && !quoi) {
+    const quoi = zonesSollicitees(sh);
+    if (quand && !quoi.length) {
       out.push({ rule: 'S115', id: sh.id, message: `sollicitée le ${quand} sans dire sur quoi (\`sollicitee_zone\`) : au tour suivant, rien ne permet de savoir si sa réponse portait sur la question posée — et c'est à elle qu'on finit par demander de le deviner` });
-    } else if (quoi && !quand) {
-      out.push({ rule: 'S115', id: sh.id, message: `porte \`sollicitee_zone: ${quoi}\` sans date de départ (\`sollicitee_le\`) : une question qu'on dit partie sans dire quand ne se relance pas et ne compte pour rien` });
+    } else if (quoi.length && !quand) {
+      out.push({ rule: 'S115', id: sh.id, message: `porte \`sollicitee_zone: ${quoi.join(', ')}\` sans date de départ (\`sollicitee_le\`) : une question qu'on dit partie sans dire quand ne se relance pas et ne compte pour rien` });
     }
-    if (!quoi) continue;
-    const zone = arr(s?.shadow_zones).find(z => z.id === quoi);
-    if (!zone) { out.push({ rule: 'S09', id: sh.id, message: `sollicitée sur ${quoi}, qui n'est pas une zone d'ombre de l'état` }); continue; }
-    // Une question posée à quelqu'un d'autre, envoyée à elle : la zone dit à qui elle s'adresse, et
-    // c'est tout l'objet de S94 — une question SUR quelqu'un n'est pas une question À quelqu'un.
-    if (zone.ask_to && zone.ask_to !== sh.id) {
-      out.push({ rule: 'S115', id: sh.id, message: `sollicitée sur ${quoi}, qui est adressée à ${zone.ask_to} (\`ask_to\`) : on lui a posé la question de quelqu'un d'autre, et sa réponse sera consignée comme si elle valait pour l'autre` });
+    for (const ref of quoi) {
+      const zone = arr(s?.shadow_zones).find(z => z.id === ref);
+      if (!zone) { out.push({ rule: 'S09', id: sh.id, message: `sollicitée sur ${ref}, qui n'est pas une zone d'ombre de l'état` }); continue; }
+      // Une question posée à quelqu'un d'autre, envoyée à elle : la zone dit à qui elle s'adresse, et
+      // c'est tout l'objet de S94 — une question SUR quelqu'un n'est pas une question À quelqu'un.
+      if (zone.ask_to && zone.ask_to !== sh.id) {
+        out.push({ rule: 'S115', id: sh.id, message: `sollicitée sur ${ref}, qui est adressée à ${zone.ask_to} (\`ask_to\`) : on lui a posé la question de quelqu'un d'autre, et sa réponse sera consignée comme si elle valait pour l'autre` });
+      }
     }
   }
   // Le deuxième tour d'un entretien par canal. La personne est `interrogée` et porte une date d'écrit :
