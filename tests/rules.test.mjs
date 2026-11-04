@@ -1489,6 +1489,42 @@ test('S119, S120, S121 : une question porte ce qui lui est arrivé', () => {
   assert.deepEqual(dits([{ id: 'ZO-004', type: 'attendu_implicite', question: 'Et celle-là ?', ask_to: 'SH-01', status: 'assumée', resolution: 'portée par R-02 : on fera sans' }], 'S121'), []);
 });
 
+test('S122, S123 : une entrée de la cartographie vaut un nombre de personnes, pas une', () => {
+  // Le cas qui a produit ces deux règles : SH-04 du troisième dossier réel, « membre(s) du bureau
+  // assurant la saisie, non présent(s) au cadrage », sans nom. Compté pour un, il faisait annoncer
+  // « 3 parties prenantes entendues sur 4 » là où le dossier ignorait combien ils étaient.
+  const sh = (extra = {}) => ({ id: 'SH-04', name: '', role: 'Membre du bureau qui saisit', power: 'faible', impact: 'fort', influence: 'positive', quadrant: 'consulter', ...extra });
+  const dits = (shs, r, phase = 'discover') => checkState({ document: 'brd', phase, stakeholders: shs }).filter(f => f.rule === r).map(f => f.message);
+
+  // Une entrée NOMMÉE n'a rien à écrire : un nom désigne une personne. L'absence d'un champ n'est
+  // pas un reproche, c'est la règle de ce catalogue.
+  assert.deepEqual(dits([sh({ name: 'Samir', status: 'interrogée' })], 'S122'), []);
+  assert.deepEqual(dits([sh({ name: 'Samir', status: 'interrogée' })], 'S123'), []);
+
+  // Sans nom et sans effectif : le dossier ne sait pas combien de personnes l'entrée vaut.
+  assert.match(dits([sh({ status: 'à interroger' })], 'S122')[0], /sans nom, et sans dire combien de personnes elle vaut \(`personnes`\)/);
+  // Un effectif écrit mais illisible n'est pas un effectif : l'ancien calcul l'aurait pris pour 1.
+  assert.match(dits([sh({ personnes: 'trois' })], 'S122')[0], /`personnes: trois` n'est pas un nombre de personnes/);
+  assert.match(dits([sh({ personnes: 0 })], 'S122')[0], /`personnes: 0` n'est pas un nombre de personnes/);
+  // L'effectif donné lève S122, et n'en appelle pas une autre tant que le statut ne parle pour personne.
+  assert.deepEqual(dits([sh({ personnes: 4, status: 'à interroger' })], 'S122'), []);
+  assert.deepEqual(dits([sh({ personnes: 4, status: 'à interroger' })], 'S123'), []);
+
+  // S123 : « interrogée » sur quatre personnes ne dit pas laquelle a parlé. Un statut ne se divise pas.
+  assert.match(dits([sh({ personnes: 4, status: 'interrogée' })], 'S123')[0], /vaut 4 personnes et se déclare « interrogée » sans dire combien d'entre elles ont parlé \(`entendues`\)/);
+  assert.deepEqual(dits([sh({ personnes: 4, entendues: 1, status: 'interrogée' })], 'S123'), []);
+  // Zéro entendues est une mesure, pas un vide : `Number('')` valait 0, et une entrée nommée et
+  // interrogée comptait alors pour zéro voix.
+  assert.deepEqual(dits([sh({ personnes: 4, entendues: 0, status: 'à interroger' })], 'S123'), []);
+  assert.match(dits([sh({ personnes: 4, entendues: 'une', status: 'interrogée' })], 'S123')[0], /`entendues: une` n'est pas un nombre de personnes entendues/);
+  // Les deux nombres se contredisent, ou le nombre contredit le statut.
+  assert.match(dits([sh({ personnes: 2, entendues: 5, status: 'interrogée' })], 'S123')[0], /5 personne\(s\) entendue\(s\) pour un effectif de 2/);
+  assert.match(dits([sh({ personnes: 4, entendues: 2, status: 'à interroger' })], 'S123')[0], /2 personne\(s\) entendue\(s\) et un statut qui dit le contraire \(`à interroger`\)/);
+
+  // Rien à vérifier en Assess : la carte n'existe pas encore, le tour de table ne donne que des noms.
+  assert.deepEqual(dits([sh({ status: 'à interroger' })], 'S122', 'assess'), []);
+});
+
 test('un message sortant ne parle qu\'en clair', () => {
   const brd = (extra = {}, zone = {}) => ({
     document: 'brd', phase: 'discover',

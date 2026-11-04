@@ -102,6 +102,19 @@ stakeholders: []
 #                          # rôle de revue, et un quadrant supposé fait un approbateur supposé
 #    attitude: ""          # ce qu'elle pense du changement, du sponsor, de la démarche (verbatim si possible)
 #    decision_domains: []  # domaines de decision_rights sur lesquels elle a autorité
+#    personnes: 1          # combien de PERSONNES RÉELLES cette entrée vaut. Vide sur une entrée nommée :
+#                          # un nom désigne quelqu'un, donc une. À renseigner dès que l'entrée tient la
+#                          # place d'un groupe sans nom — « le ou les membres du bureau qui saisissent ».
+#                          # Au troisième dossier réel, SH-04 était exactement ça, et le point d'étape
+#                          # annonçait « 3 parties prenantes entendues sur 4 » : un compte d'ENTRÉES
+#                          # donné pour un compte de personnes, lu tel quel par la dimension
+#                          # `couverture` de la porte de synthèse. Sans nom et sans effectif, le total
+#                          # n'est plus une mesure mais un plancher, et il s'affiche « sur au moins N »
+#                          # (S122). Un nom reste mieux qu'un nombre : demande-le
+#    entendues: 0          # combien d'entre elles ont effectivement parlé. Inutile quand l'entrée vaut
+#                          # une personne : son `status` le dit déjà. Dès qu'elle en vaut plusieurs, le
+#                          # statut ne se divise pas — « interrogée » sur un groupe de cinq dont un seul
+#                          # a parlé fait compter cinq voix pour une (S123)
 #    end_user: false       # utilisatrice directe du futur processus ou système
 #    represents: ""        # si elle parle au nom d'un groupe : lequel (les représentants ne remplacent pas les vrais utilisateurs)
 #    represents_source: ""  # LA source où elle le dit elle-même : SRC-xxx, et elle doit y être locutrice

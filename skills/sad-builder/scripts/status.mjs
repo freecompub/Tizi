@@ -5,7 +5,7 @@
 //          Un identifiant ne s'écrit jamais seul dans un message, et sa formulation se lit ici.
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { arr, loadState, fail, shLabel, label, PHASE_NOM, ingestedHandoffs, dossierDe, foisPosee, seuilRepetitions, dernierePosee } from './lib/common.mjs';
+import { arr, loadState, fail, shLabel, label, PHASE_NOM, ingestedHandoffs, dossierDe, foisPosee, seuilRepetitions, dernierePosee, effectifs } from './lib/common.mjs';
 import { phaseTrail, gateConditions } from './lib/gates.mjs';
 import { condenseOf, sessionsFor } from './lib/sessions.mjs';
 
@@ -167,11 +167,15 @@ if (doc === 'brd' && !['assess', 'close'].includes(s.phase)) {
   const declarees = Object.keys(DIMENSIONS).filter(d => sc[d]?.status);
   out.push('', `Porte de synthèse avant Define : ${declarees.length} dimension(s) sur 5 déclarée(s)${sc.date ? ` le ${sc.date}` : ''}`);
   const shs = arr(s.stakeholders);
-  const entendues = shs.filter(x => x.status === 'interrogée').length;
+  // La couverture comptait des ENTRÉES et disait des personnes : « 3 partie(s) prenante(s) entendue(s)
+  // sur 4 » là où une des quatre valait un nombre inconnu de membres du bureau. Un compte qu'on ne
+  // peut pas faire s'annonce comme tel — « sur au moins 4 » — et les entrées qui l'empêchent se
+  // nomment, sinon la dimension `couverture` se déclare sur une mesure fausse (S122, S123).
+  const eff = effectifs(shs);
   const bcs = arr(s.candidate_needs).filter(x => x.status !== 'abandonné');
   const uniques = bcs.filter(x => new Set(arr(x.sources).map(y => y.ref ?? y)).size < 2).length;
   const compte = {
-    couverture: `${entendues} partie(s) prenante(s) entendue(s) sur ${shs.length}`,
+    couverture: `${eff.entendus} personne(s) entendue(s) sur ${eff.mesure ? eff.total : `au moins ${eff.total}`}`,
     robustesse: bcs.length ? `${uniques} besoin(s) candidat(s) sur ${bcs.length} à source unique` : '',
   };
   for (const [d, quoi] of Object.entries(DIMENSIONS)) {
@@ -179,6 +183,9 @@ if (doc === 'brd' && !['assess', 'close'].includes(s.phase)) {
     const etat = x.status ? `${x.status}${x.status === 'faible' && !x.assumed ? ' (non assumée)' : ''}` : 'à déclarer';
     out.push(`  ${x.status === 'ok' ? '✓' : x.status ? '!' : '·'} ${d.padEnd(15)}${etat} — ${compte[d] || quoi}`);
   }
+  const noms = l => l.map(x => x.id ?? '?').slice(0, 5).join(', ') + (l.length > 5 ? ` et ${l.length - 5} autre(s)` : '');
+  if (eff.flou.length) out.push(`    ${noms(eff.flou)} : sans nom et sans effectif — le total est un plancher, pas une mesure`);
+  if (eff.partiels.length) out.push(`    ${noms(eff.partiels)} : plusieurs personnes, « interrogée », et rien ne dit combien ont parlé`);
 }
 // La checklist est écrite par groupes (`- group: 1` puis `items:`), et ce filtre ne lisait que le
 // premier niveau : au deuxième dossier réel, sept questions ouvertes n'étaient affichées nulle part.
