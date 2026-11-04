@@ -1228,6 +1228,53 @@ test('la langue de la personne n\'est pas celle du dossier, et le script ne trad
   assert.equal(lire(dossier({ langue: 'anglais', settings: { langue: 'arabe' } }, { langue: 'anglais' })).meme_langue, true, 'la racine gagne');
 });
 
+test('le relevé de relecture et la lecture d\'une réponse disent leur limite de langue', async () => {
+  const { execFileSync } = await import('node:child_process');
+  const { writeFileSync, mkdirSync } = await import('node:fs');
+  // `reach-out.mjs` tenait déjà ce raisonnement, et deux scripts de la même famille l'ignoraient :
+  // le relevé rendait du français à quelqu'un dont `langue` dit autre chose, sans le signaler une
+  // seule fois ; et la lecture d'une réponse ne disait sa limite QUE dans la branche où un signal
+  // part — c'est-à-dire là où l'agent se méfie déjà.
+  const d = tempDir('tizi-langue-relev');
+  writeFileSync(join(d, 'contacts.yaml'), 'SH-01: "nadia@exemple.fr"\nSH-02: "karim@exemple.fr"\n');
+  writeFileSync(join(d, 'state.yaml'), yaml.dump({
+    document: 'brd', phase: 'discover',
+    initiative: { name: 'Dématérialiser les inscriptions', slug: 'demat' },
+    stakeholders: [
+      { id: 'SH-01', name: 'Nadia', role: 'Agente', status: 'interrogée', joignable_par: 'courriel', langue: 'arabe', end_user: true, power: 'faible', impact: 'fort', influence: 'positive', quadrant: 'consulter' },
+      { id: 'SH-02', name: 'Karim', role: 'Sponsor', status: 'interrogée', joignable_par: 'courriel', power: 'fort', impact: 'fort', influence: 'positive', quadrant: 'impliquer' }],
+    sources: [
+      { id: 'SRC-001', type: 'entretien', date: '2026-11-01', stakeholders: ['SH-01'], quote: 'نكتب كل شيء بخط اليد', understood: 'Tout est recopié à la main' },
+      { id: 'SRC-002', type: 'entretien', date: '2026-11-01', stakeholders: ['SH-02'], quote: 'On recopie trois fois', understood: 'Triple recopie' }],
+  }));
+  const etat = join(d, 'state.yaml');
+  const relev = (sh, ...plus) => execFileSync('node', [join(SCRIPTS, 'review-sources.mjs'), etat, '--sh', sh, ...plus], { encoding: 'utf8' });
+
+  // Le FICHIER : il reste la version française de référence, et l'avertissement va à l'agent — pas
+  // dans le fichier, que la personne lira.
+  mkdirSync(join(d, 'interviews'), { recursive: true });
+  const fichier = relev('SH-01');
+  assert.match(fichier, /CE RELEVÉ EST À ÉCRIRE EN ARABE, et ce script ne le fait pas/);
+  assert.match(fichier, /ses propres mots, JAMAIS/, 'le verbatim est l\'objet de la relecture : le traduire la vide');
+  assert.doesNotMatch(relev('SH-02'), /À ÉCRIRE EN/, 'même langue : rien à signaler');
+
+  // Le MESSAGE : le contrat d'abord, la version de référence ensuite — comme `reach-out.mjs`.
+  const message = relev('SH-01', '--message');
+  assert.match(message, /CE MESSAGE EST À ÉCRIRE EN ARABE/);
+  assert.match(message, /── Version française de référence \(1 source\(s\)\) ──/);
+  assert.match(message, /Objet : Ce que j'ai compris de vos propos/, 'la version de référence suit, elle ne disparaît pas');
+  assert.doesNotMatch(relev('SH-02', '--message'), /À ÉCRIRE EN/);
+
+  // Et la lecture d'une réponse PROPRE : son silence ne vaut pas un feu vert, et la famille de
+  // détection en langue naturelle ne connaît que trois langues. Ni l'un ni l'autre n'était dit.
+  const propre = join(d, 'propre.txt');
+  writeFileSync(propre, 'Bonjour,\n\nLa saisie prend deux heures par dossier.\n\nTom\n');
+  const lu = execFileSync('node', [join(SCRIPTS, 'read-reply.mjs'), propre], { encoding: 'utf8' });
+  assert.match(lu, /Aucun signal structurel ici, et ce n'est pas un feu vert/);
+  assert.match(lu, /ne connaît que le français, l'anglais et l'arabe/);
+  assert.match(lu, /ce script ne sait pas dans quelle\n    langue il lit/);
+});
+
 // Ce qui gouverne le NOMBRE de questions dans un message : la dépendance entre elles, pas le canal.
 // Une question née de ce que la personne a déjà dit ne dépend d'aucune autre réponse — elle se groupe.
 // Une question née d'une analyse, d'un council, ou de la parole de quelqu'un d'AUTRE commande la
