@@ -338,6 +338,22 @@ shadow_zones: []
 #    action: ""
 #    blocking: false      # true seulement si l'étape suivante ne peut pas COMMENCER : nomme-la,
 #                         # et dis ce qui s'y ferait de faux (references/shadow-zones.md)
+#    posee: []            # CHAQUE fois que la question est partie, avec sa date et son canal :
+#                         # - { date: "2026-11-04", canal: courriel }
+#                         # La liste s'AJOUTE, elle ne se remplace pas. Sans elle, `status: ouverte`
+#                         # couvrait deux situations que rien ne séparait : jamais demandée, et
+#                         # demandée trois fois sans réponse. Sur le premier dossier réel, l'agent a
+#                         # reposé la même question cinq fois en deux jours — « les 150 dossiers, ça
+#                         # fait combien de familles ? » aux tours 175, 178 et 179 — et la zone est
+#                         # restée « ouverte », sa résolution vide : il reconstruisait sa question
+#                         # depuis l'état à chaque tour, et une zone ouverte avait l'air neuve.
+#                         # `sollicitee_zone` dit ce qui est parti par ÉCRIT et vit sur la personne ;
+#                         # ce champ-ci vit sur la QUESTION, et vaut pour tous les canaux — de vive
+#                         # voix, aucun script n'exécute rien, et c'est là que la répétition est née.
+#                         # Un passage sans date lisible ne compte pour rien (S119). Au-delà de trois
+#                         # passages sans réponse, ce n'est plus une question mais un constat : à
+#                         # assumer avec sa raison, ou à trancher — jamais à reposer (S120). Le seuil
+#                         # se règle par `settings.relance.repetitions`
 #    status: ouverte       # ouverte | levée | assumée
 #    resolution: ""
 #    related: []

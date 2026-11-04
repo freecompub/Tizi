@@ -1,8 +1,8 @@
 # Règles de contrôle, étape par étape
 
-**Ce document est généré par `doc-regles.mjs`. Ne le modifie pas à la main.** Une liste de 127 règles écrite à la main dérive au premier changement du catalogue, et une liste qui dérive est pire qu'une absence de liste : on la croit. Les énoncés ci-dessous sont ceux du catalogue (`skills/*/scripts/lib/rules.mjs`), les conditions de porte celles de `lib/gates.mjs`, les seuils ceux de `COVERAGE_DEFAULTS`. Pour le régénérer : `node doc-regles.mjs`. Pour vérifier qu'il est à jour : `node doc-regles.mjs --verifier`.
+**Ce document est généré par `doc-regles.mjs`. Ne le modifie pas à la main.** Une liste de 130 règles écrite à la main dérive au premier changement du catalogue, et une liste qui dérive est pire qu'une absence de liste : on la croit. Les énoncés ci-dessous sont ceux du catalogue (`skills/*/scripts/lib/rules.mjs`), les conditions de porte celles de `lib/gates.mjs`, les seuils ceux de `COVERAGE_DEFAULTS`. Pour le régénérer : `node doc-regles.mjs`. Pour vérifier qu'il est à jour : `node doc-regles.mjs --verifier`.
 
-Au total : **119 règles de structure** (`S00`–`S118`), **8 règles de rédaction** (`L01`–`L08`), **10 conditions** à la porte de PR, **10** à la porte de release, **6 garde-fous** d'export, et les conditions calculées des portes de phase des cinq documents à phases.
+Au total : **122 règles de structure** (`S00`–`S121`), **8 règles de rédaction** (`L01`–`L08`), **10 conditions** à la porte de PR, **10** à la porte de release, **6 garde-fous** d'export, et les conditions calculées des portes de phase des cinq documents à phases.
 
 ## Comment lire une règle
 
@@ -462,7 +462,7 @@ Calculée par `release-matrix.mjs` depuis le plan figé et les rapports collect�
 
 Une exigence non prouvée se corrige, ou s'assume par une dérogation dans `waivers` — qui ne compte que si elle dit **pourquoi** et **qui l'a approuvée**. Le catalogue de règles ne vérifie pas cette étape (`S00`) : un état de tests se vérifie avec `release-matrix.mjs`.
 
-## Règles de structure communes aux quatre documents (30)
+## Règles de structure communes aux quatre documents (33)
 
 Elles s'appliquent au BRD, au PRD, à la conception et au plan. Les étapes 5 et 6 ne reçoivent pas ce catalogue.
 
@@ -498,6 +498,9 @@ Elles s'appliquent au BRD, au PRD, à la conception et au plan. Les étapes 5 et
 | `S116` | indisponibilité déclarée sans dire laquelle | déclarée « non disponible » sans dire pourquoi (`indisponible_motif`) : le mot couvre quatre situations — elle n'a jamais répondu, elle a refusé, elle est absente, ou nous avons renoncé —, et seule la dernière est de notre faute. Les confondre efface celle qui nous concerne · porte un motif d'indisponibilité et le statut « … » : le motif ne se lit que sur « non disponible », ailleurs il donne l'air d'un renoncement qui n'a pas eu lieu · déclarée avoir refusé, et aucune source ne porte sa parole : un refus est ce qu'elle a dit, et ça se cite. Rapporté par un tiers, c'est une affirmation sur elle — consigne ses mots, ou dis que le refus est rapporté |
 | `S117` | question laissée en vol au-delà du seuil, sans décision | question en vol depuis … jour(s), au-delà du seuil de … (`settings.relance.agir`) : ce n'est plus une question qui vit, c'est une question que personne ne suit, et la porte cessait de la compter. Trois issues, et c'est l'utilisateur qui tranche : attendre encore en le disant, relancer une fois (`reach-out.mjs --relance`), ou renoncer — `non disponible` avec son motif. Le premier seuil, celui qui dit seulement de le signaler, est à … jour(s) |
 | `S118` | renvoi interne dans ce qu'on rend à la personne en relecture | … source(s) de parole recueillie sur … portent un renvoi interne dans `quote` ou `understood` (…) : `understood` est ce qu'on REND à la personne en relecture, pas une note à soi-même — elle n'a pas l'index sous les yeux et ne l'aura jamais. `review-sources.mjs --sh <id> --message` les nomme toutes, et refuse d'envoyer tant qu'elles sont là |
+| `S119` | passage de `posee` sans sa date ou sans son canal | passage n° … de `posee` sans date lisible (`date`, AAAA-MM-JJ…) : une question dont on dit qu'elle est partie sans dire quand ne compte ni pour la répétition ni pour l'attente · passage n° … de `posee` sans dire par quoi (`canal`) : de vive voix ou par écrit n'engage ni la même attente ni la même trace — et sans le canal, rien ne distingue une question dite d'une question envoyée |
+| `S120` | question reposée au-delà du seuil, et toujours sans réponse | posée … fois…, et toujours sans réponse : au-delà de … fois ce n'est plus une question qui vit, c'est un constat — la reposer use la personne sans rien produire. Deux issues, et c'est l'utilisateur qui tranche : l'assumer (`status: assumée` avec sa raison, portée par un risque ou une hypothèse), ou décider autrement |
+| `S121` | zone résolue par une réponse sans dire quand la question est partie | … zone(s) sur … dont la résolution nomme une source ne disent pas quand la question est partie (`posee`) : …. Quelqu'un a répondu, donc quelqu'un a demandé — et rien ne dit quand, ni par quoi, ni combien de fois. C'est la seule chronologie que le dossier pourrait avoir : sans elle, on ne sait pas ce qui a été appris quand, ni depuis combien de temps une question attend |
 
 ## Garde-fous de l'export (6)
 
@@ -637,3 +640,6 @@ Chaque règle, les étapes où elle s'applique, et la fonction du catalogue qui 
 | `S116` | 1, 2, 3, 4 | indisponibilité déclarée sans dire laquelle | `sollicitationFindings` |
 | `S117` | 1, 2, 3, 4 | question laissée en vol au-delà du seuil, sans décision | `sollicitationFindings` |
 | `S118` | 1, 2, 3, 4 | renvoi interne dans ce qu'on rend à la personne en relecture | `understoodFindings` |
+| `S119` | 1, 2, 3, 4 | passage de `posee` sans sa date ou sans son canal | `questionPoseeFindings` |
+| `S120` | 1, 2, 3, 4 | question reposée au-delà du seuil, et toujours sans réponse | `questionPoseeFindings` |
+| `S121` | 1, 2, 3, 4 | zone résolue par une réponse sans dire quand la question est partie | `questionPoseeFindings` |

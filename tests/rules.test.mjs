@@ -1391,6 +1391,24 @@ test('le nombre de questions suit la dépendance, pas le canal', async () => {
   // Enregistrée, elle disparaît : la reprise est un mode à part, et le script n'a plus à demander à la
   // personne un calcul qu'il peut faire lui-même.
   assert.ok(!reprise.message.includes('Si c\'est la même que la dernière fois'));
+
+  // ── Une question déjà partie trois fois ne repart pas une quatrième. Le fragment dicte le passage à
+  // écrire sur CHAQUE zone partie — c'est là que la trace naît, pour les canaux écrits.
+  const fragment = execFileSync('node', [join(SCRIPTS, 'reach-out.mjs'), dossier({ zones: six }), '--sh', 'SH-01'], { encoding: 'utf8' });
+  assert.match(fragment, /un passage de plus dans `posee`/);
+  assert.match(fragment, /ZO-001 : {2}- \{ date: "\d{4}-\d{2}-\d{2}", canal: "courriel" \}/);
+  assert.match(fragment, /La liste s'ajoute, elle ne se remplace pas/);
+
+  // Posées trois fois sans réponse, elles sortent du jeu : le script prend la suivante…
+  const POSEE3 = [{ date: '2026-11-01', canal: 'courriel' }, { date: '2026-11-02', canal: 'courriel' }, { date: '2026-11-03', canal: 'courriel' }];
+  const deuxDontUneRabachee = [zone('ZO-040', 'SRC-001', { posee: POSEE3 }), zone('ZO-041', 'SRC-001')];
+  assert.deepEqual(lire(dossier({ zones: deuxDontUneRabachee })).zones, ['ZO-041'], 'la rabâchée est écartée du message');
+  // …et s'il n'en reste aucune, il REFUSE au lieu de la reposer : l'assumer ou trancher est une
+  // décision de l'utilisateur, jamais de l'outil.
+  const mur = refus(dossier({ zones: [zone('ZO-040', 'SRC-001', { posee: POSEE3 })] }));
+  assert.match(mur, /La seule question qui lui est adressée est partie 3 fois ou plus sans réponse \(ZO-040 : 3 fois\)/);
+  assert.match(mur, /ce n'est plus une question/);
+  assert.match(mur, /c'est l'utilisateur qui tranche/);
 });
 
 // `sollicitee_zone` porte la liste entière quand plusieurs questions sont parties ensemble : une
@@ -1424,6 +1442,51 @@ test('S115 : une sollicitation peut porter plusieurs zones, et chacune se vérif
   const avecListe = etat(['ZO-001', 'ZO-002']);
   const sansDate = checkState({ ...avecListe, stakeholders: [{ ...avecListe.stakeholders[0], sollicitee_le: '' }] });
   assert.match(sansDate.find(f => /sollicitee_zone/.test(f.message)).message, /`sollicitee_zone: ZO-001, ZO-002` sans date de départ/);
+});
+
+test('S119, S120, S121 : une question porte ce qui lui est arrivé', () => {
+  const zone = (posee, extra = {}) => ({ id: 'ZO-001', type: 'attendu_implicite', question: 'Les 150 dossiers, ça fait combien de familles ?', ask_to: 'SH-01', status: 'ouverte', posee, ...extra });
+  const etat = (zones, settings) => ({ document: 'brd', phase: 'discover', ...(settings ? { settings } : {}),
+    stakeholders: [{ id: 'SH-01', name: 'Nadia', status: 'interrogée', end_user: true, power: 'faible', impact: 'fort', influence: 'positive', quadrant: 'consulter' }],
+    shadow_zones: zones });
+  const dits = (zones, r, settings) => checkState(etat(zones, settings)).filter(f => f.rule === r).map(f => f.message);
+  const UN = { date: '2026-11-01', canal: 'vive voix' };
+  const DEUX = { date: '2026-11-02', canal: 'courriel' };
+  const TROIS = { date: '2026-11-03', canal: 'messagerie' };
+
+  // Le champ absent ne se reproche pas en tant que tel : un dossier qui n'a jamais posé la question
+  // n'a rien à écrire. C'est S121 qui parle, et seulement quand une RÉPONSE prouve qu'on a demandé.
+  assert.deepEqual(dits([zone(undefined)], 'S119'), []);
+  assert.deepEqual(dits([zone(undefined)], 'S120'), []);
+  assert.deepEqual(dits([zone([UN, DEUX])], 'S119'), []);
+
+  // Un passage sans date, et un passage sans canal : une trace invérifiable est une case cochée.
+  assert.match(dits([zone([{ canal: 'courriel' }])], 'S119')[0], /passage n° 1 de `posee` sans date lisible/);
+  assert.match(dits([zone([{ date: 'hier', canal: 'courriel' }])], 'S119')[0], /sans date lisible.*et non « hier »/);
+  assert.match(dits([zone([{ date: '2026-11-01' }])], 'S119')[0], /passage n° 1 de `posee` sans dire par quoi/);
+  // Le canal se lit dans la même énumération que `joignable_par` : un canal inventé se voit.
+  assert.match(dits([zone([{ date: '2026-11-01', canal: 'pigeon' }])], 'S88')[0], /canal de contact « pigeon » hors énumération/);
+
+  // Trois passages sans réponse : ce n'est plus une question. Deux ne suffisent pas — reposer une fois
+  // est normal, c'est la troisième qui dit que la question ne produira rien.
+  assert.deepEqual(dits([zone([UN, DEUX])], 'S120'), []);
+  assert.match(dits([zone([UN, DEUX, TROIS])], 'S120')[0], /posée 3 fois, la dernière le 2026-11-03, et toujours sans réponse/);
+  // Une zone levée ne se reproche pas, même posée dix fois : la répétition a fini par payer.
+  assert.deepEqual(dits([zone([UN, DEUX, TROIS], { status: 'levée', resolution: 'SRC-012 : 96 familles' })], 'S120'), []);
+  // Le seuil se règle, et jamais en dessous de deux : à un, toute question posée serait un constat.
+  assert.match(dits([zone([UN, DEUX])], 'S120', { relance: { repetitions: 2 } })[0], /posée 2 fois/);
+  assert.deepEqual(dits([zone([UN, DEUX])], 'S120', { relance: { repetitions: 1 } }), []);
+  // Un passage sans date ne compte pas pour la répétition, exactement ce que son constat annonce.
+  assert.deepEqual(dits([zone([UN, DEUX, { date: '', canal: 'courriel' }])], 'S120'), []);
+
+  // S121 : la résolution nomme une source, donc quelqu'un a répondu — donc quelqu'un a demandé, et
+  // rien ne dit quand. Un constat de collection, comme S118 : soixante-dix lignes noieraient le reste.
+  const levee = (id, posee) => ({ id, type: 'attendu_implicite', question: `Cas ${id.slice(-2)} ?`, ask_to: 'SH-01', status: 'levée', resolution: `SRC-0${id.slice(-2)} : répondu`, ...(posee ? { posee } : {}) });
+  assert.deepEqual(dits([levee('ZO-002', [UN])], 'S121'), []);
+  assert.match(dits([levee('ZO-002'), levee('ZO-003')], 'S121')[0], /2 zone\(s\) sur 2 .* ne disent pas quand la question est partie \(`posee`\) : ZO-002, ZO-003/);
+  // Une résolution qui ne nomme aucune source — une décision, une raison d'abandon — ne compte pas :
+  // personne n'a forcément demandé quoi que ce soit.
+  assert.deepEqual(dits([{ id: 'ZO-004', type: 'attendu_implicite', question: 'Et celle-là ?', ask_to: 'SH-01', status: 'assumée', resolution: 'portée par R-02 : on fera sans' }], 'S121'), []);
 });
 
 test('un message sortant ne parle qu\'en clair', () => {

@@ -177,6 +177,9 @@ risks: []                  # - { id: R-01, text: "", likelihood: "", impact: "",
                           # touche : deux échelles, deux questions
 shadow_zones: []
 #  - { id: ZO-001, type: question_story, question: "", story: US-001, ask_to: "", blocking: true, status: ouverte, resolution: "" }
+#    posee: []            # chaque fois que la question est partie : - { date: "2026-11-04", canal: courriel }
+#                         # La liste s'ajoute. « ouverte » ne distinguait pas une question jamais posée
+#                         # d'une question posée trois fois sans réponse (S119, S120)
 questions: []
 council_runs: []
 #  - date: ""
