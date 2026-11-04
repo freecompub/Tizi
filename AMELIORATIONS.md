@@ -299,8 +299,30 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
 | **N'exiger qu'une zone d'ombre ressemble à la question perdrait le défaut d'origine** : la phrase courte de l'agent ne partage que **trois** mots porteurs avec ZO-017, alors que les trois autres répétitions s'apparient à 0,86 et 1,00. L'appariement **nomme** la zone et dit ce que son `posee` ne porte pas ; il ne filtre rien | 4 novembre 2026 | `la-repetition-se-voit-au-tour-meme` |
 | **La moitié écrite du même défaut, elle, se voit dans l'état : `S125`.** `sollicitee_zone` dit sur quoi on a écrit à la personne, `posee` dit que la question est partie ; `reach-out.mjs` dicte les deux lignes, mais c'est l'agent qui les écrit et il peut n'en écrire qu'une. L'état se contredit alors en silence — quelqu'un a été sollicité sur une question dont la liste des départs est vide. Deux champs du même état, aucune devinette | 4 novembre 2026 | `la-repetition-se-voit-au-tour-meme` |
 | **Un test d'idempotence qui comptait la mauvaise chose.** Il exigeait **une** entrée par événement de hook, ce qui valait « rien n'est dupliqué » tant qu'un seul script y était branché. Depuis que la fin de tour porte la capture de session **et** le garde-fou, compter les entrées interdirait ce qui est voulu : il compte désormais les **commandes distinctes**, et vérifie nommément que `Stop` porte les deux | 4 novembre 2026 | `la-repetition-se-voit-au-tour-meme` |
+| **Un outil n'est pas une forme, et `messagerie` mettait Slack, Teams, WhatsApp et Messenger dans un seul mot.** Mesuré sur un dossier copié, avec `joignable_par: gmail` : `reach-out.mjs` composait un courriel **sans objet**, et le silence se tranchait à **2 jours au lieu de 5** — l'outil inconnu retombait sur la messagerie, qui est la forme la plus étroite. Un vrai courriel sans objet, déclaré abandonné trois jours trop tôt | 4 novembre 2026 | `un-outil-n-est-pas-une-forme` |
+| **Trois niveaux, au lieu de deux mélangés.** La **coordonnée** dans `contacts.yaml`, jamais commitée ; l'**outil** dans `state.yaml` — ce n'est pas une donnée personnelle, et c'est lui qui dira quel connecteur il faut ; la **forme** dans la table, indexée par **famille**. `familleDe` ramène l'outil à sa famille une fois, à l'endroit où la table vit | 4 novembre 2026 | `un-outil-n-est-pas-une-forme` |
+| **L'énumération EST la table des outils**, `Object.keys(OUTILS)`, et pas une liste parallèle : séparées, un outil ajouté d'un côté aurait été refusé par l'autre, ou accepté sans forme connue — exactement le défaut qu'on vient de corriger. Un outil mal orthographié se voit donc (`wathsapp` → S88), et `autre:<nom>` reste un candidat à devenir une valeur | 4 novembre 2026 | `un-outil-n-est-pas-une-forme` |
+| **L'outil se demande, il ne se devine pas de la coordonnée** : la même adresse se lit dans Gmail ou dans Teams, le même numéro dans WhatsApp, Messenger ou par SMS. C'est la règle de `initiative.requested_by`. Et `reach-out.mjs` dit désormais les deux mots — « par slack (forme : messagerie) » —, parce que l'outil dit à qui on écrit et la forme dit pourquoi il n'y a pas d'objet | 4 novembre 2026 | `un-outil-n-est-pas-une-forme` |
+| La table est **tolérante à la casse** là où l'énumération ne l'est pas : « Slack » prend la bonne forme, et S88 demande quand même l'orthographe du catalogue. Mieux vaut un message juste avec un avertissement qu'un message mal formé en silence | 4 novembre 2026 | `un-outil-n-est-pas-une-forme` |
 
 ## Ouvert
+
+- **Vérifier le connecteur avant d'écrire, et garder la trace de l'autorisation.** Deux étapes
+  demandées en même temps que la séparation outil / forme, et volontairement laissées après elle parce
+  que tout s'y accroche.
+
+  *La trace d'autorisation*, par personne **et par outil** : autoriser un courriel à quelqu'un
+  n'autorise pas un WhatsApp sur son numéro personnel. Un script ne peut pas calculer un droit — le
+  consentement des personnes interrogées est la responsabilité de l'utilisateur, et l'agent demande
+  avant une première prise de contact. Ce qu'il peut faire est refuser d'agir sans la trace écrite de
+  cette décision, comme `lint_waivers` et `waived` : une décision vaut quand elle est écrite avec sa
+  raison, et l'outil ne fait que vérifier qu'elle l'est.
+
+  *Le connecteur*, et deux corrections à l'idée de départ. Pas au moment où la coordonnée est donnée :
+  enregistrer une coordonnée ne doit jamais être bloqué — ne pas savoir joindre quelqu'un est un fait,
+  pas une faute. Il compte au moment d'**écrire**. Et pas par un script : aucun script de Tizi ne voit
+  les connecteurs de la session, ce sont des programmes Node qui lisent l'état. Seul l'agent les voit,
+  donc il les **déclare**, et le catalogue vérifie la déclaration — comme tout le reste ici.
 
 - **Le garde-fou de répétition parle à l'utilisateur, pas à l'agent — et c'est une décision reportée,
   pas un oubli.** Un hook de fin de tour qui sort en 0 affiche son message à la personne

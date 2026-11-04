@@ -143,8 +143,14 @@ stakeholders: []
 #                          # c'est le seul endroit où l'échec n'est pas un dossier moins bon mais
 #                          # quelqu'un qui répond sans savoir à quoi. Ta version se fait relire par
 #                          # l'utilisateur avant l'envoi : c'est le seul contrôle disponible
-#    joignable_par: ""     # PAR QUOI on peut la joindre : vive voix | courriel | messagerie |
-#                          # téléphone | autre:<canal nommé>. Vide si on n'a pas de quoi la joindre —
+#    joignable_par: ""     # PAR QUOI on peut la joindre, et c'est l'OUTIL qu'on nomme, pas la forme :
+#                          # courriel | gmail | outlook | messagerie | slack | teams | whatsapp |
+#                          # messenger | signal | telegram | sms | téléphone | vive voix |
+#                          # autre:<outil nommé>. Une coordonnée ne dit pas l'outil : une adresse se
+#                          # lit dans Gmail ou dans Teams, un numéro dans WhatsApp, Messenger ou par
+#                          # SMS — alors demande-le, ne le devine pas. La FORME suit la famille de
+#                          # l'outil (objet ou pas, place, délais) et ne s'écrit jamais ici.
+#                          # Vide si on n'a pas de quoi la joindre —
 #                          # ne pas savoir est un fait, pas une faute, et rien ne le réclame.
 #                          # L'adresse, le numéro, l'identifiant N'ENTRENT PAS ICI : ce fichier se
 #                          # commite, part dans le handoff, et `freeze-version.mjs` en fige une copie
