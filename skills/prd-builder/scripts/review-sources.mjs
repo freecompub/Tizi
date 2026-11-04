@@ -20,7 +20,7 @@ import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { arr, loadState, writeOut, fail, table, today, txt, shLabel, label } from './lib/common.mjs';
 import { feedbackEtat, sollicitationEtat, seuilsRelance, zonesSollicitees, refsDans, RECUEIL_DE_PAROLE } from './lib/rules.mjs';
-import { nomClair, nomInitiative, joindre, paragraphes, refuseLesIdentifiants, AVERTISSEMENT_COMPTE, N_ENVOIE_RIEN, langueDe, langueDuDossier } from './lib/outgoing.mjs';
+import { nomClair, nomInitiative, joindre, paragraphes, refuseLesIdentifiants, AVERTISSEMENT_COMPTE, N_ENVOIE_RIEN, langueDe, langueDuDossier, LIGNE_CONNECTEUR } from './lib/outgoing.mjs';
 
 const args = process.argv.slice(2);
 const statePath = args.find(a => !a.startsWith('--') && args[args.indexOf(a) - 1] !== '--sh');
@@ -172,7 +172,7 @@ const CONTRAT_LANGUE = (id, langue, quoi) => [
 if (args.includes('--message')) {
   if (cibles.length !== 1) fail('`--message` écrit à UNE personne : nomme-la avec `--sh SH-xx`. Un retour de synthèse est personnel — il ne porte que ce qu\'elle a dit —, et un envoi groupé ferait lire à chacun les propos des autres.', 2);
   const id = cibles[0];
-  const { canal, adresse } = joindre(s, statePath, id);
+  const { canal, adresse, accord, connecteur } = joindre(s, statePath, id);
   const initiative = nomInitiative(s);
   if (!initiative) fail('L\'initiative n\'a pas de nom (`initiative.name`) : on n\'écrit pas à quelqu\'un à propos de rien.');
   const src = sourcesDe(id);
@@ -259,6 +259,13 @@ if (args.includes('--message')) {
     'À sa réponse : `confirmé` si tout est juste, `corrigé` si elle corrige — et alors la correction se',
     'porte dans l\'état, pas seulement dans le fil. Une source qu\'elle a corrigée est la première à',
     'faire relire ensuite, et `corrects` dit laquelle corrige laquelle (S112).',
+    // Un relevé qui PART est un contact : il porte les mots de la personne et lui demande sa relecture.
+    // Il passe donc par la même porte que `reach-out.mjs` — `joindre` a vérifié l'autorisation — et il
+    // dit la même chose du connecteur. Générer le FICHIER, lui, n'est pas un contact : il s'écrit pour
+    // l'utilisateur, à côté de l'état, et rien ne quitte la machine.
+    '',
+    `Autorisé par l'utilisateur le ${accord.le || '(sans date — S126 le dit)'}${accord.par ? `, par ${accord.par}` : ''}.`,
+    LIGNE_CONNECTEUR(canal, connecteur),
   ].join('\n'));
   process.exit(0);
 }
