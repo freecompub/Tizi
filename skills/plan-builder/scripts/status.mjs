@@ -5,7 +5,7 @@
 //          Un identifiant ne s'écrit jamais seul dans un message, et sa formulation se lit ici.
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { arr, loadState, fail, shLabel, label, PHASE_NOM, ingestedHandoffs, dossierDe } from './lib/common.mjs';
+import { arr, loadState, fail, shLabel, label, PHASE_NOM, ingestedHandoffs, dossierDe, foisPosee, seuilRepetitions, dernierePosee } from './lib/common.mjs';
 import { phaseTrail, gateConditions } from './lib/gates.mjs';
 import { condenseOf, sessionsFor } from './lib/sessions.mjs';
 
@@ -133,7 +133,22 @@ out.push('', `Zones d'ombre ouvertes : ${zo.length}${zo.filter(z => z.blocking).
 // identifiant nu, dans la même ligne : « ZO-008 … — à SH-01 », alors que `name` dit « Samir » juste à
 // côté. `shLabel` existe depuis longtemps dans le fichier commun, et seuls les artefacts ÉCRITS
 // l'appelaient : les deux scripts qui parlent dans la conversation rendaient l'adresse au lieu du nom.
-for (const z of zo.slice(0, 8)) out.push(`  ${z.blocking ? '!' : '-'} ${z.id} ${z.question ?? ''}${z.ask_to ? ` — à ${shLabel(s, z.ask_to)}` : ''}`);
+// Combien de fois la question est partie, et quand la dernière : « ouverte » couvrait aussi bien une
+// question jamais posée qu'une question posée trois fois sans réponse, et le point d'étape les rangeait
+// dans la même liste. Un compteur ne dit pas ce qui est arrivé ; une date le dit.
+const poseeDite = z => { const n = foisPosee(z).length; if (!n) return ''; const d = dernierePosee(z);
+  return ` — posée ${n} fois${d ? `, la dernière le ${d}` : ''}`; };
+for (const z of zo.slice(0, 8)) out.push(`  ${z.blocking ? '!' : '-'} ${z.id} ${z.question ?? ''}${z.ask_to ? ` — à ${shLabel(s, z.ask_to)}` : ''}${poseeDite(z)}`);
+// Les questions qu'on a reposées sans jamais obtenir de réponse sortent de la liste des ouvertes : les
+// laisser dedans, c'est les proposer une fois de plus, alors qu'elles ne se posent plus — elles
+// s'assument ou se tranchent. L'agent ne choisit ni l'un ni l'autre (references/questions.md).
+const seuil = seuilRepetitions(s);
+const rabachees = zo.filter(z => foisPosee(z).length >= seuil);
+if (rabachees.length) {
+  out.push('', `Questions reposées ${seuil} fois ou plus, toujours sans réponse : ${rabachees.length}`);
+  for (const z of rabachees) out.push(`  · ${z.id} ${z.question ?? ''}${z.ask_to ? ` — à ${shLabel(s, z.ask_to)}` : ''} (${foisPosee(z).length} fois${dernierePosee(z) ? `, la dernière le ${dernierePosee(z)}` : ''})`);
+  out.push('  Ce ne sont plus des questions : les assumer avec leur raison, portée par un risque ou une hypothèse, ou trancher autrement. À décider avec l\'utilisateur.');
+}
 // La porte de synthèse se déclare avec l'utilisateur à la fin de Discover, et `S65` ne la contrôle qu'à
 // l'entrée de Define : jusque-là, rien ne disait ce qu'il restait à couvrir. Sur le premier dossier réel,
 // les cinq dimensions étaient vides après une heure et demie de cadrage, avec zéro partie prenante

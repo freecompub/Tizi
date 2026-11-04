@@ -10,6 +10,23 @@ export const cell = v => txt(v).replace(/\|/g, '\\|').replace(/\r?\n/g, ' ');
 export const byId = coll => new Map(arr(coll).map(x => [x.id, x]));
 export const today = () => new Date().toISOString().slice(0, 10);
 
+// `posee` dit ce qui est arrivé à une QUESTION : chaque fois qu'elle est partie, avec sa date et son
+// canal. Le champ vit ici et non dans le catalogue parce que le point d'étape le lit autant que la
+// vérification — et le point d'étape existe dans les sept skills, le catalogue dans quatre. Au-delà de
+// `REPETITIONS` passages sans réponse, une question cesse d'être une question : voir S120.
+export const REPETITIONS = 3;
+export const JOUR = /^\d{4}-\d{2}-\d{2}$/;
+// Deux lectures du même champ : tout ce qui y est écrit, que S119 vérifie un à un, et ce qui COMPTE —
+// un passage sans date lisible ne se situe pas dans le temps, donc il ne compte ni pour la répétition
+// ni pour l'attente, exactement ce que son constat annonce.
+export const passagesPosee = z => arr(z?.posee).filter(x => x && typeof x === 'object');
+export const foisPosee = z => passagesPosee(z).filter(x => JOUR.test(String(x.date ?? '').trim()));
+export const seuilRepetitions = s => {
+  const n = Number(s?.settings?.relance?.repetitions ?? s?.relance?.repetitions ?? REPETITIONS);
+  return Number.isFinite(n) && n >= 2 ? n : REPETITIONS;   // à 1, toute question posée serait un constat
+};
+export const dernierePosee = z => foisPosee(z).map(f => String(f.date ?? '').trim()).filter(Boolean).sort().pop() ?? '';
+
 export function table(headers, rows) {
   if (rows.length === 0) return '_Aucun élément._\n';
   return [`| ${headers.join(' | ')} |`, `|${headers.map(() => '---').join('|')}|`, ...rows.map(r => `| ${r.map(cell).join(' | ')} |`)].join('\n') + '\n';

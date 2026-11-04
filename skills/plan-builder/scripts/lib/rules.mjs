@@ -6,7 +6,7 @@
 // complété de règles qui demandent du jugement. Une règle n'est définie qu'ici, jamais ailleurs.
 //
 // Sources : Constantinidis (check-list de bonne formulation, ch. 13) ; BABOK v3 (7.2 Verify Requirements).
-import { arr, PHASE_NOM, portesFranchies } from './common.mjs';
+import { arr, PHASE_NOM, portesFranchies, JOUR, passagesPosee, foisPosee, seuilRepetitions } from './common.mjs';
 import { porteDe, seuilsDe, derogationDe, derogationsDe, cleDerogation, verdictSeuil, INDICATIF } from './gates.mjs';
 
 // ── Règles de rédaction (portent sur un énoncé) ─────────────────────────────
@@ -127,7 +127,6 @@ const FEEDBACK_FAIT = ['confirmé', 'corrigé', 'sans objet'];
 // gabarit depuis le début et aucune règle ne le lisait : il ne servait à rien. Une demande partie est
 // une question qui vit, pas un trou. Mais une demande qu'on DIT partie sans dire quand ne se vérifie
 // pas, et c'est l'agent qui écrit le champ : d'où trois états, et le troisième tient à la date.
-const JOUR = /^\d{4}-\d{2}-\d{2}$/;
 // `s` est optionnel et c'est volontaire : sans lui, l'attente ne se périme pas, et tous les appelants du
 // dépôt le passent. La raison de la périmer est celle du jumeau `sollicitationEtat` — une demande de
 // relecture partie il y a six semaines ne vit plus, elle est oubliée, et la faire passer pour vivante
@@ -1858,6 +1857,57 @@ export function sollicitationFindings(s) {
   return out;
 }
 
+// Une zone d'ombre portait sa question et son destinataire, jamais ce qui lui était arrivé. `status`
+// disait « ouverte », et « ouverte » couvrait deux situations que rien ne séparait : jamais demandée,
+// et demandée trois fois sans réponse. Sur le premier dossier réel, l'agent a reposé la même question
+// cinq fois en deux jours — « les 150 dossiers, ça fait combien de familles ? » aux tours 175, 178 et
+// 179 — et la zone est restée « ouverte », sa `resolution` vide : il reconstruisait sa question depuis
+// l'état à chaque tour, et une zone ouverte avait l'air neuve. `sollicitee_zone` dit ce qui est parti
+// PAR ÉCRIT, et se porte sur la personne ; de vive voix aucun script n'exécute rien, et c'est
+// justement le canal par lequel ces cinq questions sont passées. La trace va donc sur la QUESTION,
+// quel que soit le canal : c'est elle qu'on pose, et c'est elle qui se répète.
+// Une résolution qui nomme une source dit que quelqu'un a répondu — donc que quelqu'un a demandé.
+const REPONDUE = /\bSRC-\d+/;
+
+export function questionPoseeFindings(s) {
+  const out = [];
+  const zones = arr(s?.shadow_zones);
+  const seuil = seuilRepetitions(s);
+  for (const z of zones) {
+    const passages = passagesPosee(z);
+    const fois = foisPosee(z);
+    // Le champ s'écrit à la main dès que la question sort de la bouche de l'agent : une entrée sans
+    // date ni canal ne se compte pas et ne se relit pas, et une trace invérifiable est une case cochée.
+    for (const [i, f] of passages.entries()) {
+      const quand = String(f.date ?? '').trim();
+      const canal = String(f.canal ?? '').trim();
+      if (!JOUR.test(quand)) {
+        out.push({ rule: 'S119', id: z.id, message: `passage n° ${i + 1} de \`posee\` sans date lisible (\`date\`, AAAA-MM-JJ${quand ? `, et non « ${quand} »` : ''}) : une question dont on dit qu'elle est partie sans dire quand ne compte ni pour la répétition ni pour l'attente` });
+      }
+      if (!canal) {
+        out.push({ rule: 'S119', id: z.id, message: `passage n° ${i + 1} de \`posee\` sans dire par quoi (\`canal\`) : de vive voix ou par écrit n'engage ni la même attente ni la même trace — et sans le canal, rien ne distingue une question dite d'une question envoyée` });
+      }
+      checkEnum(out, z.id, 'canal de contact', canal);
+    }
+    // Trois fois sans réponse, ce n'est plus une question : c'est un constat. Reposer une quatrième
+    // fois use la personne et ne produit rien — la zone s'assume avec sa raison, ou l'utilisateur
+    // tranche. L'agent ne choisit ni l'un ni l'autre : renoncer à savoir n'est pas une décision d'outil.
+    if (z.status === 'ouverte' && fois.length >= seuil) {
+      const dates = fois.map(f => String(f.date ?? '').trim()).filter(Boolean).sort();
+      out.push({ rule: 'S120', id: z.id, message: `posée ${fois.length} fois${dates.length ? `, la dernière le ${dates[dates.length - 1]}` : ''}, et toujours sans réponse : au-delà de ${seuil} fois ce n'est plus une question qui vit, c'est un constat — la reposer use la personne sans rien produire. Deux issues, et c'est l'utilisateur qui tranche : l'assumer (\`status: assumée\` avec sa raison, portée par un risque ou une hypothèse), ou décider autrement` });
+    }
+  }
+  // Un constat de collection, comme S118 : sur un dossier qui n'a jamais tenu le champ, la trace manque
+  // sur soixante-dix zones, et soixante-dix lignes de lint noieraient tout le reste. Une ligne, avec le
+  // compte et quelques exemples, dit la même chose et se déroge d'un seul geste à la racine.
+  const repondues = zones.filter(z => REPONDUE.test(String(z.resolution ?? '')));
+  const muettes = repondues.filter(z => !foisPosee(z).length);
+  if (muettes.length) {
+    out.push({ rule: 'S121', id: 'shadow_zones', message: `${muettes.length} zone(s) sur ${repondues.length} dont la résolution nomme une source ne disent pas quand la question est partie (\`posee\`) : ${muettes.slice(0, 5).map(z => z.id).join(', ')}${muettes.length > 5 ? ` et ${muettes.length - 5} autre(s)` : ''}. Quelqu'un a répondu, donc quelqu'un a demandé — et rien ne dit quand, ni par quoi, ni combien de fois. C'est la seule chronologie que le dossier pourrait avoir : sans elle, on ne sait pas ce qui a été appris quand, ni depuis combien de temps une question attend` });
+  }
+  return out;
+}
+
 export function confirmationFindings(s) {
   const out = [];
   const idx = elementsIndex(s);
@@ -1994,7 +2044,7 @@ export function checkState(s, ctx = {}) {
     return [{ rule: 'S00', id: 'document', message: `document « ${doc} » : ce catalogue vérifie ${DOCUMENTS.join(', ')}, et rien d'autre — un état d'implémentation se vérifie avec pr-gate.mjs et trace-check.mjs, un état de tests avec release-matrix.mjs` }];
   }
   const base = doc === 'plan' ? checkPlan(s, refs) : doc === 'sad' ? checkSad(s) : doc === 'prd' ? checkPrd(s) : checkBrd(s);
-  const all = [...base, ...placeholderFindings(s), ...unsourcedNumberFindings(s), ...constitutionFindings(s, ctx.constitution), ...checklistFindings(s, ctx.checklists), ...interviewFindings(s, ctx.interviews), ...outgoingFindings(s, [...fichiersDe(ctx.interviews), ...fichiersDe(ctx.checklists)]), ...governanceFindings(s), ...coverageFindings(s, refs), ...phaseFindings(s), ...sourceContentFindings(s), ...confirmationFindings(s), ...contactFindings(s, ctx.contacts), ...sollicitationFindings(s), ...riskFindings(s), ...understoodFindings(s), ...relectureFindings(s), ...handoffFindings(ctx.handoffs), ...upstreamFindings(s, refs), ...contextFindings(ctx.cards, s.settings?.context_budget)];
+  const all = [...base, ...placeholderFindings(s), ...unsourcedNumberFindings(s), ...constitutionFindings(s, ctx.constitution), ...checklistFindings(s, ctx.checklists), ...interviewFindings(s, ctx.interviews), ...outgoingFindings(s, [...fichiersDe(ctx.interviews), ...fichiersDe(ctx.checklists)]), ...governanceFindings(s), ...coverageFindings(s, refs), ...phaseFindings(s), ...sourceContentFindings(s), ...confirmationFindings(s), ...contactFindings(s, ctx.contacts), ...sollicitationFindings(s), ...questionPoseeFindings(s), ...riskFindings(s), ...understoodFindings(s), ...relectureFindings(s), ...handoffFindings(ctx.handoffs), ...upstreamFindings(s, refs), ...contextFindings(ctx.cards, s.settings?.context_budget)];
   const idx = waiverIndex(s);
   return all.map(f => {
     const raison = idx.get(`${f.id}|${f.rule}`);
@@ -2021,6 +2071,9 @@ export const STRUCT_RULES = {
   S116: 'indisponibilité déclarée sans dire laquelle',
   S117: 'question laissée en vol au-delà du seuil, sans décision',
   S118: 'renvoi interne dans ce qu\'on rend à la personne en relecture',
+  S119: 'passage de `posee` sans sa date ou sans son canal',
+  S120: 'question reposée au-delà du seuil, et toujours sans réponse',
+  S121: 'zone résolue par une réponse sans dire quand la question est partie',
   S01: 'objectif non mesurable', S02: 'exigence sans objectif', S03: 'exigence sans besoin sourcé', S04: 'exigence sans critère d\'acceptation',
   S05: 'priorité ou release manquante', S06: 'exigence sans origine', S07: 'Must sans scénario d\'erreur', S08: 'NFR incomplète',
   S09: 'référence inexistante', S10: 'référence vers un élément abandonné', S11: 'règle métier sans source', S12: 'règle sans niveau d\'application',

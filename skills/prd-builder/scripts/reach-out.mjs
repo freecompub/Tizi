@@ -24,7 +24,7 @@
 // boîte de réception de quelqu'un.
 //
 // Usage : node reach-out.mjs <état.yaml> --sh SH-xx [--relance] [--json]
-import { arr, loadState, fail, today, shLabel } from './lib/common.mjs';
+import { arr, loadState, fail, today, shLabel, seuilRepetitions, foisPosee } from './lib/common.mjs';
 import { sollicitationEtat, zonesSollicitees } from './lib/rules.mjs';
 import { nomClair, nomInitiative, demandeur, langueDe, langueDuDossier, joindre, formeEcrite, refuseLesIdentifiants, refuseLaTroisiemePersonne, AVERTISSEMENT_COMPTE, N_ENVOIE_RIEN } from './lib/outgoing.mjs';
 
@@ -97,8 +97,18 @@ if (situation === 'repondu' && JOUR_RE.test(String(sh.sollicitee_le ?? '').trim(
 
 // Les questions candidates : les zones ouvertes qui lui sont ADRESSÉES, par ordre d'impact.
 // `ask_to`, pas `related` : une question sur quelqu'un n'est pas une question à quelqu'un (S94).
-const zones = rank(arr(s.shadow_zones)).filter(z => z.ask_to === id);
-if (!zones.length) fail(`Aucune zone d'ombre ouverte ne lui est adressée (\`ask_to: ${id}\`). Écrire à quelqu'un sans question précise dépense la seule prise de contact qu'on a.`);
+const adressees = rank(arr(s.shadow_zones)).filter(z => z.ask_to === id);
+// Une question déjà partie trois fois sans réponse ne repart pas une quatrième. C'est le défaut que
+// `posee` sert à voir, et le voir sans l'empêcher ne servirait à rien : la reposer use la personne et ne
+// produit pas la réponse que les trois premières n'ont pas produite. Elle s'assume ou se tranche, et ni
+// l'un ni l'autre n'est une décision d'outil (S120).
+const seuil = seuilRepetitions(s);
+const rabachees = adressees.filter(z => foisPosee(z).length >= seuil);
+const zones = adressees.filter(z => foisPosee(z).length < seuil);
+if (!adressees.length) fail(`Aucune zone d'ombre ouverte ne lui est adressée (\`ask_to: ${id}\`). Écrire à quelqu'un sans question précise dépense la seule prise de contact qu'on a.`);
+if (!zones.length) {
+  fail(`${rabachees.length > 1 ? 'Toutes les questions qui lui sont adressées sont parties' : 'La seule question qui lui est adressée est partie'} ${seuil} fois ou plus sans réponse (${rabachees.map(z => `${z.id} : ${foisPosee(z).length} fois`).join(' · ')}) : ${rabachees.length > 1 ? 'ce ne sont plus des questions' : 'ce n\'est plus une question'}, et une fois de plus ne produira pas ce que les précédentes n'ont pas produit. Deux issues, et c'est l'utilisateur qui tranche : ${rabachees.length > 1 ? 'les assumer' : 'l\'assumer'} — \`status: assumée\` avec la raison, portée par un risque ou une hypothèse —, ou décider autrement.`);
+}
 
 // En relance, ce sont les MÊMES questions qui repartent, et `sollicitee_zone` dit lesquelles : on ne les
 // devine plus par le classement, comme il fallait le faire avant que le champ existe. Si aucune n'est
@@ -330,6 +340,20 @@ if (args.includes('--json')) {
 
 const yamlZone = posees.length === 1 ? `"${posees[0].id}"` : `[${posees.map(z => z.id).join(', ')}]`;
 
+// `sollicitee_zone` vit sur la PERSONNE et ne dit que le dernier envoi : il s'écrase au suivant. Ce qui
+// manquait, c'est ce qui est arrivé à la QUESTION — combien de fois elle est partie, et quand. Sans
+// elle, une zone encore ouverte a l'air neuve, et c'est ainsi qu'on repose trois fois la même question :
+// sur le premier dossier réel, « les 150 dossiers, ça fait combien de familles ? » est partie aux tours
+// 175, 178 et 179, et la zone est restée « ouverte » avec sa résolution vide.
+const POSEE = [
+  '',
+  `Et sur ${posees.length > 1 ? 'chacune des zones parties' : 'la zone partie'}, un passage de plus dans \`posee\` :`,
+  ...posees.map(z => `    ${z.id} :  - { date: "${today()}", canal: "${canal}" }`),
+  'La liste s\'ajoute, elle ne se remplace pas : c\'est elle qui dit si la question est neuve ou rabâchée.',
+  `Au-delà de ${seuilRepetitions(s)} passages sans réponse, ce n'est plus une question, c'est un constat : à assumer`,
+  'avec sa raison, ou à trancher avec l\'utilisateur — jamais à reposer une fois de plus (S120).',
+];
+
 // Sa langue n'est pas celle du dossier : on rend le contrat, pas une traduction.
 if (!memeLangue) {
   console.log([
@@ -371,6 +395,7 @@ if (!memeLangue) {
     ...(mode === 'premiere' ? ['    status: sollicitée'] : []),
     `    sollicitee_le: "${today()}"`,
     `    sollicitee_zone: ${yamlZone}`,
+    ...POSEE,
   ].join('\n'));
   process.exit(0);
 }
@@ -419,6 +444,7 @@ console.log([
       '« sollicitée » dirait qu\'elle n\'a jamais parlé, et éteindrait ce que sa voix avait fermé (S83, S95).']),
   ...(posees.length > 1 ? ['La liste entière, pas seulement la première : relancer doit pouvoir reposer exactement ce'
     + ' qui a été posé, et une zone sur cinq ne le permettrait pas.'] : []),
+  ...POSEE,
   '',
   `À la réponse : une source \`type: échange écrit\`, \`stakeholders: [${id}]\`, SA DATE — c'est elle qui dit`,
   `que ${posees.length > 1 ? 'les questions sont retombées' : 'la question est retombée'} —, le verbatim dans \`quote\`${mode === 'premiere' ? ', puis `status: interrogée`' : ''}`,
