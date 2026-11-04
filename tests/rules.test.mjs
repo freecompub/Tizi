@@ -5,7 +5,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import yaml from '../skills/brd-builder/scripts/lib/vendor/js-yaml.mjs';
 import { tempDir, node } from './helpers.mjs';
-import { DOCUMENTS, STRUCT_RULES, TEXT_RULES, checkState, sollicitationEtat, seuilsRelance, refsDans, coverage, coverageFindings, coverageRows, evidenceOf, contextFindings, OUTILS, familleDe, formeDuCanal } from '../skills/brd-builder/scripts/lib/rules.mjs';
+import { DOCUMENTS, STRUCT_RULES, TEXT_RULES, checkState, sollicitationEtat, seuilsRelance, refsDans, coverage, coverageFindings, coverageRows, evidenceOf, contextFindings, OUTILS, familleDe, formeDuCanal, connecteursDe } from '../skills/brd-builder/scripts/lib/rules.mjs';
 import { gateConditions } from '../skills/brd-builder/scripts/lib/gates.mjs';
 import { shellWrittenPaths } from '../skills/brd-builder/scripts/lib/agent-io.mjs';
 import { buildExtract } from '../skills/brd-builder/scripts/lib/sessions.mjs';
@@ -979,7 +979,7 @@ test('le retour de synthèse part par le canal, et ce n\'est pas le fichier en p
     writeFileSync(join(d, 'contacts.yaml'), 'SH-01: "nadia@exemple.fr"\n');
     writeFileSync(join(d, 'state.yaml'), yaml.dump({
       document: 'brd', phase: 'discover', initiative: { name: 'Dématérialiser les inscriptions', slug: 'demat' },
-      stakeholders: [{ id: 'SH-01', name: 'Nadia', role: 'Agente d\'accueil', status: 'interrogée', joignable_par: 'courriel', end_user: true, power: 'faible', impact: 'fort', influence: 'positive', quadrant: 'consulter' }],
+      stakeholders: [{ id: 'SH-01', name: 'Nadia', role: 'Agente d\'accueil', status: 'interrogée', joignable_par: 'courriel', contact_autorise: [{ outil: 'courriel', le: ilYA(2) }], end_user: true, power: 'faible', impact: 'fort', influence: 'positive', quadrant: 'consulter' }],
       sources, ...extra,
     }));
     return join(d, 'state.yaml');
@@ -1187,7 +1187,7 @@ test('la langue de la personne n\'est pas celle du dossier, et le script ne trad
       document: 'brd', phase: 'discover',
       initiative: { name: 'Dématérialiser les inscriptions', slug: 'demat', requested_by: 'SH-02' },
       stakeholders: [
-        { id: 'SH-01', name: 'Nadia', role: 'Agente', status: 'à interroger', joignable_par: 'courriel', end_user: true, power: 'faible', impact: 'fort', influence: 'positive', quadrant: 'consulter', ...shExtra },
+        { id: 'SH-01', name: 'Nadia', role: 'Agente', status: 'à interroger', joignable_par: 'courriel', contact_autorise: [{ outil: 'courriel', le: ilYA(2) }], end_user: true, power: 'faible', impact: 'fort', influence: 'positive', quadrant: 'consulter', ...shExtra },
         { id: 'SH-02', name: 'Karim', role: 'Sponsor', status: 'interrogée', power: 'fort', impact: 'fort', influence: 'positive', quadrant: 'impliquer' }],
       shadow_zones: [{ id: 'ZO-001', type: 'attendu_implicite', question: 'Qu\'est-ce qui vous fait perdre le plus de temps ?', ask_to: 'SH-01', status: 'ouverte' }],
       ...extra,
@@ -1241,8 +1241,8 @@ test('le relevé de relecture et la lecture d\'une réponse disent leur limite d
     document: 'brd', phase: 'discover',
     initiative: { name: 'Dématérialiser les inscriptions', slug: 'demat' },
     stakeholders: [
-      { id: 'SH-01', name: 'Nadia', role: 'Agente', status: 'interrogée', joignable_par: 'courriel', langue: 'arabe', end_user: true, power: 'faible', impact: 'fort', influence: 'positive', quadrant: 'consulter' },
-      { id: 'SH-02', name: 'Karim', role: 'Sponsor', status: 'interrogée', joignable_par: 'courriel', power: 'fort', impact: 'fort', influence: 'positive', quadrant: 'impliquer' }],
+      { id: 'SH-01', name: 'Nadia', role: 'Agente', status: 'interrogée', joignable_par: 'courriel', langue: 'arabe', contact_autorise: [{ outil: 'courriel', le: ilYA(2) }], end_user: true, power: 'faible', impact: 'fort', influence: 'positive', quadrant: 'consulter' },
+      { id: 'SH-02', name: 'Karim', role: 'Sponsor', status: 'interrogée', joignable_par: 'courriel', contact_autorise: [{ outil: 'courriel', le: ilYA(2) }], power: 'fort', impact: 'fort', influence: 'positive', quadrant: 'impliquer' }],
     sources: [
       { id: 'SRC-001', type: 'entretien', date: '2026-11-01', stakeholders: ['SH-01'], quote: 'نكتب كل شيء بخط اليد', understood: 'Tout est recopié à la main' },
       { id: 'SRC-002', type: 'entretien', date: '2026-11-01', stakeholders: ['SH-02'], quote: 'On recopie trois fois', understood: 'Triple recopie' }],
@@ -1294,7 +1294,7 @@ test('le nombre de questions suit la dépendance, pas le canal', async () => {
       document: 'brd', phase: 'discover',
       initiative: { name: 'Dématérialiser les inscriptions', slug: 'demat', requested_by: 'SH-02', ...initiative },
       stakeholders: [
-        { id: 'SH-01', name: 'Nadia', role: 'Agente', status: 'interrogée', joignable_par: canal, end_user: true, power: 'faible', impact: 'fort', influence: 'positive', quadrant: 'consulter', ...sh },
+        { id: 'SH-01', name: 'Nadia', role: 'Agente', status: 'interrogée', joignable_par: canal, contact_autorise: [{ outil: canal, le: ilYA(2) }], end_user: true, power: 'faible', impact: 'fort', influence: 'positive', quadrant: 'consulter', ...sh },
         { id: 'SH-02', name: 'Karim', role: 'Directeur', status: 'interrogée', power: 'fort', impact: 'fort', influence: 'positive', quadrant: 'impliquer' }],
       // `muette` enlève SES sources : c'est ce qui fait un mode `premiere`, et ce qui rend toute
       // précision impossible — on ne précise pas ce que personne n'a dit.
@@ -1594,6 +1594,51 @@ test('S125 : une sollicitation écrite s\'inscrit sur la personne ET sur la ques
   assert.deepEqual(dits({ sollicitee_le: ilYA(1), sollicitee_zone: 'ZO-001' }, { posee: [{ canal: 'courriel' }] }), []);
   // Une zone de `sollicitee_zone` qui n'existe pas est l'affaire de S09 : celle-ci ne la double pas.
   assert.deepEqual(dits({ sollicitee_le: ilYA(1), sollicitee_zone: 'ZO-099' }), []);
+});
+
+test('S126 : écrire à quelqu\'un demande une autorisation écrite, et par outil', () => {
+  // La consigne existait dans `SKILL.md` — « demande à l'utilisateur avant la première prise de
+  // contact : l'option est la sienne, pas celle de la personne au bout, qui n'a rien choisi » — et rien
+  // ne la tenait. Un script ne peut pas calculer un DROIT, et ce n'est pas son rôle : le consentement
+  // des personnes interrogées est la responsabilité de l'utilisateur. Il peut vérifier que sa décision
+  // est ÉCRITE, comme pour `waived` et `lint_waivers`.
+  const sh = extra => ({ id: 'SH-01', name: 'Nadia', power: 'faible', impact: 'fort', influence: 'positive', quadrant: 'consulter', ...extra });
+  const dits = (extra, racine = {}) => checkState({ document: 'brd', phase: 'discover', ...racine, stakeholders: [sh(extra)] })
+    .filter(f => f.rule === 'S126').map(f => f.message);
+  const PARTI = { status: 'sollicitée', sollicitee_le: ilYA(1), sollicitee_zone: 'ZO-001' };
+
+  // Rien n'est parti : rien à reprocher. L'absence d'un champ n'est pas un reproche.
+  assert.deepEqual(dits({ joignable_par: 'slack' }), []);
+  // Parti sans trace de la décision : le constat le dit, et dit quoi écrire.
+  assert.match(dits({ joignable_par: 'slack', ...PARTI })[0], /sollicitée par « slack » sans que rien n'autorise de lui écrire par cet outil/);
+  // Autorisé pour cet outil : plus rien à dire.
+  assert.deepEqual(dits({ joignable_par: 'slack', ...PARTI, contact_autorise: [{ outil: 'slack', le: ilYA(2) }] }), []);
+  // PAR OUTIL : autoriser un courriel n'autorise pas un message sur un numéro personnel. Deux outils de
+  // la même FAMILLE ne se couvrent pas non plus — Slack et WhatsApp sont tous deux de la messagerie.
+  assert.match(dits({ joignable_par: 'whatsapp', ...PARTI, contact_autorise: [{ outil: 'slack', le: ilYA(2) }] })[0], /sollicitée par « whatsapp »/);
+  assert.match(dits({ joignable_par: 'gmail', ...PARTI, contact_autorise: [{ outil: 'courriel', le: ilYA(2) }] })[0], /sollicitée par « gmail »/);
+  // Une autorisation sans date ne se vérifie pas, et une décision invérifiable est une case cochée.
+  assert.match(dits({ joignable_par: 'slack', contact_autorise: [{ outil: 'slack' }] })[0], /sans date lisible \(`le`, AAAA-MM-JJ\)/);
+  assert.match(dits({ joignable_par: 'slack', contact_autorise: [{ outil: 'slack', le: 'hier' }] })[0], /et non « hier »/);
+  // Et une autorisation qui ne nomme pas l'outil n'autorise rien de précis.
+  assert.match(dits({ joignable_par: 'slack', contact_autorise: [{ le: ilYA(2) }] })[0], /sans dire par quel outil/);
+  // Un canal qui ne porte pas d'écrit n'a pas d'autorisation à demander : de vive voix, c'est
+  // l'utilisateur qui parle, et il était dans la pièce.
+  assert.deepEqual(dits({ joignable_par: 'vive voix', ...PARTI }), []);
+  assert.deepEqual(dits({ joignable_par: 'téléphone', ...PARTI }), []);
+  // `joignable_par` vide est l'affaire de S115 : celle-ci ne la double pas.
+  assert.deepEqual(dits({ joignable_par: '', ...PARTI }), []);
+
+  // Les connecteurs sont DÉCLARÉS par l'agent — aucun script ne voit les outils branchés sur la
+  // session —, et ils suivent la même énumération que les outils.
+  const s88 = racine => checkState({ document: 'brd', phase: 'discover', ...racine, stakeholders: [sh({ joignable_par: 'slack' })] })
+    .filter(f => f.rule === 'S88').map(f => f.message);
+  assert.deepEqual(s88({ settings: { connecteurs: ['slack', 'gmail'] } }), []);
+  assert.match(s88({ settings: { connecteurs: ['pigeon'] } })[0], /canal de contact « pigeon » hors énumération/);
+  // Trois états : une liste, une liste vide — « j'ai regardé, il n'y en a pas » —, ou rien de déclaré.
+  assert.equal(connecteursDe({ settings: { connecteurs: [] } }).length, 0);
+  assert.equal(connecteursDe({}), null);
+  assert.deepEqual(connecteursDe({ connecteurs: ['Slack'] }), ['slack']);
 });
 
 test('question-guard.mjs : la même question reposée trois fois se voit au tour même', async () => {

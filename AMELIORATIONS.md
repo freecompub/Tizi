@@ -304,25 +304,14 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
 | **L'énumération EST la table des outils**, `Object.keys(OUTILS)`, et pas une liste parallèle : séparées, un outil ajouté d'un côté aurait été refusé par l'autre, ou accepté sans forme connue — exactement le défaut qu'on vient de corriger. Un outil mal orthographié se voit donc (`wathsapp` → S88), et `autre:<nom>` reste un candidat à devenir une valeur | 4 novembre 2026 | `un-outil-n-est-pas-une-forme` |
 | **L'outil se demande, il ne se devine pas de la coordonnée** : la même adresse se lit dans Gmail ou dans Teams, le même numéro dans WhatsApp, Messenger ou par SMS. C'est la règle de `initiative.requested_by`. Et `reach-out.mjs` dit désormais les deux mots — « par slack (forme : messagerie) » —, parce que l'outil dit à qui on écrit et la forme dit pourquoi il n'y a pas d'objet | 4 novembre 2026 | `un-outil-n-est-pas-une-forme` |
 | La table est **tolérante à la casse** là où l'énumération ne l'est pas : « Slack » prend la bonne forme, et S88 demande quand même l'orthographe du catalogue. Mieux vaut un message juste avec un avertissement qu'un message mal formé en silence | 4 novembre 2026 | `un-outil-n-est-pas-une-forme` |
+| **Rien ne tenait la consigne « demande à l'utilisateur avant la première prise de contact ».** Elle était dans les deux `SKILL.md` depuis le début, et les deux scripts sortants composaient sans elle : personne ne savait si la question avait été posée. `contact_autorise` porte la décision, `reach-out.mjs` et `review-sources.mjs --message` **refusent** de composer sans elle (S126), et le refus imprime la ligne exacte à écrire | 4 novembre 2026 | `l-autorisation-s-ecrit-par-outil` |
+| **Un script ne calcule pas un droit, et ce n'est pas son rôle.** Le consentement des personnes interrogées est la responsabilité de l'utilisateur ; ce qui se vérifie est que sa décision est **écrite**, comme `waived` et `lint_waivers`. D'où la séparation dite dans la référence : le **consentement** est celui de la personne au bout et ne se coche pas, l'**autorisation** est la décision de l'utilisateur d'écrire maintenant par un outil précis — et c'est la seule des deux qu'un script puisse lire | 4 novembre 2026 | `l-autorisation-s-ecrit-par-outil` |
+| **Par OUTIL, pas par personne** : autoriser un courriel n'autorise pas un message sur un numéro personnel, et deux outils d'une même **famille** ne se couvrent pas — Slack et WhatsApp sont tous deux de la messagerie. L'égalité est exacte, le même mot que `joignable_par`, et le refus dit lequel corriger. Sans date, l'autorisation ne se vérifie pas : une décision invérifiable est une case cochée | 4 novembre 2026 | `l-autorisation-s-ecrit-par-outil` |
+| **La porte est posée au seul goulot qui existe**, `joindre()` dans `lib/outgoing.mjs` : les deux scripts sortants y passent, donc aucun ne peut l'oublier, et un troisième l'aurait d'office. Un canal sans écrit n'y a rien à autoriser — de vive voix, c'est l'utilisateur qui parle, et il était dans la pièce | 4 novembre 2026 | `l-autorisation-s-ecrit-par-outil` |
+| **Le connecteur n'est pas un fait du dossier, donc il se déclare.** Aucun script de Tizi ne voit les outils branchés sur la session : ce sont des programmes Node qui lisent un état. L'agent les écrit — `connecteurs: [slack, gmail]` —, et les scripts se contentent de le **dire**, jamais de refuser : un connecteur absent change qui appuie sur « envoyer », pas si le message peut partir. Trois états, comme partout : une liste, `[]` (« j'ai regardé, il n'y en a pas »), ou rien de déclaré | 4 novembre 2026 | `l-autorisation-s-ecrit-par-outil` |
+| **La porte a eu des dents tout de suite** : cinq tests qui lançaient un script sortant ont échoué sur le coup, faute d'autorisation dans leur fixture. C'est la preuve qu'elle n'était pas décorative — et le défaut qu'elle corrige est précisément celui-là, un chemin que rien n'empêchait | 4 novembre 2026 | `l-autorisation-s-ecrit-par-outil` |
 
 ## Ouvert
-
-- **Vérifier le connecteur avant d'écrire, et garder la trace de l'autorisation.** Deux étapes
-  demandées en même temps que la séparation outil / forme, et volontairement laissées après elle parce
-  que tout s'y accroche.
-
-  *La trace d'autorisation*, par personne **et par outil** : autoriser un courriel à quelqu'un
-  n'autorise pas un WhatsApp sur son numéro personnel. Un script ne peut pas calculer un droit — le
-  consentement des personnes interrogées est la responsabilité de l'utilisateur, et l'agent demande
-  avant une première prise de contact. Ce qu'il peut faire est refuser d'agir sans la trace écrite de
-  cette décision, comme `lint_waivers` et `waived` : une décision vaut quand elle est écrite avec sa
-  raison, et l'outil ne fait que vérifier qu'elle l'est.
-
-  *Le connecteur*, et deux corrections à l'idée de départ. Pas au moment où la coordonnée est donnée :
-  enregistrer une coordonnée ne doit jamais être bloqué — ne pas savoir joindre quelqu'un est un fait,
-  pas une faute. Il compte au moment d'**écrire**. Et pas par un script : aucun script de Tizi ne voit
-  les connecteurs de la session, ce sont des programmes Node qui lisent l'état. Seul l'agent les voit,
-  donc il les **déclare**, et le catalogue vérifie la déclaration — comme tout le reste ici.
 
 - **Le garde-fou de répétition parle à l'utilisateur, pas à l'agent — et c'est une décision reportée,
   pas un oubli.** Un hook de fin de tour qui sort en 0 affiche son message à la personne

@@ -5,7 +5,7 @@
 import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { arr, loadState, fail, shLabel } from './common.mjs';
-import { refsDans, formeDuCanal } from './rules.mjs';
+import { refsDans, formeDuCanal, autorisationsDe, connecteursDe } from './rules.mjs';
 
 // Le nom d'une personne tel qu'on l'écrit DANS un message : son nom, sinon sa fonction, jamais son
 // identifiant. `shLabel` rend « Karim (SH-02) » — c'est l'outil des rapports internes, et il était
@@ -90,12 +90,49 @@ export function formeEcrite(canal, ou) {
 export function joindre(s, statePath, id) {
   const contactsPath = join(dirname(statePath), 'contacts.yaml');
   const contacts = existsSync(contactsPath) ? loadState(contactsPath) : {};
-  const canal = String(arr(s.stakeholders).find(x => x.id === id)?.joignable_par ?? '').trim();
+  const sh = arr(s.stakeholders).find(x => x.id === id);
+  const canal = String(sh?.joignable_par ?? '').trim();
   const adresse = String(contacts[id] ?? '').trim();
   if (!canal) fail(`${shLabel(s, id)} n'a pas de \`joignable_par\` : on ne sait pas par quoi lui écrire. Demande-le à l'utilisateur.`);
   if (!adresse) fail(`Aucune coordonnée pour ${id} dans ${contactsPath}. Le canal est annoncé (« ${canal} »), la coordonnée n'y est pas (S114) — demande-la à l'utilisateur, et ne la recopie pas dans l'état.`);
-  return { canal, adresse, contactsPath };
+  // L'autorisation d'écrire à quelqu'un n'est pas une donnée qu'un script calcule : le consentement des
+  // personnes interrogées est la responsabilité de l'utilisateur, et c'est lui qui tranche s'il est
+  // légitime d'écrire maintenant. Ce que le script peut faire est refuser d'agir sans la TRACE ÉCRITE de
+  // cette décision — comme `lint_waivers` et `waived` : une décision vaut quand elle est écrite, et
+  // l'outil ne fait que vérifier qu'elle l'est. Jusqu'ici la consigne existait dans `SKILL.md` et rien
+  // ne la tenait : le script composait, et personne ne savait si la question avait été posée.
+  //
+  // Par OUTIL, et pas par personne : autoriser un courriel à quelqu'un n'autorise pas un WhatsApp sur
+  // son numéro personnel. L'égalité est exacte — l'outil autorisé est celui par lequel on écrit —, et le
+  // refus dit quel mot corriger. Ce n'est pas de la pédanterie : l'outil est ce qui décide du connecteur
+  // et de la forme, donc une autorisation qui ne le nomme pas n'autorise rien de précis.
+  // Un canal qui ne porte pas d'écrit n'a pas d'autorisation à demander : de vive voix ou au téléphone,
+  // c'est l'utilisateur lui-même qui parle, et il était dans la pièce. `formeEcrite` dira, juste après,
+  // qu'il n'y a pas de message à composer — un refus plus précis que celui-ci.
+  const accordees = autorisationsDe(sh);
+  const accord = accordees.find(a => a.outil === canal.toLowerCase());
+  if (!accord && formeDuCanal(canal).ecrit) {
+    const dites = accordees.length ? ` Autorisations écrites pour ${shLabel(s, id)} : ${accordees.map(a => `« ${a.outil} »${a.le ? ` (${a.le})` : ''}`).join(', ')} — nomme le même outil que \`joignable_par\`.` : '';
+    fail(`Rien n'autorise d'écrire à ${shLabel(s, id)} par « ${canal} » (S126).${dites} L'option est la tienne, pas celle de la personne au bout, qui n'a rien choisi : demande-la à l'utilisateur, puis écris sa décision sur la partie prenante —\n`
+      + `    contact_autorise:\n      - { outil: ${canal.toLowerCase()}, le: "AAAA-MM-JJ" }\n`
+      + 'Une autorisation sans date ne se vérifie pas, et une autorisation qu\'on ne peut pas vérifier est une case cochée.');
+  }
+  // Le connecteur, lui, n'est pas un fait du dossier : aucun script ne voit les outils branchés sur la
+  // session, seul l'agent les voit. Il les DÉCLARE donc, et on se contente de dire ce qu'on en lit — sans
+  // jamais refuser pour ça : ce script n'envoie rien, et ce qui part est toujours un texte qu'un humain
+  // a pu lire. Un connecteur absent change qui appuie sur « envoyer », pas si le message peut partir.
+  const connecteurs = connecteursDe(s);
+  const connecteur = connecteurs === null ? null : connecteurs.includes(canal.toLowerCase());
+  return { canal, adresse, contactsPath, accord, connecteur };
 }
+// Ce qu'on dit du connecteur, en une ligne, dans le fragment : trois états, comme partout — déclaré et
+// présent, déclaré et absent, rien de déclaré. Les deux derniers mènent au même geste et ne sont pas le
+// même fait : l'un est un outil qu'on sait ne pas avoir, l'autre une question jamais posée.
+export const LIGNE_CONNECTEUR = (canal, connecteur) => (connecteur === true
+  ? `Connecteur « ${canal} » déclaré dans l'état : l'envoi peut passer par lui, quand tu l'auras relu.`
+  : connecteur === false
+    ? `« ${canal} » n'est pas dans les connecteurs déclarés (\`settings.connecteurs\`) : ce texte part de la main d'un humain.`
+    : 'Aucun connecteur déclaré (`settings.connecteurs`) : ce texte part de la main d\'un humain. Si un outil est branché, dis-le — ça ne change pas ce qui s\'écrit, ça change qui appuie sur « envoyer ».');
 
 // Les paragraphes se séparent par des LIGNES VIDES, jamais par un simple retour. Un courriel part en
 // `text/plain; format=flowed`, où les retours simples sont des coupures DOUCES que certains clients

@@ -157,6 +157,19 @@ stakeholders: []
 #                          # en lecture seule sous `versions/` d'où rien ne se reprend. Ils vont dans
 #                          # `contacts.yaml`, à côté de l'état, que `.gitignore` exclut. S114 refuse
 #                          # une coordonnée ici, et signale un canal annoncé qui n'en a aucune là-bas
+#    contact_autorise: []  # L'AUTORISATION DE L'UTILISATEUR d'écrire à cette personne, par OUTIL :
+#                          # - { outil: slack, le: "2026-11-04", par: "Samir" }
+#                          # `reach-out.mjs` et `review-sources.mjs --message` REFUSENT de composer
+#                          # sans elle (S126). Un script ne calcule pas un droit, et ce n'est pas son
+#                          # rôle : le consentement des personnes interrogées est la responsabilité de
+#                          # l'utilisateur, et c'est lui qui dit s'il est légitime d'écrire maintenant.
+#                          # Ce qui se vérifie, c'est que sa décision est ÉCRITE — comme `waived` et
+#                          # `lint_waivers`. Par OUTIL, parce qu'autoriser un courriel n'autorise pas
+#                          # un message sur un numéro personnel, et deux outils d'une même famille ne
+#                          # se couvrent pas : Slack et WhatsApp sont tous deux de la messagerie.
+#                          # L'outil nommé ici est le MÊME mot que `joignable_par`. Sans date, elle ne
+#                          # se vérifie pas, et une décision invérifiable est une case cochée.
+#                          # `par` est libre : qui a dit oui, quand ça vaut la peine de le garder
 #    sollicitee_le: ""     # AAAA-MM-JJ — QUAND la question lui est partie, sur le canal ci-dessus.
 #                          # Elle ne se lit que sur le statut « sollicitée ». Sans elle, « sollicitée »
 #                          # compte comme si personne n'avait jamais écrit (S115) : c'est toi qui écris
@@ -461,6 +474,15 @@ langue: français            # la langue de CE dossier : celle dans laquelle l'�
                             # surchargeable. Une partie prenante qui ne la lit pas porte sa propre
                             # `langue` ; `reach-out.mjs` énumère alors ce que le message doit dire au
                             # lieu de le traduire lui-même
+
+connecteurs: ~              # LES OUTILS BRANCHÉS SUR LA SESSION, tels que TOI tu les vois : aucun
+                            # script ne les voit. `~` veut dire « rien de déclaré », `[]` veut dire
+                            # « j'ai regardé, il n'y en a pas » — ce n'est pas la même chose, et les
+                            # scripts les distinguent. `[slack, gmail]` dit ce qui est là. Ça ne change
+                            # JAMAIS ce qui s'écrit, ni le droit d'écrire : ça change qui appuie sur
+                            # « envoyer ». Sans connecteur, le texte part de la main d'un humain — et
+                            # c'est de toute façon ce que font les scripts, qui n'envoient rien. Les
+                            # valeurs sont celles de `joignable_par` (S88)
 
 relance: {}                 # deux horloges, en jours, pour une question partie à quelqu'un et restée
                             # sans réponse : { signaler: 1, agir: 5 } par défaut. DIRE à l'utilisateur

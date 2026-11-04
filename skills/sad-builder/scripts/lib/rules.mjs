@@ -247,6 +247,20 @@ export const seuilsRelance = (s, canal) => ({ ...RELANCE, ...(canal ? formeDuCan
 // vit, une fois, plutôt que chez chaque lecteur.
 export const zonesSollicitees = sh => (Array.isArray(sh?.sollicitee_zone) ? sh.sollicitee_zone : [sh?.sollicitee_zone])
   .map(x => String(x ?? '').trim()).filter(Boolean);
+// L'autorisation de l'UTILISATEUR d'écrire à quelqu'un, par outil. Le champ accepte une entrée seule ou
+// une liste, comme `sollicitee_zone` : la tolérance vit ici, une fois, plutôt que chez chaque lecteur.
+// L'outil se lit en minuscules parce que la table l'est, et S88 demande de son côté l'orthographe.
+export const autorisationsDe = sh => (Array.isArray(sh?.contact_autorise) ? sh.contact_autorise : [sh?.contact_autorise])
+  .filter(a => a && typeof a === 'object')
+  .map(a => ({ outil: String(a.outil ?? '').trim().toLowerCase(), le: String(a.le ?? '').trim(), par: String(a.par ?? '').trim() }));
+// Les outils branchés sur la session, tels que l'AGENT les déclare : aucun script ne les voit. Trois
+// états, comme partout : une liste, une liste vide — « j'ai regardé, il n'y en a pas » —, ou `null`,
+// rien de déclaré, qui n'est pas la même chose et ne se lit pas comme une absence de connecteur.
+export const connecteursDe = s => {
+  const brut = s?.settings?.connecteurs ?? s?.connecteurs;
+  if (brut === undefined || brut === null) return null;
+  return arr(brut).map(x => String(x ?? '').trim().toLowerCase()).filter(Boolean);
+};
 const JOURS = 86400000;
 const joursDepuis = d => Math.floor((Date.parse(new Date().toISOString().slice(0, 10)) - Date.parse(d)) / JOURS);
 
@@ -1918,6 +1932,41 @@ export function sollicitationFindings(s) {
 // Une résolution qui nomme une source dit que quelqu'un a répondu — donc que quelqu'un a demandé.
 const REPONDUE = /\bSRC-\d+/;
 
+// Ce que `reach-out.mjs` et `review-sources.mjs --message` refusent désormais de composer sans elle. La
+// consigne existait dans `SKILL.md` — « demande à l'utilisateur avant la première prise de contact :
+// l'option est la sienne, pas celle de la personne au bout, qui n'a rien choisi » — et rien ne la
+// tenait : le script composait, et personne ne savait si la question avait été posée. Un script ne peut
+// pas calculer un DROIT, et ce n'est pas son rôle : le consentement des personnes interrogées est la
+// responsabilité de l'utilisateur. Il peut vérifier que sa décision est ÉCRITE, comme pour `waived` et
+// `lint_waivers` — et une autorisation sans date ne se vérifie pas.
+export function autorisationFindings(s) {
+  const out = [];
+  for (const sh of arr(s?.stakeholders)) {
+    for (const [i, a] of autorisationsDe(sh).entries()) {
+      if (!a.outil) {
+        out.push({ rule: 'S126', id: sh.id, message: `autorisation n° ${i + 1} de \`contact_autorise\` sans dire par quel outil (\`outil\`) : autoriser « un contact » n'autorise rien de précis — un courriel n'est pas un WhatsApp sur un numéro personnel` });
+        continue;
+      }
+      checkEnum(out, sh.id, 'canal de contact', a.outil);
+      if (!JOUR.test(a.le)) {
+        out.push({ rule: 'S126', id: sh.id, message: `autorisation d'écrire par « ${a.outil} » sans date lisible (\`le\`, AAAA-MM-JJ${a.le ? `, et non « ${a.le} »` : ''}) : une autorisation qu'on ne peut pas situer dans le temps ne se vérifie pas, et une décision invérifiable est une case cochée` });
+      }
+    }
+    // Quelque chose est parti, et l'état ne dit pas que ça avait été autorisé. `joignable_par` vide est
+    // l'affaire de S115, et un canal sans écrit n'a pas d'autorisation à demander : de vive voix, c'est
+    // l'utilisateur qui parle, et il était dans la pièce.
+    const canal = String(sh?.joignable_par ?? '').trim();
+    const parti = sh?.status === 'sollicitée' || ecrit(sh?.sollicitee_le) || zonesSollicitees(sh).length;
+    if (!parti || !canal || !formeDuCanal(canal).ecrit) continue;
+    if (autorisationsDe(sh).some(a => a.outil === canal.toLowerCase())) continue;
+    out.push({ rule: 'S126', id: sh.id, message: `sollicitée par « ${canal} » sans que rien n'autorise de lui écrire par cet outil (\`contact_autorise\`) : l'option est celle de l'utilisateur, pas celle de la personne au bout, qui n'a rien choisi. Sa décision s'écrit — \`- { outil: ${canal.toLowerCase()}, le: "AAAA-MM-JJ" }\` — et par OUTIL, parce qu'autoriser un courriel n'autorise pas un message sur un numéro personnel` });
+  }
+  // Les connecteurs déclarés suivent la même énumération que les outils : un connecteur nommé hors
+  // table ne correspond à rien qu'un `joignable_par` puisse désigner.
+  for (const c of connecteursDe(s) ?? []) checkEnum(out, 'settings', 'canal de contact', c);
+  return out;
+}
+
 export function questionPoseeFindings(s) {
   const out = [];
   const zones = arr(s?.shadow_zones);
@@ -2145,7 +2194,7 @@ export function checkState(s, ctx = {}) {
     return [{ rule: 'S00', id: 'document', message: `document « ${doc} » : ce catalogue vérifie ${DOCUMENTS.join(', ')}, et rien d'autre — un état d'implémentation se vérifie avec pr-gate.mjs et trace-check.mjs, un état de tests avec release-matrix.mjs` }];
   }
   const base = doc === 'plan' ? checkPlan(s, refs) : doc === 'sad' ? checkSad(s) : doc === 'prd' ? checkPrd(s) : checkBrd(s);
-  const all = [...base, ...placeholderFindings(s), ...unsourcedNumberFindings(s), ...constitutionFindings(s, ctx.constitution), ...checklistFindings(s, ctx.checklists), ...interviewFindings(s, ctx.interviews), ...outgoingFindings(s, [...fichiersDe(ctx.interviews), ...fichiersDe(ctx.checklists)]), ...governanceFindings(s), ...coverageFindings(s, refs), ...phaseFindings(s), ...sourceContentFindings(s), ...confirmationFindings(s), ...contactFindings(s, ctx.contacts), ...sollicitationFindings(s), ...questionPoseeFindings(s), ...effectifFindings(s), ...riskFindings(s), ...understoodFindings(s), ...relectureFindings(s), ...handoffFindings(ctx.handoffs), ...upstreamFindings(s, refs), ...contextFindings(ctx.cards, s.settings?.context_budget)];
+  const all = [...base, ...placeholderFindings(s), ...unsourcedNumberFindings(s), ...constitutionFindings(s, ctx.constitution), ...checklistFindings(s, ctx.checklists), ...interviewFindings(s, ctx.interviews), ...outgoingFindings(s, [...fichiersDe(ctx.interviews), ...fichiersDe(ctx.checklists)]), ...governanceFindings(s), ...coverageFindings(s, refs), ...phaseFindings(s), ...sourceContentFindings(s), ...confirmationFindings(s), ...contactFindings(s, ctx.contacts), ...sollicitationFindings(s), ...autorisationFindings(s), ...questionPoseeFindings(s), ...effectifFindings(s), ...riskFindings(s), ...understoodFindings(s), ...relectureFindings(s), ...handoffFindings(ctx.handoffs), ...upstreamFindings(s, refs), ...contextFindings(ctx.cards, s.settings?.context_budget)];
   const idx = waiverIndex(s);
   return all.map(f => {
     const raison = idx.get(`${f.id}|${f.rule}`);
@@ -2179,6 +2228,7 @@ export const STRUCT_RULES = {
   S123: 'entrée collective dont le statut parle pour tout le monde',
   S124: 'trace de porte dont le compte ne concorde pas avec ses dérogations',
   S125: 'sollicitation écrite inscrite sur la personne et pas sur la question',
+  S126: 'contact parti sans que l\'autorisation de l\'utilisateur soit écrite',
   S01: 'objectif non mesurable', S02: 'exigence sans objectif', S03: 'exigence sans besoin sourcé', S04: 'exigence sans critère d\'acceptation',
   S05: 'priorité ou release manquante', S06: 'exigence sans origine', S07: 'Must sans scénario d\'erreur', S08: 'NFR incomplète',
   S09: 'référence inexistante', S10: 'référence vers un élément abandonné', S11: 'règle métier sans source', S12: 'règle sans niveau d\'application',

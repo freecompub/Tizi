@@ -26,7 +26,7 @@
 // Usage : node reach-out.mjs <état.yaml> --sh SH-xx [--relance] [--json]
 import { arr, loadState, fail, today, shLabel, seuilRepetitions, foisPosee } from './lib/common.mjs';
 import { sollicitationEtat, zonesSollicitees, familleDe } from './lib/rules.mjs';
-import { nomClair, nomInitiative, demandeur, langueDe, langueDuDossier, joindre, formeEcrite, refuseLesIdentifiants, refuseLaTroisiemePersonne, AVERTISSEMENT_COMPTE, N_ENVOIE_RIEN } from './lib/outgoing.mjs';
+import { nomClair, nomInitiative, demandeur, langueDe, langueDuDossier, joindre, formeEcrite, refuseLesIdentifiants, refuseLaTroisiemePersonne, AVERTISSEMENT_COMPTE, N_ENVOIE_RIEN, LIGNE_CONNECTEUR } from './lib/outgoing.mjs';
 
 const JOUR_RE = /^\d{4}-\d{2}-\d{2}$/;
 const jours = d => Math.floor((Date.parse(today()) - Date.parse(d)) / 86400000);
@@ -43,7 +43,7 @@ if (!sh) fail(`${id} n'est pas une partie prenante de ${statePath}.`);
 
 // Les coordonnées vivent à côté de l'état et ne se commitent pas (S114). Absentes, il n'y a rien à
 // composer : un message sans destinataire ne s'écrit pas « en attendant ».
-const { canal, adresse } = joindre(s, statePath, id);
+const { canal, adresse, accord, connecteur } = joindre(s, statePath, id);
 // Et un canal qui ne porte pas d'écrit n'est pas un canal de message. Le téléphone et la vive voix sont
 // des conversations : elles se mènent avec un guide d'entretien, pas avec un texte composé d'avance.
 const forme = formeEcrite(canal, `${shLabel(s, id)} est déclarée joignable`);
@@ -456,6 +456,8 @@ console.log([
   `que ${posees.length > 1 ? 'les questions sont retombées' : 'la question est retombée'} —, le verbatim dans \`quote\`${mode === 'premiere' ? ', puis `status: interrogée`' : ''}`,
   `et ${posees.length > 1 ? `les zones ${posees.map(z => z.id).join(', ')} levées — celles qu'elle a traitées, pas les autres` : `la zone ${posees[0].id} levée`}.`,
   `Seuils de ce canal : signaler à ${forme.relance.signaler} j, trancher à ${forme.relance.agir} j (S117).`,
+  `Autorisé par l'utilisateur le ${accord.le || '(sans date — S126 le dit)'}${accord.par ? `, par ${accord.par}` : ''}.`,
+  LIGNE_CONNECTEUR(canal, connecteur),
   ...(mode === 'relance' ? ['', 'Si elle ne répond pas davantage, renonce et dis-le : `status: non disponible`. Un silence qu\'on',
     'laisse ouvert indéfiniment donne au dossier l\'air d\'attendre quelque chose qui ne viendra pas.'] : []),
 ].join('\n'));
