@@ -1572,6 +1572,21 @@ export function outgoingFindings(s, fichiers = []) {
 // décidé par Dédé (SRC-080) » —, que rien ne lit, que le document rendu ne peut pas reprendre, et qui
 // disparaissent à la première réécriture du champ par un outil.
 
+// `gate` était la seule trace que rien ne relisait : l'agent y écrit une phrase, et aucun script au
+// monde ne pouvait la contredire. Sur le troisième dossier réel : « 5 conditions sur 7 mesurées
+// (status.mjs) », avec deux dérogations nommées. 7 − 5 = 2, donc juste — et c'était un hasard que
+// rien ne vérifiait. Or les quatre références de phase disent la même phrase mot pour mot : l'entrée
+// porte « l'état de la porte tel que `status.mjs` l'a dit, et CHAQUE condition franchie par dérogation
+// avec sa raison ». Le nombre de conditions non tenues et le nombre de dérogations sont donc le même
+// nombre, et deux nombres qui doivent coïncider se vérifient. C'est aussi ce qui rend la trace
+// relisible plus tard : « 5 sur 7 » seul ne dit pas si la porte en avait sept ou si le catalogue a
+// bougé depuis ; « 5 sur 7 » adossé à deux dérogations nommées se tient tout seul.
+const COMPTE_PORTE = /(\d+)\s*condition[^.;:]*?\bsur\s*(\d+)/i;
+export const comptePorte = e => {
+  const m = COMPTE_PORTE.exec(String(e?.gate ?? ''));
+  return m ? { tenues: Number(m[1]), mesurees: Number(m[2]) } : null;
+};
+
 // Une porte franchie sans trace, et une trace sans son décideur ni sa date.
 export function phaseFindings(s) {
   const out = [];
@@ -1594,6 +1609,19 @@ export function phaseFindings(s) {
       message: porteDe(e)
         ? `porte franchie sans ${manque.join(', ni ')} : un passage de phase se décide avec l'utilisateur, jamais seul, et la décision se nomme`
         : `retour en arrière écrit sans ${manque.join(', ni ')} : un retour se décide comme une porte, et un journal qui ne dit pas pourquoi on a reculé ne se relit pas` });
+    if (!porteDe(e)) continue;   // un retour ne mesure pas de porte : il en vient
+    const c = comptePorte(e), derogees = arr(e.waived).length;
+    const id = `phase:${e.from ?? '?'}`;
+    if (!c) {
+      out.push({ rule: 'S124', id, message: String(e.gate ?? '').trim()
+        ? `\`gate\` ne dit pas combien de conditions étaient tenues sur combien de mesurées (« ${String(e.gate).trim().slice(0, 60)}${String(e.gate).trim().length > 60 ? '…' : ''} ») : recopie la ligne de \`status.mjs\`, « X condition(s) tenue(s) sur Y mesurée(s) », sinon la trace ne se relit pas — on ne sait plus si la porte en avait Y ou si le catalogue a bougé depuis`
+        : 'porte franchie sans dire ce que la porte disait au passage (`gate`) : la ligne de `status.mjs`, « X condition(s) tenue(s) sur Y mesurée(s) ». Sans elle, le journal dit qu\'on est passé et rien ne dit à quel prix' });
+    } else if (c.tenues > c.mesurees) {
+      out.push({ rule: 'S124', id, message: `\`gate\` annonce ${c.tenues} condition(s) tenue(s) sur ${c.mesurees} mesurée(s) : on ne tient pas plus de conditions que la porte n'en mesure` });
+    } else if (c.mesurees - c.tenues !== derogees) {
+      const nonTenues = c.mesurees - c.tenues;
+      out.push({ rule: 'S124', id, message: `\`gate\` annonce ${c.tenues} condition(s) tenue(s) sur ${c.mesurees}, donc ${nonTenues} non tenue(s), et \`waived\` en nomme ${derogees} : ${nonTenues > derogees ? `${nonTenues - derogees} condition(s) ont été franchies sans que rien ne dise laquelle ni pourquoi` : `${derogees - nonTenues} dérogation(s) de plus que de conditions non tenues`}. Une condition non tenue se dérogue nommément, avec sa raison, ou elle n'est pas franchie` });
+    }
   }
   return out;
 }
@@ -2114,6 +2142,7 @@ export const STRUCT_RULES = {
   S121: 'zone résolue par une réponse sans dire quand la question est partie',
   S122: 'entrée de la cartographie qui ne dit pas combien de personnes elle vaut',
   S123: 'entrée collective dont le statut parle pour tout le monde',
+  S124: 'trace de porte dont le compte ne concorde pas avec ses dérogations',
   S01: 'objectif non mesurable', S02: 'exigence sans objectif', S03: 'exigence sans besoin sourcé', S04: 'exigence sans critère d\'acceptation',
   S05: 'priorité ou release manquante', S06: 'exigence sans origine', S07: 'Must sans scénario d\'erreur', S08: 'NFR incomplète',
   S09: 'référence inexistante', S10: 'référence vers un élément abandonné', S11: 'règle métier sans source', S12: 'règle sans niveau d\'application',

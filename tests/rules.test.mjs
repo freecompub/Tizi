@@ -1899,9 +1899,11 @@ test('S100 et S101 : une porte franchie laisse sa trace, avec son décideur et s
   // Deux portes franchies, aucune trace : deux constats, chacun nommant la phase close.
   assert.deepEqual(porte({}).map(f => `${f.rule} ${f.id}`), ['S100 phase:assess', 'S100 phase:discover']);
   assert.match(porte({})[0].message, /phase_log/);
-  const complet = [{ from: 'assess', to: 'discover', date: '2026-10-29', decided_by: 'SH-02', source: 'SRC-026' },
-    { from: 'discover', to: 'define', date: '2026-11-02', decided_by: 'SH-02', source: 'SRC-080' }];
+  // Une trace complète porte aussi ce que la porte disait : S124 le relit (voir son propre témoin).
+  const complet = [{ from: 'assess', to: 'discover', date: '2026-10-29', decided_by: 'SH-02', source: 'SRC-026', gate: '7 condition(s) tenue(s) sur 7 mesurée(s)' },
+    { from: 'discover', to: 'define', date: '2026-11-02', decided_by: 'SH-02', source: 'SRC-080', gate: '13 condition(s) tenue(s) sur 13 mesurée(s)' }];
   assert.deepEqual(porte({ phase_log: complet }), [], 'un journal complet est encore signalé');
+  assert.deepEqual(checkState({ document: 'brd', phase: 'define', phase_log: complet }).filter(f => f.rule === 'S124'), []);
   // Une entrée sans décideur ni source : la trace existe, la décision n'est pas nommée.
   const boiteux = porte({ phase_log: [complet[0], { from: 'discover', to: 'define', date: '2026-11-02' }] });
   assert.deepEqual(boiteux.map(f => f.rule), ['S101']);
@@ -1927,6 +1929,41 @@ test('S100 et S101 : une porte franchie laisse sa trace, avec son décideur et s
   assert.deepEqual(porte({ phase_log: [...complet,
     { from: 'define', to: 'discover', date: '2026-11-03', decided_by: 'SH-02', reason: 'valeur actuelle inconnue', zone: 'ZO-012', kind: 'retour' }] }), [],
   'un retour complet est encore signalé');
+});
+
+test('S124 : la trace d\'une porte dit ce qu\'elle a coûté, et le compte concorde', () => {
+  // Le cas qui a produit cette règle : la seule entrée de `phase_log` d'un dossier réel disait
+  // « 5 conditions sur 7 mesurées (status.mjs) » avec deux dérogations nommées. 7 − 5 = 2, donc juste,
+  // et c'était un hasard — `gate` était le seul champ de l'état que RIEN ne relisait.
+  const trace = extra => checkState({ document: 'brd', phase: 'discover',
+    phase_log: [{ from: 'assess', to: 'discover', date: '2026-11-02', decided_by: 'SH-03', source: 'SRC-016', ...extra }] })
+    .filter(f => f.rule === 'S124').map(f => f.message);
+  const REEL = '5 conditions sur 7 mesurées (status.mjs) : restaient 22 zones d\'ombre ouvertes';
+  const deux = [{ condition: 'chaque zone d\'ombre est levée ou assumée', reason: 'le programme de Discover' },
+    { condition: 'aucun avertissement ni corrigé ni dérogé', reason: 'deux questions ouvertes' }];
+
+  // Les deux formulations du compte se lisent : celle de `status.mjs` et celle que l'agent a écrite.
+  assert.deepEqual(trace({ gate: REEL, waived: deux }), []);
+  assert.deepEqual(trace({ gate: '7 condition(s) tenue(s) sur 7 mesurée(s)' }), []);
+
+  // Sans `gate`, le journal dit qu'on est passé et rien ne dit à quel prix.
+  assert.match(trace({})[0], /porte franchie sans dire ce que la porte disait au passage \(`gate`\)/);
+  // Une phrase sans compte n'est pas un compte : c'est ce qui rendait le champ incontrôlable.
+  assert.match(trace({ gate: 'la porte était bonne' })[0], /ne dit pas combien de conditions étaient tenues sur combien de mesurées/);
+
+  // Le cœur : deux non tenues et une seule dérogation nommée. La doctrine, écrite mot pour mot dans
+  // les quatre références de phase, dit « CHAQUE condition franchie par dérogation avec sa raison ».
+  assert.match(trace({ gate: REEL, waived: [deux[0]] })[0], /donc 2 non tenue\(s\), et `waived` en nomme 1 : 1 condition\(s\) ont été franchies sans que rien ne dise laquelle ni pourquoi/);
+  // Et l'inverse : tout tenu, et pourtant une dérogation. L'un des deux est faux.
+  assert.match(trace({ gate: '7 conditions sur 7', waived: [deux[0]] })[0], /1 dérogation\(s\) de plus que de conditions non tenues/);
+  // Un compte impossible.
+  assert.match(trace({ gate: '9 conditions sur 7' })[0], /on ne tient pas plus de conditions que la porte n'en mesure/);
+
+  // Un retour en arrière ne mesure pas de porte : il en vient. Rien à lui reprocher ici.
+  assert.deepEqual(checkState({ document: 'brd', phase: 'discover',
+    phase_log: [{ from: 'assess', to: 'discover', date: '2026-11-02', decided_by: 'SH-03', source: 'SRC-016', gate: '7 conditions sur 7' },
+      { from: 'discover', to: 'discover', date: '2026-11-03', decided_by: 'SH-03', reason: 'une contradiction', kind: 'retour' }] })
+    .filter(f => f.rule === 'S124'), []);
 });
 
 // Le modèle d'état n'avait AUCUN champ pour ce qui avait été dit. Mesuré : 92 sources sur 93 — dont 65
