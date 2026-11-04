@@ -162,7 +162,11 @@ const startHook = captureSkill ? scriptPath(captureSkill, 'session-start.mjs') :
 const hasImpl = skills.includes('impl-builder');
 const capture = captureSkill ? scriptPath(captureSkill, 'session-capture.mjs') : '';
 const guard = hasImpl ? scriptPath('impl-builder', 'tdd-guard.mjs') : '';
-if (claude && (capture || guard)) {
+// Le garde-fou de répétition n'a de sens que là où l'on pose des questions à des personnes : il vit dans
+// les skills d'élicitation, et le premier installé le porte — comme la capture de session.
+const questionsSkill = skills.find(s => existsSync(join(source, s, 'scripts', 'question-guard.mjs')));
+const questions = questionsSkill ? scriptPath(questionsSkill, 'question-guard.mjs') : '';
+if (claude && (capture || guard || questions)) {
   const p = join(project, '.claude', 'settings.json');
   act(`hooks Claude Code → ${p}`, () => {
     const cfg = existsSync(p) ? JSON.parse(readFileSync(p, 'utf8')) : {};
@@ -176,12 +180,13 @@ if (claude && (capture || guard)) {
     };
     if (guard) set('PreToolUse', guard, 'Edit|Write|MultiEdit|NotebookEdit');
     if (capture) for (const e of ['Stop', 'PreCompact', 'SessionEnd']) set(e, capture);
+    if (questions) set('Stop', questions);
     if (startHook) set('SessionStart', startHook);
     mkdirSync(dirname(p), { recursive: true });
     writeFileSync(p, `${JSON.stringify(cfg, null, 2)}\n`);
   });
 }
-if (plugin && (capture || guard)) {
+if (plugin && (capture || guard || questions)) {
   // Un fichier de hooks par outil : les chemins ne peuvent pas être les mêmes, puisque la variable qui
   // donne la racine du plugin diffère (${CLAUDE_PLUGIN_ROOT} contre ${PLUGIN_ROOT}). Elle est toujours
   // entre guillemets : un chemin d'installation peut contenir des espaces.
@@ -189,6 +194,7 @@ if (plugin && (capture || guard)) {
     guard: hasImpl ? scriptPath('impl-builder', 'tdd-guard.mjs', tool) : '',
     capture: captureSkill ? scriptPath(captureSkill, 'session-capture.mjs', tool) : '',
     start: captureSkill ? scriptPath(captureSkill, 'session-start.mjs', tool) : '',
+    questions: questionsSkill ? scriptPath(questionsSkill, 'question-guard.mjs', tool) : '',
   });
   const mapFor = tool => {
     const x = pathsFor(tool);
@@ -196,6 +202,9 @@ if (plugin && (capture || guard)) {
     const hooks = {};
     if (x.guard) hooks.PreToolUse = [{ matcher: 'Edit|Write|MultiEdit|NotebookEdit', hooks: [{ type: 'command', command: `node "${x.guard}"` }] }];
     if (x.capture) for (const e of ['Stop', 'PreCompact', 'SessionEnd']) hooks[e] = entry(x.capture);
+    // Deux hooks sur la même fin de tour : la capture écrit l'extrait, le garde-fou lit ce qui vient
+    // d'être dit. Il s'ajoute, il ne remplace pas — l'ordre est celui de la liste.
+    if (x.questions) hooks.Stop = [...(hooks.Stop ?? []), ...entry(x.questions)];
     if (x.start) hooks.SessionStart = entry(x.start);
     return hooks;
   };

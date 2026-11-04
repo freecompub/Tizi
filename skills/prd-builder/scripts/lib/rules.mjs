@@ -1933,6 +1933,20 @@ export function questionPoseeFindings(s) {
   if (muettes.length) {
     out.push({ rule: 'S121', id: 'shadow_zones', message: `${muettes.length} zone(s) sur ${repondues.length} dont la résolution nomme une source ne disent pas quand la question est partie (\`posee\`) : ${muettes.slice(0, 5).map(z => z.id).join(', ')}${muettes.length > 5 ? ` et ${muettes.length - 5} autre(s)` : ''}. Quelqu'un a répondu, donc quelqu'un a demandé — et rien ne dit quand, ni par quoi, ni combien de fois. C'est la seule chronologie que le dossier pourrait avoir : sans elle, on ne sait pas ce qui a été appris quand, ni depuis combien de temps une question attend` });
   }
+  // Une sollicitation écrite s'inscrit à DEUX endroits : sur la personne — `sollicitee_zone` dit sur
+  // quoi on lui a écrit — et sur la question — `posee` dit qu'elle est partie, avec sa date et son
+  // canal. `reach-out.mjs` imprime les deux lignes à ajouter, mais c'est l'agent qui les écrit, et il
+  // peut n'en écrire qu'une. L'état se contredit alors en silence : quelqu'un a été sollicité sur une
+  // question dont la liste des départs est vide. Aucune devinette ici, deux champs du même état — et
+  // c'est la moitié du défaut que `question-guard.mjs` ne peut pas voir, puisqu'elle est par écrit.
+  const parZone = new Map(zones.map(z => [z.id, z]));
+  for (const sh of arr(s?.stakeholders)) {
+    for (const zid of zonesSollicitees(sh)) {
+      const z = parZone.get(zid);
+      if (!z || passagesPosee(z).length) continue;
+      out.push({ rule: 'S125', id: z.id, message: `${sh.id ?? 'une partie prenante'} porte \`sollicitee_zone: ${zid}\`${ecrit(sh.sollicitee_le) ? ` et \`sollicitee_le: ${sh.sollicitee_le}\`` : ''}, et \`posee\` est vide : on a inscrit sur la personne ce qu'on n'a pas inscrit sur la question. Un passage par départ — \`- { date: "AAAA-MM-JJ", canal: "…" }\` —, sinon rien ne dit combien de fois celle-ci est partie, et une zone ouverte a l'air neuve` });
+    }
+  }
   return out;
 }
 
@@ -2143,6 +2157,7 @@ export const STRUCT_RULES = {
   S122: 'entrée de la cartographie qui ne dit pas combien de personnes elle vaut',
   S123: 'entrée collective dont le statut parle pour tout le monde',
   S124: 'trace de porte dont le compte ne concorde pas avec ses dérogations',
+  S125: 'sollicitation écrite inscrite sur la personne et pas sur la question',
   S01: 'objectif non mesurable', S02: 'exigence sans objectif', S03: 'exigence sans besoin sourcé', S04: 'exigence sans critère d\'acceptation',
   S05: 'priorité ou release manquante', S06: 'exigence sans origine', S07: 'Must sans scénario d\'erreur', S08: 'NFR incomplète',
   S09: 'référence inexistante', S10: 'référence vers un élément abandonné', S11: 'règle métier sans source', S12: 'règle sans niveau d\'application',
