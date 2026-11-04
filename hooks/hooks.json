@@ -19,6 +19,14 @@
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/skills/backlog-executor/scripts/session-capture.mjs\""
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/skills/brd-builder/scripts/question-guard.mjs\""
+          }
+        ]
       }
     ],
     "PreCompact": [

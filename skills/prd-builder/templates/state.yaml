@@ -148,7 +148,9 @@ stakeholders: []          # qui a parlé, et en quelle qualité — chaîné : r
 #                          # l'erreur à qui a répondu, et une relance repart sur LES questions
 #                          # parties, pas sur celles que le classement remettrait en tête. La liste
 #                          # entière, pas seulement la première : une relance doit pouvoir reposer
-#                          # exactement ce qui a été posé
+#                          # exactement ce qui a été posé. Et une zone nommée ici porte un passage de
+#                          # plus dans son `posee` : écrire sur la personne sans écrire sur la question
+#                          # laisse un état qui se contredit en silence (S125)
 #    status: à interroger  # à interroger | sollicitée | interrogée | non disponible. « sollicitée »
 #                          # veut dire qu'on a écrit, pas qu'on a reçu : elle reste non entendue
 
@@ -370,7 +372,11 @@ shadow_zones: []
 #                         # Un passage sans date lisible ne compte pour rien (S119). Au-delà de trois
 #                         # passages sans réponse, ce n'est plus une question mais un constat : à
 #                         # assumer avec sa raison, ou à trancher — jamais à reposer (S120). Le seuil
-#                         # se règle par `settings.relance.repetitions`
+#                         # se règle par `settings.relance.repetitions`. De vive voix, aucun script
+#                         # n'est dans le chemin : `question-guard.mjs`, branché sur la fin de tour,
+#                         # lit ce que l'agent vient de dire et prévient quand la même question
+#                         # repart pour la troisième fois. Il ne bloque pas, et il n'écrit pas ce
+#                         # champ — c'est toujours l'agent qui l'écrit
 #    status: ouverte       # ouverte | levée | assumée
 #    resolution: ""
 #    related: []

@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import yaml from '../skills/brd-builder/scripts/lib/vendor/js-yaml.mjs';
-import { tempDir } from './helpers.mjs';
+import { tempDir, node } from './helpers.mjs';
 import { DOCUMENTS, STRUCT_RULES, TEXT_RULES, checkState, sollicitationEtat, seuilsRelance, refsDans, coverage, coverageFindings, coverageRows, evidenceOf, contextFindings } from '../skills/brd-builder/scripts/lib/rules.mjs';
 import { gateConditions } from '../skills/brd-builder/scripts/lib/gates.mjs';
 import { shellWrittenPaths } from '../skills/brd-builder/scripts/lib/agent-io.mjs';
@@ -1534,6 +1534,77 @@ test('S119, S120, S121 : une question porte ce qui lui est arrivé', () => {
   // Une résolution qui ne nomme aucune source — une décision, une raison d'abandon — ne compte pas :
   // personne n'a forcément demandé quoi que ce soit.
   assert.deepEqual(dits([{ id: 'ZO-004', type: 'attendu_implicite', question: 'Et celle-là ?', ask_to: 'SH-01', status: 'assumée', resolution: 'portée par R-02 : on fera sans' }], 'S121'), []);
+});
+
+test('S125 : une sollicitation écrite s\'inscrit sur la personne ET sur la question', () => {
+  // `reach-out.mjs` imprime les deux lignes à ajouter, et c'est l'agent qui les écrit : il peut n'en
+  // écrire qu'une. L'état se contredit alors en silence — quelqu'un a été sollicité sur une question
+  // dont la liste des départs est vide. C'est la moitié écrite du défaut que `question-guard.mjs` ne
+  // peut pas voir : de vive voix, aucun champ ne trahit la question partie.
+  const etat = (shExtra, zoneExtra = {}) => ({ document: 'brd', phase: 'discover',
+    stakeholders: [{ id: 'SH-01', name: 'Nadia', status: 'sollicitée', power: 'faible', impact: 'fort', influence: 'positive', quadrant: 'consulter', ...shExtra }],
+    shadow_zones: [{ id: 'ZO-001', type: 'attendu_implicite', question: 'Les 150 dossiers, ça fait combien de familles ?', ask_to: 'SH-01', status: 'ouverte', ...zoneExtra }] });
+  const dits = (shExtra, zoneExtra) => checkState(etat(shExtra, zoneExtra)).filter(f => f.rule === 'S125').map(f => f.message);
+
+  // Rien de parti : rien à reprocher. L'absence d'un champ n'est pas un reproche.
+  assert.deepEqual(dits({}), []);
+  // Parti sur la personne, muet sur la question : le constat porte la zone, et nomme qui a été sollicité.
+  const [dit] = dits({ sollicitee_le: ilYA(1), sollicitee_zone: 'ZO-001' });
+  assert.match(dit, /SH-01 porte `sollicitee_zone: ZO-001`/);
+  assert.match(dit, /et `posee` est vide/);
+  // Les deux écrits : plus rien à dire. Un passage sans date suffit — S119 juge la date, pas celle-ci.
+  assert.deepEqual(dits({ sollicitee_le: ilYA(1), sollicitee_zone: 'ZO-001' }, { posee: [{ date: ilYA(1), canal: 'courriel' }] }), []);
+  assert.deepEqual(dits({ sollicitee_le: ilYA(1), sollicitee_zone: 'ZO-001' }, { posee: [{ canal: 'courriel' }] }), []);
+  // Une zone de `sollicitee_zone` qui n'existe pas est l'affaire de S09 : celle-ci ne la double pas.
+  assert.deepEqual(dits({ sollicitee_le: ilYA(1), sollicitee_zone: 'ZO-099' }), []);
+});
+
+test('question-guard.mjs : la même question reposée trois fois se voit au tour même', async () => {
+  // Le défaut d'origine est passé de vive voix, et de vive voix aucun script n'est dans le chemin :
+  // `reach-out.mjs` ne tourne que pour un canal écrit. La fin de tour est le seul moment où quelque
+  // chose peut lire ce que l'agent vient de dire. Mesuré sur 19 transcriptions de dossiers réels et
+  // 415 phrases interrogatives : 4 groupes signalés, tous vrais, aucune fausse alerte ailleurs.
+  const { writeFileSync, mkdirSync } = await import('node:fs');
+  const d = tempDir('tizi-question-guard');
+  mkdirSync(join(d, 'brd', 'essai'), { recursive: true });
+  writeFileSync(join(d, 'brd', 'essai', 'state.yaml'), yaml.dump({ document: 'brd', phase: 'discover',
+    stakeholders: [{ id: 'SH-01', name: 'Dédé', status: 'interrogée' }],
+    shadow_zones: [{ id: 'ZO-017', type: 'attendu_implicite', question: 'Les 150 dossiers de la dernière campagne correspondent à combien de familles ?', ask_to: 'SH-01', status: 'ouverte' }] }));
+
+  const QUESTION = 'les 150 dossiers de la dernière campagne, ça fait combien de familles ?';
+  const dit = (...textes) => {
+    const p = join(d, `t-${textes.length}-${Math.random().toString(36).slice(2)}.jsonl`);
+    writeFileSync(p, textes.map((text, i) => JSON.stringify({ type: 'assistant',
+      timestamp: `2026-11-04T10:0${i}:00.000Z`, message: { content: [{ type: 'text', text }] } })).join('\n'));
+    const r = node(join(SCRIPTS, 'question-guard.mjs'), ['--transcription', p, '--racine', d, '--texte']);
+    assert.equal(r.code, 0, `le garde-fou prévient, il ne bloque jamais : ${r.err}`);
+    return r.out.trim();
+  };
+
+  // Deux fois : reposer une question est normal. C'est la troisième qui dit qu'elle ne produira rien.
+  assert.equal(dit(QUESTION, 'Autre chose ?', QUESTION), '');
+  // Trois fois, dont la dernière à l'instant : il parle, nomme la zone, et dit ce que l'état n'a pas.
+  const trois = dit(QUESTION, `Pardon — ${QUESTION}`, QUESTION);
+  assert.match(trois, /ZO-017 : la même question vient de partir pour la 3e fois/);
+  assert.match(trois, /`posee` de ZO-017 ne porte aucun passage/);
+  assert.match(trois, /ce n'est plus une question, c'est un constat/);
+  // Un garde-fou qui redirait à chaque tour ce qu'il a dit au précédent devient un bruit de fond, et un
+  // bruit de fond se désactive : le groupe doit contenir le DERNIER message de l'agent.
+  assert.equal(dit(QUESTION, QUESTION, QUESTION, 'Où en sommes-nous du périmètre ?'), '');
+  // Trois questions différentes ne sont pas une répétition, même avec un vocabulaire commun.
+  assert.equal(dit('combien de dossiers sont déposés sur une campagne ?', 'combien de dossiers se perdent sur une campagne ?',
+    'combien de dossiers repartent sur une campagne ?'), '');
+
+  // Sans dossier ouvert, le hook n'a rien à dire — et il ne lit même pas la transcription : mesuré,
+  // une transcription de 70 Mo coûte 1,1 s et 245 Mo, une de 4,6 Mo coûte 67 ms. Dans un dépôt de code,
+  // il a signalé à l'essai une phrase de doctrine citée trois fois, qui n'était une question pour personne.
+  const vide = tempDir('tizi-question-guard-vide');
+  const p = join(vide, 't.jsonl');
+  writeFileSync(p, [QUESTION, QUESTION, QUESTION].map((text, i) => JSON.stringify({ type: 'assistant',
+    timestamp: `2026-11-04T10:0${i}:00.000Z`, message: { content: [{ type: 'text', text }] } })).join('\n'));
+  const r = node(join(SCRIPTS, 'question-guard.mjs'), ['--transcription', p, '--racine', vide, '--texte']);
+  assert.equal(r.code, 0);
+  assert.equal(r.out.trim(), '');
 });
 
 test('S122, S123 : une entrée de la cartographie vaut un nombre de personnes, pas une', () => {

@@ -161,7 +161,20 @@ for (const target of ['claude', 'copilot', 'both']) test(`installation : cible $
   if (target !== 'copilot') assert.ok(existsSync(join(proj, '.claude/settings.json')) && existsSync(join(proj, '.claude/agents/review-functional.md')));
   if (target !== 'claude') assert.ok(existsSync(join(proj, '.github/hooks/tizi.json')) && existsSync(join(proj, '.github/agents/finding-verifier.agent.md')));
   node(join(ROOT, 'install.mjs'), ['--project', proj, '--target', target]);
-  if (target !== 'copilot') for (const l of Object.values(JSON.parse(readFileSync(join(proj, '.claude/settings.json'), 'utf8')).hooks)) assert.equal(l.length, 1, 'entrée de hook dupliquée');
+  // Réinstaller ne doit rien dupliquer. Ce test comptait les ENTRÉES par événement, et une seule par
+  // événement était la même chose tant qu'un seul script y était branché. Depuis que la fin de tour
+  // porte la capture de session ET le garde-fou de répétition, compter les entrées interdirait ce qui
+  // est voulu : c'est la commande qui ne doit pas apparaître deux fois.
+  if (target !== 'copilot') {
+    const { hooks } = JSON.parse(readFileSync(join(proj, '.claude/settings.json'), 'utf8'));
+    for (const [evenement, l] of Object.entries(hooks)) {
+      const commandes = l.flatMap(e => e.hooks ?? [e]).map(h => h.command);
+      assert.equal(new Set(commandes).size, commandes.length, `entrée de hook dupliquée sur ${evenement} : ${commandes.join(' · ')}`);
+    }
+    const finDeTour = (hooks.Stop ?? []).flatMap(e => e.hooks ?? [e]).map(h => h.command);
+    assert.equal(finDeTour.length, 2, 'la fin de tour porte la capture de session et le garde-fou de répétition');
+    assert.ok(finDeTour.some(c => c.includes('session-capture.mjs')) && finDeTour.some(c => c.includes('question-guard.mjs')), finDeTour.join(' · '));
+  }
   const ignore = readFileSync(join(proj, '.gitignore'), 'utf8').split('\n');
   assert.equal(ignore.filter(l => l === '.impl/').length, 1);
   // Les rapports de test sont une sortie locale régénérée : lancer les suites ne doit pas salir l'arbre.

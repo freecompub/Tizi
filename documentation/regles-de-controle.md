@@ -1,8 +1,8 @@
 # Règles de contrôle, étape par étape
 
-**Ce document est généré par `doc-regles.mjs`. Ne le modifie pas à la main.** Une liste de 133 règles écrite à la main dérive au premier changement du catalogue, et une liste qui dérive est pire qu'une absence de liste : on la croit. Les énoncés ci-dessous sont ceux du catalogue (`skills/*/scripts/lib/rules.mjs`), les conditions de porte celles de `lib/gates.mjs`, les seuils ceux de `COVERAGE_DEFAULTS`. Pour le régénérer : `node doc-regles.mjs`. Pour vérifier qu'il est à jour : `node doc-regles.mjs --verifier`.
+**Ce document est généré par `doc-regles.mjs`. Ne le modifie pas à la main.** Une liste de 134 règles écrite à la main dérive au premier changement du catalogue, et une liste qui dérive est pire qu'une absence de liste : on la croit. Les énoncés ci-dessous sont ceux du catalogue (`skills/*/scripts/lib/rules.mjs`), les conditions de porte celles de `lib/gates.mjs`, les seuils ceux de `COVERAGE_DEFAULTS`. Pour le régénérer : `node doc-regles.mjs`. Pour vérifier qu'il est à jour : `node doc-regles.mjs --verifier`.
 
-Au total : **125 règles de structure** (`S00`–`S124`), **8 règles de rédaction** (`L01`–`L08`), **10 conditions** à la porte de PR, **10** à la porte de release, **6 garde-fous** d'export, et les conditions calculées des portes de phase des cinq documents à phases.
+Au total : **126 règles de structure** (`S00`–`S125`), **8 règles de rédaction** (`L01`–`L08`), **10 conditions** à la porte de PR, **10** à la porte de release, **6 garde-fous** d'export, et les conditions calculées des portes de phase des cinq documents à phases.
 
 ## Comment lire une règle
 
@@ -462,7 +462,7 @@ Calculée par `release-matrix.mjs` depuis le plan figé et les rapports collect�
 
 Une exigence non prouvée se corrige, ou s'assume par une dérogation dans `waivers` — qui ne compte que si elle dit **pourquoi** et **qui l'a approuvée**. Le catalogue de règles ne vérifie pas cette étape (`S00`) : un état de tests se vérifie avec `release-matrix.mjs`.
 
-## Règles de structure communes aux quatre documents (36)
+## Règles de structure communes aux quatre documents (37)
 
 Elles s'appliquent au BRD, au PRD, à la conception et au plan. Les étapes 5 et 6 ne reçoivent pas ce catalogue.
 
@@ -504,6 +504,7 @@ Elles s'appliquent au BRD, au PRD, à la conception et au plan. Les étapes 5 et
 | `S122` | entrée de la cartographie qui ne dit pas combien de personnes elle vaut | `personnes: …` n'est pas un nombre de personnes : un entier d'au moins 1, ou rien du tout · sans nom, et sans dire combien de personnes elle vaut (`personnes`) : une entrée qui ne désigne personne peut en valoir une ou cinq, et la couverture la compte pour une. Un nom, ou un effectif |
 | `S123` | entrée collective dont le statut parle pour tout le monde | `entendues: …` n'est pas un nombre de personnes entendues : un entier d'au moins 0, ou rien du tout · vaut … personnes et se déclare « interrogée » sans dire combien d'entre elles ont parlé (`entendues`) : un statut ne se divise pas, et en avoir entendu une sur … n'est pas avoir entendu le groupe · … personne(s) entendue(s) pour un effectif de … : l'un des deux nombres est faux · … personne(s) entendue(s) et un statut qui dit le contraire (`…`) : dès qu'une seule a parlé, l'entrée est « interrogée » et `entendues` dit combien |
 | `S124` | trace de porte dont le compte ne concorde pas avec ses dérogations | `gate` ne dit pas combien de conditions étaient tenues sur combien de mesurées (« … ») : recopie la ligne de `status.mjs`, « X condition(s) tenue(s) sur Y mesurée(s) », sinon la trace ne se relit pas — on ne sait plus si la porte en avait Y ou si le catalogue a bougé depuis · porte franchie sans dire ce que la porte disait au passage (`gate`) : la ligne de `status.mjs`, « X condition(s) tenue(s) sur Y mesurée(s) ». Sans elle, le journal dit qu'on est passé et rien ne dit à quel prix · `gate` annonce … condition(s) tenue(s) sur … mesurée(s) : on ne tient pas plus de conditions que la porte n'en mesure · `gate` annonce … condition(s) tenue(s) sur …, donc … non tenue(s), et `waived` en nomme … : …. Une condition non tenue se dérogue nommément, avec sa raison, ou elle n'est pas franchie |
+| `S125` | sollicitation écrite inscrite sur la personne et pas sur la question | … porte `sollicitee_zone: …`…, et `posee` est vide : on a inscrit sur la personne ce qu'on n'a pas inscrit sur la question. Un passage par départ — `- { date: "AAAA-MM-JJ", canal: "…" }` —, sinon rien ne dit combien de fois celle-ci est partie, et une zone ouverte a l'air neuve |
 
 ## Garde-fous de l'export (6)
 
@@ -649,3 +650,4 @@ Chaque règle, les étapes où elle s'applique, et la fonction du catalogue qui 
 | `S122` | 1, 2, 3, 4 | entrée de la cartographie qui ne dit pas combien de personnes elle vaut | `effectifFindings` |
 | `S123` | 1, 2, 3, 4 | entrée collective dont le statut parle pour tout le monde | `effectifFindings` |
 | `S124` | 1, 2, 3, 4 | trace de porte dont le compte ne concorde pas avec ses dérogations | `phaseFindings` |
+| `S125` | 1, 2, 3, 4 | sollicitation écrite inscrite sur la personne et pas sur la question | `questionPoseeFindings` |
