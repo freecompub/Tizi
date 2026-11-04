@@ -302,13 +302,27 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
 
 ## Ouvert
 
-- **Le garde-fou de répétition parle à l'utilisateur, pas à l'agent.** Un hook de fin de tour qui sort
-  en 0 affiche son message à la personne (`systemMessage`) ; pour que l'agent le lise, il faudrait
-  **bloquer** la fin de tour. C'est défendable — `tdd-guard.mjs` bloque bien une écriture — mais il
-  raisonne sur des chemins de fichiers, pas sur du français : une fausse alerte y coûte un tour perdu,
-  et un garde-fou qui crie pour rien se fait désactiver. À trancher après une vraie mesure en usage :
-  combien de fois il a parlé, et combien de fois il avait raison. La mesure d'aujourd'hui porte sur des
-  transcriptions passées, pas sur des tours vécus.
+- **Le garde-fou de répétition parle à l'utilisateur, pas à l'agent — et c'est une décision reportée,
+  pas un oubli.** Un hook de fin de tour qui sort en 0 affiche son message à la personne
+  (`systemMessage`) ; l'agent ne le voit pas. Conséquence assumée pour l'instant : c'est la personne
+  qu'on vient d'interroger trois fois qui doit dire « tu me l'as déjà demandée ». Pour que l'agent le
+  lise, il faudrait **bloquer** la fin de tour — l'agent ne pourrait alors pas poser la question une
+  quatrième fois sans avoir lu qu'il l'a déjà posée trois.
+
+  Ce qui plaide pour : c'est l'agent qui se trompe, donc c'est à lui qu'il faut le dire, et
+  `tdd-guard.mjs` bloque bien une écriture de fichier. Ce qui plaide contre : `tdd-guard` raisonne sur
+  des **chemins de fichiers**, où se tromper est rare et clair, quand celui-ci juge du **français**, où
+  « est-ce la même question ? » est flou. Une fausse alerte y coûte un tour perdu, et un garde-fou qui
+  crie pour rien se fait désactiver.
+
+  Ce qui manque pour trancher : une mesure **en usage**. Celle d'aujourd'hui — zéro fausse alerte sur
+  18 sessions et 415 phrases interrogatives — est obtenue en **rejouant le passé**, pas en vivant des
+  tours. Deux nombres suffiront, relevés sur un ou deux vrais entretiens : combien de fois il a parlé,
+  et combien de fois il avait raison.
+
+  Et une troisième voie à ne pas oublier, qui est celle que je recommanderais ensuite : bloquer
+  **seulement quand il est sûr** — zone d'ombre reconnue et `posee` vide —, et se contenter de prévenir
+  dans les autres cas. Sur la mesure, **trois des quatre** répétitions tombaient dans ce cas sûr.
 - **`main` n'est pas protégée sur GitHub.** `ci-audit.mjs` le signale (« Branch not protected »,
   HTTP 404 avec un jeton sans droit d'administration), et personne ne l'a fait. Celui-là ne dépend pas
   de Tizi : quatre PR ont été fusionnées sur une branche que rien n'empêche de pousser en direct.
