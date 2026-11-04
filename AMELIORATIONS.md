@@ -426,6 +426,35 @@ ci-dessus en viennent. Il restait aussi, non corrigé :
 Décidées, et écartées. Elles restent écrites : sans ça, elles reviennent dans six mois comme une
 intention neuve, et le travail de les instruire est à refaire.
 
+- **Un garde-fou de dérive, qui aurait parlé au bout de N tours sans relecture de l'état** — écartée le
+  **4 novembre 2026**, sur mesure. L'hypothèse venait d'une observation juste : en session longue sans
+  interaction, l'agent se perd et se met à faire des erreurs. La mesure confirme l'espace de dérive et
+  réfute la cause.
+
+  *L'espace existe.* Écart « tours parlés sans qu'un script relise l'état », sur 10 sessions
+  d'entretien et 600 tours : médiane 1, 90ᵉ 4, 95ᵉ 8, 99ᵉ 15, max 19. Sur une session de développement
+  de 650 tours : médiane 3, 90ᵉ 13, 95ᵉ 19, 99ᵉ 34, **max 51**. Et sans que l'utilisateur parle :
+  médiane 3 et max 29 en entretien, médiane 9 et **max 131** en développement. Dix fois plus de place
+  pour dériver.
+
+  *La cause est ailleurs.* Un seuil à 12 tours donnait 5 alertes sur 600 tours en entretien — un volume
+  acceptable, et j'étais prêt à l'écrire. Les cinq franchissements, lus un par un : « les cinq lentilles
+  sont rentrées : 40 questions candidates » · « je lis le dossier avant de répondre » · « document lu
+  intégralement — 5 pages » · « le PDF est en partie du texte, en partie des images : j'extrais les
+  images » · « quatre lentilles sur cinq ont rendu — 32 questions candidates ». **Cinq
+  franchissements, cinq fausses alertes** : cinq tâches longues qui ne touchent légitimement pas
+  l'état — lire un document, extraire un PDF, faire tourner un council.
+
+  *Et il n'aurait rien attrapé.* Les quatre répétitions de questions détectées sur les transcriptions
+  réelles se sont produites à **1, 1, 1 et 6 tours** d'écart, sous n'importe quel seuil envisageable.
+
+  *Ce qui marche à la place*, et c'est la doctrine du dépôt : l'agent relit l'état, et l'état ne dit pas
+  ce qui s'est passé. Tours 24 et 25 d'un dossier réel — un tour d'écart, l'état relu entre les deux, la
+  même question reposée. Le remède est que le **fichier porte le fait** (`posee`, `personnes` /
+  `entendues`, le compte des portes, S125), pas que l'agent relise plus souvent. Et pour ce qu'un
+  fichier ne peut pas porter au moment où ça arrive, un hook qui lit ce qui vient d'être dit
+  (`question-guard.mjs`) — pas un compteur de tours.
+
 - **Faire passer Tizi par Tizi** — écartée le **25 octobre 2026**, après une tentative. Le choix du
   chemin bloque : deux des six questions n'ont pas de réponse sur un dépôt d'outillage. « Le changement
   crée-t-il ou modifie-t-il une règle métier ? » suppose un client, un processus d'entreprise, une règle
