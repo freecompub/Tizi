@@ -249,7 +249,7 @@ if (plugin) {
     writeFileSync(p, `${JSON.stringify(manifest, null, 2)}\n`);
   });
 }
-if (copilot && (capture || guard)) {
+if (copilot && (capture || guard || questions)) {
   const p = join(project, '.github', 'hooks', 'tizi.json');
   act(`hooks Copilot → ${p}`, () => {
     // Noms d'événements en PascalCase : charge utile compatible VS Code et Claude (snake_case, noms d'outils traduits).
@@ -257,6 +257,12 @@ if (copilot && (capture || guard)) {
     const hooks = {};
     if (guard) hooks.PreToolUse = entry(guard);
     if (capture) for (const e of ['Stop', 'PreCompact', 'SessionEnd']) hooks[e] = entry(capture);
+    // Deux hooks sur la même fin de tour, ici comme dans les deux autres chemins : la capture écrit
+    // l'extrait, le garde-fou lit ce qui vient d'être dit. Il s'AJOUTE. Ce chemin-ci est le troisième et
+    // il avait été oublié : le plugin et `.claude/settings.json` portaient le garde-fou, et une
+    // installation `--target copilot` dans un dépôt ne le portait pas. Le test ne regardait que
+    // l'EXISTENCE du fichier côté Copilot, et le contenu côté Claude seulement.
+    if (questions) hooks.Stop = [...(hooks.Stop ?? []), ...entry(questions)];
     if (startHook) hooks.SessionStart = entry(startHook);
     mkdirSync(dirname(p), { recursive: true });
     writeFileSync(p, `${JSON.stringify({ version: 1, hooks }, null, 2)}\n`);
