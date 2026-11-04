@@ -25,7 +25,7 @@
 //
 // Usage : node reach-out.mjs <état.yaml> --sh SH-xx [--relance] [--json]
 import { arr, loadState, fail, today, shLabel, seuilRepetitions, foisPosee } from './lib/common.mjs';
-import { sollicitationEtat, zonesSollicitees } from './lib/rules.mjs';
+import { sollicitationEtat, zonesSollicitees, familleDe } from './lib/rules.mjs';
 import { nomClair, nomInitiative, demandeur, langueDe, langueDuDossier, joindre, formeEcrite, refuseLesIdentifiants, refuseLaTroisiemePersonne, AVERTISSEMENT_COMPTE, N_ENVOIE_RIEN } from './lib/outgoing.mjs';
 
 const JOUR_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -47,6 +47,12 @@ const { canal, adresse } = joindre(s, statePath, id);
 // Et un canal qui ne porte pas d'écrit n'est pas un canal de message. Le téléphone et la vive voix sont
 // des conversations : elles se mènent avec un guide d'entretien, pas avec un texte composé d'avance.
 const forme = formeEcrite(canal, `${shLabel(s, id)} est déclarée joignable`);
+// L'outil et la forme ne sont pas le même mot, et le fragment doit dire les deux. « par slack » dit
+// avec quoi on écrit — et c'est ce qui dira quel connecteur il faut ; « forme : messagerie » dit
+// pourquoi il n'y a pas d'objet et pourquoi le silence se tranche à deux jours. Les confondre faisait
+// rendre un message à objet pour un fil de discussion, puisque quatre outils tombaient dans un mot.
+const famille = familleDe(canal);
+const parQuoi = famille === canal.trim().toLowerCase() ? canal : `${canal} (forme : ${famille})`;
 const etat = sollicitationEtat(sh, s.sources);
 const siennes = arr(s.sources).filter(x => arr(x.stakeholders).includes(id));
 
@@ -357,7 +363,7 @@ const POSEE = [
 // Sa langue n'est pas celle du dossier : on rend le contrat, pas une traduction.
 if (!memeLangue) {
   console.log([
-    `${mode === 'premiere' ? 'Première prise de contact' : mode} — à ${shLabel(s, id)}, par ${canal} — ${adresse}`,
+    `${mode === 'premiere' ? 'Première prise de contact' : mode} — à ${shLabel(s, id)}, par ${parQuoi} — ${adresse}`,
     `Zone(s) visée(s) : ${posees.map(z => z.id).join(', ')} · sa langue : ${langue} (celle du dossier : ${langueDuDossier(s)})`,
     '',
     `CE MESSAGE EST À ÉCRIRE EN ${langue.toUpperCase()}, et ce script ne le fait pas.`,
@@ -405,7 +411,7 @@ const TITRE = { premiere: 'Première prise de contact', suite: 'Suite du fil',
   relance: `Relance — sans réponse depuis ${JOUR_RE.test(String(sh.sollicitee_le ?? '')) ? `${jours(sh.sollicitee_le)} j` : 'une date inconnue'}` };
 const autres = zones.length - posees.length;
 console.log([
-  `${TITRE[mode]} — à ${shLabel(s, id)}, par ${canal} — ${adresse}`,
+  `${TITRE[mode]} — à ${shLabel(s, id)}, par ${parQuoi} — ${adresse}`,
   `Zone(s) visée(s) : ${posees.map(z => `${z.id}${z.reasons.length ? ` (${z.reasons.join(', ')})` : ''}`).join(' · ')}`,
   ...(objet ? [`Objet : ${objet}`] : [`Pas d'objet : le canal « ${canal} » n'en porte pas.`]),
   ...(nomClair(s, id) === String(sh.role ?? '').trim() && !String(sh.name ?? '').trim()

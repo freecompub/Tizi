@@ -5,7 +5,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import yaml from '../skills/brd-builder/scripts/lib/vendor/js-yaml.mjs';
 import { tempDir, node } from './helpers.mjs';
-import { DOCUMENTS, STRUCT_RULES, TEXT_RULES, checkState, sollicitationEtat, seuilsRelance, refsDans, coverage, coverageFindings, coverageRows, evidenceOf, contextFindings } from '../skills/brd-builder/scripts/lib/rules.mjs';
+import { DOCUMENTS, STRUCT_RULES, TEXT_RULES, checkState, sollicitationEtat, seuilsRelance, refsDans, coverage, coverageFindings, coverageRows, evidenceOf, contextFindings, OUTILS, familleDe, formeDuCanal } from '../skills/brd-builder/scripts/lib/rules.mjs';
 import { gateConditions } from '../skills/brd-builder/scripts/lib/gates.mjs';
 import { shellWrittenPaths } from '../skills/brd-builder/scripts/lib/agent-io.mjs';
 import { buildExtract } from '../skills/brd-builder/scripts/lib/sessions.mjs';
@@ -1534,6 +1534,43 @@ test('S119, S120, S121 : une question porte ce qui lui est arrivé', () => {
   // Une résolution qui ne nomme aucune source — une décision, une raison d'abandon — ne compte pas :
   // personne n'a forcément demandé quoi que ce soit.
   assert.deepEqual(dits([{ id: 'ZO-004', type: 'attendu_implicite', question: 'Et celle-là ?', ask_to: 'SH-01', status: 'assumée', resolution: 'portée par R-02 : on fera sans' }], 'S121'), []);
+});
+
+test('un outil n\'est pas une forme : la famille se déduit, le connecteur se nomme', () => {
+  // `messagerie` mettait Slack, Teams, WhatsApp et Messenger dans un seul mot, et une coordonnée ne dit
+  // pas l'outil : une même adresse se lit dans Gmail ou dans Teams, un même numéro dans WhatsApp,
+  // Messenger ou par SMS. Mesuré avant le correctif, avec `joignable_par: gmail` : le fragment partait
+  // SANS objet et le silence se tranchait à 2 jours au lieu de 5, parce que l'outil inconnu retombait
+  // sur la messagerie. Un vrai courriel sans objet, déclaré abandonné trois jours trop tôt.
+  assert.equal(familleDe('gmail'), 'courriel');
+  assert.equal(formeDuCanal('gmail').objet, true);
+  assert.equal(formeDuCanal('gmail').relance.agir, 5);
+  assert.equal(familleDe('whatsapp'), 'messagerie');
+  assert.equal(formeDuCanal('whatsapp').objet, false);
+  assert.equal(formeDuCanal('whatsapp').relance.agir, 2);
+  // Les quatre valeurs d'avant sont des FAMILLES, et elles continuent de valoir pour elles-mêmes :
+  // aucun dossier en cours ne change de forme.
+  for (const f of ['courriel', 'messagerie', 'téléphone', 'vive voix']) assert.equal(familleDe(f), f);
+  // Ni le téléphone ni la vive voix ne portent d'écrit, et un outil de messagerie en porte.
+  assert.equal(formeDuCanal('téléphone').ecrit, false);
+  assert.equal(formeDuCanal('sms').ecrit, true);
+  // Un outil inconnu prend la famille la plus ÉTROITE : se tromper vers le court ne coûte rien, se
+  // tromper vers le long pose un objet au milieu d'un fil de discussion.
+  assert.equal(familleDe('autre:fil interne'), 'messagerie');
+  assert.equal(familleDe(''), 'messagerie');
+  // Tolérante à la casse là où l'énumération ne l'est pas : le message est juste, et S88 demande quand
+  // même l'orthographe du catalogue. Mieux vaut un avertissement qu'un message mal formé en silence.
+  assert.equal(familleDe('Slack'), 'messagerie');
+
+  // L'énumération EST la table, pas une liste parallèle : séparées, un outil ajouté d'un côté serait
+  // refusé de l'autre, ou accepté sans forme connue.
+  const dits = j => checkState({ document: 'brd', phase: 'discover',
+    stakeholders: [{ id: 'SH-01', name: 'Nadia', status: 'à interroger', joignable_par: j }] }).filter(f => f.rule === 'S88').map(f => f.message);
+  assert.deepEqual(dits('slack'), []);
+  assert.deepEqual(dits('gmail'), []);
+  assert.match(dits('wathsapp')[0], /canal de contact « wathsapp » hors énumération.*whatsapp/);
+  assert.match(dits('autre:outil maison')[0], /« outil maison » hors énumération, et nommé : candidat à devenir une valeur/);
+  for (const o of Object.keys(OUTILS)) assert.deepEqual(dits(o), [], `l'outil « ${o} » a une forme mais pas de place dans l'énumération : S88 le refuserait`);
 });
 
 test('S125 : une sollicitation écrite s\'inscrit sur la personne ET sur la question', () => {

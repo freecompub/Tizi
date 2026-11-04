@@ -6,8 +6,11 @@
 # indéfiniment. Ici, elle reste sur la machine : `.gitignore` exclut `contacts.yaml`, et
 # `freeze-version.mjs` ne copie que `state.yaml`, `refs.yaml` et les dossiers générés.
 #
-# L'état dit PAR QUOI chaque personne se joint (`joignable_par` : vive voix | courriel | messagerie |
-# téléphone | autre:<canal nommé>). Ce fichier dit AVEC QUOI. S114 vérifie que les deux concordent :
+# L'état dit PAR QUOI chaque personne se joint — l'OUTIL : `joignable_par` vaut courriel, gmail,
+# outlook, messagerie, slack, teams, whatsapp, messenger, signal, telegram, sms, téléphone, vive voix,
+# ou `autre:<outil nommé>`. Ce fichier dit AVEC QUOI. Et la coordonnée ne détermine pas l'outil : la
+# même adresse se lit dans Gmail ou dans Teams, le même numéro dans WhatsApp ou par SMS — l'outil se
+# demande à l'utilisateur. S114 vérifie que les deux concordent :
 # un canal annoncé sans entrée ici, c'est une personne que personne ne peut joindre ; et une entrée
 # ici à un identifiant inconnu de l'état ne désigne personne.
 #

@@ -189,6 +189,8 @@ export const sollicitationEtat = (sh, sources = []) => {
 // sans réponse au bout de cinq jours est un courriel qu'on n'a pas lu, un message instantané sans
 // réponse au bout de cinq jours est un message qu'on a décidé de ne pas lire. Le même nombre y qualifie
 // deux situations différentes, et c'était le même nombre.
+// La table est indexée par FAMILLE, pas par outil : `familleDe` ramène l'outil à sa famille une fois,
+// juste en dessous.
 const FORMES = {
   courriel: { objet: true, ecrit: true, groupe: 5, declaration: 'longue', relance: { signaler: 1, agir: 5 } },
   messagerie: { objet: false, ecrit: true, groupe: 3, declaration: 'courte', relance: { signaler: 1, agir: 2 } },
@@ -214,7 +216,24 @@ const FORMES = {
 // Le défaut d'un canal inconnu — un `autre:<libellé>`, un outil maison — est la MESSAGERIE et non le
 // courriel : la forme la plus étroite passe partout, alors qu'un objet collé dans un fil de discussion
 // se voit tout de suite. Se tromper vers le court ne coûte rien ; se tromper vers le long, oui.
-export const formeDuCanal = canal => FORMES[String(canal ?? '').trim()] ?? FORMES.messagerie;
+// Un OUTIL n'est pas une FORME, et « messagerie » mettait Slack, Teams, WhatsApp et Messenger dans le
+// même sac — alors que leurs délais de silence et leur place ne sont pas les mêmes. Surtout : une
+// coordonnée ne dit pas l'outil. Une même adresse se lit dans Gmail ou dans Teams, un même numéro dans
+// WhatsApp, Messenger ou par SMS. L'outil se DEMANDE, il ne se devine pas de la forme de l'adresse —
+// c'est la règle de `initiative.requested_by`, « ne le devine pas » —, et c'est lui qui dira quel
+// connecteur il faut le jour où un message doit vraiment partir. La forme, elle, suit la FAMILLE.
+export const OUTILS = {
+  courriel: 'courriel', gmail: 'courriel', outlook: 'courriel',
+  messagerie: 'messagerie', slack: 'messagerie', teams: 'messagerie', whatsapp: 'messagerie',
+  messenger: 'messagerie', signal: 'messagerie', telegram: 'messagerie', sms: 'messagerie',
+  'téléphone': 'téléphone', 'vive voix': 'vive voix',
+};
+// Tolérante à la casse là où l'énumération ne l'est pas : « Slack » prend la bonne forme, et S88
+// demande quand même l'orthographe du catalogue. Mieux vaut un message juste avec un avertissement
+// qu'un message mal formé en silence. Un outil inconnu — un `autre:<nom>`, un outil maison — prend la
+// famille la plus étroite, pour la raison dite juste au-dessus.
+export const familleDe = canal => OUTILS[String(canal ?? '').trim().toLowerCase()] ?? 'messagerie';
+export const formeDuCanal = canal => FORMES[familleDe(canal)];
 const RELANCE = FORMES.courriel.relance;
 // Les deux emplacements, comme `seuilsDe` : le plan range ses réglages sous `settings`, le BRD et le
 // PRD à la racine. Lire les deux évite d'imposer une forme à un gabarit qui en a déjà une autre.
@@ -279,8 +298,10 @@ const ENUMS = {
   vraisemblance: { valeurs: ['faible', 'moyenne', 'forte'] },
   'ampleur du risque': { valeurs: ['faible', 'moyen', 'fort'] },
   // PAR QUOI on peut joindre quelqu'un, jamais AVEC QUOI : le canal, pas la coordonnée (S114).
-  // `autre:<libellé>` couvre un canal nommé — un fil d'équipe, un outil interne.
-  'canal de contact': { valeurs: ['vive voix', 'courriel', 'messagerie', 'téléphone'] },
+  // Les valeurs sont celles de `OUTILS`, et pas une liste parallèle : séparées, un outil ajouté à la
+  // table aurait été refusé par l'énumération, ou l'inverse — accepté sans forme connue.
+  // `autre:<libellé>` couvre un outil nommé qui n'y est pas encore — un fil d'équipe, un outil maison.
+  'canal de contact': { valeurs: Object.keys(OUTILS) },
   // POURQUOI quelqu'un n'est pas joignable. `non disponible` couvrait quatre situations d'un seul mot :
   // elle n'a jamais répondu ; elle a REFUSÉ, ce que notre propre message l'invite à faire ; elle est
   // absente, en congé, partie ; ou NOUS avons renoncé pour nos raisons. La dernière est la seule où la
