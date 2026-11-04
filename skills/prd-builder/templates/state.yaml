@@ -3,6 +3,16 @@ document: prd
 initiative:
   name: ""
   slug: ""
+  requested_by: ""       # SH-xx : QUI a demandé cette initiative. Obligatoire dès qu'on écrit à
+                         # quelqu'un par un canal (`reach-out.mjs` refuse sans lui) : « je vous écris
+                         # à la demande de … » est la ligne qui rattache le message à ce dont on a
+                         # parlé à la personne, et c'est elle qui rend le contact légitime maintenant
+                         # que le consentement est du côté de l'utilisateur. Elle se lisait avant à
+                         # `request.requested_by` — un chemin qui n'existait dans aucun gabarit —, avec
+                         # un rattrapage par mot-clé sur les rôles : sur le dossier réel les deux
+                         # étaient muets, et la clause disparaissait sans trace. Ne la devine pas :
+                         # nommer la mauvaise personne lui fait dire qu'elle a demandé une démarche
+                         # dont elle n'a pas entendu parler
 mode: chaîné              # chaîné (depuis un BRD) | autonome (depuis un brief)
 phase: frame              # frame | specify | govern
 
@@ -75,10 +85,68 @@ stakeholders: []          # qui a parlé, et en quelle qualité — chaîné : r
 #                          # établi et plus rien ne la relit
 #    represented_by: ""    # l'inverse, sur la personne REPRÉSENTÉE : le SH-xx de qui répond pour elle
 #                          # (S94). Ça enregistre qui parle en son nom, ça ne vaut pas sa voix
-#    status: à interroger  # à interroger | interrogée | non disponible
+#    langue: ""            # la langue dans laquelle elle se lit et s'écrit, si ce n'est pas celle du
+#                          # dossier (`settings.langue`, « français » par défaut). Vide = celle du
+#                          # dossier, et c'est le cas courant. Tizi est en français par choix — ses
+#                          # skills, ses règles, ses documents, que l'ÉQUIPE lit. La personne au bout
+#                          # d'un canal n'est pas de l'équipe, et rien ne dit qu'elle lit le français.
+#                          # Renseigné et différent, `reach-out.mjs` ne traduit PAS : il énumère ce que
+#                          # le message doit dire et pourquoi, et l'agent écrit. Une déclaration de
+#                          # consentement mal traduite peut se tromper sur CE À QUOI elle consent, et
+#                          # c'est le seul endroit où l'échec n'est pas un dossier moins bon mais
+#                          # quelqu'un qui répond sans savoir à quoi. Ta version se fait relire par
+#                          # l'utilisateur avant l'envoi : c'est le seul contrôle disponible
+#    joignable_par: ""     # PAR QUOI on peut la joindre : vive voix | courriel | messagerie |
+#                          # téléphone | autre:<canal nommé>. Vide si on n'a pas de quoi la joindre —
+#                          # ne pas savoir est un fait, pas une faute, et rien ne le réclame.
+#                          # L'adresse, le numéro, l'identifiant N'ENTRENT PAS ICI : ce fichier se
+#                          # commite, part dans le handoff, et `freeze-version.mjs` en fige une copie
+#                          # en lecture seule sous `versions/` d'où rien ne se reprend. Ils vont dans
+#                          # `contacts.yaml`, à côté de l'état, que `.gitignore` exclut. S114 refuse
+#                          # une coordonnée ici, et signale un canal annoncé qui n'en a aucune là-bas
+#    sollicitee_le: ""     # AAAA-MM-JJ — QUAND la question lui est partie, sur le canal ci-dessus.
+#                          # Elle ne se lit que sur le statut « sollicitée ». Sans elle, « sollicitée »
+#                          # compte comme si personne n'avait jamais écrit (S115) : c'est toi qui écris
+#                          # le champ, et une sollicitation invérifiable est une case cochée. Avec elle,
+#                          # le silence de la personne devient une question qui VIT — les constats sur
+#                          # sa voix non entendue changent de liste au lieu de compter contre le dossier,
+#                          # et `review-sources.mjs --etat` dit depuis combien de jours elle est en vol
+#    indisponible_motif: ""  # POURQUOI elle n'est pas joignable, sur le statut « non disponible » et
+#                          # nulle part ailleurs (S116) : silence | refus | absence | renoncement |
+#                          # autre:<libellé>. Le mot seul couvrait quatre situations — elle n'a jamais
+#                          # répondu ; elle a REFUSÉ, ce que le message de sollicitation l'invite à
+#                          # faire ; elle est absente, en congé, partie ; ou NOUS avons renoncé pour
+#                          # nos raisons. La dernière est la seule qui soit de notre faute, et c'est
+#                          # celle qu'un mot unique cachait le mieux. Renoncer N'ÉTEINT RIEN : le
+#                          # statut reste « non entendue », donc S94 et S83 continuent de dire que sa
+#                          # voix manque — un choix de notre part n'est pas une réussite du dossier.
+#                          # Et un refus est SA parole : consigne ses mots en source avant de l'écrire
+#    sollicitee_zone: ""   # LA ou LES zones d'ombre sur lesquelles les questions sont parties :
+#                          # `ZO-001`, ou `[ZO-001, ZO-034]` quand le message en portait plusieurs.
+#                          # Avec `sollicitee_le` — les deux ou aucun (S115). Sans elle, au tour
+#                          # suivant, rien ne dit si sa réponse portait sur la question posée : le
+#                          # message de suite la remerciait d'avoir répondu puis reposait la même
+#                          # question, et finissait par demander à la personne de trancher à notre
+#                          # place. Avec elle, l'agent sait reprendre la question sans faire porter
+#                          # l'erreur à qui a répondu, et une relance repart sur LES questions
+#                          # parties, pas sur celles que le classement remettrait en tête. La liste
+#                          # entière, pas seulement la première : une relance doit pouvoir reposer
+#                          # exactement ce qui a été posé
+#    status: à interroger  # à interroger | sollicitée | interrogée | non disponible. « sollicitée »
+#                          # veut dire qu'on a écrit, pas qu'on a reçu : elle reste non entendue
 
 sources: []               # preuves produit (entretiens, tests utilisateurs, analytics, études, décisions)
-#  - { id: SRC-001, type: entretien, date: "", stakeholders: [SH-01], present: [], quote: "", understood: "", confirms: [], corrects: [], path: "", feedback: à envoyer, feedback_motif: "" }   # type : cadrage | entretien | observation | test | analytics | étude | décision
+#  - { id: SRC-001, type: entretien, date: "", stakeholders: [SH-01], present: [], quote: "", understood: "", confirms: [], corrects: [], path: "", feedback: à envoyer, feedback_le: "", feedback_par: "", feedback_motif: "" }   # type : cadrage | entretien | échange écrit | observation | test | analytics | étude | décision
+#                          # échange écrit : la personne a répondu PAR ÉCRIT. Recueil auprès d'elle comme
+#                          # un entretien, mais sans salle — donc pas de `present` —, et il ne se déclare
+#                          # pas `entretien` : un fil de six messages et une conversation de quarante
+#                          # minutes ne sont pas la même preuve, et le relecteur doit pouvoir les distinguer
+#                          # `feedback_le` : QUAND la demande de relecture est partie. Sans elle, `envoyé`
+#                          # ne se vérifie pas et S84 le compte comme jamais demandé ; avec elle, il vaut
+#                          # « non mesuré » — une question posée, pas un trou. `feedback_par` : par quoi
+#                          # elle est partie — oral, courriel, messagerie, ou le canal nommé. Informatif,
+#                          # rien ne le réclame ; il sert à qui relance, et à qui se demande si une trace
+#                          # existe ailleurs que dans ce fichier
 #                          # `corrects` : les SOURCES dont celle-ci corrige la lecture (S112) — `confirms`
 #                          # ne pointe que vers des éléments, donc rien ne menait d'une source à celle
 #                          # qui l'a corrigée ; `feedback_motif` : pourquoi « sans objet » sur une parole
@@ -309,6 +377,27 @@ prd_sections:             # à rédiger | proposé | validé
   metrics: à rédiger
   risks: à rédiger
   glossary: à rédiger
+
+langue: français            # la langue de CE dossier : celle dans laquelle l'équipe le lit et l'écrit.
+                            # Tizi est en français par choix, mais le défaut se déclare ici au lieu
+                            # d'être en dur dans les scripts, pour que le couplage soit visible et
+                            # surchargeable. Une partie prenante qui ne la lit pas porte sa propre
+                            # `langue` ; `reach-out.mjs` énumère alors ce que le message doit dire au
+                            # lieu de le traduire lui-même
+
+relance: {}                 # deux horloges, en jours, pour une question partie à quelqu'un et restée
+                            # sans réponse : { signaler: 1, agir: 5 } par défaut. DIRE à l'utilisateur
+                            # qu'il n'y a pas de réponse ne coûte rien et ne sort pas du dossier — un
+                            # jour suffit. RELANCER ou RENONCER sort vers quelqu'un qui n'a rien demandé,
+                            # et c'est irréversible : relancer au bout d'un jour, c'est harceler, et une
+                            # source brûlée ne se rouvre pas là où un avertissement se corrige. Les
+                            # confondre fait l'un au rythme de l'autre. Au-delà de `agir`, l'attente
+                            # cesse de protéger le dossier : « non mesuré » n'est plus une réponse
+                            # acceptable, et S117 le dit. Une association de parents et un service
+                            # hospitalier n'ont pas le même tempo, d'où le réglage.
+                            # Et aucune horloge ne tourne : rien ne se déclenche, le seuil QUALIFIE ce
+                            # qu'on voit en arrivant sur le dossier. Trois semaines sans y revenir, et
+                            # l'alerte arrive à trois semaines
 
 thresholds: {}              # seuils en %, par métrique ; vide = valeurs par défaut (lib/rules.mjs, COVERAGE_DEFAULTS).
                             # Un seuil à 0 ne compare rien : c'est une mise hors périmètre, et elle passe

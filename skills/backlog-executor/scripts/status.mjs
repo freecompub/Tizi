@@ -106,11 +106,18 @@ const voisins = (nom, lire) => { const d = join(dirname(statePath), nom); return
 // Le contexte COMPLET de `lint.mjs` : les handoffs amont, la constitution, les listes de contrôle et
 // les guides d'entretien. Il en manquait trois, et chacun retirait des constats du décompte.
 const constitution = (() => { for (const r of ['.', racine]) { const c = join(r, '.tizi', 'constitution.yaml'); if (existsSync(c)) return loadState(c); } return null; })();
+// `contacts.yaml` est le sixième morceau de ce contexte, et il se lit ici pour la raison écrite plus
+// haut : les coordonnées ne sont pas dans l'état, et un contexte incomplet retire des constats.
+const contactsPath = join(dirname(statePath), 'contacts.yaml');
+const contacts = existsSync(contactsPath) ? loadState(contactsPath) : null;
 const actifs = regles ? regles.checkState(s, {
-  refs: refs ?? {}, constitution, handoffs: ingestedHandoffs(s, statePath, refs ?? {}),
+  refs: refs ?? {}, constitution, contacts, handoffs: ingestedHandoffs(s, statePath, refs ?? {}),
   checklists: voisins('checklists', f => ({ file: f, text: readFileSync(join(dirname(statePath), 'checklists', f), 'utf8') })),
   interviews: voisins('interviews', f => ({ file: f, text: readFileSync(join(dirname(statePath), 'interviews', f), 'utf8') })),
-}).filter(f => !f.waived).length : null;
+// `pending` sort du décompte avec `waived`, et pour la même raison : la porte compte ce qui manque au
+// dossier, pas ce qu'on attend de quelqu'un d'autre. Les deux scripts filtrent pareil, sinon ils
+// annoncent deux nombres différents — ce que le commentaire ci-dessus interdit.
+}).filter(f => !f.waived && !f.pending).length : null;
 // La porte de sortie, avec ses conditions comptées — pour les cinq documents à phases.
 const porte = gateConditions(s, { actifs, refs });
 if (porte) {

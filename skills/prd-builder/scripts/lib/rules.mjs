@@ -98,7 +98,11 @@ export const OBSERVED_SOURCE_TYPES = ['observation', 'mesure', 'test'];
 // Types de source où personne n'est présent : un document, un ticket ou un handoff se lisent sans
 // entretien. Partout ailleurs, quelqu'un a parlé, et le dossier doit pouvoir dire qui (S81).
 export const SOURCES_SANS_PRESENCE = ['document', 'ticket', 'dt-handoff', 'code', 'configuration'];
-const NON_ENTENDU = ['à interroger', 'non disponible'];
+// `sollicitée` en fait partie, et ce n'est pas un détail : elle dit qu'on a écrit, pas qu'on a reçu.
+// Tant qu'elle n'a pas répondu, une décision rendue en son nom reste rapportée par un tiers (S90) et
+// une source à son nom reste du second degré (S81). Ce qui change avec la sollicitation, c'est le
+// REPROCHE de son silence, pas le fait qu'elle se taise.
+const NON_ENTENDU = ['à interroger', 'sollicitée', 'non disponible'];
 // Les types de source où quelqu'un a été INTERROGÉ ou REGARDÉ, et eux seuls. La liste était d'abord
 // écrite en négatif — tout sauf `cadrage` — et comptait donc comme « entendu » un document, un ticket,
 // un handoff, et `autre`, que `phase-define.md` prescrivait justement pour une décision de
@@ -107,14 +111,135 @@ const NON_ENTENDU = ['à interroger', 'non disponible'];
 // Rappel du défaut d'origine : `cadrage` est l'échange qui OUVRE l'initiative, déclaratif. Sur le
 // premier dossier réel les DIX sources étaient de ce type, et `S83` restait verte parce qu'un parent
 // avait parlé au premier échange — le parent demandeur, et développeur.
-const RECUEIL_AUPRES_DE = ['entretien', 'observation', 'atelier', 'test'];
+const RECUEIL_AUPRES_DE = ['entretien', 'observation', 'atelier', 'test', 'échange écrit'];
 // Les échanges où des gens sont dans la même pièce — les seuls où `present` veut dire quelque chose.
-// Une mesure, une étude ou une décision de l'utilisateur n'ont pas de salle.
-const EN_PRESENCE = ['cadrage', ...RECUEIL_AUPRES_DE];
+// Une mesure, une étude ou une décision de l'utilisateur n'ont pas de salle. Un `échange écrit` non
+// plus : on y est interrogé sans y être présent, et un tour de table n'y aurait pas de sens. La liste
+// dérivait de RECUEIL_AUPRES_DE ; elle s'écrit en clair parce que les deux ne coïncident plus.
+const EN_PRESENCE = ['cadrage', 'entretien', 'observation', 'atelier', 'test'];
 // Les deux naissances d'initiative observées. `autre:<libellé>` reste ouvert : voir S86.
 const PROVENANCE = ['decoupage', 'sortie_perimetre'];
 // Un retour à la source fait : la personne a relu la synthèse, et l'a confirmée ou corrigée.
 const FEEDBACK_FAIT = ['confirmé', 'corrigé', 'sans objet'];
+// `envoyé` et `à envoyer` tombaient dans le même sac : S84 ne testait que l'appartenance à la liste
+// ci-dessus, donc « demandé le 21, pas encore de réponse » et « jamais rien demandé à personne »
+// rendaient le même constat, avec le même message — jamais vérifié. L'état `envoyé` vivait dans le
+// gabarit depuis le début et aucune règle ne le lisait : il ne servait à rien. Une demande partie est
+// une question qui vit, pas un trou. Mais une demande qu'on DIT partie sans dire quand ne se vérifie
+// pas, et c'est l'agent qui écrit le champ : d'où trois états, et le troisième tient à la date.
+const JOUR = /^\d{4}-\d{2}-\d{2}$/;
+// `s` est optionnel et c'est volontaire : sans lui, l'attente ne se périme pas, et tous les appelants du
+// dépôt le passent. La raison de la périmer est celle du jumeau `sollicitationEtat` — une demande de
+// relecture partie il y a six semaines ne vit plus, elle est oubliée, et la faire passer pour vivante
+// est le mensonge que les trois états existaient pour éviter. Les deux seuils sont les mêmes :
+// `relance: { signaler, agir }`.
+//
+// Ce que la mesure prouve, et ce qu'elle ne prouve pas. Le seul dossier réel disponible porte
+// 84 sources dont ZÉRO en `envoyé` — 74 `à envoyer`, 10 `sans objet` — donc la péremption n'y produit
+// aucun constat. Le « 93 sources passées à envoyé+date » du commit qui a créé ces trois états venait du
+// DEUXIÈME dossier réel, qui n'est plus là : je n'ai pas pu mesurer sur lui. L'absence d'impact est donc
+// établie sur un dossier où le champ n'est pas utilisé, pas sur un dossier qui s'en sert.
+export const feedbackEtat = (src, s) => {
+  if (FEEDBACK_FAIT.includes(src?.feedback)) return 'fait';
+  if (src?.feedback !== 'envoyé') return 'absent';
+  const le = String(src?.feedback_le ?? '').trim();
+  if (!JOUR.test(le)) return 'absent';
+  return !s || joursDepuis(le) <= seuilsRelance(s).agir ? 'attente' : 'absent';
+};
+// Exactement symétrique de `feedbackEtat`, et pour la même raison. Tant qu'il n'y avait que
+// `à interroger | interrogée | non disponible`, « je lui ai écrit le 21, elle n'a pas encore
+// répondu » n'avait aucun endroit où se dire : il fallait la laisser `à interroger`, c'est-à-dire
+// rendre le même constat que si personne ne l'avait jamais contactée. Écrire à quelqu'un coûtait
+// donc autant que ne pas lui écrire, et l'autonomie n'avait pas de sens. Trois états, et le
+// troisième tient à la date — c'est l'agent qui écrit le champ, et une sollicitation qu'on DIT
+// partie sans dire quand ne se vérifie pas : « sollicitée » invérifiable est une case cochée.
+// `sollicitee_le` suffisait tant que l'échange tenait en un tour : sur quelqu'un de jamais entendu, une
+// date écrite veut dire qu'une question vit. Mais un entretien par canal ne tient PAS en un tour — une
+// question, la réponse, la suivante — et au deuxième tour la personne est `interrogée`. Le statut ne peut
+// plus porter l'attente : la repasser `sollicitée` dirait qu'elle n'a jamais parlé, et éteindrait
+// faussement ce que sa voix avait fermé (S83, S95). L'état se CALCULE donc au lieu de se déclarer : une
+// question est en vol si la dernière chose qu'on lui a écrite est POSTÉRIEURE à la dernière chose qu'elle
+// a dite. Rien de neuf dans le modèle — et c'est le premier lecteur du `date` d'une source, écrit dans le
+// gabarit depuis le début et que rien ne lisait.
+export const sollicitationEtat = (sh, sources = []) => {
+  const ecrit = String(sh?.sollicitee_le ?? '').trim();
+  if (sh?.status === 'sollicitée') return JOUR.test(ecrit) ? 'attente' : 'absent';
+  if (sh?.status !== 'interrogée') return 'absent';
+  // Entendue, et rien d'écrit depuis : c'est tenu. Le cas d'une personne rencontrée en réunion, qui
+  // n'est jamais passée par un canal — la majorité des dossiers, et il ne doit rien lui arriver.
+  if (!JOUR.test(ecrit)) return 'fait';
+  const dites = arr(sources).filter(x => arr(x.stakeholders).includes(sh.id))
+    .map(x => String(x.date ?? '').trim()).filter(d => JOUR.test(d)).sort();
+  // Aucune de ses sources ne porte de date : on ne peut pas comparer, donc on ne conclut pas qu'une
+  // question vit. C'est S115 qui le dit, parce qu'un silence qu'on ne sait pas lire se signale.
+  if (!dites.length) return 'fait';
+  return ecrit > dites[dites.length - 1] ? 'attente' : 'fait';
+};
+// Deux horloges, et pas une. DIRE à l'utilisateur qu'il n'y a pas de réponse ne coûte rien et ne sort
+// pas du dossier : vingt-quatre heures suffisent. RELANCER ou RENONCER sort vers quelqu'un qui n'a rien
+// demandé, et c'est irréversible — relancer au bout d'un jour, c'est harceler, et une source brûlée ne
+// se rouvre pas là où un avertissement se corrige. Les confondre fait l'un au rythme de l'autre.
+//
+// Et rien ne tient d'horloge : aucun démon ne tourne, l'agent ne travaille que quand on le lance. Le
+// seuil ne DÉCLENCHE donc rien — il qualifie ce qu'on voit en arrivant sur le dossier. Si personne n'y
+// revient pendant trois semaines, l'alerte arrive à trois semaines. C'est moins joli, et c'est vrai.
+//
+// Réglables, parce qu'une association de parents et un service hospitalier n'ont pas le même tempo.
+//
+// Et dépendants du CANAL, parce que cinq jours ne veulent pas dire la même chose partout : un courriel
+// sans réponse au bout de cinq jours est un courriel qu'on n'a pas lu, un message instantané sans
+// réponse au bout de cinq jours est un message qu'on a décidé de ne pas lire. Le même nombre y qualifie
+// deux situations différentes, et c'était le même nombre.
+const FORMES = {
+  courriel: { objet: true, ecrit: true, groupe: 5, declaration: 'longue', relance: { signaler: 1, agir: 5 } },
+  messagerie: { objet: false, ecrit: true, groupe: 3, declaration: 'courte', relance: { signaler: 1, agir: 2 } },
+  // Ni le téléphone ni la vive voix ne portent de message : ce sont des conversations, et une
+  // conversation a son guide d'entretien — huit à douze questions dans les mains d'un humain qui mène
+  // l'échange (`references/questions.md`). `reach-out.mjs` compose un TEXTE : il refuse ces deux-là
+  // plutôt que d'en rendre un qu'il faudrait lire à voix haute.
+  'téléphone': { objet: false, ecrit: false, groupe: 3, declaration: 'courte', relance: { signaler: 1, agir: 2 } },
+  'vive voix': { objet: false, ecrit: false, groupe: 3, declaration: 'courte', relance: { signaler: 1, agir: 5 } },
+};
+// Ce que le canal gouverne, et il ne gouverne que ça : la FORME. Le nombre de questions qu'un message
+// porte ne dépend pas du tuyau mais de ce que les questions ont entre elles — c'est `reach-out.mjs` qui
+// le décide, et sur un autre critère. La table vit ici parce que l'énumération `canal de contact` est
+// ici : séparées, elles dériveraient au premier canal ajouté, et un canal sans forme composerait un
+// message par défaut sans que rien ne le dise.
+//   objet        un courriel en exige un, une messagerie n'en a pas — l'y mettre pose un titre au
+//                milieu d'un fil de discussion ;
+//   ecrit        si le canal porte un texte du tout ;
+//   groupe       la place, en nombre de questions : un écran de téléphone n'est pas une page ;
+//   declaration  l'ouverture, longue ou courte. Ce qu'elle DIT ne change jamais — qui écrit, où va la
+//                réponse, qu'elle est libre —, seule sa longueur change ;
+//   relance      au bout de combien de jours le silence se signale, puis se tranche.
+// Le défaut d'un canal inconnu — un `autre:<libellé>`, un outil maison — est la MESSAGERIE et non le
+// courriel : la forme la plus étroite passe partout, alors qu'un objet collé dans un fil de discussion
+// se voit tout de suite. Se tromper vers le court ne coûte rien ; se tromper vers le long, oui.
+export const formeDuCanal = canal => FORMES[String(canal ?? '').trim()] ?? FORMES.messagerie;
+const RELANCE = FORMES.courriel.relance;
+// Les deux emplacements, comme `seuilsDe` : le plan range ses réglages sous `settings`, le BRD et le
+// PRD à la racine. Lire les deux évite d'imposer une forme à un gabarit qui en a déjà une autre.
+// Le canal se glisse SOUS les deux : ce que le dossier déclare l'emporte sur ce que le canal suggère,
+// parce qu'un réglage écrit est un choix et qu'une table est un défaut.
+export const seuilsRelance = (s, canal) => ({ ...RELANCE, ...(canal ? formeDuCanal(canal).relance : {}),
+  ...(s?.settings?.relance ?? {}), ...(s?.relance ?? {}) });
+// Les zones sur lesquelles une sollicitation est partie. Une seule au départ, d'où le champ au
+// singulier ; plusieurs depuis qu'un message peut porter une liste de précisions indépendantes. Le
+// champ accepte donc les deux formes — `ZO-001` ou `[ZO-001, ZO-034]` —, et c'est ici que la tolérance
+// vit, une fois, plutôt que chez chaque lecteur.
+export const zonesSollicitees = sh => (Array.isArray(sh?.sollicitee_zone) ? sh.sollicitee_zone : [sh?.sollicitee_zone])
+  .map(x => String(x ?? '').trim()).filter(Boolean);
+const JOURS = 86400000;
+const joursDepuis = d => Math.floor((Date.parse(new Date().toISOString().slice(0, 10)) - Date.parse(d)) / JOURS);
+
+// L'attente n'est pas éternelle, et c'est le vrai apport du seuil. `sollicitée` + date vaut
+// « non mesuré » — une question qui vit, que la porte ne compte pas contre le dossier. Mais une
+// question en vol depuis quarante jours ne vit plus : elle est abandonnée sans que personne l'ait dit,
+// et la faire passer pour vivante est précisément le mensonge que les trois états existaient pour
+// éviter. Au-delà de `agir`, le constat redevient un constat.
+const enAttenteDeReponse = (sh, s) => sollicitationEtat(sh, s?.sources) === 'attente'
+  && joursDepuis(sh.sollicitee_le) <= seuilsRelance(s).agir;
+
 // Les cinq motifs EARS (`references/ears.md`) et le marqueur que chacun impose à l'énoncé. La règle
 // cherche la trace de la forme déclarée, pas le style : `unwanted` ne réclame que la condition, pas le
 // « alors » que la référence met dans son tableau. Exigé, il signalait « Si un agent transmet un dossier
@@ -137,7 +262,7 @@ const EARS = {
 // qui n'était analysé nulle part avant S86 : un préfixe se coupe sur le `:`, et le libellé est dû.
 const ENUMS = {
   'type de contrainte': { valeurs: ['legale', 'contractuelle', 'organisationnelle', 'budgetaire', 'environnement'] },
-  'type de source': { valeurs: ['cadrage', 'entretien', 'observation', 'mesure', 'test', 'document', 'atelier', 'ticket', 'revue', 'dt-handoff', 'décision', 'analytics', 'étude'] },
+  'type de source': { valeurs: ['cadrage', 'entretien', 'échange écrit', 'observation', 'mesure', 'test', 'document', 'atelier', 'ticket', 'revue', 'dt-handoff', 'décision', 'analytics', 'étude'] },
   'domaine de décision': { valeurs: ['perimetre', 'objectifs', 'priorites', 'donnees_securite'], prefixes: ['processus', 'regles'] },
   'type d\'exigence de transition': { valeurs: ['formation', 'conduite_du_changement', 'reprise_de_donnees', 'coexistence', 'communication', 'support'] },
   'type d\'interface': { valeurs: ['openapi', 'asyncapi'] },
@@ -154,6 +279,14 @@ const ENUMS = {
   // là, à quel point le changement touche quelqu'un ; ici, ce que coûterait le risque s'il se produisait.
   vraisemblance: { valeurs: ['faible', 'moyenne', 'forte'] },
   'ampleur du risque': { valeurs: ['faible', 'moyen', 'fort'] },
+  // PAR QUOI on peut joindre quelqu'un, jamais AVEC QUOI : le canal, pas la coordonnée (S114).
+  // `autre:<libellé>` couvre un canal nommé — un fil d'équipe, un outil interne.
+  'canal de contact': { valeurs: ['vive voix', 'courriel', 'messagerie', 'téléphone'] },
+  // POURQUOI quelqu'un n'est pas joignable. `non disponible` couvrait quatre situations d'un seul mot :
+  // elle n'a jamais répondu ; elle a REFUSÉ, ce que notre propre message l'invite à faire ; elle est
+  // absente, en congé, partie ; ou NOUS avons renoncé pour nos raisons. La dernière est la seule où la
+  // faute est entièrement de notre côté, et c'est celle qu'un mot unique cachait le mieux.
+  'motif d\'indisponibilité': { valeurs: ['silence', 'refus', 'absence', 'renoncement'] },
 };
 // `phase-discover.md` : le quadrant d'implication SE DÉDUIT du pouvoir et de l'impact. Il ne s'affirme
 // pas — et `phase-govern.md` en fait un rôle de revue (« impliquer » → approbateur), donc une déduction
@@ -231,7 +364,7 @@ const checkRepresentation = (s, out, shs, { endUsersSeuls }) => {
     const concerne = endUsersSeuls ? sh.end_user : true;
     if (!concerne || !NON_ENTENDU.includes(sh.status)) continue;
     if (par && shs.has(par) && par !== sh.id && !interrogeeDansUneZone(s, sh.id)) {
-      out.push({ rule: 'S94', id: sh.id, message: citeeDansUneZone(s, sh.id)
+      out.push({ rule: 'S94', id: sh.id, ...(enAttenteDeReponse(sh, s) ? { pending: true } : {}), message: citeeDansUneZone(s, sh.id)
         ? `représentée par ${par} et jamais entendue : une zone ouverte la nomme, mais aucune ne lui est adressée (\`ask_to\`) — une question sur quelqu'un n'est pas une question à quelqu'un`
         : `représentée par ${par} et jamais entendue, sans qu'aucune zone ouverte ne lui soit adressée : une représentation dit qui répond pour elle, elle ne remplace pas sa voix` });
     }
@@ -418,8 +551,22 @@ export function checkBrd(s) {
     // Une source qui déclare `confirms: [BR-001]` EST la vérification : elle répond à la question que
     // pose `feedback`, et mieux — c'est l'exigence elle-même qui a été relue, pas son matériau.
     const vu = confirmes(s);
-    if (ids.length && !ids.some(id => FEEDBACK_FAIT.includes(srcs.get(id)?.feedback)) && !vu.has(b.id) && !arr(b.from_needs).some(n => vu.has(n))) {
-      out.push({ rule: 'S84', id: b.id, message: 'exigence validée sur des sources dont aucune n\'a été relue par la personne interrogée (`feedback`) : ce qui a été compris n\'a jamais été vérifié auprès d\'elle' });
+    if (ids.length && !vu.has(b.id) && !arr(b.from_needs).some(n => vu.has(n))) {
+      const lot = ids.map(id => srcs.get(id)).filter(Boolean);
+      const etats = lot.map(x => feedbackEtat(x, s));
+      // Une seule relecture faite suffit — c'est la règle d'origine. Sinon, le lot est soit en attente
+      // (au moins une demande partie et datée), soit muet. Les deux ne se disent pas pareil : la
+      // première est une question qu'on a posée, la seconde une question qu'on n'a pas posée.
+      if (!etats.includes('fait')) {
+        const attente = etats.includes('attente');
+        const sansDate = lot.filter(x => x.feedback === 'envoyé' && !JOUR.test(String(x.feedback_le ?? '').trim())).map(x => x.id);
+        out.push({ rule: 'S84', id: b.id, ...(attente ? { pending: true } : {}),
+          message: attente
+            ? 'exigence validée sur des sources dont la relecture est partie et pas encore revenue (`feedback: envoyé`) : la question vit, elle n\'est pas encore tranchée'
+            : sansDate.length
+              ? `exigence validée sur des sources dites parties en relecture sans dire quand (\`feedback_le\` manque sur ${sansDate.join(', ')}) : « envoyé » sans date ne se vérifie pas, et c'est l'agent qui écrit le champ`
+              : 'exigence validée sur des sources dont aucune n\'a été relue par la personne interrogée (`feedback`) : ce qui a été compris n\'a jamais été vérifié auprès d\'elle' });
+      }
     }
   }
   // S83 ne voit que l'absence TOTALE : un utilisateur direct entendu sur quatre, et la règle est verte
@@ -459,8 +606,12 @@ export function checkBrd(s) {
       if (!RECUEIL_AUPRES_DE.includes(src.type)) continue;
       for (const id of arr(src.stakeholders)) interroges.add(id);
     }
+    // Un utilisateur direct à qui la question est PARTIE est une question qui vit : le constat change
+    // de liste au lieu de compter contre le dossier, comme un retour à la source envoyé. Sinon écrire
+    // à la bonne personne ne vaut rien jusqu'à ce qu'elle réponde, et ce qui ne vaut rien ne se fait pas.
+    const utilEnAttente = arr(s.stakeholders).filter(sh => sh.end_user && enAttenteDeReponse(sh, s));
     if (entendus.length && !util.length) {
-      out.push({ rule: 'S83', id: 'stakeholders', message: 'des besoins recueillis, et aucun utilisateur direct entendu (`end_user`) : tout passe par des représentants' });
+      out.push({ rule: 'S83', id: 'stakeholders', ...(utilEnAttente.length ? { pending: true } : {}), message: `des besoins recueillis, et aucun utilisateur direct entendu (\`end_user\`) : tout passe par des représentants${utilEnAttente.length ? ` — ${utilEnAttente.map(sh => sh.id).join(', ')} sollicité(s) et sans réponse, la question vit` : ''}` });
     } else if (util.length && !util.some(sh => interroges.has(sh.id))) {
       out.push({ rule: 'S83', id: 'stakeholders', message: `utilisateur direct présent au cadrage mais jamais interrogé (${util.map(sh => sh.id).join(', ')}) : être dans la pièce au premier échange n'est pas avoir été entendu sur son travail` });
     }
@@ -673,8 +824,14 @@ export function checkPrd(s) {
       // PRD depuis toujours, et `S84` ne vivait que dans `checkBrd` — invisible au garde-fou, qui lisait
       // `rules.mjs` en entier alors qu'il est copié dans quatre skills.
       const src = srcs.get(f.origin);
-      if (src && !FEEDBACK_FAIT.includes(src.feedback) && !confirmes(s).has(f.id)) {
-        out.push({ rule: 'S84', id: f.id, message: `exigence tirée de ${f.origin}, que la personne interrogée n'a jamais relue (\`feedback\`) : ce qui a été compris n'a pas été vérifié auprès d'elle` });
+      const etat = src ? feedbackEtat(src, s) : 'fait';
+      if (etat !== 'fait' && !confirmes(s).has(f.id)) {
+        out.push({ rule: 'S84', id: f.id, ...(etat === 'attente' ? { pending: true } : {}),
+          message: etat === 'attente'
+            ? `exigence tirée de ${f.origin}, dont la relecture est partie le ${src.feedback_le} et pas encore revenue : la question vit, elle n'est pas encore tranchée`
+            : src.feedback === 'envoyé'
+              ? `exigence tirée de ${f.origin}, dite partie en relecture sans dire quand (\`feedback_le\`) : « envoyé » sans date ne se vérifie pas, et c'est l'agent qui écrit le champ`
+              : `exigence tirée de ${f.origin}, que la personne interrogée n'a jamais relue (\`feedback\`) : ce qui a été compris n'a pas été vérifié auprès d'elle` });
       }
     }
     deadRefs(out, f, f.goals, goals);
@@ -1375,6 +1532,10 @@ const reduit = x => String(x ?? '').toLowerCase().normalize('NFD').replace(/[\u0
   .replace(/[^a-z0-9]+/g, ' ').trim().split(' ').filter(m => m.length > 3);
 const motsClefs = texte => reduit(texte).slice(0, 4);
 const REF_RE = /\b[A-Z]{2,4}-\d{1,3}\b/g;
+// Les identifiants internes d'un texte. S104 s'en sert sur les FICHIERS qui partent ; un message
+// composé pour un canal ne passe par aucun fichier, et ne peut donc pas être contrôlé par une règle
+// de l'état. `reach-out.mjs` s'en sert pour refuser de composer : même doctrine, autre point d'arrêt.
+export const refsDans = texte => [...new Set(String(texte ?? '').match(REF_RE) ?? [])];
 export function outgoingFindings(s, fichiers = []) {
   const out = [];
   const index = new Map();
@@ -1445,10 +1606,13 @@ export function phaseFindings(s) {
 // que parce que l'agent avait encore la conversation en mémoire vive, et une reconstitution sur 93 a
 // échoué — « SRC-004 : aucun relevé écrit pour cette source ». Après un effacement de contexte, 93.
 // Le constat porte sur la collection : nommer 92 sources une par une ne se lit pas.
-const PAROLE = ['cadrage', 'entretien', 'atelier', 'revue', 'décision'];
+// `échange écrit` en fait partie, et c'est là qu'il coûte le moins : les mots existent déjà, il n'y a
+// qu'à les recopier. Une source dont le contenu tenait dans un fil de messages est précisément celle
+// dont personne ne pense à écrire le verbatim, parce qu'on croit que le fil le gardera.
+const PAROLE = ['cadrage', 'entretien', 'échange écrit', 'atelier', 'revue', 'décision'];
 // Les sources où quelqu'un a PARLÉ et où ce qu'on en a tiré est une interprétation. `décision` en est
 // retirée : une décision de l'utilisateur est son propre dernier mot, on ne la lui fait pas relire.
-const RECUEIL_DE_PAROLE = PAROLE.filter(t => t !== 'décision');
+export const RECUEIL_DE_PAROLE = PAROLE.filter(t => t !== 'décision');
 export function sourceContentFindings(s) {
   const toutes = arr(s.sources);
   // `note` est le nom que porte déjà le contenu dans le modèle de la conception : on n'impose pas un
@@ -1511,6 +1675,35 @@ export function riskFindings(s) {
 // source : rien ne menait du tour de table à l'échange qui en a corrigé la lecture, et qui lira le
 // premier dans six mois n'a aucun chemin vers le second. Une source corrigée est par définition la
 // première à faire relire : la déclarer « sans objet » se contredit.
+// `understood` est ce qu'on REND à la personne en relecture — le gabarit le dit depuis le début : c'est
+// « ce qui se corrige quand la citation est juste et la conclusion fausse ». En pratique il a dérivé vers
+// le carnet d'analyse de l'agent. Mesuré sur le troisième dossier réel : 52 sources de parole recueillie
+// sur 91 portent un renvoi interne, et l'une d'elles explique à quoi sert `present: []` dans des sources
+// passées. Montré à la personne, c'est incompréhensible et un peu gênant ; et c'est `review-sources.mjs`
+// qui s'en aperçoit, au moment d'envoyer, quand il y a cinquante-deux champs à réécrire.
+//
+// Le constat porte sur la COLLECTION, et une seule fois. Cinquante-deux constats noieraient les vingt
+// autres du dossier, et le défaut n'est pas cinquante-deux fautes indépendantes : c'est une manière
+// d'écrire le champ. Une ligne qui dit le compte et nomme les premières, le script nomme le reste.
+//
+// Il ne porte que sur les types dont la parole REPART vers la personne. Une décision de l'utilisateur ne
+// se fait pas relire à son auteur — c'est déjà la doctrine de `S111` —, donc un renvoi interne n'y gêne
+// personne : sur le dossier réel, les dix sources de type `décision` sortent du compte, et les quatre
+// seuls renvois trouvés dans un `quote` sont toutes des décisions.
+//
+// Et le seuil est le même que celui du script, volontairement : si la règle était plus clémente que le
+// refus, le lint dirait que tout va bien et l'envoi refuserait. C'est le pire des deux mondes.
+export function understoodFindings(s) {
+  const sales = arr(s?.sources)
+    .filter(x => RECUEIL_DE_PAROLE.includes(x.type))
+    .map(x => ({ id: x.id, refs: refsDans(`${x.quote ?? ''}\n${x.understood ?? ''}`) }))
+    .filter(x => x.refs.length);
+  if (!sales.length) return [];
+  const total = arr(s?.sources).filter(x => RECUEIL_DE_PAROLE.includes(x.type)).length;
+  const montrees = sales.slice(0, 5);
+  return [{ rule: 'S118', id: 'sources', message: `${sales.length} source(s) de parole recueillie sur ${total} portent un renvoi interne dans \`quote\` ou \`understood\` (${montrees.map(x => `${x.id} → ${x.refs.slice(0, 3).join(', ')}`).join(' · ')}${sales.length > montrees.length ? ` · et ${sales.length - montrees.length} autre(s)` : ''}) : \`understood\` est ce qu'on REND à la personne en relecture, pas une note à soi-même — elle n'a pas l'index sous les yeux et ne l'aura jamais. \`review-sources.mjs --sh <id> --message\` les nomme toutes, et refuse d'envoyer tant qu'elles sont là` }];
+}
+
 export function relectureFindings(s) {
   const out = [];
   const srcs = new Map(arr(s?.sources).map(x => [x.id, x]));
@@ -1525,6 +1718,141 @@ export function relectureFindings(s) {
       if (cible.feedback === 'sans objet') {
         out.push({ rule: 'S112', id: ref, message: `corrigée par ${src.id}, et pourtant déclarée « sans objet » en relecture : une source dont on sait que ce qu'on en avait compris était faux est la première à faire relire` });
       }
+    }
+  }
+  return out;
+}
+
+// Une coordonnée n'a rien à faire dans `state.yaml`. Ce fichier se commite, `freeze-version.mjs` en
+// fige une copie en lecture seule sous `versions/`, et d'une version figée rien ne se reprend : une
+// adresse écrite là y reste. Le champ dit donc par quoi la personne se joint ; l'adresse, le numéro ou
+// l'identifiant vivent dans `contacts.yaml`, à côté de l'état, que `.gitignore` exclut. Le handoff est
+// déjà hors de danger — `build-handoff.mjs` ne retient que `id`, `name`, `role`, `represents`, `status`.
+const COORDONNEE = [[/@/, 'une adresse'], [/(?:\+|\b0)[\d .\-()]{8,}/, 'un numéro'], [/https?:\/\//, 'un lien']];
+// `contacts` porte les trois états, comme partout ailleurs : `undefined`, personne n'a regardé le
+// disque — on ne conclut rien ; `null`, regardé et aucun fichier ; un objet, regardé et le voici.
+// « On n'a pas regardé » n'est pas « il n'y a rien », et c'est le second qui se reproche.
+export function contactFindings(s, contacts) {
+  const out = [];
+  for (const sh of arr(s?.stakeholders)) {
+    const canal = String(sh.joignable_par ?? '').trim();
+    if (!canal) continue;              // ne pas savoir joindre quelqu'un est un fait, pas une faute
+    const porte = COORDONNEE.find(([re]) => re.test(canal));
+    if (porte) {
+      out.push({ rule: 'S114', id: sh.id, message: `\`joignable_par\` porte ${porte[1]} : ce champ dit par quoi on la joint, pas avec quoi — l'état se commite et \`freeze-version.mjs\` en fige une copie sous \`versions/\`, d'où rien ne se reprend. La coordonnée va dans \`contacts.yaml\`, à côté de l'état, que \`.gitignore\` exclut` });
+      continue;                        // le canal est illisible : le confronter à `contacts.yaml` n'apprendrait rien
+    }
+    checkEnum(out, sh.id, 'canal de contact', canal);
+    if (contacts === undefined) continue;
+    if (contacts === null) {
+      out.push({ rule: 'S114', id: sh.id, message: `déclarée joignable par « ${canal} » et aucun \`contacts.yaml\` à côté de l'état : le canal est annoncé, la coordonnée n'existe nulle part — personne ne peut la joindre` });
+    } else if (!String(contacts[sh.id] ?? '').trim()) {
+      out.push({ rule: 'S114', id: sh.id, message: `déclarée joignable par « ${canal} », et \`contacts.yaml\` ne porte rien à son identifiant : le canal est annoncé, la coordonnée n'y est pas` });
+    }
+  }
+  for (const id of Object.keys(contacts ?? {})) {
+    if (!arr(s?.stakeholders).some(sh => sh.id === id)) {
+      out.push({ rule: 'S09', id, message: 'coordonnée dans `contacts.yaml` à un identifiant qui n\'est pas une partie prenante de l\'état : une coordonnée qui ne désigne personne ne sert à rien, et elle a pu être recopiée de travers' });
+    }
+  }
+  return out;
+}
+
+// Le champ `sollicitee_le` n'a qu'un lecteur, et c'est ici. `sollicitationEtat` plus haut en tire
+// l'état ; cette règle refuse les deux manières de l'écrire pour rien : le statut sans la date, qui
+// ne se vérifie pas, et la sollicitation sans canal, qui ne dit pas par où elle serait partie.
+export function sollicitationFindings(s) {
+  const out = [];
+  for (const sh of arr(s?.stakeholders)) {
+    if (sh.status !== 'sollicitée') {
+      // Une date sans le statut qui va avec : soit la personne a répondu et le champ est un reste,
+      // soit le statut a été écrasé. Dans les deux cas la date ne se lit plus, et elle a l'air de dire
+      // quelque chose. Sur `interrogée`, c'est normal : elle garde la trace de quand on a écrit.
+      if (String(sh.sollicitee_le ?? '').trim() && !['interrogée', 'non disponible'].includes(sh.status)) {
+        out.push({ rule: 'S115', id: sh.id, message: `porte une date de sollicitation et le statut « ${sh.status ?? 'absent'} » : la date ne se lit que sur « sollicitée », ailleurs elle donne l'air d'une question en vol qui n'en est pas une` });
+      }
+      continue;
+    }
+    if (!JOUR.test(String(sh.sollicitee_le ?? '').trim())) {
+      out.push({ rule: 'S115', id: sh.id, message: 'déclarée « sollicitée » sans dire quand (`sollicitee_le`, AAAA-MM-JJ) : c\'est toi qui écris le champ, et une sollicitation qu\'on ne peut pas vérifier est une case cochée — sans la date elle compte comme si personne ne lui avait jamais écrit' });
+    }
+    if (!String(sh.joignable_par ?? '').trim()) {
+      out.push({ rule: 'S115', id: sh.id, message: 'déclarée « sollicitée » sans dire par quoi (`joignable_par`) : une question partie sans canal ne se relance pas, et personne ne sait où aller chercher la réponse' });
+    }
+  }
+  // Une question qu'on a laissée en vol au-delà du seuil. Ce n'est pas un reproche sur le délai — c'est
+  // qu'au-delà, « non mesuré » cesse d'être une réponse acceptable : il faut relancer, ou renoncer en
+  // le disant. Trois issues et pas deux, et c'est l'utilisateur qui tranche, pas l'agent : écrire à
+  // quelqu'un qui ne répond pas, ou renoncer sur lui, n'est pas une décision d'outil.
+  for (const sh of arr(s?.stakeholders)) {
+    if (sollicitationEtat(sh, s?.sources) !== 'attente') continue;
+    // Les seuils du canal par lequel la question est PARTIE : une question laissée deux jours sur une
+    // messagerie est déjà en souffrance là où un courriel vient d'arriver.
+    const { signaler, agir } = seuilsRelance(s, sh.joignable_par);
+    const jours = joursDepuis(sh.sollicitee_le);
+    if (jours <= agir) continue;
+    out.push({ rule: 'S117', id: sh.id, message: `question en vol depuis ${jours} jour(s), au-delà du seuil de ${agir} (\`settings.relance.agir\`) : ce n'est plus une question qui vit, c'est une question que personne ne suit, et la porte cessait de la compter. Trois issues, et c'est l'utilisateur qui tranche : attendre encore en le disant, relancer une fois (\`reach-out.mjs --relance\`), ou renoncer — \`non disponible\` avec son motif. Le premier seuil, celui qui dit seulement de le signaler, est à ${signaler} jour(s)` });
+  }
+  // Renoncer sur quelqu'un se dit, et dit lequel des quatre. Même famille que `envoyé` sans date : c'est
+  // l'agent qui écrit le champ, et `non disponible` sans raison est une case cochée. Deux conséquences
+  // que le catalogue tient ailleurs et qu'il faut rappeler ici : le statut reste dans `NON_ENTENDU`,
+  // donc renoncer N'ÉTEINT RIEN — S94 et S83 continuent de dire que sa voix manque, parce qu'un choix
+  // de notre part n'est pas une réussite du dossier. Et un REFUS est lui-même une parole : si elle
+  // écrit « je préfère ne pas répondre », ce sont ses mots, et ils se consignent comme tels.
+  for (const sh of arr(s?.stakeholders)) {
+    const motif = String(sh.indisponible_motif ?? '').trim();
+    if (sh.status === 'non disponible' && !motif) {
+      out.push({ rule: 'S116', id: sh.id, message: 'déclarée « non disponible » sans dire pourquoi (`indisponible_motif`) : le mot couvre quatre situations — elle n\'a jamais répondu, elle a refusé, elle est absente, ou nous avons renoncé —, et seule la dernière est de notre faute. Les confondre efface celle qui nous concerne' });
+    }
+    if (!motif) continue;
+    if (sh.status !== 'non disponible') {
+      out.push({ rule: 'S116', id: sh.id, message: `porte un motif d'indisponibilité et le statut « ${sh.status ?? 'absent'} » : le motif ne se lit que sur « non disponible », ailleurs il donne l'air d'un renoncement qui n'a pas eu lieu` });
+      continue;
+    }
+    checkEnum(out, sh.id, 'motif d\'indisponibilité', motif);
+    // Un refus est SA parole, et une parole se cite. Sans aucune source où elle parle, « elle a refusé »
+    // est une affirmation d'un tiers sur elle — exactement ce que S110 refuse pour une représentation,
+    // et S90 pour une décision rendue en son nom.
+    if (motif === 'refus' && !arr(s?.sources).some(x => arr(x.stakeholders).includes(sh.id))) {
+      out.push({ rule: 'S116', id: sh.id, message: 'déclarée avoir refusé, et aucune source ne porte sa parole : un refus est ce qu\'elle a dit, et ça se cite. Rapporté par un tiers, c\'est une affirmation sur elle — consigne ses mots, ou dis que le refus est rapporté' });
+    }
+  }
+  // `sollicitee_le` dit QUAND, `sollicitee_zone` dit QUOI. Les deux ou aucun : une sollicitation qui ne
+  // dit pas ce qu'elle demandait est inexploitable au tour suivant — c'est ce qui forçait le message de
+  // suite à dire « si c'est la même question que la dernière fois, c'est que j'ai mal lu votre réponse »,
+  // faute de pouvoir le savoir. L'ambiguïté était rendue à la personne, qui n'a rien à voir là-dedans.
+  // Le champ porte une zone ou plusieurs : un message peut emporter une liste de précisions
+  // indépendantes, et chacune se vérifie comme si elle était partie seule — exister, et être adressée
+  // à elle. Grouper ne relâche aucun des deux contrôles.
+  for (const sh of arr(s?.stakeholders)) {
+    const quand = String(sh.sollicitee_le ?? '').trim();
+    const quoi = zonesSollicitees(sh);
+    if (quand && !quoi.length) {
+      out.push({ rule: 'S115', id: sh.id, message: `sollicitée le ${quand} sans dire sur quoi (\`sollicitee_zone\`) : au tour suivant, rien ne permet de savoir si sa réponse portait sur la question posée — et c'est à elle qu'on finit par demander de le deviner` });
+    } else if (quoi.length && !quand) {
+      out.push({ rule: 'S115', id: sh.id, message: `porte \`sollicitee_zone: ${quoi.join(', ')}\` sans date de départ (\`sollicitee_le\`) : une question qu'on dit partie sans dire quand ne se relance pas et ne compte pour rien` });
+    }
+    for (const ref of quoi) {
+      const zone = arr(s?.shadow_zones).find(z => z.id === ref);
+      if (!zone) { out.push({ rule: 'S09', id: sh.id, message: `sollicitée sur ${ref}, qui n'est pas une zone d'ombre de l'état` }); continue; }
+      // Une question posée à quelqu'un d'autre, envoyée à elle : la zone dit à qui elle s'adresse, et
+      // c'est tout l'objet de S94 — une question SUR quelqu'un n'est pas une question À quelqu'un.
+      if (zone.ask_to && zone.ask_to !== sh.id) {
+        out.push({ rule: 'S115', id: sh.id, message: `sollicitée sur ${ref}, qui est adressée à ${zone.ask_to} (\`ask_to\`) : on lui a posé la question de quelqu'un d'autre, et sa réponse sera consignée comme si elle valait pour l'autre` });
+      }
+    }
+  }
+  // Le deuxième tour d'un entretien par canal. La personne est `interrogée` et porte une date d'écrit :
+  // l'état se lit en comparant cette date à celle de sa dernière source. Si aucune de ses sources ne
+  // porte de date, la comparaison est impossible — et c'est le seul cas où le dossier contient la
+  // réponse sans pouvoir le prouver. On ne devine pas : on dit que la mesure manque et laquelle.
+  for (const sh of arr(s?.stakeholders)) {
+    if (sh.status !== 'interrogée' || !JOUR.test(String(sh.sollicitee_le ?? '').trim())) continue;
+    const siennes = arr(s?.sources).filter(x => arr(x.stakeholders).includes(sh.id));
+    if (!siennes.length) {
+      out.push({ rule: 'S115', id: sh.id, message: `déclarée « interrogée » et écrite le ${sh.sollicitee_le}, et aucune source ne la porte comme locutrice : le statut dit qu'elle a parlé, le dossier ne garde rien de ce qu'elle a dit` });
+    } else if (!siennes.some(x => JOUR.test(String(x.date ?? '').trim()))) {
+      out.push({ rule: 'S115', id: sh.id, message: `écrite le ${sh.sollicitee_le}, et aucune de ses ${siennes.length} source(s) ne porte de date : on ne peut pas savoir si elle a répondu depuis — donc ni relancer, ni enchaîner. Date la source qui vient d'elle` });
     }
   }
   return out;
@@ -1560,7 +1888,7 @@ export function governanceFindings(s) {
     if (!['relecteur', 'approbateur'].includes(r.role)) continue;
     const sh = r.stakeholder && shs.get(r.stakeholder);
     if (sh && NON_ENTENDU.includes(sh.status)) {
-      out.push({ rule: 'S98', id: `reviewers:${r.stakeholder}`, message: `${r.role} que l'état déclare « ${sh.status} » : une revue demande si le document est fidèle à ce qu'on a dit, et cette personne n'a rien dit. Interroge-la d'abord, ou passe-la en « informé » — sinon son silence devient une approbation` });
+      out.push({ rule: 'S98', id: `reviewers:${r.stakeholder}`, ...(enAttenteDeReponse(sh, s) ? { pending: true } : {}), message: `${r.role} que l'état déclare « ${sh.status} » : une revue demande si le document est fidèle à ce qu'on a dit, et cette personne n'a rien dit. Interroge-la d'abord, ou passe-la en « informé » — sinon son silence devient une approbation` });
     }
   }
   for (const r of arr(g.review_rounds)) {
@@ -1666,7 +1994,7 @@ export function checkState(s, ctx = {}) {
     return [{ rule: 'S00', id: 'document', message: `document « ${doc} » : ce catalogue vérifie ${DOCUMENTS.join(', ')}, et rien d'autre — un état d'implémentation se vérifie avec pr-gate.mjs et trace-check.mjs, un état de tests avec release-matrix.mjs` }];
   }
   const base = doc === 'plan' ? checkPlan(s, refs) : doc === 'sad' ? checkSad(s) : doc === 'prd' ? checkPrd(s) : checkBrd(s);
-  const all = [...base, ...placeholderFindings(s), ...unsourcedNumberFindings(s), ...constitutionFindings(s, ctx.constitution), ...checklistFindings(s, ctx.checklists), ...interviewFindings(s, ctx.interviews), ...outgoingFindings(s, [...fichiersDe(ctx.interviews), ...fichiersDe(ctx.checklists)]), ...governanceFindings(s), ...coverageFindings(s, refs), ...phaseFindings(s), ...sourceContentFindings(s), ...confirmationFindings(s), ...riskFindings(s), ...relectureFindings(s), ...handoffFindings(ctx.handoffs), ...upstreamFindings(s, refs), ...contextFindings(ctx.cards, s.settings?.context_budget)];
+  const all = [...base, ...placeholderFindings(s), ...unsourcedNumberFindings(s), ...constitutionFindings(s, ctx.constitution), ...checklistFindings(s, ctx.checklists), ...interviewFindings(s, ctx.interviews), ...outgoingFindings(s, [...fichiersDe(ctx.interviews), ...fichiersDe(ctx.checklists)]), ...governanceFindings(s), ...coverageFindings(s, refs), ...phaseFindings(s), ...sourceContentFindings(s), ...confirmationFindings(s), ...contactFindings(s, ctx.contacts), ...sollicitationFindings(s), ...riskFindings(s), ...understoodFindings(s), ...relectureFindings(s), ...handoffFindings(ctx.handoffs), ...upstreamFindings(s, refs), ...contextFindings(ctx.cards, s.settings?.context_budget)];
   const idx = waiverIndex(s);
   return all.map(f => {
     const raison = idx.get(`${f.id}|${f.rule}`);
@@ -1688,6 +2016,11 @@ export const STRUCT_RULES = {
   S109: 'risque consigné sans être apprécié', S110: 'représentation sans la source où elle se dit',
   S111: 'relecture « sans objet » sur une parole, sans raison', S112: 'correction d\'une source non reliée ou laissée sans relecture',
   S113: 'utilisateur direct qu\'aucun besoin ne concerne',
+  S114: 'coordonnée dans l\'état versionné, ou canal annoncé sans coordonnée',
+  S115: 'sollicitation déclarée sans sa date ou sans son canal',
+  S116: 'indisponibilité déclarée sans dire laquelle',
+  S117: 'question laissée en vol au-delà du seuil, sans décision',
+  S118: 'renvoi interne dans ce qu\'on rend à la personne en relecture',
   S01: 'objectif non mesurable', S02: 'exigence sans objectif', S03: 'exigence sans besoin sourcé', S04: 'exigence sans critère d\'acceptation',
   S05: 'priorité ou release manquante', S06: 'exigence sans origine', S07: 'Must sans scénario d\'erreur', S08: 'NFR incomplète',
   S09: 'référence inexistante', S10: 'référence vers un élément abandonné', S11: 'règle métier sans source', S12: 'règle sans niveau d\'application',

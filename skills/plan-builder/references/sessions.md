@@ -59,6 +59,10 @@ un fichier que personne ne modifie à la main. Chaque session écrit donc désor
 dans son propre fichier ; les scripts lisent l'ensemble du dossier. Un `index.yaml` historique reste
 lu s'il existe, et n'est plus jamais réécrit : rien à migrer.
 
+**Une coordonnée ne sort pas par la session.** L'extrait reprend tes messages **mot pour mot**, et il se commite — seuls le `.jsonl` et les `.tmp` sont exclus par le `.gitignore`. Tout le dispositif des coordonnées était donc contourné par le chemin le plus probable de tous : `reach-out.mjs` dit « demande-la à l'utilisateur », l'utilisateur la tape dans le fil, et elle partait dans le dépôt. Les adresses de courriel et les numéros de téléphone sont désormais remplacés, dans l'extrait comme dans la copie de la transcription, par `[coordonnée masquée — voir contacts.yaml]` : la marque dit qu'il manque quelque chose et où le chercher. Ce n'est pas un secret au sens des jetons — rien n'est compromis — c'est une donnée personnelle qui reste sur la machine où elle a été donnée.
+
+**Le condensé, lui, c'est toi qui l'écris, et aucun motif ne te relira.** N'y mets jamais une adresse, un numéro ni un identifiant de messagerie. Le fichier se commite comme l'extrait, et il n'a pas de filtre : ce que tu y écris y reste. Quand une coordonnée compte pour la suite, elle va dans `contacts.yaml` du dossier, et le condensé dit au plus « ses coordonnées sont dans `contacts.yaml` ». La même règle vaut pour `session.next_action` et pour toute note de l'état : l'état se commite, part dans le handoff, et `freeze-version.mjs` en fige une copie dont rien ne se reprend.
+
 **Ce que l'extrait ne peut pas savoir.** Il est produit depuis la transcription, sans interprétation,
 et deux choses y échappent. Les **écritures faites au shell** : seules la redirection et `tee` y
 désignent un fichier ; un `sed -i`, un script ou un éditeur lancé en ligne de commande n'est pas

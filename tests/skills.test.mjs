@@ -122,6 +122,37 @@ test('ni la suite ni les bancs ne laissent de dossier temporaire derrière eux',
 // deux, et `S80` fermait la porte de gouvernance du BRD sur des listes qu'aucune de ses phases ne disait
 // de produire. `block.mjs` et les deux scripts d'analyse croisée étaient dans le même cas, cinq copies
 // chacun. Même famille que le council du plan, qui avait un moment prescrit et aucun appelant.
+// Une clause ouverte puis abandonnée. Le gabarit du PRD a porté pendant une version la phrase
+// « `feedback_par` : par quoi », suivie directement d'un commentaire sur un autre champ : la phrase
+// avait été coupée en écrivant, et personne ne l'a vue — ni la relecture, ni les 262 tests, parce
+// qu'aucun ne lit la prose des gabarits. Le champ restait donc nommé et inexpliqué dans le fichier que
+// l'agent copie pour chaque dossier, et un champ qu'on nomme sans le dire se remplit au hasard.
+// La forme est reconnaissable : un mot qui ANNONCE la suite, en fin de ligne, et la ligne d'après qui
+// ouvre un autre sujet. Le motif est étroit par construction — il ne tire que sur cette forme-là, et
+// au jour où il est écrit il ne correspond nulle part ailleurs dans les sept skills.
+const CLAUSE_OUVERTE = /(par quoi|avec quoi|à qui|de qui|pour qui|dont|lequel|laquelle|c'est-à-dire|à savoir|parce que|puisque|sauf si|tandis que)\s*$/;
+const AUTRE_SUJET = /^\s*#\s*#?\s*`[a-z_]+`\s*:/;
+test('aucun commentaire de gabarit ou de référence ne laisse une clause en l\'air', () => {
+  const abandonnees = [];
+  for (const s of skills) {
+    const fichiers = [join(SKILLS, s, 'SKILL.md')];
+    for (const d of ['templates', 'references']) {
+      const dir = join(SKILLS, s, d);
+      if (existsSync(dir)) for (const f of readdirSync(dir)) fichiers.push(join(dir, f));
+    }
+    for (const f of fichiers) {
+      const lignes = readFileSync(f, 'utf8').split('\n');
+      for (let i = 0; i < lignes.length - 1; i++) {
+        if (!lignes[i].trimStart().startsWith('#')) continue;
+        if (CLAUSE_OUVERTE.test(lignes[i]) && AUTRE_SUJET.test(lignes[i + 1])) {
+          abandonnees.push(`${s}/${f.split('/').slice(-2).join('/')}:${i + 1} — « …${lignes[i].trim().slice(-40)} » puis « ${lignes[i + 1].trim().slice(0, 40)}… »`);
+        }
+      }
+    }
+  }
+  assert.deepEqual(abandonnees, [], `phrase(s) coupée(s) en écrivant :\n  ${abandonnees.join('\n  ')}`);
+});
+
 test('aucun script livré sans appelant', () => {
   const communs = [join(ROOT, 'entrypoints', 'entrypoints.yaml'), join(ROOT, 'install.mjs'),
     join(ROOT, 'hooks', 'hooks.json'), join(ROOT, 'com.github.copilot', 'hooks', 'hooks.json')]
@@ -529,7 +560,9 @@ test('un champ qu\'une référence ordonne de remplir est lu par un script', () 
 test('le PRD a un registre de parties prenantes, et la chaîne le remplit', () => {
   const tpl = readFileSync(join(SKILLS, 'prd-builder', 'templates', 'state.yaml'), 'utf8');
   assert.match(tpl, /^stakeholders: \[\]/m, 'le PRD n\'a pas de registre de parties prenantes');
-  assert.match(tpl, /status: à interroger\s+# à interroger \| interrogée/, 'le registre ne dit pas qui a été entendu');
+  // `sollicitée` s'est glissé entre les deux : on a écrit, on n'a pas reçu. La propriété que ce garde
+  // tient est inchangée — le registre dit qui a été entendu —, et le troisième état en fait partie.
+  assert.match(tpl, /status: à interroger\s+# à interroger \| sollicitée \| interrogée/, 'le registre ne dit pas qui a été entendu');
   assert.match(tpl, /represents: ""/, 'le registre ne porte pas la qualité de celui qui parle pour un autre');
   assert.match(tpl, /stakeholders: \[SH-01\]/, 'une source du PRD ne nomme pas qui a parlé');
   assert.doesNotMatch(tpl, /SRC-001[^}]*who:/, 'une source garde un champ libre concurrent de `stakeholders`');
@@ -1132,9 +1165,85 @@ test('la documentation des règles de contrôle est à jour', async () => {
   for (const bloc of [/^### Porte de PR \(\d+ conditions\)/m, /^### Porte de release \(\d+ conditions\)/m, /^## Garde-fous de l'export \(\d+\)/m]) {
     assert.match(doc, bloc, `un bloc de contrôles manque : ${bloc}`);
   }
+  // Un message est une phrase. Le scanner lisait aussi les littéraux de la CONDITION d'un ternaire, et
+  // S84 a affiché « attente · exigence tirée de … » — le test d'un `etat === 'attente'` promu au rang
+  // de message. Un mot seul dans une cellule de messages est la signature de cette fuite.
+  const fuites = [];
+  // L'index, en fin de document, a une autre forme : sa troisième colonne est un libellé, pas des
+  // messages. On s'arrête avant lui.
+  const tables = doc.slice(0, doc.indexOf('## Index des règles'));
+  for (const ligne of tables.split('\n').filter(l => /^\| `[A-Z]\d{2,3}` \|/.test(l))) {
+    const cellule = ligne.split('|')[3] ?? '';
+    for (const msg of cellule.split(' · ').map(x => x.trim()).filter(Boolean)) {
+      if (!/\s/.test(msg) && msg !== '—') fuites.push(`${ligne.split('|')[1].trim()} : « ${msg} »`);
+    }
+  }
+  assert.deepEqual(fuites, [], `message(s) d'un seul mot — un test de ternaire lu comme un message :\n${fuites.join('\n')}`);
   // Les conditions de porte viennent de `gateConditions`, pas d'une copie : on en vérifie une au hasard.
   const { gateConditions } = await import(join(SKILLS, 'brd-builder', 'scripts', 'lib', 'gates.mjs'));
   for (const c of gateConditions({ document: 'sad', phase: 'design' }).conditions) {
     assert.ok(doc.includes(c[0]), `condition de porte absente de la documentation : « ${c[0]} »`);
   }
+});
+
+// Une relecture partie et pas encore revenue n'est pas un trou du dossier : c'est une question posée.
+// Elle change de liste comme une dérogation, et elle sort du décompte des avertissements actifs — sinon
+// poser la question coûte autant que ne pas la poser, et la porte reproche à l'utilisateur ce qu'il
+// attend de quelqu'un d'autre. Les deux scripts doivent filtrer pareil : `lint.mjs` l'écartait et
+// `status.mjs` la comptait, ils annonçaient deux nombres différents sur le même fichier.
+test('une relecture partie sort du décompte, dans les deux scripts, et se dit à part', () => {
+  const dir = tempDir('tizi-relecture');
+  mkdirSync(join(dir, 'brd', 'demo'), { recursive: true });
+  const etat = join(dir, 'brd', 'demo', 'state.yaml');
+  const ecrire = source => writeFileSync(etat, [
+    'document: brd', 'phase: define',
+    'stakeholders:', '  - { id: SH-01, name: Durand, role: référente, status: interrogée, end_user: true }',
+    'sources:', `  - ${source}`,
+    'candidate_needs:', '  - { id: BC-01, text: "Pouvoir suivre un dossier", sources: [{ ref: SRC-01 }], concerns: [SH-01], status: confirmé }',
+    'business_requirements:', '  - { id: BR-01, statement: "Le service doit pouvoir suivre un dossier", status: validé, priority: must, from_needs: [BC-01], objectives: [OBJ-01] }',
+    'objectives:', '  - { id: OBJ-01, statement: "Réduire les rejets", indicator: taux, target: "5 %", status: validé }',
+  ].join('\n'));
+  const compte = () => {
+    const st = node(script('brd-builder', 'status.mjs'), [etat], { cwd: dir });
+    const lt = node(script('brd-builder', 'lint.mjs'), [etat], { cwd: dir });
+    assert.equal(st.code, 0, st.err);
+    return { st, lt,
+      porte: Number(st.out.match(/(\d+) avertissement\(s\) actif\(s\)/)?.[1]),
+      lint: Number(lt.out.match(/Vérification : (\d+) avertissement/)?.[1]) || 0 };
+  };
+
+  // Jamais demandé : S84 compte, dans les deux.
+  ecrire('{ id: SRC-01, type: entretien, stakeholders: [SH-01], quote: "je perds une heure", feedback: à envoyer }');
+  const muet = compte();
+  assert.ok(/S84/.test(muet.lt.out), 'S84 ne sort pas sur une source jamais relue');
+  assert.equal(muet.porte, muet.lint, 'le point d\'étape et le lint annoncent deux nombres différents');
+
+  // Demandé, et daté : un avertissement de moins dans les deux, et la question se dit à part.
+  // La date se compte depuis AUJOURD'HUI : l'attente se périme au-delà de `relance.agir` (5 jours), donc
+  // une date en dur finit par mesurer le calendrier au lieu du filtrage des deux scripts.
+  const hier = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  ecrire(`{ id: SRC-01, type: entretien, stakeholders: [SH-01], quote: "je perds une heure", feedback: envoyé, feedback_le: "${hier}" }`);
+  const vol = compte();
+  assert.equal(vol.lint, muet.lint - 1, 'la relecture partie reste dans le décompte du lint');
+  assert.equal(vol.porte, vol.lint, 'les deux scripts ne filtrent pas pareil');
+
+  assert.match(vol.lt.out, /question\(s\) posée\(s\) et pas encore revenue\(s\)/, 'la question posée ne se dit nulle part');
+  assert.match(vol.lt.out, /… \[S84\] BR-01/, 'la question posée n\'est pas nommée');
+  // Elle ne disparaît pas : la sortie machine la garde, avec son drapeau.
+  const js = node(script('brd-builder', 'lint.mjs'), [etat, '--json'], { cwd: dir });
+  assert.equal(JSON.parse(js.out).find(f => f.rule === 'S84')?.pending, true, 'la sortie machine perd l\'état');
+
+  // Partie il y a six semaines : ce n'est plus une question qui vit, c'est une relecture oubliée. Le
+  // constat redevient actif, et les deux scripts restent d'accord — c'est ce point-là qui s'était déjà
+  // désaccordé une fois, quand `status.mjs` ne recevait pas le même contexte que `lint.mjs`.
+  const vieux = new Date(Date.now() - 42 * 86400000).toISOString().slice(0, 10);
+  ecrire(`{ id: SRC-01, type: entretien, stakeholders: [SH-01], quote: "je perds une heure", feedback: envoyé, feedback_le: "${vieux}" }`);
+  const perime = compte();
+  assert.equal(perime.lint, muet.lint, 'au-delà du seuil, l\'attente ne protège plus le dossier');
+  assert.equal(perime.porte, perime.lint, 'les deux scripts ne filtrent pas pareil sur une attente périmée');
+  // Dite partie sans date : elle retombe au débit du dossier, c'est l'agent qui écrit le champ.
+  ecrire('{ id: SRC-01, type: entretien, stakeholders: [SH-01], quote: "je perds une heure", feedback: envoyé }');
+  const cochee = compte();
+  assert.equal(cochee.lint, muet.lint, 'une case cochée sans date vaut une demande en vol');
+  assert.match(cochee.lt.out, /sans dire quand/);
 });
