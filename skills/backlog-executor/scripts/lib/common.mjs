@@ -27,6 +27,45 @@ export const seuilRepetitions = s => {
 };
 export const dernierePosee = z => foisPosee(z).map(f => String(f.date ?? '').trim()).filter(Boolean).sort().pop() ?? '';
 
+// Une entrée de la cartographie ne vaut pas forcément UNE personne. Sur le troisième dossier réel,
+// SH-04 est « membre(s) du bureau assurant la saisie, non présent(s) au cadrage » : sans nom, et le
+// dossier ignore s'ils sont un ou cinq. Le point d'étape annonçait « 3 partie(s) prenante(s)
+// entendue(s) sur 4 » — un compte d'ENTRÉES donné pour un compte de personnes. Et la dimension
+// `couverture` de la porte de synthèse se déclare en lisant ce compte, donc la mesure fausse ne
+// restait pas dans le point d'étape. Deux champs, et une entrée nommée n'a besoin d'aucun des deux :
+// `personnes` dit combien l'entrée en vaut, `entendues` combien d'entre elles ont parlé (S122, S123).
+export const ecrit = v => v !== undefined && v !== null && String(v).trim() !== '';
+// Un champ vide n'est pas un zéro : `Number('')` vaut 0, et une entrée nommée et interrogée comptait
+// alors pour zéro personne entendue. Rien d'écrit se lit `null`, jamais 0.
+const entier = v => { if (!ecrit(v)) return null; const n = Number(String(v).trim()); return Number.isInteger(n) && n >= 0 ? n : null; };
+// Trois états, comme partout ailleurs : un nombre, zéro, ou `null` — non mesuré. Un nom désigne une
+// personne, donc une entrée nommée vaut 1 sans rien écrire ; une entrée sans nom ni `personnes` ne
+// vaut pas 1 par défaut, elle ne vaut rien de connu, et un total qui l'ignore est un total faux.
+export const effectifDe = sh => {
+  const n = entier(sh?.personnes);
+  if (n !== null && n >= 1) return n;
+  if (ecrit(sh?.personnes)) return null;               // écrit, mais illisible : S122 le dit
+  return String(sh?.name ?? '').trim() ? 1 : null;
+};
+export const entendusDe = sh => {
+  const k = entier(sh?.entendues);
+  if (k !== null) return k;
+  if (ecrit(sh?.entendues)) return null;
+  if (sh?.status !== 'interrogée') return 0;
+  // `interrogée` sur une entrée collective ne dit pas qui a parlé : un statut ne se divise pas.
+  return effectifDe(sh) === 1 ? 1 : null;
+};
+export const effectifs = shs => {
+  const l = arr(shs);
+  const flou = l.filter(sh => effectifDe(sh) === null);
+  const partiels = l.filter(sh => effectifDe(sh) !== null && entendusDe(sh) === null);
+  return {
+    total: l.reduce((n, sh) => n + (effectifDe(sh) ?? 0), 0),
+    entendus: l.reduce((n, sh) => n + (entendusDe(sh) ?? 0), 0),
+    flou, partiels, mesure: !flou.length && !partiels.length,
+  };
+};
+
 export function table(headers, rows) {
   if (rows.length === 0) return '_Aucun élément._\n';
   return [`| ${headers.join(' | ')} |`, `|${headers.map(() => '---').join('|')}|`, ...rows.map(r => `| ${r.map(cell).join(' | ')} |`)].join('\n') + '\n';

@@ -17,7 +17,11 @@ phase_log: []            # une porte franchie, une entrée — `phase` dit la ph
 #    date: ""            # AAAA-MM-JJ
 #    decided_by: SH-02   # qui a tranché — déclaré par l'utilisateur, jamais déduit
 #    source: SRC-080     # la source qui porte la décision
-#    gate: ""            # l'état de la porte au passage, tel que status.mjs l'a dit : « 7 conditions sur 7 »
+#    gate: ""            # l'état de la porte au passage, RECOPIÉ tel que status.mjs l'a dit :
+#                          # « X condition(s) tenue(s) sur Y mesurée(s) ». Le compte se relit : Y moins X
+#                          # donne les conditions non tenues, et `waived` doit en nommer exactement
+#                          # autant (S124). C'était le seul champ de l'état que rien ne relisait — une
+#                          # phrase libre, qu'aucun script ne pouvait contredire
 #    waived: []          # conditions franchies par dérogation : - { condition: "", reason: "" }
 #    kind: porte         # porte (par défaut) | retour — un retour en arrière est un passage comme un
 #                        # autre, et il s'écrit dans le MÊME journal : `define_returns` ne valait que

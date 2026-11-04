@@ -1228,6 +1228,53 @@ test('la langue de la personne n\'est pas celle du dossier, et le script ne trad
   assert.equal(lire(dossier({ langue: 'anglais', settings: { langue: 'arabe' } }, { langue: 'anglais' })).meme_langue, true, 'la racine gagne');
 });
 
+test('le relevé de relecture et la lecture d\'une réponse disent leur limite de langue', async () => {
+  const { execFileSync } = await import('node:child_process');
+  const { writeFileSync, mkdirSync } = await import('node:fs');
+  // `reach-out.mjs` tenait déjà ce raisonnement, et deux scripts de la même famille l'ignoraient :
+  // le relevé rendait du français à quelqu'un dont `langue` dit autre chose, sans le signaler une
+  // seule fois ; et la lecture d'une réponse ne disait sa limite QUE dans la branche où un signal
+  // part — c'est-à-dire là où l'agent se méfie déjà.
+  const d = tempDir('tizi-langue-relev');
+  writeFileSync(join(d, 'contacts.yaml'), 'SH-01: "nadia@exemple.fr"\nSH-02: "karim@exemple.fr"\n');
+  writeFileSync(join(d, 'state.yaml'), yaml.dump({
+    document: 'brd', phase: 'discover',
+    initiative: { name: 'Dématérialiser les inscriptions', slug: 'demat' },
+    stakeholders: [
+      { id: 'SH-01', name: 'Nadia', role: 'Agente', status: 'interrogée', joignable_par: 'courriel', langue: 'arabe', end_user: true, power: 'faible', impact: 'fort', influence: 'positive', quadrant: 'consulter' },
+      { id: 'SH-02', name: 'Karim', role: 'Sponsor', status: 'interrogée', joignable_par: 'courriel', power: 'fort', impact: 'fort', influence: 'positive', quadrant: 'impliquer' }],
+    sources: [
+      { id: 'SRC-001', type: 'entretien', date: '2026-11-01', stakeholders: ['SH-01'], quote: 'نكتب كل شيء بخط اليد', understood: 'Tout est recopié à la main' },
+      { id: 'SRC-002', type: 'entretien', date: '2026-11-01', stakeholders: ['SH-02'], quote: 'On recopie trois fois', understood: 'Triple recopie' }],
+  }));
+  const etat = join(d, 'state.yaml');
+  const relev = (sh, ...plus) => execFileSync('node', [join(SCRIPTS, 'review-sources.mjs'), etat, '--sh', sh, ...plus], { encoding: 'utf8' });
+
+  // Le FICHIER : il reste la version française de référence, et l'avertissement va à l'agent — pas
+  // dans le fichier, que la personne lira.
+  mkdirSync(join(d, 'interviews'), { recursive: true });
+  const fichier = relev('SH-01');
+  assert.match(fichier, /CE RELEVÉ EST À ÉCRIRE EN ARABE, et ce script ne le fait pas/);
+  assert.match(fichier, /ses propres mots, JAMAIS/, 'le verbatim est l\'objet de la relecture : le traduire la vide');
+  assert.doesNotMatch(relev('SH-02'), /À ÉCRIRE EN/, 'même langue : rien à signaler');
+
+  // Le MESSAGE : le contrat d'abord, la version de référence ensuite — comme `reach-out.mjs`.
+  const message = relev('SH-01', '--message');
+  assert.match(message, /CE MESSAGE EST À ÉCRIRE EN ARABE/);
+  assert.match(message, /── Version française de référence \(1 source\(s\)\) ──/);
+  assert.match(message, /Objet : Ce que j'ai compris de vos propos/, 'la version de référence suit, elle ne disparaît pas');
+  assert.doesNotMatch(relev('SH-02', '--message'), /À ÉCRIRE EN/);
+
+  // Et la lecture d'une réponse PROPRE : son silence ne vaut pas un feu vert, et la famille de
+  // détection en langue naturelle ne connaît que trois langues. Ni l'un ni l'autre n'était dit.
+  const propre = join(d, 'propre.txt');
+  writeFileSync(propre, 'Bonjour,\n\nLa saisie prend deux heures par dossier.\n\nTom\n');
+  const lu = execFileSync('node', [join(SCRIPTS, 'read-reply.mjs'), propre], { encoding: 'utf8' });
+  assert.match(lu, /Aucun signal structurel ici, et ce n'est pas un feu vert/);
+  assert.match(lu, /ne connaît que le français, l'anglais et l'arabe/);
+  assert.match(lu, /ce script ne sait pas dans quelle\n    langue il lit/);
+});
+
 // Ce qui gouverne le NOMBRE de questions dans un message : la dépendance entre elles, pas le canal.
 // Une question née de ce que la personne a déjà dit ne dépend d'aucune autre réponse — elle se groupe.
 // Une question née d'une analyse, d'un council, ou de la parole de quelqu'un d'AUTRE commande la
@@ -1487,6 +1534,42 @@ test('S119, S120, S121 : une question porte ce qui lui est arrivé', () => {
   // Une résolution qui ne nomme aucune source — une décision, une raison d'abandon — ne compte pas :
   // personne n'a forcément demandé quoi que ce soit.
   assert.deepEqual(dits([{ id: 'ZO-004', type: 'attendu_implicite', question: 'Et celle-là ?', ask_to: 'SH-01', status: 'assumée', resolution: 'portée par R-02 : on fera sans' }], 'S121'), []);
+});
+
+test('S122, S123 : une entrée de la cartographie vaut un nombre de personnes, pas une', () => {
+  // Le cas qui a produit ces deux règles : SH-04 du troisième dossier réel, « membre(s) du bureau
+  // assurant la saisie, non présent(s) au cadrage », sans nom. Compté pour un, il faisait annoncer
+  // « 3 parties prenantes entendues sur 4 » là où le dossier ignorait combien ils étaient.
+  const sh = (extra = {}) => ({ id: 'SH-04', name: '', role: 'Membre du bureau qui saisit', power: 'faible', impact: 'fort', influence: 'positive', quadrant: 'consulter', ...extra });
+  const dits = (shs, r, phase = 'discover') => checkState({ document: 'brd', phase, stakeholders: shs }).filter(f => f.rule === r).map(f => f.message);
+
+  // Une entrée NOMMÉE n'a rien à écrire : un nom désigne une personne. L'absence d'un champ n'est
+  // pas un reproche, c'est la règle de ce catalogue.
+  assert.deepEqual(dits([sh({ name: 'Samir', status: 'interrogée' })], 'S122'), []);
+  assert.deepEqual(dits([sh({ name: 'Samir', status: 'interrogée' })], 'S123'), []);
+
+  // Sans nom et sans effectif : le dossier ne sait pas combien de personnes l'entrée vaut.
+  assert.match(dits([sh({ status: 'à interroger' })], 'S122')[0], /sans nom, et sans dire combien de personnes elle vaut \(`personnes`\)/);
+  // Un effectif écrit mais illisible n'est pas un effectif : l'ancien calcul l'aurait pris pour 1.
+  assert.match(dits([sh({ personnes: 'trois' })], 'S122')[0], /`personnes: trois` n'est pas un nombre de personnes/);
+  assert.match(dits([sh({ personnes: 0 })], 'S122')[0], /`personnes: 0` n'est pas un nombre de personnes/);
+  // L'effectif donné lève S122, et n'en appelle pas une autre tant que le statut ne parle pour personne.
+  assert.deepEqual(dits([sh({ personnes: 4, status: 'à interroger' })], 'S122'), []);
+  assert.deepEqual(dits([sh({ personnes: 4, status: 'à interroger' })], 'S123'), []);
+
+  // S123 : « interrogée » sur quatre personnes ne dit pas laquelle a parlé. Un statut ne se divise pas.
+  assert.match(dits([sh({ personnes: 4, status: 'interrogée' })], 'S123')[0], /vaut 4 personnes et se déclare « interrogée » sans dire combien d'entre elles ont parlé \(`entendues`\)/);
+  assert.deepEqual(dits([sh({ personnes: 4, entendues: 1, status: 'interrogée' })], 'S123'), []);
+  // Zéro entendues est une mesure, pas un vide : `Number('')` valait 0, et une entrée nommée et
+  // interrogée comptait alors pour zéro voix.
+  assert.deepEqual(dits([sh({ personnes: 4, entendues: 0, status: 'à interroger' })], 'S123'), []);
+  assert.match(dits([sh({ personnes: 4, entendues: 'une', status: 'interrogée' })], 'S123')[0], /`entendues: une` n'est pas un nombre de personnes entendues/);
+  // Les deux nombres se contredisent, ou le nombre contredit le statut.
+  assert.match(dits([sh({ personnes: 2, entendues: 5, status: 'interrogée' })], 'S123')[0], /5 personne\(s\) entendue\(s\) pour un effectif de 2/);
+  assert.match(dits([sh({ personnes: 4, entendues: 2, status: 'à interroger' })], 'S123')[0], /2 personne\(s\) entendue\(s\) et un statut qui dit le contraire \(`à interroger`\)/);
+
+  // Rien à vérifier en Assess : la carte n'existe pas encore, le tour de table ne donne que des noms.
+  assert.deepEqual(dits([sh({ status: 'à interroger' })], 'S122', 'assess'), []);
 });
 
 test('un message sortant ne parle qu\'en clair', () => {
@@ -1863,9 +1946,11 @@ test('S100 et S101 : une porte franchie laisse sa trace, avec son décideur et s
   // Deux portes franchies, aucune trace : deux constats, chacun nommant la phase close.
   assert.deepEqual(porte({}).map(f => `${f.rule} ${f.id}`), ['S100 phase:assess', 'S100 phase:discover']);
   assert.match(porte({})[0].message, /phase_log/);
-  const complet = [{ from: 'assess', to: 'discover', date: '2026-10-29', decided_by: 'SH-02', source: 'SRC-026' },
-    { from: 'discover', to: 'define', date: '2026-11-02', decided_by: 'SH-02', source: 'SRC-080' }];
+  // Une trace complète porte aussi ce que la porte disait : S124 le relit (voir son propre témoin).
+  const complet = [{ from: 'assess', to: 'discover', date: '2026-10-29', decided_by: 'SH-02', source: 'SRC-026', gate: '7 condition(s) tenue(s) sur 7 mesurée(s)' },
+    { from: 'discover', to: 'define', date: '2026-11-02', decided_by: 'SH-02', source: 'SRC-080', gate: '13 condition(s) tenue(s) sur 13 mesurée(s)' }];
   assert.deepEqual(porte({ phase_log: complet }), [], 'un journal complet est encore signalé');
+  assert.deepEqual(checkState({ document: 'brd', phase: 'define', phase_log: complet }).filter(f => f.rule === 'S124'), []);
   // Une entrée sans décideur ni source : la trace existe, la décision n'est pas nommée.
   const boiteux = porte({ phase_log: [complet[0], { from: 'discover', to: 'define', date: '2026-11-02' }] });
   assert.deepEqual(boiteux.map(f => f.rule), ['S101']);
@@ -1891,6 +1976,41 @@ test('S100 et S101 : une porte franchie laisse sa trace, avec son décideur et s
   assert.deepEqual(porte({ phase_log: [...complet,
     { from: 'define', to: 'discover', date: '2026-11-03', decided_by: 'SH-02', reason: 'valeur actuelle inconnue', zone: 'ZO-012', kind: 'retour' }] }), [],
   'un retour complet est encore signalé');
+});
+
+test('S124 : la trace d\'une porte dit ce qu\'elle a coûté, et le compte concorde', () => {
+  // Le cas qui a produit cette règle : la seule entrée de `phase_log` d'un dossier réel disait
+  // « 5 conditions sur 7 mesurées (status.mjs) » avec deux dérogations nommées. 7 − 5 = 2, donc juste,
+  // et c'était un hasard — `gate` était le seul champ de l'état que RIEN ne relisait.
+  const trace = extra => checkState({ document: 'brd', phase: 'discover',
+    phase_log: [{ from: 'assess', to: 'discover', date: '2026-11-02', decided_by: 'SH-03', source: 'SRC-016', ...extra }] })
+    .filter(f => f.rule === 'S124').map(f => f.message);
+  const REEL = '5 conditions sur 7 mesurées (status.mjs) : restaient 22 zones d\'ombre ouvertes';
+  const deux = [{ condition: 'chaque zone d\'ombre est levée ou assumée', reason: 'le programme de Discover' },
+    { condition: 'aucun avertissement ni corrigé ni dérogé', reason: 'deux questions ouvertes' }];
+
+  // Les deux formulations du compte se lisent : celle de `status.mjs` et celle que l'agent a écrite.
+  assert.deepEqual(trace({ gate: REEL, waived: deux }), []);
+  assert.deepEqual(trace({ gate: '7 condition(s) tenue(s) sur 7 mesurée(s)' }), []);
+
+  // Sans `gate`, le journal dit qu'on est passé et rien ne dit à quel prix.
+  assert.match(trace({})[0], /porte franchie sans dire ce que la porte disait au passage \(`gate`\)/);
+  // Une phrase sans compte n'est pas un compte : c'est ce qui rendait le champ incontrôlable.
+  assert.match(trace({ gate: 'la porte était bonne' })[0], /ne dit pas combien de conditions étaient tenues sur combien de mesurées/);
+
+  // Le cœur : deux non tenues et une seule dérogation nommée. La doctrine, écrite mot pour mot dans
+  // les quatre références de phase, dit « CHAQUE condition franchie par dérogation avec sa raison ».
+  assert.match(trace({ gate: REEL, waived: [deux[0]] })[0], /donc 2 non tenue\(s\), et `waived` en nomme 1 : 1 condition\(s\) ont été franchies sans que rien ne dise laquelle ni pourquoi/);
+  // Et l'inverse : tout tenu, et pourtant une dérogation. L'un des deux est faux.
+  assert.match(trace({ gate: '7 conditions sur 7', waived: [deux[0]] })[0], /1 dérogation\(s\) de plus que de conditions non tenues/);
+  // Un compte impossible.
+  assert.match(trace({ gate: '9 conditions sur 7' })[0], /on ne tient pas plus de conditions que la porte n'en mesure/);
+
+  // Un retour en arrière ne mesure pas de porte : il en vient. Rien à lui reprocher ici.
+  assert.deepEqual(checkState({ document: 'brd', phase: 'discover',
+    phase_log: [{ from: 'assess', to: 'discover', date: '2026-11-02', decided_by: 'SH-03', source: 'SRC-016', gate: '7 conditions sur 7' },
+      { from: 'discover', to: 'discover', date: '2026-11-03', decided_by: 'SH-03', reason: 'une contradiction', kind: 'retour' }] })
+    .filter(f => f.rule === 'S124'), []);
 });
 
 // Le modèle d'état n'avait AUCUN champ pour ce qui avait été dit. Mesuré : 92 sources sur 93 — dont 65

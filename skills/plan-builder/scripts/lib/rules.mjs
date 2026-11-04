@@ -6,7 +6,7 @@
 // complété de règles qui demandent du jugement. Une règle n'est définie qu'ici, jamais ailleurs.
 //
 // Sources : Constantinidis (check-list de bonne formulation, ch. 13) ; BABOK v3 (7.2 Verify Requirements).
-import { arr, PHASE_NOM, portesFranchies, JOUR, passagesPosee, foisPosee, seuilRepetitions } from './common.mjs';
+import { arr, PHASE_NOM, portesFranchies, JOUR, passagesPosee, foisPosee, seuilRepetitions, ecrit, effectifDe, entendusDe } from './common.mjs';
 import { porteDe, seuilsDe, derogationDe, derogationsDe, cleDerogation, verdictSeuil, INDICATIF } from './gates.mjs';
 
 // ── Règles de rédaction (portent sur un énoncé) ─────────────────────────────
@@ -1572,6 +1572,21 @@ export function outgoingFindings(s, fichiers = []) {
 // décidé par Dédé (SRC-080) » —, que rien ne lit, que le document rendu ne peut pas reprendre, et qui
 // disparaissent à la première réécriture du champ par un outil.
 
+// `gate` était la seule trace que rien ne relisait : l'agent y écrit une phrase, et aucun script au
+// monde ne pouvait la contredire. Sur le troisième dossier réel : « 5 conditions sur 7 mesurées
+// (status.mjs) », avec deux dérogations nommées. 7 − 5 = 2, donc juste — et c'était un hasard que
+// rien ne vérifiait. Or les quatre références de phase disent la même phrase mot pour mot : l'entrée
+// porte « l'état de la porte tel que `status.mjs` l'a dit, et CHAQUE condition franchie par dérogation
+// avec sa raison ». Le nombre de conditions non tenues et le nombre de dérogations sont donc le même
+// nombre, et deux nombres qui doivent coïncider se vérifient. C'est aussi ce qui rend la trace
+// relisible plus tard : « 5 sur 7 » seul ne dit pas si la porte en avait sept ou si le catalogue a
+// bougé depuis ; « 5 sur 7 » adossé à deux dérogations nommées se tient tout seul.
+const COMPTE_PORTE = /(\d+)\s*condition[^.;:]*?\bsur\s*(\d+)/i;
+export const comptePorte = e => {
+  const m = COMPTE_PORTE.exec(String(e?.gate ?? ''));
+  return m ? { tenues: Number(m[1]), mesurees: Number(m[2]) } : null;
+};
+
 // Une porte franchie sans trace, et une trace sans son décideur ni sa date.
 export function phaseFindings(s) {
   const out = [];
@@ -1594,6 +1609,19 @@ export function phaseFindings(s) {
       message: porteDe(e)
         ? `porte franchie sans ${manque.join(', ni ')} : un passage de phase se décide avec l'utilisateur, jamais seul, et la décision se nomme`
         : `retour en arrière écrit sans ${manque.join(', ni ')} : un retour se décide comme une porte, et un journal qui ne dit pas pourquoi on a reculé ne se relit pas` });
+    if (!porteDe(e)) continue;   // un retour ne mesure pas de porte : il en vient
+    const c = comptePorte(e), derogees = arr(e.waived).length;
+    const id = `phase:${e.from ?? '?'}`;
+    if (!c) {
+      out.push({ rule: 'S124', id, message: String(e.gate ?? '').trim()
+        ? `\`gate\` ne dit pas combien de conditions étaient tenues sur combien de mesurées (« ${String(e.gate).trim().slice(0, 60)}${String(e.gate).trim().length > 60 ? '…' : ''} ») : recopie la ligne de \`status.mjs\`, « X condition(s) tenue(s) sur Y mesurée(s) », sinon la trace ne se relit pas — on ne sait plus si la porte en avait Y ou si le catalogue a bougé depuis`
+        : 'porte franchie sans dire ce que la porte disait au passage (`gate`) : la ligne de `status.mjs`, « X condition(s) tenue(s) sur Y mesurée(s) ». Sans elle, le journal dit qu\'on est passé et rien ne dit à quel prix' });
+    } else if (c.tenues > c.mesurees) {
+      out.push({ rule: 'S124', id, message: `\`gate\` annonce ${c.tenues} condition(s) tenue(s) sur ${c.mesurees} mesurée(s) : on ne tient pas plus de conditions que la porte n'en mesure` });
+    } else if (c.mesurees - c.tenues !== derogees) {
+      const nonTenues = c.mesurees - c.tenues;
+      out.push({ rule: 'S124', id, message: `\`gate\` annonce ${c.tenues} condition(s) tenue(s) sur ${c.mesurees}, donc ${nonTenues} non tenue(s), et \`waived\` en nomme ${derogees} : ${nonTenues > derogees ? `${nonTenues - derogees} condition(s) ont été franchies sans que rien ne dise laquelle ni pourquoi` : `${derogees - nonTenues} dérogation(s) de plus que de conditions non tenues`}. Une condition non tenue se dérogue nommément, avec sa raison, ou elle n'est pas franchie` });
+    }
   }
   return out;
 }
@@ -1908,6 +1936,44 @@ export function questionPoseeFindings(s) {
   return out;
 }
 
+// Une entrée de la cartographie peut valoir plusieurs personnes, et rien ne le disait. Sur le troisième
+// dossier réel, SH-04 n'a pas de nom — « membre(s) du bureau assurant la saisie, non présent(s) au
+// cadrage » — et le point d'étape l'a comptée pour une : « 3 partie(s) prenante(s) entendue(s) sur 4 ».
+// Un compte d'entrées donné pour un compte de personnes, lu tel quel par la dimension `couverture` de
+// la porte de synthèse. Deux manques, et chacun rend le total faux d'une façon différente : l'entrée
+// ne dit pas combien elle vaut (S122), ou elle le dit et son statut parle pour tout le monde (S123).
+// Une entrée nommée n'a rien à écrire : un nom désigne une personne. Rien à vérifier avant Discover,
+// la carte n'existe pas encore — le tour de table ne donne que des noms et des fonctions.
+export function effectifFindings(s) {
+  const out = [];
+  if (!['discover', 'define', 'govern'].includes(s?.phase)) return out;
+  for (const sh of arr(s?.stakeholders)) {
+    const eff = effectifDe(sh), vus = entendusDe(sh);
+    if (eff === null) {
+      if (ecrit(sh?.personnes)) {
+        out.push({ rule: 'S122', id: sh.id, message: `\`personnes: ${String(sh.personnes).trim()}\` n'est pas un nombre de personnes : un entier d'au moins 1, ou rien du tout` });
+      } else {
+        out.push({ rule: 'S122', id: sh.id, message: 'sans nom, et sans dire combien de personnes elle vaut (`personnes`) : une entrée qui ne désigne personne peut en valoir une ou cinq, et la couverture la compte pour une. Un nom, ou un effectif' });
+      }
+      continue;
+    }
+    if (vus === null) {
+      if (ecrit(sh?.entendues)) {
+        out.push({ rule: 'S123', id: sh.id, message: `\`entendues: ${String(sh.entendues).trim()}\` n'est pas un nombre de personnes entendues : un entier d'au moins 0, ou rien du tout` });
+      } else {
+        out.push({ rule: 'S123', id: sh.id, message: `vaut ${eff} personnes et se déclare « interrogée » sans dire combien d'entre elles ont parlé (\`entendues\`) : un statut ne se divise pas, et en avoir entendu une sur ${eff} n'est pas avoir entendu le groupe` });
+      }
+      continue;
+    }
+    if (vus > eff) {
+      out.push({ rule: 'S123', id: sh.id, message: `${vus} personne(s) entendue(s) pour un effectif de ${eff} : l'un des deux nombres est faux` });
+    } else if (vus > 0 && sh.status !== 'interrogée') {
+      out.push({ rule: 'S123', id: sh.id, message: `${vus} personne(s) entendue(s) et un statut qui dit le contraire (\`${sh.status ?? 'absent'}\`) : dès qu'une seule a parlé, l'entrée est « interrogée » et \`entendues\` dit combien` });
+    }
+  }
+  return out;
+}
+
 export function confirmationFindings(s) {
   const out = [];
   const idx = elementsIndex(s);
@@ -2044,7 +2110,7 @@ export function checkState(s, ctx = {}) {
     return [{ rule: 'S00', id: 'document', message: `document « ${doc} » : ce catalogue vérifie ${DOCUMENTS.join(', ')}, et rien d'autre — un état d'implémentation se vérifie avec pr-gate.mjs et trace-check.mjs, un état de tests avec release-matrix.mjs` }];
   }
   const base = doc === 'plan' ? checkPlan(s, refs) : doc === 'sad' ? checkSad(s) : doc === 'prd' ? checkPrd(s) : checkBrd(s);
-  const all = [...base, ...placeholderFindings(s), ...unsourcedNumberFindings(s), ...constitutionFindings(s, ctx.constitution), ...checklistFindings(s, ctx.checklists), ...interviewFindings(s, ctx.interviews), ...outgoingFindings(s, [...fichiersDe(ctx.interviews), ...fichiersDe(ctx.checklists)]), ...governanceFindings(s), ...coverageFindings(s, refs), ...phaseFindings(s), ...sourceContentFindings(s), ...confirmationFindings(s), ...contactFindings(s, ctx.contacts), ...sollicitationFindings(s), ...questionPoseeFindings(s), ...riskFindings(s), ...understoodFindings(s), ...relectureFindings(s), ...handoffFindings(ctx.handoffs), ...upstreamFindings(s, refs), ...contextFindings(ctx.cards, s.settings?.context_budget)];
+  const all = [...base, ...placeholderFindings(s), ...unsourcedNumberFindings(s), ...constitutionFindings(s, ctx.constitution), ...checklistFindings(s, ctx.checklists), ...interviewFindings(s, ctx.interviews), ...outgoingFindings(s, [...fichiersDe(ctx.interviews), ...fichiersDe(ctx.checklists)]), ...governanceFindings(s), ...coverageFindings(s, refs), ...phaseFindings(s), ...sourceContentFindings(s), ...confirmationFindings(s), ...contactFindings(s, ctx.contacts), ...sollicitationFindings(s), ...questionPoseeFindings(s), ...effectifFindings(s), ...riskFindings(s), ...understoodFindings(s), ...relectureFindings(s), ...handoffFindings(ctx.handoffs), ...upstreamFindings(s, refs), ...contextFindings(ctx.cards, s.settings?.context_budget)];
   const idx = waiverIndex(s);
   return all.map(f => {
     const raison = idx.get(`${f.id}|${f.rule}`);
@@ -2074,6 +2140,9 @@ export const STRUCT_RULES = {
   S119: 'passage de `posee` sans sa date ou sans son canal',
   S120: 'question reposée au-delà du seuil, et toujours sans réponse',
   S121: 'zone résolue par une réponse sans dire quand la question est partie',
+  S122: 'entrée de la cartographie qui ne dit pas combien de personnes elle vaut',
+  S123: 'entrée collective dont le statut parle pour tout le monde',
+  S124: 'trace de porte dont le compte ne concorde pas avec ses dérogations',
   S01: 'objectif non mesurable', S02: 'exigence sans objectif', S03: 'exigence sans besoin sourcé', S04: 'exigence sans critère d\'acceptation',
   S05: 'priorité ou release manquante', S06: 'exigence sans origine', S07: 'Must sans scénario d\'erreur', S08: 'NFR incomplète',
   S09: 'référence inexistante', S10: 'référence vers un élément abandonné', S11: 'règle métier sans source', S12: 'règle sans niveau d\'application',

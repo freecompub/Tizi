@@ -84,16 +84,31 @@ test('point d\'étape : porte de synthèse montrée en Discover, avec ce qui se 
   mkdirSync(join(dir, 'brd/cadrage'), { recursive: true });
   writeFileSync(join(dir, 'brd/cadrage/state.yaml'), [
     'document: brd', 'initiative: { name: "Cadrage", slug: cadrage }', 'phase: discover',
-    'stakeholders:', '  - { id: SH-01, status: interrogée }', '  - { id: SH-02, status: à interroger }',
-    '  - { id: SH-03, status: à interroger }',
+    'stakeholders:', '  - { id: SH-01, name: Samir, status: interrogée }',
+    '  - { id: SH-02, name: Tom, status: à interroger }',
+    '  - { id: SH-03, name: Dédé, status: à interroger }',
     'sources:', '  - { id: SRC-001, type: cadrage, stakeholders: [SH-01] }',
     'candidate_needs:', '  - { id: BC-001, text: "x", sources: [{ ref: SRC-001 }] }',
     '  - { id: BC-002, text: "y", sources: [{ ref: SRC-001 }] }', '',
   ].join('\n'));
   const out = node(script('brd-builder', 'status.mjs'), ['brd/cadrage/state.yaml'], { cwd: dir }).out;
   assert.match(out, /Porte de synthèse avant Define : 0 dimension\(s\) sur 5/);
-  assert.match(out, /couverture\s+à déclarer — 1 partie\(s\) prenante\(s\) entendue\(s\) sur 3/);
+  // Trois personnes nommées : le compte est une mesure, et il se lit en personnes.
+  assert.match(out, /couverture\s+à déclarer — 1 personne\(s\) entendue\(s\) sur 3/);
   assert.match(out, /robustesse\s+à déclarer — 2 besoin\(s\) candidat\(s\) sur 2 à source unique/);
+
+  // Le cas du troisième dossier réel : une quatrième entrée sans nom, qui vaut un nombre inconnu de
+  // personnes. Le total devient un plancher, l'annonce le dit, et l'entrée qui l'empêche se nomme.
+  writeFileSync(join(dir, 'brd/cadrage/state.yaml'), [
+    'document: brd', 'initiative: { name: "Cadrage", slug: cadrage }', 'phase: discover',
+    'stakeholders:', '  - { id: SH-01, name: Samir, status: interrogée }',
+    '  - { id: SH-04, name: "", role: "Membre du bureau qui saisit", status: à interroger }',
+    '  - { id: SH-05, name: "", personnes: 4, status: interrogée }', '',
+  ].join('\n'));
+  const flou = node(script('brd-builder', 'status.mjs'), ['brd/cadrage/state.yaml'], { cwd: dir }).out;
+  assert.match(flou, /couverture\s+à déclarer — 1 personne\(s\) entendue\(s\) sur au moins 5/);
+  assert.match(flou, /SH-04 : sans nom et sans effectif — le total est un plancher, pas une mesure/);
+  assert.match(flou, /SH-05 : plusieurs personnes, « interrogée », et rien ne dit combien ont parlé/);
   rmSync(dir, { recursive: true });
 });
 

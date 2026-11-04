@@ -20,7 +20,7 @@ import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { arr, loadState, writeOut, fail, table, today, txt, shLabel, label } from './lib/common.mjs';
 import { feedbackEtat, sollicitationEtat, seuilsRelance, zonesSollicitees, refsDans, RECUEIL_DE_PAROLE } from './lib/rules.mjs';
-import { nomClair, nomInitiative, joindre, paragraphes, refuseLesIdentifiants, AVERTISSEMENT_COMPTE, N_ENVOIE_RIEN } from './lib/outgoing.mjs';
+import { nomClair, nomInitiative, joindre, paragraphes, refuseLesIdentifiants, AVERTISSEMENT_COMPTE, N_ENVOIE_RIEN, langueDe, langueDuDossier } from './lib/outgoing.mjs';
 
 const args = process.argv.slice(2);
 const statePath = args.find(a => !a.startsWith('--') && args[args.indexOf(a) - 1] !== '--sh');
@@ -143,6 +143,32 @@ const construitDepuis = (coll, ids) => arr(s[coll]).filter(x => x.status !== 'ab
 //     dans cet ordre. Le message garde les trois mais sans la numérotation d'un formulaire : on ne
 //     fait pas remplir un questionnaire à quelqu'un qui lit sur son téléphone.
 const MESSAGE_MAX_SOURCES = 10;
+// ── La langue de la personne ────────────────────────────────────────────────
+// `reach-out.mjs` tenait déjà ce raisonnement, et ce script l'ignorait : il rendait du français à
+// quelqu'un dont `langue` dit autre chose, sans le signaler une seule fois. Or le relevé est le
+// document le plus sensible du lot — c'est celui qui demande « est-ce bien ce que vous avez dit ? » —,
+// et une personne qui ne comprend pas la question répond oui.
+//
+// Il ne traduit pas, pour les mêmes deux raisons que `reach-out.mjs` : une traduction non relue peut
+// se tromper sur CE QU'ON lui attribue, et un script qui en rendrait une donnerait l'impression que la
+// question est réglée. Il rend le contrat à la place.
+//
+// Et il y a ici un élément que `reach-out.mjs` n'avait pas à dire : LE VERBATIM NE SE TRADUIT PAS. Ce
+// qu'elle a dit est l'objet même de la relecture ; le traduire fait relire une paraphrase, c'est-à-dire
+// exactement ce que le relevé existe pour empêcher. Seul le cadre autour se réécrit.
+const CONTRAT_LANGUE = (id, langue, quoi) => [
+  `CE ${quoi} EST À ÉCRIRE EN ${langue.toUpperCase()}, et ce script ne le fait pas.`,
+  `Sa langue : ${langue} · celle du dossier : ${langueDuDossier(s)} (\`langue\` sur ${id}).`,
+  'Il ne traduit pas : une traduction non relue peut se tromper sur ce qu\'on lui attribue, et un script',
+  'qui en rendrait une donnerait l\'impression que la question est réglée.',
+  '',
+  'Ce qui se réécrit, et ce qui ne se réécrit PAS :',
+  '  · le cadre — pourquoi ce document, ce qu\'on lui demande de chercher, comment le retour revient',
+  '  · ses propres mots, JAMAIS. Le verbatim est l\'objet de la relecture ; le traduire la fait porter',
+  '    sur une paraphrase, c\'est-à-dire sur exactement ce que ce relevé existe pour empêcher.',
+  '  · aucun identifiant interne, dans aucune langue : elle n\'a pas l\'index sous les yeux.',
+];
+
 if (args.includes('--message')) {
   if (cibles.length !== 1) fail('`--message` écrit à UNE personne : nomme-la avec `--sh SH-xx`. Un retour de synthèse est personnel — il ne porte que ce qu\'elle a dit —, et un envoi groupé ferait lire à chacun les propos des autres.', 2);
   const id = cibles[0];
@@ -205,6 +231,18 @@ if (args.includes('--message')) {
   if (args.includes('--json')) {
     console.log(JSON.stringify({ stakeholder: id, canal, adresse, objet, message, sources: aRelire.map(x => x.id) }, null, 2));
     process.exit(0);
+  }
+  // Sa langue n'est pas celle du dossier : on rend le contrat, pas une traduction. Le message de
+  // référence reste affiché dessous — c'est la version écrite, relue et mesurée, celle dont le
+  // contenu ne doit pas changer en changeant de langue.
+  if (langueDe(s, id) !== langueDuDossier(s)) {
+    console.log([
+      `Retour de synthèse — à ${shLabel(s, id)}, par ${canal} — ${adresse}`,
+      '',
+      ...CONTRAT_LANGUE(id, langueDe(s, id), 'MESSAGE'),
+      '',
+      `── Version française de référence (${aRelire.length} source(s)) ──`,
+    ].join('\n'));
   }
   console.log([
     `Retour de synthèse — à ${shLabel(s, id)}, par ${canal} — ${adresse}`,
@@ -283,6 +321,11 @@ for (const id of cibles) {
   writeOut(p, md.join('\n'));
   const muettes = src.filter(x => !dit(x)).length;
   console.log(`Relevé généré : ${p} (${src.length} source(s)${muettes ? `, dont ${muettes} sans contenu à relire` : ''}).`);
+  // Le fichier est écrit en français : c'est la version de référence, pas « le » relevé. L'avertissement
+  // va à l'agent et non dans le fichier — la personne au bout n'a pas à lire une consigne de travail.
+  if (langueDe(s, id) !== langueDuDossier(s)) {
+    console.log(['', ...CONTRAT_LANGUE(id, langueDe(s, id), 'RELEVÉ'), ''].join('\n'));
+  }
 }
 // Publier n'est pas transmettre : c'est l'utilisateur qui sait quand la personne a le document, et
 // l'agent ne décide pas d'un envoi à sa place.

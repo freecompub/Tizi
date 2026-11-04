@@ -27,7 +27,11 @@ phase_log: []            # une porte franchie, une entrée — `phase` dit la ph
 #    date: ""            # AAAA-MM-JJ
 #    decided_by: SH-02   # qui a tranché — déclaré par l'utilisateur, jamais déduit
 #    source: SRC-080     # la source qui porte la décision
-#    gate: ""            # l'état de la porte au passage, tel que status.mjs l'a dit : « 7 conditions sur 7 »
+#    gate: ""            # l'état de la porte au passage, RECOPIÉ tel que status.mjs l'a dit :
+#                          # « X condition(s) tenue(s) sur Y mesurée(s) ». Le compte se relit : Y moins X
+#                          # donne les conditions non tenues, et `waived` doit en nommer exactement
+#                          # autant (S124). C'était le seul champ de l'état que rien ne relisait — une
+#                          # phrase libre, qu'aucun script ne pouvait contredire
 #    waived: []          # conditions franchies par dérogation : - { condition: "", reason: "" }
 #    kind: porte         # porte (par défaut) | retour — un retour en arrière est un passage comme un
 #                        # autre, et il s'écrit dans le MÊME journal : `define_returns` ne valait que
@@ -76,6 +80,19 @@ stakeholders: []          # qui a parlé, et en quelle qualité — chaîné : r
 #  - id: SH-01
 #    name: ""
 #    role: ""              # sa FONCTION, telle qu'elle se présente : un fait qu'on demande
+#    personnes: 1          # combien de PERSONNES RÉELLES cette entrée vaut. Vide sur une entrée nommée :
+#                          # un nom désigne quelqu'un, donc une. À renseigner dès que l'entrée tient la
+#                          # place d'un groupe sans nom — « le ou les membres du bureau qui saisissent ».
+#                          # Au troisième dossier réel, SH-04 était exactement ça, et le point d'étape
+#                          # annonçait « 3 parties prenantes entendues sur 4 » : un compte d'ENTRÉES
+#                          # donné pour un compte de personnes, lu tel quel par la dimension
+#                          # `couverture` de la porte de synthèse. Sans nom et sans effectif, le total
+#                          # n'est plus une mesure mais un plancher, et il s'affiche « sur au moins N »
+#                          # (S122). Un nom reste mieux qu'un nombre : demande-le
+#    entendues: 0          # combien d'entre elles ont effectivement parlé. Inutile quand l'entrée vaut
+#                          # une personne : son `status` le dit déjà. Dès qu'elle en vaut plusieurs, le
+#                          # statut ne se divise pas — « interrogée » sur un groupe de cinq dont un seul
+#                          # a parlé fait compter cinq voix pour une (S123)
 #    represents: ""        # si elle parle au nom d'un groupe ou d'un absent : lequel. C'est une QUALITÉ,
 #                          # que tu déduis et fais corriger — un représentant ne remplace pas les vrais
 #                          # utilisateurs, et laisse ouverte une zone `persona_non_fonde` sur eux
