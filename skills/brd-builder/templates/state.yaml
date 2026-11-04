@@ -4,6 +4,16 @@ initiative:
   name: ""
   slug: ""
   trigger: ""            # pourquoi maintenant
+  requested_by: ""       # SH-xx : QUI a demandé cette initiative. Obligatoire dès qu'on écrit à
+                         # quelqu'un par un canal (`reach-out.mjs` refuse sans lui) : « je vous écris
+                         # à la demande de … » est la ligne qui rattache le message à ce dont on a
+                         # parlé à la personne, et c'est elle qui rend le contact légitime maintenant
+                         # que le consentement est du côté de l'utilisateur. Elle se lisait avant à
+                         # `request.requested_by` — un chemin qui n'existait dans aucun gabarit —, avec
+                         # un rattrapage par mot-clé sur les rôles : sur le dossier réel les deux
+                         # étaient muets, et la clause disparaissait sans trace. Ne la devine pas :
+                         # nommer la mauvaise personne lui fait dire qu'elle a demandé une démarche
+                         # dont elle n'a pas entendu parler
   derived_from: {}       # d'où elle vient, quand elle ne naît pas d'une demande mais d'une autre
                          # initiative. Renseigne `derived_from` à la création : `split_into` ne dit la
                          # filiation que vers le bas, et seulement depuis une mère close
@@ -141,14 +151,17 @@ stakeholders: []
 #                          # statut reste « non entendue », donc S94 et S83 continuent de dire que sa
 #                          # voix manque — un choix de notre part n'est pas une réussite du dossier.
 #                          # Et un refus est SA parole : consigne ses mots en source avant de l'écrire
-#    sollicitee_zone: ""   # LA zone d'ombre sur laquelle la question est partie : ZO-xxx. Avec
-#                          # `sollicitee_le` — les deux ou aucun (S115). Sans elle, au tour suivant,
-#                          # rien ne dit si sa réponse portait sur la question posée : le message de
-#                          # suite la remerciait d'avoir répondu puis reposait la même question, et
-#                          # finissait par demander à la personne de trancher à notre place. Avec
-#                          # elle, l'agent sait reprendre la question sans faire porter l'erreur à qui
-#                          # a répondu, et une relance repart sur LA question partie, pas sur celle que
-#                          # le classement remettrait en tête
+#    sollicitee_zone: ""   # LA ou LES zones d'ombre sur lesquelles les questions sont parties :
+#                          # `ZO-001`, ou `[ZO-001, ZO-034]` quand le message en portait plusieurs.
+#                          # Avec `sollicitee_le` — les deux ou aucun (S115). Sans elle, au tour
+#                          # suivant, rien ne dit si sa réponse portait sur la question posée : le
+#                          # message de suite la remerciait d'avoir répondu puis reposait la même
+#                          # question, et finissait par demander à la personne de trancher à notre
+#                          # place. Avec elle, l'agent sait reprendre la question sans faire porter
+#                          # l'erreur à qui a répondu, et une relance repart sur LES questions
+#                          # parties, pas sur celles que le classement remettrait en tête. La liste
+#                          # entière, pas seulement la première : une relance doit pouvoir reposer
+#                          # exactement ce qui a été posé
 #    status: à interroger  # à interroger | sollicitée | interrogée | non disponible. « interrogée »
 #                          # veut dire ENTENDUE AU MOINS UNE FOIS, pas « plus rien à lui demander » :
 #                          # la zone `partie_prenante_non_entendue` se ferme quand aucune zone ouverte

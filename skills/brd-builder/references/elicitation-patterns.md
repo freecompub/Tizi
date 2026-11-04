@@ -273,6 +273,38 @@ Avec elle, `reach-out.mjs` a **quatre** modes au lieu de trois, et le quatrième
 
 La **reprise** dit « je l'ai mal posée », pas « vous avez mal répondu », parce que c'est le cas de loin le plus probable : une question qu'on ne comprend pas est une question mal écrite. Et elle offre une sortie que rien n'offrait : *si ce n'est pas à vous qu'il faut la poser, dites-le moi* — une réponse qui ne répond pas veut parfois dire que la question n'était pas pour cette personne, et c'est une information précieuse sur la cartographie.
 
+**Combien de questions à la fois : ce n'est pas le canal qui le dit, c'est la dépendance entre les questions.** La règle d'une seule question par tour avait un motif unique — *la question suivante s'écrit à partir de la réponse à la précédente, et personne n'est là pour relancer entre les deux*. Ce motif ne vaut que pour l'**élicitation**. Une question qui précise ce que la personne a **déjà dit** ne dépend d'aucune autre réponse : « vous avez dit dix minutes par dossier — pour une famille nouvelle, ou qui revient ? » se répond seule, et dix comme elle coûtent moins à la personne en un message qu'en dix messages.
+
+Le dossier porte déjà la distinction, et personne ne la lisait : **`origin`**.
+
+| `origin` | Ce que c'est | Nombre |
+|---|---|---|
+| une source où **elle** parle | une **précision** de ses propres mots — indépendante | groupable |
+| un `council:`, un atelier, le cadrage | de l'**exploration** : sa réponse commandera la suivante | une à la fois |
+| une source où **quelqu'un d'autre** parle | lui demander de commenter la parole d'un tiers — pas une précision | une à la fois |
+
+Mesuré sur le troisième dossier réel avant d'écrire une ligne : **22 zones ouvertes adressées à quelqu'un, 15 précisions et 7 explorations** ; pour la personne la plus sollicitée, **10 précisions sur 18**. Et quatre des sept explorations venaient bien d'un `SRC-xxx` — celui de quelqu'un d'autre : le critère les sépare, là où « l'origine est une source » les aurait mélangées.
+
+Ce que le critère établit est l'**indépendance**, pas la brièveté. Une question née de ses mots peut rester ouverte et longue — « qu'est-ce que le papier empêche, au-delà des pertes ? » vient de sa source : elle ne dépend toujours d'aucune autre réponse, et c'est tout ce qu'il faut pour la grouper. La brièveté, elle, relève du canal.
+
+**Une première prise de contact ne peut jamais grouper**, et ce n'est pas une règle de plus : c'est une conséquence. Le mode `premiere` veut dire qu'aucune source ne porte la personne comme locutrice, donc qu'aucune zone ne peut être née de ses mots — chez quelqu'un qui n'a jamais parlé, **tout est exploration**. La liste n'existe qu'au deuxième tour, et la règle d'une seule question tient entière là où elle était justifiée. La **reprise** reste seule aussi : on s'excuse d'avoir mal posé *une* question, et y glisser des nouvelles brouillerait l'excuse.
+
+**Le canal gouverne la forme, et seulement la forme.** La table vit à côté de l'énumération `canal de contact`, pour qu'un canal ajouté ne puisse pas exister sans forme :
+
+| Canal | Objet | Place | Déclaration | Signaler | Trancher |
+|---|---|---|---|---|---|
+| courriel | oui | 5 questions | longue | 1 j | 5 j |
+| messagerie | non | 3 questions | courte | 1 j | 2 j |
+| téléphone, vive voix | — | pas de message | — | 1 j | 2 j / 5 j |
+
+Trois choses à en retenir. Un **canal inconnu** — un `autre:<libellé>`, un outil maison — prend la forme de la **messagerie** et non celle du courriel : la forme la plus étroite passe partout, alors qu'un objet collé dans un fil de discussion se voit tout de suite. Se tromper vers le court ne coûte rien, vers le long si. Le **téléphone et la vive voix ne portent pas de message** : ce sont des conversations, et une conversation se mène avec un guide d'entretien — huit à douze questions dans les mains d'un humain qui relance (`references/questions.md`) —, donc `reach-out.mjs` refuse plutôt que de rendre un texte à lire à voix haute. Et les **seuils suivent le canal** (`S117`) : cinq jours sans réponse à un courriel, c'est un courriel qu'on n'a pas lu ; cinq jours sans réponse à un message instantané, c'est un message qu'on a décidé de ne pas lire. Le même nombre y qualifie deux situations différentes, et c'était le même nombre. Ce que le dossier déclare — `relance` à la racine, `settings.relance` — l'emporte toujours : un réglage écrit est un choix, une table est un défaut.
+
+**Mettre la coordonnée dans `contacts.yaml` EST l'enregistrement du consentement.** C'est l'utilisateur qui l'obtient, pas l'agent : les personnes qu'on va joindre sont censées attendre le message, parce que quelqu'un leur en a parlé. Il n'y a donc **pas** de champ de consentement à cocher, et le message n'en demande pas. Ce qui reste dans la déclaration n'en est pas : c'est ce que la personne a besoin de savoir pour lire ce qu'elle reçoit — **qui écrit** (un agent, et le compte d'envoi porte peut-être un nom de personne), **au nom de qui**, **où va sa réponse**, et **qu'elle peut s'arrêter**. Quatre éléments, qui tiennent en quatre paragraphes sur un courriel et en deux sur une messagerie : seule la longueur change, jamais ce qui est dit. Une déclaration qui remplit l'écran d'un téléphone avant la première question ne se lit pas, et une déclaration qu'on ne lit pas ne vaut pas mieux qu'une déclaration absente.
+
+**`initiative.requested_by` est obligatoire, et c'est le défaut le plus coûteux qu'on ait trouvé.** « Je vous écris à la demande de … » est la ligne qui rattache le message à ce dont on a parlé à la personne, et c'est elle qui rend le contact légitime maintenant que le consentement est du côté de l'utilisateur. Elle se lisait à `request.requested_by` — **un chemin qui n'existe dans aucun des deux gabarits** —, avec un rattrapage par expression régulière sur les rôles, `/sponsor/i`. Sur le troisième dossier réel, le chemin était vide et aucun des quatre rôles ne contenait le mot : la clause **disparaissait sans trace**, et le message partait sans dire au nom de qui on écrit. Un champ absent du gabarit ne se remplit jamais, et un rattrapage par mot-clé sur un rôle écrit en français libre est un tirage au sort. `reach-out.mjs` refuse désormais de composer sans lui — et **ne le devine pas** : nommer la mauvaise personne comme commanditaire lui fait dire qu'elle a demandé une démarche dont elle n'a pas entendu parler.
+
+**`sollicitee_zone` porte la liste entière**, pas seulement la première : `ZO-001`, ou `[ZO-001, ZO-034]`. Une relance doit pouvoir reposer **exactement** ce qui a été posé, et une zone sur cinq ne le permettrait pas. `S115` vérifie chacune comme si elle était partie seule — elle existe, et elle est adressée à cette personne : grouper ne relâche aucun des deux contrôles.
+
 La **relance** repart désormais sur la question enregistrée. Avant, elle reprenait la mieux classée en supposant que c'était la même ; si une zone plus urgente était apparue entre-temps, la personne recevait une autre question **sous couvert de relance** — et croyait qu'on l'avait déjà interrogée là-dessus. Et si la question en vol n'est plus ouverte, le script refuse : l'état se contredit, et le dire vaut mieux qu'envoyer n'importe quoi.
 
 **Les signaux d'injection, et ce qu'ils ne voient pas.** `read-reply.mjs` signale sept formes qui se reconnaissent sans comprendre la langue : une surcharge de direction (`U+202D`, `U+202E`), un caractère invisible, une marque de rôle en début de ligne (`system:`, `assistant:`), un jeton de dialogue de modèle (`<|…|>`, `[INST]`), un bloc de code, un en-tête d'instruction. Il **ne nettoie rien** : on ne nettoie pas ce qu'une personne a dit, c'est ce qui se relit.

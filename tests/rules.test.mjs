@@ -1184,8 +1184,8 @@ test('la langue de la personne n\'est pas celle du dossier, et le script ne trad
     const d = tempDir('tizi-langue');
     writeFileSync(join(d, 'contacts.yaml'), 'SH-01: "nadia@exemple.fr"\n');
     writeFileSync(join(d, 'state.yaml'), yaml.dump({
-      document: 'brd', phase: 'discover', initiative: { name: 'Dématérialiser les inscriptions', slug: 'demat' },
-      request: { requested_by: 'SH-02' },
+      document: 'brd', phase: 'discover',
+      initiative: { name: 'Dématérialiser les inscriptions', slug: 'demat', requested_by: 'SH-02' },
       stakeholders: [
         { id: 'SH-01', name: 'Nadia', role: 'Agente', status: 'à interroger', joignable_par: 'courriel', end_user: true, power: 'faible', impact: 'fort', influence: 'positive', quadrant: 'consulter', ...shExtra },
         { id: 'SH-02', name: 'Karim', role: 'Sponsor', status: 'interrogée', power: 'fort', impact: 'fort', influence: 'positive', quadrant: 'impliquer' }],
@@ -1206,13 +1206,13 @@ test('la langue de la personne n\'est pas celle du dossier, et le script ne trad
   const arabe = lire(dossier({}, { langue: 'Arabe' }));
   assert.equal(arabe.langue, 'arabe', 'normalisé, pour qu\'« Arabe » et « arabe » ne soient pas deux langues');
   assert.equal(arabe.meme_langue, false);
-  assert.equal(arabe.obligatoire.length, 5, 'les cinq éléments d\'une première prise de contact');
+  assert.equal(arabe.obligatoire.length, 6, 'les six éléments d\'une première prise de contact — « au nom de qui » compris');
   // Et chaque élément porte SA RAISON : c'est ce qui permet de l'écrire dans une autre langue sans le
   // trahir. Une liste de phrases à traduire se trahit ; une liste d'intentions, non.
   for (const [quoi, pourquoi] of arabe.obligatoire) {
     assert.ok(quoi && pourquoi, `l'élément « ${quoi} » n'a pas de raison`);
   }
-  assert.match(arabe.obligatoire.map(x => x[0]).join(' | '), /qui écrit.*qu'elle est libre.*UNE question/);
+  assert.match(arabe.obligatoire.map(x => x[0]).join(' | '), /qui écrit.*au nom de qui.*qu'elle est libre.*UNE question/);
 
   // LA propriété qui prouve l'absence de couplage : un dossier en arabe dont une personne lit le
   // FRANÇAIS doit se comporter pareil. Si le français était privilégié quelque part, c'est ici que
@@ -1221,18 +1221,215 @@ test('la langue de la personne n\'est pas celle du dossier, et le script ne trad
   const inverse = lire(dossier({ langue: 'arabe' }, { langue: 'français' }));
   assert.equal(inverse.langue, 'français');
   assert.equal(inverse.meme_langue, false, 'le français n\'est pas un cas particulier');
-  assert.equal(inverse.obligatoire.length, 5);
+  assert.equal(inverse.obligatoire.length, 6);
 
   // Et les deux emplacements se lisent, la racine l'emportant comme pour tous les autres réglages.
   assert.equal(lire(dossier({ settings: { langue: 'arabe' } }, {})).meme_langue, true, 'sous settings');
   assert.equal(lire(dossier({ langue: 'anglais', settings: { langue: 'arabe' } }, { langue: 'anglais' })).meme_langue, true, 'la racine gagne');
 });
 
+// Ce qui gouverne le NOMBRE de questions dans un message : la dépendance entre elles, pas le canal.
+// Une question née de ce que la personne a déjà dit ne dépend d'aucune autre réponse — elle se groupe.
+// Une question née d'une analyse, d'un council, ou de la parole de quelqu'un d'AUTRE commande la
+// suivante — elle part seule. `origin` porte la distinction, et personne ne la lisait.
+// Mesuré sur le troisième dossier réel avant d'écrire la règle : 22 zones ouvertes adressées à
+// quelqu'un, 15 précisions et 7 explorations ; 10 précisions sur 18 pour la personne la plus
+// sollicitée. Ce test tient la propriété, le dossier a donné la proportion.
+test('le nombre de questions suit la dépendance, pas le canal', async () => {
+  const { execFileSync } = await import('node:child_process');
+  const { writeFileSync } = await import('node:fs');
+  // Nadia a parlé deux fois (SRC-001, SRC-002) ; Karim a parlé une fois (SRC-003). Les zones adressées
+  // à Nadia naissent tantôt de SES sources, tantôt d'un council, tantôt de la source de KARIM.
+  const dossier = ({ canal = 'courriel', zones, sh = {}, initiative = {}, muette = false } = {}) => {
+    const d = tempDir('tizi-groupe');
+    writeFileSync(join(d, 'contacts.yaml'), 'SH-01: "nadia@exemple.fr"\n');
+    writeFileSync(join(d, 'state.yaml'), yaml.dump({
+      document: 'brd', phase: 'discover',
+      initiative: { name: 'Dématérialiser les inscriptions', slug: 'demat', requested_by: 'SH-02', ...initiative },
+      stakeholders: [
+        { id: 'SH-01', name: 'Nadia', role: 'Agente', status: 'interrogée', joignable_par: canal, end_user: true, power: 'faible', impact: 'fort', influence: 'positive', quadrant: 'consulter', ...sh },
+        { id: 'SH-02', name: 'Karim', role: 'Directeur', status: 'interrogée', power: 'fort', impact: 'fort', influence: 'positive', quadrant: 'impliquer' }],
+      // `muette` enlève SES sources : c'est ce qui fait un mode `premiere`, et ce qui rend toute
+      // précision impossible — on ne précise pas ce que personne n'a dit.
+      sources: [
+        ...(muette ? [] : [
+          { id: 'SRC-001', type: 'entretien', date: ilYA(9), stakeholders: ['SH-01'], quote: 'Dix minutes par dossier.', feedback: 'confirmé' },
+          { id: 'SRC-002', type: 'entretien', date: ilYA(8), stakeholders: ['SH-01'], quote: 'Les relances partent le lundi.', feedback: 'confirmé' }]),
+        { id: 'SRC-003', type: 'entretien', date: ilYA(7), stakeholders: ['SH-02'], quote: 'C\'est une priorité.', feedback: 'confirmé' }],
+      shadow_zones: zones,
+    }));
+    return join(d, 'state.yaml');
+  };
+  // Les questions ne portent AUCUN identifiant : `refuseLesIdentifiants` refuserait de composer, et
+  // c'est voulu (S104 un cran plus loin). Un libellé en clair, numéroté à la main pour les distinguer.
+  const zone = (id, origin, extra = {}) => ({ id, type: 'attendu_implicite', origin, question: `Que se passe-t-il, cas ${id.slice(-2)} ?`, ask_to: 'SH-01', status: 'ouverte', related: [], ...extra });
+  const lire = (etat, ...extra) => JSON.parse(execFileSync('node', [join(SCRIPTS, 'reach-out.mjs'), etat, '--sh', 'SH-01', '--json', ...extra], { encoding: 'utf8' }));
+  const refus = (etat, ...extra) => {
+    try { execFileSync('node', [join(SCRIPTS, 'reach-out.mjs'), etat, '--sh', 'SH-01', '--json', ...extra], { encoding: 'utf8', stdio: 'pipe' }); }
+    catch (e) { return String(e.stderr || e.stdout || ''); }
+    assert.fail('le script aurait dû refuser');
+  };
+
+  // ── Le cas qui a motivé le changement : six précisions de ses propres mots.
+  const six = [zone('ZO-001', 'SRC-001'), zone('ZO-002', 'SRC-001'), zone('ZO-003', 'SRC-002'),
+    zone('ZO-004', 'SRC-002'), zone('ZO-005', 'SRC-001'), zone('ZO-006', 'SRC-002')];
+  const groupe = lire(dossier({ zones: six }));
+  assert.equal(groupe.mode, 'suite');
+  assert.equal(groupe.zones.length, 5, 'un courriel en porte cinq au plus — la place du canal, pas la dépendance');
+  assert.equal(groupe.gardees, 1, 'la sixième est gardée, et le message le dit');
+  assert.match(groupe.message, /6 autre\(s\)|1 autre\(s\) de la même sorte/);
+  assert.match(groupe.message, /^1\. Que se passe-t-il, cas 01 \?$/m, 'numérotées');
+  assert.match(groupe.message, /indépendantes les unes des autres/);
+  // Séparées par des lignes VIDES : en `format=flowed`, un retour simple est une coupure douce que
+  // certains clients recollent, et une liste dont les éléments fusionnent est illisible.
+  assert.match(groupe.message, /1\. Que se passe-t-il, cas 01 \?\n\n2\. /);
+
+  // ── Une zone née d'une analyse part SEULE, même entourée de précisions. Le classement d'impact la
+  // met en tête (`contradiction` pèse 5 contre 3), et sa réponse commandera la suivante.
+  const tete = lire(dossier({ zones: [zone('ZO-010', 'council:sceptique', { type: 'contradiction' }), ...six] }));
+  assert.deepEqual(tete.zones, ['ZO-010'], 'exploration en tête : une seule question');
+  assert.equal(tete.gardees, 0);
+  assert.match(tete.message, /Une seule question :/);
+
+  // ── Et la propriété la plus fine : un `SRC-xxx` qui n'est PAS d'elle n'est pas une précision. Sur le
+  // dossier réel, quatre des sept explorations venaient d'une source — celle de quelqu'un d'autre.
+  // Lui demander de commenter la parole d'un tiers n'est pas préciser la sienne.
+  const autrui = lire(dossier({ zones: [zone('ZO-020', 'SRC-001'), zone('ZO-021', 'SRC-003'), zone('ZO-022', 'SRC-003')] }));
+  assert.deepEqual(autrui.zones, ['ZO-020'], 'seule la zone née de SA source est groupée avec la tête');
+
+  // ── Une PREMIÈRE prise de contact ne peut jamais grouper, et ce n'est pas une règle de plus : c'est
+  // une conséquence. `premiere` veut dire qu'aucune source ne la porte comme locutrice, donc aucune
+  // zone ne peut être née de ses mots — chez quelqu'un qui n'a jamais parlé, tout est exploration.
+  const premiere = lire(dossier({ zones: six, muette: true, sh: { status: 'à interroger' } }));
+  assert.equal(premiere.mode, 'premiere');
+  assert.equal(premiere.zones.length, 1, 'rien à préciser chez quelqu\'un qui n\'a jamais parlé');
+  assert.match(premiere.message, /Une seule question :/);
+  // Et la déclaration entière y est, les quatre éléments : le consentement n'y est plus (la coordonnée
+  // dans `contacts.yaml` EST son enregistrement), ce qui reste est ce qu'elle doit savoir pour lire.
+  assert.match(premiere.message, /je suis un agent logiciel/i);
+  assert.match(premiere.message, /à la demande de Karim/);
+  assert.match(premiere.message, /vous pourrez relire/);
+  assert.match(premiere.message, /vous pouvez ne pas répondre/);
+  assert.equal(premiere.objet, 'Une question — Dématérialiser les inscriptions');
+
+  // ── La reprise reste seule : on s'excuse d'avoir mal posé UNE question, et y glisser des nouvelles
+  // brouillerait l'excuse. Elle a répondu après qu'on a écrit, et la zone posée est toujours ouverte.
+  const reprise = lire(dossier({ zones: six, sh: { sollicitee_le: ilYA(10), sollicitee_zone: 'ZO-001' } }));
+  assert.equal(reprise.mode, 'reprise');
+  assert.deepEqual(reprise.zones, ['ZO-001']);
+  assert.match(reprise.message, /je l'ai mal posée/);
+
+  // ── Le CANAL gouverne la forme, et seulement la forme.
+  const messagerie = lire(dossier({ canal: 'messagerie', zones: six }));
+  assert.equal(messagerie.zones.length, 3, 'un écran de téléphone n\'est pas une page');
+  assert.equal(messagerie.objet, null, 'une messagerie n\'a pas d\'objet — l\'y mettre pose un titre au milieu d\'un fil');
+  assert.equal(messagerie.forme.declaration, 'courte');
+  // Et le courriel, lui, porte bien un objet — celui du mode, et le même en relance qu'à la première
+  // fois, parce qu'une relance reste dans le même fil.
+  assert.equal(groupe.objet, 'Suite de notre échange — Dématérialiser les inscriptions');
+
+  // La déclaration ne s'écrit qu'à la PREMIÈRE prise de contact — après, la redire traiterait la
+  // personne en inconnue. C'est donc là que sa longueur se mesure, et ce qu'elle DIT ne change pas :
+  // les quatre éléments y sont, en deux paragraphes au lieu de quatre.
+  const courte = lire(dossier({ canal: 'messagerie', zones: six, muette: true, sh: { status: 'à interroger' } }));
+  assert.equal(courte.mode, 'premiere');
+  assert.ok(courte.message.length < premiere.message.length,
+    `la déclaration courte est plus courte (${courte.message.length} contre ${premiere.message.length})`);
+  for (const [quoi, motif] of [['qui écrit', /agent logiciel/i], ['au nom de qui', /à la demande de Karim/],
+    ['où va sa réponse', /dossier que vous relirez/], ['qu\'elle est libre', /vous pouvez ne pas répondre/i]]) {
+    assert.match(courte.message, motif, `la déclaration courte dit encore « ${quoi} »`);
+  }
+
+  // Un canal inconnu prend la forme de la MESSAGERIE, pas celle du courriel : la forme la plus étroite
+  // passe partout, un objet collé dans un fil de discussion se voit tout de suite.
+  const inconnu = lire(dossier({ canal: 'autre:Teams', zones: six }));
+  assert.equal(inconnu.objet, null);
+  assert.equal(inconnu.zones.length, 3);
+
+  // Ni le téléphone ni la vive voix ne portent de message : ce sont des conversations, et une
+  // conversation se mène avec un guide d'entretien. Le script refuse plutôt que de rendre un texte.
+  for (const parle of ['téléphone', 'vive voix']) {
+    assert.match(refus(dossier({ canal: parle, zones: six })), /n'est pas un canal d'écriture.*guide d'entretien/s, parle);
+  }
+
+  // Les seuils suivent le canal (S117) : cinq jours sans réponse à un courriel, c'est un courriel qu'on
+  // n'a pas lu ; cinq jours sans réponse à un message instantané, c'est un message qu'on a décidé de ne
+  // pas lire. Le même nombre y qualifie deux situations, et c'était le même nombre.
+  assert.deepEqual(seuilsRelance({}, 'courriel'), { signaler: 1, agir: 5 });
+  assert.deepEqual(seuilsRelance({}, 'messagerie'), { signaler: 1, agir: 2 });
+  assert.deepEqual(seuilsRelance({}), { signaler: 1, agir: 5 }, 'sans canal, le défaut ne change pas');
+  // Ce que le dossier déclare l'emporte sur ce que le canal suggère : un réglage écrit est un choix.
+  assert.deepEqual(seuilsRelance({ relance: { agir: 9 } }, 'messagerie'), { signaler: 1, agir: 9 });
+
+  // ── `initiative.requested_by` est obligatoire. Il se lisait à `request.requested_by`, un chemin qui
+  // n'existe dans AUCUN gabarit, avec un rattrapage par `/sponsor/i` sur les rôles : sur le dossier
+  // réel les deux étaient muets et la clause « à la demande de … » disparaissait sans trace.
+  assert.match(refus(dossier({ zones: six, initiative: { requested_by: '' } })), /`initiative\.requested_by` n'est pas renseigné/);
+  assert.match(refus(dossier({ zones: six, initiative: { requested_by: 'SH-77' } })), /ne désigne personne/);
+  // Et le rattrapage par mot-clé a disparu : un rôle qui contient « sponsor » ne suffit plus. Le
+  // deviner serait pire que l'omettre — nommer la mauvaise personne lui fait dire qu'elle a demandé
+  // une démarche dont elle n'a pas entendu parler.
+  assert.match(refus(dossier({ zones: six, initiative: { requested_by: '' }, sh: { role: 'Sponsor du projet' } })), /n'est pas renseigné/);
+
+  // ── Une question écrite SUR la personne, envoyée À cette personne. Trouvé sur le dossier réel, dans
+  // la question de tête du premier message groupé : « … Dédé l'affirme, le relevé ne la mentionne pas ».
+  // C'est juste, c'est utile, et c'est écrit pour l'index — lu dans sa boîte, ça dit « untel prétend »
+  // en face de lui. `refuseLesIdentifiants` attrape `SH-03`, pas un prénom.
+  const tiers = [{ ...zone('ZO-030', 'SRC-001'), question: 'Le formulaire porte-t-il une case ? Nadia l\'affirme, le document ne la mentionne pas.' }];
+  assert.match(refus(dossier({ zones: tiers })), /nomme « Nadia ».*à la troisième personne/s);
+  // Reformulée à la deuxième personne, elle passe : ce n'est pas la zone qu'on change, c'est la phrase.
+  const vous = [{ ...zone('ZO-030', 'SRC-001'), question: 'Le formulaire porte-t-il une case ? Vous l\'affirmez, le document ne la mentionne pas.' }];
+  assert.deepEqual(lire(dossier({ zones: vous })).zones, ['ZO-030']);
+  // Un nom de moins de trois lettres ne se cherche pas : il attraperait des mots ordinaires.
+  const court = [{ ...zone('ZO-031', 'SRC-001'), question: 'Le maximum est-il atteint en juin ?' }];
+  assert.deepEqual(lire(dossier({ zones: court, sh: { name: 'Ma' } })).zones, ['ZO-031']);
+
+  // ── Et la phrase du doute s'accorde : elle ne sort que si rien n'enregistre ce qui est parti la fois
+  // d'avant, et au singulier elle disait « la même » devant cinq questions.
+  assert.match(groupe.message, /Si l'une d'elles est la même que la dernière fois/);
+  assert.match(tete.message, /Si c'est la même que la dernière fois/);
+  // Enregistrée, elle disparaît : la reprise est un mode à part, et le script n'a plus à demander à la
+  // personne un calcul qu'il peut faire lui-même.
+  assert.ok(!reprise.message.includes('Si c\'est la même que la dernière fois'));
+});
+
+// `sollicitee_zone` porte la liste entière quand plusieurs questions sont parties ensemble : une
+// relance doit pouvoir reposer EXACTEMENT ce qui a été posé, et une zone sur cinq ne le permettrait pas.
+// Les deux formes se lisent — `ZO-001` et `[ZO-001, ZO-034]` — et S115 vérifie chacune comme si elle
+// était partie seule : elle existe (S09), et elle est adressée à cette personne.
+test('S115 : une sollicitation peut porter plusieurs zones, et chacune se vérifie', () => {
+  const etat = sollicitee_zone => ({
+    document: 'brd', phase: 'discover',
+    stakeholders: [{ id: 'SH-01', name: 'Nadia', status: 'sollicitée', sollicitee_le: ilYA(1), sollicitee_zone, joignable_par: 'courriel', end_user: true, power: 'faible', impact: 'fort', influence: 'positive', quadrant: 'consulter' }],
+    shadow_zones: [
+      { id: 'ZO-001', type: 'attendu_implicite', question: 'A ?', ask_to: 'SH-01', status: 'ouverte' },
+      { id: 'ZO-002', type: 'attendu_implicite', question: 'B ?', ask_to: 'SH-01', status: 'ouverte' },
+      { id: 'ZO-003', type: 'attendu_implicite', question: 'C ?', ask_to: 'SH-02', status: 'ouverte' }],
+  });
+  const dits = (v, r) => checkState(etat(v)).filter(f => f.rule === r).map(f => f.message);
+
+  // Une liste de zones ouvertes et bien adressées : rien à dire.
+  assert.deepEqual(dits(['ZO-001', 'ZO-002'], 'S115'), []);
+  assert.deepEqual(dits(['ZO-001', 'ZO-002'], 'S09'), []);
+  // La forme au singulier continue de se lire : le champ est né comme ça, et les dossiers existants
+  // la portent. Élargir n'est pas remplacer.
+  assert.deepEqual(dits('ZO-001', 'S115'), []);
+
+  // Une zone de la liste qui n'existe pas : le constat la nomme, elle et pas la liste.
+  assert.match(dits(['ZO-001', 'ZO-099'], 'S09')[0], /sollicitée sur ZO-099, qui n'est pas une zone d'ombre/);
+  // Une zone adressée à quelqu'un d'AUTRE glissée dans le lot : sa réponse serait consignée comme si
+  // elle valait pour l'autre. Grouper ne relâche pas ce contrôle — c'est tout l'objet de S94.
+  assert.match(dits(['ZO-001', 'ZO-003'], 'S115')[0], /sollicitée sur ZO-003, qui est adressée à SH-02/);
+  // Et la liste sans date ne compte pour rien, en nommant tout ce qui est parti.
+  const avecListe = etat(['ZO-001', 'ZO-002']);
+  const sansDate = checkState({ ...avecListe, stakeholders: [{ ...avecListe.stakeholders[0], sollicitee_le: '' }] });
+  assert.match(sansDate.find(f => /sollicitee_zone/.test(f.message)).message, /`sollicitee_zone: ZO-001, ZO-002` sans date de départ/);
+});
+
 test('un message sortant ne parle qu\'en clair', () => {
   const brd = (extra = {}, zone = {}) => ({
     document: 'brd', phase: 'discover',
-    initiative: { name: 'Dématérialiser les inscriptions', slug: 'demat', trigger: 'priorité du directeur' },
-    request: { requested_by: 'SH-02' },
+    initiative: { name: 'Dématérialiser les inscriptions', slug: 'demat', trigger: 'priorité du directeur', requested_by: 'SH-02' },
     stakeholders: [
       { id: 'SH-01', name: 'Nadia', role: 'Agente d\'accueil', status: 'à interroger', joignable_par: 'courriel', end_user: true, power: 'faible', impact: 'fort', influence: 'positive', quadrant: 'consulter' },
       { id: 'SH-02', name: 'Karim', role: 'Sponsor', status: 'interrogée', power: 'fort', impact: 'fort', influence: 'positive', quadrant: 'impliquer' },

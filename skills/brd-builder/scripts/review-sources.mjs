@@ -19,7 +19,7 @@
 import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { arr, loadState, writeOut, fail, table, today, txt, shLabel, label } from './lib/common.mjs';
-import { feedbackEtat, sollicitationEtat, seuilsRelance, refsDans, RECUEIL_DE_PAROLE } from './lib/rules.mjs';
+import { feedbackEtat, sollicitationEtat, seuilsRelance, zonesSollicitees, refsDans, RECUEIL_DE_PAROLE } from './lib/rules.mjs';
 import { nomClair, nomInitiative, joindre, paragraphes, refuseLesIdentifiants, AVERTISSEMENT_COMPTE, N_ENVOIE_RIEN } from './lib/outgoing.mjs';
 
 const args = process.argv.slice(2);
@@ -63,14 +63,24 @@ if (args.includes('--etat')) {
     // partir. Entre les deux, on le SIGNALE — ça ne coûte rien et ça ne sort pas du dossier. Au-delà du
     // second, il faut TRANCHER, et c'est l'utilisateur qui tranche : relancer sort vers quelqu'un qui
     // n'a rien demandé. Le relevé qualifie donc chaque attente au lieu de se contenter de son âge.
-    const { signaler, agir } = seuilsRelance(s);
-    const etiquette = n => (n > agir ? 'À TRANCHER' : n >= signaler ? 'à signaler' : 'vient de partir');
-    console.log(`\n${sollicitees.length} personne(s) sollicitée(s) et sans réponse (seuils : signaler à ${signaler} j, trancher à ${agir} j) :`);
+    // Et les seuils dépendent du CANAL : cinq jours sans réponse à un courriel, c'est un courriel qu'on
+    // n'a pas lu ; cinq jours sans réponse à un message instantané, c'est un message qu'on a décidé de
+    // ne pas lire. Le relevé qualifie donc chaque attente avec l'horloge de son propre canal, et dit
+    // laquelle — sinon deux lignes voisines portant le même nombre de jours et deux étiquettes
+    // différentes passeraient pour une erreur.
+    const seuilsDe = sh => seuilsRelance(s, sh.joignable_par);
+    const etiquette = (n, sh) => {
+      const { signaler, agir } = seuilsDe(sh);
+      return n > agir ? 'À TRANCHER' : n >= signaler ? 'à signaler' : 'vient de partir';
+    };
+    console.log(`\n${sollicitees.length} personne(s) sollicitée(s) et sans réponse (les seuils suivent le canal) :`);
     for (const sh of [...sollicitees].sort((a, b) => jours(b.sollicitee_le) - jours(a.sollicitee_le))) {
       const n = jours(sh.sollicitee_le);
-      console.log(`  ${etiquette(n).padEnd(16)} ${shLabel(s, sh.id)} — ${n} j, par ${sh.joignable_par || 'canal non dit'}${sh.sollicitee_zone ? `, sur ${sh.sollicitee_zone}` : ', sans dire sur quoi'}`);
+      const { signaler, agir } = seuilsDe(sh);
+      const quoi = zonesSollicitees(sh);
+      console.log(`  ${etiquette(n, sh).padEnd(16)} ${shLabel(s, sh.id)} — ${n} j, par ${sh.joignable_par || 'canal non dit'} (signaler ${signaler} j, trancher ${agir} j)${quoi.length ? `, sur ${quoi.join(', ')}` : ', sans dire sur quoi'}`);
     }
-    const aTrancher = sollicitees.filter(sh => jours(sh.sollicitee_le) > agir).length;
+    const aTrancher = sollicitees.filter(sh => jours(sh.sollicitee_le) > seuilsDe(sh).agir).length;
     if (aTrancher) console.log(`  ${aTrancher} au-delà du seuil (S117) : attendre encore en le disant, relancer une fois (\`reach-out.mjs --relance\`), ou renoncer — \`non disponible\` avec son motif. Aucune horloge ne tourne : ce constat date de maintenant, pas du jour du seuil.`);
   }
   // Déclarées sollicitées sans date : elles ne comptent pour rien (S115), et personne ne les relancera
