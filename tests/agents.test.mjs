@@ -165,15 +165,25 @@ for (const target of ['claude', 'copilot', 'both']) test(`installation : cible $
   // événement était la même chose tant qu'un seul script y était branché. Depuis que la fin de tour
   // porte la capture de session ET le garde-fou de répétition, compter les entrées interdirait ce qui
   // est voulu : c'est la commande qui ne doit pas apparaître deux fois.
-  if (target !== 'copilot') {
-    const { hooks } = JSON.parse(readFileSync(join(proj, '.claude/settings.json'), 'utf8'));
+  //
+  // Et les DEUX cibles sont vérifiées au contenu, pas seulement Claude. Le défaut que ça rattrape :
+  // l'installation `--target copilot` dans un dépôt écrit ses hooks par un TROISIÈME chemin — ni le
+  // plugin, ni `.claude/settings.json` — et il avait été oublié en branchant le garde-fou. Le test ne
+  // regardait là que l'existence du fichier : il est passé au vert sur un hook absent.
+  const fichiers = [
+    ...(target !== 'copilot' ? [['.claude/settings.json', c => c.hooks]] : []),
+    ...(target !== 'claude' ? [['.github/hooks/tizi.json', c => c.hooks]] : []),
+  ];
+  for (const [chemin, dedans] of fichiers) {
+    const hooks = dedans(JSON.parse(readFileSync(join(proj, chemin), 'utf8')));
+    const commandesDe = l => (Array.isArray(l) ? l : [l]).flatMap(e => e.hooks ?? [e]).map(h => h.command);
     for (const [evenement, l] of Object.entries(hooks)) {
-      const commandes = l.flatMap(e => e.hooks ?? [e]).map(h => h.command);
-      assert.equal(new Set(commandes).size, commandes.length, `entrée de hook dupliquée sur ${evenement} : ${commandes.join(' · ')}`);
+      const commandes = commandesDe(l);
+      assert.equal(new Set(commandes).size, commandes.length, `${chemin} : entrée de hook dupliquée sur ${evenement} : ${commandes.join(' · ')}`);
     }
-    const finDeTour = (hooks.Stop ?? []).flatMap(e => e.hooks ?? [e]).map(h => h.command);
-    assert.equal(finDeTour.length, 2, 'la fin de tour porte la capture de session et le garde-fou de répétition');
-    assert.ok(finDeTour.some(c => c.includes('session-capture.mjs')) && finDeTour.some(c => c.includes('question-guard.mjs')), finDeTour.join(' · '));
+    const finDeTour = commandesDe(hooks.Stop ?? []);
+    assert.equal(finDeTour.length, 2, `${chemin} : la fin de tour porte la capture de session et le garde-fou de répétition`);
+    assert.ok(finDeTour.some(c => c.includes('session-capture.mjs')) && finDeTour.some(c => c.includes('question-guard.mjs')), `${chemin} : ${finDeTour.join(' · ')}`);
   }
   const ignore = readFileSync(join(proj, '.gitignore'), 'utf8').split('\n');
   assert.equal(ignore.filter(l => l === '.impl/').length, 1);
