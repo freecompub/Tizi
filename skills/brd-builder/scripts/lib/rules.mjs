@@ -488,11 +488,34 @@ const checkSources = (s, out, shs) => {
       }
     }
   }
+  // L'échappatoire « déjà dit par le statut, et S81 s'en charge » était fausse dans un cas, et c'est
+  // celui qui s'est produit. S81 parle d'une SOURCE attribuée à quelqu'un de non entendu ; quelqu'un
+  // qui n'est locuteur de rien n'est attribué à aucune source, donc S81 n'a rien à dire sur lui, et
+  // S87 s'effaçait devant une règle muette. Sur le deuxième dossier réel, Tom portait `à interroger`
+  // et figurait dans `present` des SIX sources du cadrage : locuteur d'aucune, et aucune des deux
+  // règles ne l'a signalé. Douze sources plus tard le dossier a franchi sa porte sur une seule voix,
+  // et c'est l'utilisateur qui a dû écrire « t'as posé aucune question, Samir représente les parents,
+  // Tom et Toto les profs ». Le statut `à interroger` explique un silence HORS de la salle ; dedans,
+  // il dit le contraire — la personne était là et personne ne lui a rien demandé.
+  //
+  // Le seuil est à deux présences, et pas à une : un premier échange où une personne ne parle pas est
+  // un échange, le tour de table nomme qui est là et quelqu'un répond. À partir du second, le dossier
+  // se construit devant quelqu'un qu'on n'interroge jamais. Les deux autres statuts de `NON_ENTENDU`
+  // gardent l'échappatoire entière, faute d'avoir été mesurés : `sollicitée` a sa question en vol, que
+  // S115 et S117 suivent, et `non disponible` son renoncement, que S116 et S83 portent.
+  const PRESENCES_MUETTES = 2;
   for (const p of presents) {
     if (locuteurs.has(p)) continue;
     const qui = shs.get(p);
-    if (qui && NON_ENTENDU.includes(qui.status)) continue;   // déjà dit par le statut, et S81 s'en charge
-    out.push({ rule: 'S87', id: p, message: `présent${qui?.name ? ` (${qui.name})` : ''} mais locuteur d'aucune source : être dans la pièce n'est pas avoir parlé, et le silence n'est pas un accord` });
+    const combien = arr(s.sources).filter(x => arr(x.present).includes(p)).length;
+    const aInterroger = qui?.status === 'à interroger' && combien >= PRESENCES_MUETTES;
+    if (qui && NON_ENTENDU.includes(qui.status) && !aInterroger) continue;
+    const nom = qui?.name ? ` (${qui.name})` : '';
+    if (aInterroger) {
+      out.push({ rule: 'S87', id: p, message: `présent${nom} sur ${combien} sources et locuteur d'aucune, avec le statut « à interroger » : ce statut explique un silence hors de la salle, pas dedans — la personne était là chaque fois et personne ne lui a rien demandé. Interroge-la, ou dis pourquoi sa voix ne compte pas ici` });
+    } else {
+      out.push({ rule: 'S87', id: p, message: `présent${nom} mais locuteur d'aucune source : être dans la pièce n'est pas avoir parlé, et le silence n'est pas un accord` });
+    }
   }
 };
 
@@ -1812,6 +1835,32 @@ export function contactFindings(s, contacts) {
       out.push({ rule: 'S114', id: sh.id, message: `déclarée joignable par « ${canal} », et \`contacts.yaml\` ne porte rien à son identifiant : le canal est annoncé, la coordonnée n'y est pas` });
     }
   }
+  // Le dossier peut écrire à quelqu'un, il a quelque chose à lui demander, et rien n'est jamais parti.
+  // Sur le deuxième dossier réel, l'utilisateur a donné l'adresse de Toto au deuxième message. L'agent a
+  // fait la moitié du travail, proprement : gabarit copié, adresse écrite dans `contacts.yaml`, ligne
+  // ajoutée au `.gitignore`, exclusion vérifiée, `joignable_par: courriel` posé sur la fiche. Puis plus
+  // rien — `reach-out.mjs` n'a pas été lancé une seule fois sur les trois sessions, et le statut est
+  // resté `à interroger`. Ce qui l'attendait s'il avait essayé, deux refus dans l'ordre : S126, rien
+  // n'autorise d'écrire, puis `initiative.requested_by` vide. Les deux sont justes et les deux se
+  // lèvent avec UNE question à l'utilisateur ; aucune n'a été posée. Le refus d'un script dit ce qui
+  // manque, il ne dit pas de renoncer.
+  //
+  // Les quatre conditions valent ensemble, et chacune retire une raison légitime de n'avoir rien
+  // envoyé : la forme du canal porte de l'écrit, donc l'agent peut composer lui-même ; la coordonnée
+  // est là, donc il sait où ; une zone d'ombre ouverte lui est adressée, donc il a quelque chose à
+  // demander ; et le statut n'est ni `sollicitée` ni `interrogée` ni `non disponible`, donc ce n'est ni
+  // une question en vol, ni une réponse reçue, ni un renoncement écrit. Ne rien savoir du canal d'une
+  // personne est un fait, pas une faute — c'est tout savoir et ne rien faire qui se reproche.
+  for (const sh of arr(s?.stakeholders)) {
+    if (sh.status !== 'à interroger') continue;
+    const canal = String(sh.joignable_par ?? '').trim();
+    if (!canal || !formeDuCanal(canal)?.ecrit) continue;
+    if (!contacts || !String(contacts[sh.id] ?? '').trim()) continue;
+    if (String(sh.sollicitee_le ?? '').trim() || zonesSollicitees(sh).length) continue;
+    const pour = arr(s?.shadow_zones).filter(z => z.status === 'ouverte' && z.ask_to === sh.id).map(z => z.id);
+    if (!pour.length) continue;
+    out.push({ rule: 'S127', id: sh.id, message: `joignable par « ${canal} », sa coordonnée est dans \`contacts.yaml\`, ${pour.length > 1 ? `${pour.length} questions ouvertes lui sont adressées` : 'une question ouverte lui est adressée'} (${pour.join(', ')}) — et aucune sollicitation n'est jamais partie. Tout ce qu'il faut pour écrire est là : \`reach-out.mjs --sh ${sh.id}\`. Si le script refuse, son refus nomme ce qui manque, et ce qui manque est une question à poser à l'utilisateur, pas une raison de renoncer` });
+  }
   for (const id of Object.keys(contacts ?? {})) {
     if (!arr(s?.stakeholders).some(sh => sh.id === id)) {
       out.push({ rule: 'S09', id, message: 'coordonnée dans `contacts.yaml` à un identifiant qui n\'est pas une partie prenante de l\'état : une coordonnée qui ne désigne personne ne sert à rien, et elle a pu être recopiée de travers' });
@@ -2229,6 +2278,7 @@ export const STRUCT_RULES = {
   S124: 'trace de porte dont le compte ne concorde pas avec ses dérogations',
   S125: 'sollicitation écrite inscrite sur la personne et pas sur la question',
   S126: 'contact parti sans que l\'autorisation de l\'utilisateur soit écrite',
+  S127: 'contact disponible, question en attente, et rien n\'est jamais parti',
   S01: 'objectif non mesurable', S02: 'exigence sans objectif', S03: 'exigence sans besoin sourcé', S04: 'exigence sans critère d\'acceptation',
   S05: 'priorité ou release manquante', S06: 'exigence sans origine', S07: 'Must sans scénario d\'erreur', S08: 'NFR incomplète',
   S09: 'référence inexistante', S10: 'référence vers un élément abandonné', S11: 'règle métier sans source', S12: 'règle sans niveau d\'application',
