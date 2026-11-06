@@ -1808,6 +1808,143 @@ export function relectureFindings(s) {
   return out;
 }
 
+// LES RENVOIS, LES DEUX FILS. Un état pointe vers ses propres éléments de deux manières. La première
+// est un CHAMP de renvoi — `source`, `sources`, `related`, `origin` —, lisible par une machine. La
+// seconde est écrite DANS la phrase : « Ressaisie annuelle : … (SRC-003, Dédé) ». Mesuré sur le
+// deuxième dossier réel : 136 renvois par champ, 58 en prose répartis dans treize champs différents,
+// et 37 de ces derniers nomment aussi le locuteur — une information que le champ de renvoi ne porte
+// pas à cet endroit.
+//
+// Ce qui a été trouvé en cherchant qui relit ces renvois : presque personne. Sur les ONZE manières
+// dont un BRD pointe vers une source, une seule était vérifiée — `business_rules[].sources[].ref`. Les
+// dix autres, éprouvées une par une en y mettant un `SRC-997` qui n'existe pas, ne disaient rien. Sur
+// ce dossier, 2 renvois sur 194 pointaient vers quelque chose dont l'existence avait été contrôlée.
+//
+// Le registre ne se code pas en dur : il se DÉDUIT des identifiants que l'état porte, groupés par
+// préfixe. C'est ce qui permet à la même règle de servir les quatre documents sans liste à tenir à
+// jour, et c'est ce qui tient les trois états — un préfixe dont l'état n'a aucun élément n'a pas de
+// registre, donc on ne conclut rien sur `BR-001` dans un BRD. Ne pas savoir n'est pas constater.
+export function registresDe(s) {
+  const par = new Map();
+  const voir = n => {
+    if (Array.isArray(n)) return n.forEach(voir);
+    if (!n || typeof n !== 'object') return;
+    const m = /^([A-Z]{1,4})-\d+$/.exec(String(n.id ?? '').trim());
+    if (m) { if (!par.has(m[1])) par.set(m[1], new Set()); par.get(m[1]).add(m[0]); }
+    for (const v of Object.values(n)) voir(v);
+  };
+  voir(s);
+  return par;
+}
+
+const ID_SEUL = /^([A-Z]{1,4})-\d+$/;
+// Les champs qui portent un renvoi, et rien d'autre. Un champ absent de cette liste est de la prose,
+// et c'est l'autre fil qui s'en occupe.
+const CHAMPS_DE_RENVOI = new Set(['source', 'sources', 'ref', 'origin', 'related', 'concerns',
+  'from_needs', 'objectives', 'business_rules', 'evidence', 'goals', 'journeys', 'decider',
+  'escalation', 'arbiter', 'ask_to', 'requested_by', 'decided_by', 'owner', 'represented_by',
+  'stakeholders', 'present', 'sollicitee_zone', 'zone', 'moved_to', 'related_to']);
+// Ce que les appels plus anciens relisent déjà, par `<collection>.<champ>`. Les y relire une seconde
+// fois donnerait deux constats pour un seul renvoi mort, et un lint qui se répète se lit moins.
+const DEJA_RELUS = new Set(['sources.stakeholders', 'sources.present', 'business_rules.sources',
+  'stakeholders.sollicitee_zone',
+  'candidate_needs.concerns', 'business_requirements.objectives', 'business_requirements.from_needs',
+  'business_requirements.business_rules', 'shadow_zones.arbiter', 'decision_rights.decider',
+  'decision_rights.escalation', 'metrics.goal', 'features.goals', 'features.journeys',
+  'functional_requirements.origin', 'data_entities.evidence']);
+
+// Un renvoi mort dans un champ de renvoi (S09). La valeur se lit sous trois formes, parce que les
+// gabarits en emploient trois : la chaîne nue (`source: SRC-003`), la liste de chaînes
+// (`related: [BC-002]`), et l'objet qui porte sa localisation (`sources: [{ ref: SRC-003, location:
+// "point 1" }]`). Un champ hétérogène — `related` porte des SRC, des ZO, des BC, des SH, des RG et des
+// DD sur le dossier réel — se résout par le préfixe de chaque identifiant, pas par une collection
+// décidée d'avance.
+export function renvoiFindings(s) {
+  const out = [];
+  const reg = registresDe(s);
+  const valeurs = v => (Array.isArray(v) ? v : [v]).flatMap(x => {
+    if (typeof x === 'string') return [x.trim()];
+    if (x && typeof x === 'object' && typeof x.ref === 'string') return [x.ref.trim()];
+    return [];
+  });
+  for (const [coll, liste] of Object.entries(s ?? {})) {
+    if (!Array.isArray(liste)) continue;
+    for (const el of liste) {
+      if (!el || typeof el !== 'object') continue;
+      for (const [champ, v] of Object.entries(el)) {
+        if (!CHAMPS_DE_RENVOI.has(champ) || DEJA_RELUS.has(`${coll}.${champ}`)) continue;
+        for (const ref of valeurs(v)) {
+          const m = ID_SEUL.exec(ref);
+          if (!m || !reg.has(m[1])) continue;        // ni un identifiant, ni un préfixe que l'état connaît
+          if (reg.get(m[1]).has(ref)) continue;
+          out.push({ rule: 'S09', id: el.id ?? coll, message: `\`${champ}\` renvoie vers ${ref}, qui n'existe pas dans l'état` });
+        }
+      }
+    }
+  }
+  return out;
+}
+
+// LE SECOND FIL : un identifiant écrit DANS la phrase (S128). Rien ne le relisait — un seul endroit
+// de tout le code lit un identifiant à l'intérieur d'un texte, `REPONDUE` sur `shadow_zones.resolution`,
+// et seulement comme un oui/non : « quelqu'un a répondu, donc quelqu'un a demandé ». Il ne résout
+// jamais QUELLE source. Un `(SRC-099, Dédé)` glissé dans le canevas du dossier réel ne changeait pas
+// une ligne du lint.
+//
+// Pourquoi ne pas interdire ce fil plutôt que le vérifier : il sert à quelqu'un qui lit le canevas
+// d'une traite, et il porte le NOM de qui a parlé, que le champ de renvoi n'a pas à cet endroit. Le
+// supprimer rendrait le document moins lisible pour gagner une cohérence que la règle tient autrement.
+//
+// La seconde moitié de la règle est la seule qui pouvait dériver en silence : « (SRC-003, Dédé) » est
+// une attribution recopiée à la main à côté du registre, et deux écritures de la même chose finissent
+// par se contredire. Mesuré avant d'écrire la règle : 37 attributions en prose sur le dossier réel,
+// 37 qui concordent. La règle verrouille donc une propriété VRAIE au moment où elle l'est, elle ne
+// répare pas un dégât — et c'est le bon moment pour la poser.
+//
+// La limite, écrite plutôt que cachée : un identifiant d'une AUTRE initiative cité en prose — la
+// décision d'une initiative mère, par exemple — se lit ici comme mort, puisque le registre est celui
+// de cet état. C'est à cela que sert la dérogation nommée, et c'est préférable au silence : une
+// citation qu'on ne peut pas résoudre est une citation que le lecteur ne peut pas suivre.
+const EN_PROSE = /\b([A-Z]{1,4})-\d+\b/g;
+const ATTRIBUTION = /\(([A-Z]{1,4}-\d+)\s*,\s*([^),]{2,40})\)/g;
+export function proseFindings(s) {
+  const out = [];
+  const reg = registresDe(s);
+  const noms = new Map(arr(s?.stakeholders).map(sh => [sh.id, String(sh.name ?? '').trim()]));
+  const srcs = new Map(arr(s?.sources).map(x => [x.id, x]));
+  const dit = (chemin, texte) => {
+    for (const m of texte.matchAll(EN_PROSE)) {
+      const [ref, prefixe] = [m[0], m[1]];
+      if (!reg.has(prefixe) || reg.get(prefixe).has(ref)) continue;
+      out.push({ rule: 'S128', id: chemin, message: `cite ${ref} dans son texte, et ${ref} n'existe pas dans l'état : un renvoi écrit dans la phrase se suit comme les autres, et celui-là ne mène nulle part` });
+    }
+    for (const m of texte.matchAll(ATTRIBUTION)) {
+      const [, ref, qui] = m;
+      const src = srcs.get(ref);
+      if (!src) continue;                       // déjà dit juste au-dessus, et une seule fois suffit
+      const parlants = arr(src.stakeholders);
+      if (!parlants.length) {
+        out.push({ rule: 'S128', id: chemin, message: `attribue ${ref} à « ${qui.trim()} » dans son texte, et ${ref} ne porte aucun locuteur (\`stakeholders\`) : le nom écrit à la main est la seule trace de qui a parlé, et rien ne le confirme` });
+        continue;
+      }
+      const attendus = parlants.map(p => noms.get(p) ?? p);
+      if (attendus.some(n => n && qui.trim().toLowerCase().includes(String(n).toLowerCase()))) continue;
+      out.push({ rule: 'S128', id: chemin, message: `attribue ${ref} à « ${qui.trim()} » dans son texte, quand le registre donne ${attendus.join(', ')} : la même parole est écrite deux fois, et les deux écritures se contredisent` });
+    }
+  };
+  const voir = (n, chemin) => {
+    if (typeof n === 'string') return dit(chemin, n);
+    if (Array.isArray(n)) return n.forEach(x => voir(x, chemin));
+    if (!n || typeof n !== 'object') return;
+    for (const [k, v] of Object.entries(n)) {
+      if (CHAMPS_DE_RENVOI.has(k)) continue;          // l'autre fil, et S09 s'en charge
+      voir(v, chemin ? `${chemin}.${k}` : k);
+    }
+  };
+  voir(s, '');
+  return out;
+}
+
 // Une coordonnée n'a rien à faire dans `state.yaml`. Ce fichier se commite, `freeze-version.mjs` en
 // fige une copie en lecture seule sous `versions/`, et d'une version figée rien ne se reprend : une
 // adresse écrite là y reste. Le champ dit donc par quoi la personne se joint ; l'adresse, le numéro ou
@@ -2243,7 +2380,7 @@ export function checkState(s, ctx = {}) {
     return [{ rule: 'S00', id: 'document', message: `document « ${doc} » : ce catalogue vérifie ${DOCUMENTS.join(', ')}, et rien d'autre — un état d'implémentation se vérifie avec pr-gate.mjs et trace-check.mjs, un état de tests avec release-matrix.mjs` }];
   }
   const base = doc === 'plan' ? checkPlan(s, refs) : doc === 'sad' ? checkSad(s) : doc === 'prd' ? checkPrd(s) : checkBrd(s);
-  const all = [...base, ...placeholderFindings(s), ...unsourcedNumberFindings(s), ...constitutionFindings(s, ctx.constitution), ...checklistFindings(s, ctx.checklists), ...interviewFindings(s, ctx.interviews), ...outgoingFindings(s, [...fichiersDe(ctx.interviews), ...fichiersDe(ctx.checklists)]), ...governanceFindings(s), ...coverageFindings(s, refs), ...phaseFindings(s), ...sourceContentFindings(s), ...confirmationFindings(s), ...contactFindings(s, ctx.contacts), ...sollicitationFindings(s), ...autorisationFindings(s), ...questionPoseeFindings(s), ...effectifFindings(s), ...riskFindings(s), ...understoodFindings(s), ...relectureFindings(s), ...handoffFindings(ctx.handoffs), ...upstreamFindings(s, refs), ...contextFindings(ctx.cards, s.settings?.context_budget)];
+  const all = [...base, ...placeholderFindings(s), ...unsourcedNumberFindings(s), ...constitutionFindings(s, ctx.constitution), ...checklistFindings(s, ctx.checklists), ...interviewFindings(s, ctx.interviews), ...outgoingFindings(s, [...fichiersDe(ctx.interviews), ...fichiersDe(ctx.checklists)]), ...governanceFindings(s), ...coverageFindings(s, refs), ...phaseFindings(s), ...sourceContentFindings(s), ...confirmationFindings(s), ...renvoiFindings(s), ...proseFindings(s), ...contactFindings(s, ctx.contacts), ...sollicitationFindings(s), ...autorisationFindings(s), ...questionPoseeFindings(s), ...effectifFindings(s), ...riskFindings(s), ...understoodFindings(s), ...relectureFindings(s), ...handoffFindings(ctx.handoffs), ...upstreamFindings(s, refs), ...contextFindings(ctx.cards, s.settings?.context_budget)];
   const idx = waiverIndex(s);
   return all.map(f => {
     const raison = idx.get(`${f.id}|${f.rule}`);
@@ -2279,6 +2416,7 @@ export const STRUCT_RULES = {
   S125: 'sollicitation écrite inscrite sur la personne et pas sur la question',
   S126: 'contact parti sans que l\'autorisation de l\'utilisateur soit écrite',
   S127: 'contact disponible, question en attente, et rien n\'est jamais parti',
+  S128: 'identifiant cité dans une phrase qui ne mène nulle part, ou attribution qui contredit le registre',
   S01: 'objectif non mesurable', S02: 'exigence sans objectif', S03: 'exigence sans besoin sourcé', S04: 'exigence sans critère d\'acceptation',
   S05: 'priorité ou release manquante', S06: 'exigence sans origine', S07: 'Must sans scénario d\'erreur', S08: 'NFR incomplète',
   S09: 'référence inexistante', S10: 'référence vers un élément abandonné', S11: 'règle métier sans source', S12: 'règle sans niveau d\'application',
