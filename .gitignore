@@ -9,3 +9,10 @@
 # Rapports de test : sortie locale, régénérée à chaque exécution des suites (impl/config.yaml).
 /reports/
 # Les dossiers .impl/ et .tizi/ de exemple/ sont des données de test : ils restent versionnés.
+
+# Ouvrages lus : non versionnés. Ce dépôt est public et ils sont sous droits ; ce qui se partage, ce
+# sont les notes de lecture (`documentation/notes-*.md`), qui sont une synthèse et non des extraits.
+# Le PDF du document de référence est une exception nommée : il a été retiré en attendant un réexport
+# depuis le Markdown vivant, et doit pouvoir revenir.
+/documentation/*.pdf
+!/documentation/Tizi - un SDLC agentique.pdf
