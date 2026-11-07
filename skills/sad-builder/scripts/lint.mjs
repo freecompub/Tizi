@@ -77,7 +77,7 @@ if (!args.includes('--json') && attente.length) {
 // rend la case vide visible. Les lignes évitent la forme `[Sxx]` à dessein : la signature des tests
 // dorés capture ce motif pour comparer les CONSTATS, et une abstention n'est pas un constat.
 if (!args.includes('--json')) {
-  const muettes = abstentions(state);
+  const muettes = abstentions(state, refs);
   if (muettes.length) {
     console.log(`\n${muettes.length} règle(s) non mesurée(s) — elles n'ont rien eu à lire :`);
     for (const f of muettes) console.log(`  \u2205 ${f.rule} — ${STRUCT_RULES[f.rule]} : ${f.message.replace(/^non mesurée : /, '')}`);

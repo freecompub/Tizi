@@ -42,6 +42,10 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
 
 | Piste | Date | Où |
 |---|---|---|
+| **Une règle hors de son réglage ne s'applique pas — elle n'est pas « non mesurée ».** Mesuré avant d'écrire, en faisant varier phase et cadence sur les mêmes données : **5 règles du BRD** changent de comportement selon la phase (`S04`, `S05`, `S65`, `S100`, `S113`) et **2 du plan** selon la cadence (`S48`, `S49`). Sept, pas des dizaines — la mesure a réduit la proposition d'un ordre de grandeur. `quand` déclare la condition : `vaut` en liste blanche, `sauf` en liste noire, chacune recopiant la forme que le code emploie. Effet sur `exemple/plan/flux` : **7 abstentions deviennent 1**, et la seule qui reste — `S59`, la mesure des outcomes — est celle qu'un projet au fil de l'eau peut remplir. Sur un BRD, `S04` et `S05` cessent de se dire non mesurées en Discover et Define, où elles ne valent pas | 7 novembre 2026 | `ce-que-lit-le-plan` |
+| **Le bruit permanent venait d'un silence accidentel dans le code.** Six règles d'itération — `S58`, `S75`, `S76`, `S77`, `S130` et `S48` — parcouraient `s.iterations`, vide en cadence `flux`, et se taisaient **par accident** plutôt que par décision : seule `S48` portait la condition. Une liaison unique, `const iterations = settings.cadence === 'flux' ? [] : arr(s.iterations)`, dit maintenant ce que les règles voulaient dire. Vérifié avant de changer qu'aucun état du dépôt n'a `cadence: flux` **avec** des itérations : la liaison ne retire donc aucun constat existant | 7 novembre 2026 | `ce-que-lit-le-plan` |
+| **Le test de correspondance a été étendu avant le `quand`, comme annoncé.** Il ne vérifiait que les lectures : un `quand` inventé aurait pu mentir sans que rien le dise. Il est désormais pris **des deux côtés** — dans son réglage la règle parle, hors de son réglage elle se tait — et il place d'abord l'état dans le réglage de la règle avant de la juger, sans quoi `S49` se faisait reprocher un silence qui n'était pas le sien. Il a attrapé trois erreurs de ma main dès le premier passage | 7 novembre 2026 | `ce-que-lit-le-plan` |
+| **Ce que lit le plan : 28 déclarations de plus, 56 sur 131.** Deuxième tranche, celle de `checkPlan`. Les 28 ont concordé avec le code du premier coup, vérifiées une à une sur le dossier réel. Un plan vide annonce désormais `S100` **et 28 règles non mesurées** ; `exemple/plan/demo` n'en a **aucune** — tout était mesurable ; et `exemple/plan/flux`, qui n'a pas d'itérations, en annonce **7**, au lieu de six règles d'itération silencieuses qu'on prenait pour satisfaites. Au passage, deux règles ne lisent pas l'état mais **les handoffs amont** — `S39` les releases du PRD, `S51` les mesures et les spikes de la conception : `abstentions()` prend donc les refs, et les chemins sous `refs.` les désignent. Le test de correspondance couvre maintenant **un dossier réel par document déclaré**, avec ses handoffs | 7 novembre 2026 | `ce-que-lit-le-plan` |
 | **Sur un état entièrement vide, 3 règles sur 131 parlaient.** Mesuré avant d'écrire : un BRD vide récolte `S65`, `S89` et `S100` ; un PRD, un SAD, un plan vides n'en récoltent qu'une, `S100`. Les 128 autres se taisaient, et rien ne distinguait ce silence d'un « tout va bien » — **un document où il n'y a rien passait pour un document presque propre**. En regardant le code, il n'y a pas deux silences mais **trois sortes de règle** : celles qui ont besoin d'une lecture pour parler, celles qui **constatent l'absence** (toujours mesurables dans leur phase), et les mixtes comme `S89`. `LECTURES` déclare ce que chaque règle lit, `abstentions()` rend les cases vides, et le lint les affiche : un BRD quasi vide annonce désormais 6 avertissements **et 26 règles non mesurées**, chacune nommant la collection absente. Première tranche : les 28 règles de `checkBrd` ; `NON_DECLAREES` tient les 103 autres, et un test exige que les deux listes couvrent **exactement** le registre — une règle neuve ne peut pas rester non classée | 7 novembre 2026 | `ne-pas-savoir-nest-pas-constater` |
 | **Le test a démenti une de mes déclarations avant que je l'écrive.** `S83` (« aucun utilisateur direct entendu ») paraissait constater une absence ; vidé `stakeholders`, elle se tait — elle a besoin de parties prenantes entendues pour parler. Ma propre mesure de l'état vide le disait déjà, S83 n'y figurait pas, et je l'avais mal lue. Le test qui compare chaque déclaration au comportement réel du code — vidée, la règle se tait, ou bien elle constate l'absence — est ce qui empêche cette table de dériver du catalogue qu'elle décrit, la faute exacte trouvée dans les documents d'exemple le même jour | 7 novembre 2026 | `ne-pas-savoir-nest-pas-constater` |
 | **Le livre reste dehors.** Le PDF d'*Essential Scrum* est resté non suivi tout le temps de la lecture, mais rien ne l'empêchait : un `git add -A` distrait l'emportait dans l'historique d'un dépôt **public**, et un ouvrage sous droits n'en sort plus. `/documentation/*.pdf` ferme la porte. Avec une **exception nommée** — `!/documentation/Tizi - un SDLC agentique.pdf` —, parce que le PDF du document de référence a été retiré en attendant un réexport depuis le Markdown vivant et doit pouvoir revenir : une règle qui bloquerait ce retour échangerait un risque contre un autre. Vérifié dans les deux sens avec `git check-ignore -v` : le livre est pris par la règle, le document de référence par la négation | 7 novembre 2026 | `le-livre-reste-dehors` |
@@ -526,6 +530,26 @@ règle, une fois qu'on aura des buts venus de vrais dossiers. Le but de l'exempl
 (autorisation du 7 novembre) : `Tirer parti des refus : le superviseur les consulte, les agents y sont
 formés` — un but, et ses deux élaborations nommées, qui sont exactement les deux tâches de IT-2
 (`TK-007`, le journal de la story US-005, et `TK-008`, la formation de `TR-01`).
+
+### Ce que `quand` ne tranche pas encore (7 novembre)
+
+La scène qui reste est celle d'un **BRD en Discover sans exigences métier**. Sept règles s'y annoncent
+« non mesurées », et c'est **vrai** : elles s'appliqueraient si des exigences existaient, elles n'ont
+simplement rien à lire. Mais à ce stade du chemin, c'est **normal** — les exigences s'écrivent en Define.
+Le même message s'affichera une phase plus loin, où il désignera un vrai trou.
+
+Mesuré : sur ces sept règles, **cinq** (`S02`, `S03`, `S63`, `S64`, `S84`) s'appliquent dès Discover.
+Ce n'est donc pas une question d'applicabilité et `quand` n'y répond pas. C'est une question sur ce que
+le document doit **contenir à cette phase** — et cette connaissance existe déjà ailleurs : les portes de
+phase et les seuils de couverture. D'ailleurs c'est exactement ce qui a parlé dans la scène du dossier en
+Define : « Objectifs servis par au moins une exigence : 0 % pour un seuil de 100 % ».
+
+Reste à mesurer, donc, avant de proposer quoi que ce soit : une abstention peut-elle citer la porte qui
+attend cette collection ? Je ne sais pas encore ce que ça coûte.
+
+Et le **quatrième verdict « sans objet »** reste écarté pour l'instant : avec sept règles concernées, un
+mot de plus dans un vocabulaire que les gens doivent apprendre coûte plus qu'il ne rapporte. Le chiffre
+décidera, une fois les 74 règles restantes déclarées.
 
 ## Écartées
 
