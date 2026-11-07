@@ -5,7 +5,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import yaml from '../skills/brd-builder/scripts/lib/vendor/js-yaml.mjs';
 import { tempDir, node } from './helpers.mjs';
-import { DOCUMENTS, STRUCT_RULES, TEXT_RULES, checkState, sollicitationEtat, seuilsRelance, refsDans, coverage, coverageFindings, coverageRows, evidenceOf, contextFindings, OUTILS, familleDe, formeDuCanal, connecteursDe } from '../skills/brd-builder/scripts/lib/rules.mjs';
+import { DOCUMENTS, STRUCT_RULES, TEXT_RULES, LECTURES, NON_DECLAREES, abstentions, checkState, sollicitationEtat, seuilsRelance, refsDans, coverage, coverageFindings, coverageRows, evidenceOf, contextFindings, OUTILS, familleDe, formeDuCanal, connecteursDe } from '../skills/brd-builder/scripts/lib/rules.mjs';
 import { gateConditions } from '../skills/brd-builder/scripts/lib/gates.mjs';
 import { shellWrittenPaths } from '../skills/brd-builder/scripts/lib/agent-io.mjs';
 import { buildExtract } from '../skills/brd-builder/scripts/lib/sessions.mjs';
@@ -2860,4 +2860,72 @@ test('un fragment cité dans une phrase ne casse pas son bloc de citation', () =
   assert.doesNotMatch(md, /caractère\(s\) de plus dans la transcription\._ »/, 'la marque de bloc est insérée dans une citation');
   // Et elle dit toujours qu'elle a coupé, sans couper en plein mot.
   assert.match(ligne, /d'un enfant… »/);
+});
+
+
+// ── « Je n'ai pas pu mesurer » ───────────────────────────────────────────────
+// Mesuré avant d'écrire : sur un état entièrement vide, **3 règles sur 131 parlent** (`S65`, `S89`,
+// `S100`). Les 128 autres se taisent, et rien ne distingue ce silence d'un « tout va bien » — un
+// document où il n'y a rien passe pour un document presque propre. `LECTURES` dit ce que chaque règle
+// a besoin de lire ; ces tests vérifient que la déclaration correspond **vraiment** au code, sans
+// quoi la table dériverait du catalogue qu'elle prétend décrire — la faute exacte trouvée dans les
+// documents d'exemple le 7 novembre.
+test('LECTURES et NON_DECLAREES couvrent le registre, exactement et sans doublon', () => {
+  const declarees = Object.keys(LECTURES);
+  assert.deepEqual(declarees.filter(r => NON_DECLAREES.includes(r)), [],
+    'une règle est à la fois déclarée et listée comme non déclarée');
+  const ordre = (a, b) => +a.slice(1) - +b.slice(1);
+  assert.deepEqual([...declarees, ...NON_DECLAREES].sort(ordre), Object.keys(STRUCT_RULES).sort(ordre),
+    'toute règle du registre doit être soit déclarée dans LECTURES, soit listée dans NON_DECLAREES : une règle neuve ne peut pas rester non classée');
+  for (const [r, d] of Object.entries(LECTURES)) {
+    assert.ok(DOCUMENTS.includes(d.doc), `${r} : document « ${d.doc} » hors catalogue`);
+    assert.ok(Array.isArray(d.lit) && d.lit.length, `${r} : il faut dire ce qu'elle lit`);
+  }
+});
+
+// Le test qui empêche la table de mentir, et qui a déjà servi : `S83` y était déclarée « constate une
+// absence », et la vérification l'a démentie — elle a besoin de parties prenantes entendues pour
+// parler. La mesure de l'état vide le disait déjà (S83 n'y figurait pas) ; je l'avais mal lue.
+test('ce que LECTURES déclare est ce que le code fait : vidée, la règle se tait — ou constate l\'absence', () => {
+  const reel = yaml.load(readFileSync(new URL('../exemple/brd/demo/state.yaml', import.meta.url).pathname, 'utf8'));
+  const vider = (s, chemins) => {
+    const c = JSON.parse(JSON.stringify(s));
+    for (const chemin of chemins) {
+      const parts = chemin.split('.');
+      const feuille = parts.pop();
+      const parent = parts.reduce((o, k) => (o && o[k]) || {}, c);
+      delete parent[feuille];
+    }
+    return c;
+  };
+  let verifiees = 0;
+  for (const [regle, d] of Object.entries(LECTURES)) {
+    if (d.doc !== 'brd') continue;
+    const parle = checkState(vider(reel, d.lit)).some(f => f.rule === regle);
+    if (d.absence) assert.ok(parle, `${regle} est déclarée « absence » : elle devrait parler quand ${d.lit.join(', ')} est vide`);
+    else assert.ok(!parle, `${regle} parle encore alors que ${d.lit.join(', ')} est vide : la déclaration ne dit pas tout ce qu'elle lit`);
+    verifiees++;
+  }
+  assert.equal(verifiees, 28, 'la première tranche déclare les 28 règles émises par checkBrd');
+});
+
+test('abstentions : un BRD vide rend 26 règles non mesurées, et dit pourquoi', () => {
+  const vide = { document: 'brd', phase: 'define' };
+  assert.deepEqual([...new Set(checkState(vide).map(f => f.rule))].sort(),
+    ['S100', 'S65', 'S89'], 'sur un état vide, seules les règles qui constatent une absence parlent');
+  const a = abstentions(vide);
+  assert.equal(a.length, 26, 'les 28 déclarées, moins les deux qui constatent une absence');
+  assert.ok(a.every(x => x.message.startsWith('non mesurée :')), 'le constat dit qu\'il ne constate rien');
+  assert.match(a.find(x => x.rule === 'S02').message, /`business_requirements` est vide/);
+
+  // Un tableau vide et un objet vide ne disent rien de plus qu'un champ absent.
+  assert.ok(abstentions({ document: 'brd', business_requirements: [] }).some(x => x.rule === 'S02'));
+  assert.ok(!abstentions({ document: 'brd', business_requirements: [{ id: 'BR-1' }] }).some(x => x.rule === 'S02'));
+
+  // Sur un dossier réel, presque tout est mesuré : ce qui reste le dit par son nom.
+  const reel = yaml.load(readFileSync(new URL('../exemple/brd/demo/state.yaml', import.meta.url).pathname, 'utf8'));
+  assert.deepEqual(abstentions(reel).map(x => x.rule).sort(), ['S86', 'S97']);
+
+  // Une règle du BRD n'est pas « non mesurée » sur un plan : elle ne s'y applique pas.
+  assert.deepEqual(abstentions({ document: 'plan', phase: 'schedule' }), []);
 });

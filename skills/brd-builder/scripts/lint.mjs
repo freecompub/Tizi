@@ -8,7 +8,7 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { loadState, fail, ingestedHandoffs } from './lib/common.mjs';
-import { checkState } from './lib/rules.mjs';
+import { checkState, abstentions, STRUCT_RULES } from './lib/rules.mjs';
 
 const args = process.argv.slice(2);
 const statePath = args.find(a => !a.startsWith('--') && !/^[A-Z]+-/.test(a));
@@ -70,4 +70,17 @@ if (!args.includes('--json') && attente.length) {
   console.log(`\n${attente.length} question(s) posée(s) et pas encore revenue(s) :`);
   for (const f of attente) console.log(`  … [${f.rule}] ${f.id} — ${f.message}`);
   console.log('  Ni tenues ni en échec : non mesurées. Relancer est un geste de l\'utilisateur, pas une correction du dossier.');
+}
+
+// Ne pas savoir n'est pas constater. Mesuré : sur un état entièrement vide, 3 règles sur 131 parlent —
+// les 128 autres se taisaient sans qu'on puisse distinguer ce silence d'un « tout va bien ». Ce bloc
+// rend la case vide visible. Les lignes évitent la forme `[Sxx]` à dessein : la signature des tests
+// dorés capture ce motif pour comparer les CONSTATS, et une abstention n'est pas un constat.
+if (!args.includes('--json')) {
+  const muettes = abstentions(state);
+  if (muettes.length) {
+    console.log(`\n${muettes.length} règle(s) non mesurée(s) — elles n'ont rien eu à lire :`);
+    for (const f of muettes) console.log(`  \u2205 ${f.rule} — ${STRUCT_RULES[f.rule]} : ${f.message.replace(/^non mesurée : /, '')}`);
+    console.log('  Ni vrai, ni faux : une case vide. L\'absence de constat ne vaut pas constat de conformité.');
+  }
 }
