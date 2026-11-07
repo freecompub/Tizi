@@ -2480,3 +2480,98 @@ export const STRUCT_RULES = {
   S63: 'exigence à source unique', S64: 'exigence sans source', S65: 'porte de synthèse', S66: 'exigence de transition incomplète', S67: 'exploration de concepts',
   S68: 'espace réservé resté', S69: 'chiffre sans source', S70: 'fiche de contexte trop longue', S71: 'ADR sans règle', S72: 'collision entre tâches', S73: 'comportement existant à préserver', S74: 'taille et risque calculé', S75: 'attention humaine dépassée', S76: 'tâche non finie sans décision', S77: 'action de rétrospective sans suivi', S78: 'voie rapide sans épopée', S79: 'constitution', S80: 'liste de contrôle de relecture', S81: 'source sans personne entendue', S82: 'métrique et objectif désaccordés', S83: 'aucun utilisateur direct entendu', S84: 'exigence jamais relue par la source', S85: 'motif EARS absent ou désaccordé', S86: 'provenance d\'initiative incomplète ou hors énumération', S87: 'présent sans avoir parlé', S88: 'valeur hors énumération ou « autre » sans libellé', S89: 'droit de décision sans décideur ou confirmé par lui-même', S90: 'décision rendue au nom de quelqu\'un qu\'on n\'a pas entendu', S91: 'locuteur absent de la salle qu\'il a fait parler', S92: 'quadrant d\'implication affirmé au lieu d\'être déduit', S93: 'influence inconnue à fort pouvoir, sans attitude notée', S94: 'représentation non déclarée, ou tenue pour une voix', S95: 'besoin sans porteur, ou porté par une voix jamais entendue', S96: 'guide d\'entretien pour quelqu\'un qui est dans la salle', S97: 'hypothèse à vérifier sans moyen de vérification', S98: 'relecteur ou approbateur jamais entendu', S99: 'cycle de revue sans échéance, ou retour non tranché',
 };
+
+// ── Ce qu'une règle a besoin de lire pour pouvoir parler ────────────────────
+//
+// Mesuré avant d'écrire, et le chiffre a décidé de la forme : sur un état entièrement vide,
+// **3 règles sur 131 parlent** (`S65`, `S89`, `S100` au BRD ; `S100` seule ailleurs). Les 128 autres
+// se taisent, et ce silence est indiscernable d'un « tout va bien » — un document où il n'y a rien
+// passe pour un document presque propre. C'est le trou qu'un audit de documents écrits ailleurs ne
+// peut pas combler sans cette table.
+//
+// En regardant le code plutôt qu'en le supposant, il n'y a pas deux silences mais **trois sortes de
+// règle** :
+//   `lit`           la ou les lectures dont la règle a besoin. Toutes vides → elle n'a **rien mesuré**.
+//   `absence: true` la règle **constate l'absence** : elle parle précisément quand la lecture est
+//                   vide, et reste donc mesurable dans sa phase. `S89` est mixte — elle parcourt
+//                   `decision_rights` et reproche en plus les domaines dus qui manquent.
+//   absente d'ici   pas encore classée : elle figure dans `NON_DECLAREES`, et un test l'exige.
+//
+// `doc` dit de quel document la règle relève : une règle du BRD n'est pas « non mesurée » sur un
+// plan, elle ne s'y applique pas. Première tranche : les 28 règles émises par `checkBrd`.
+export const LECTURES = {
+  S01: { doc: 'brd', lit: ['objectives'] },
+  S02: { doc: 'brd', lit: ['business_requirements'] },
+  S03: { doc: 'brd', lit: ['business_requirements'] },
+  S04: { doc: 'brd', lit: ['business_requirements'] },
+  S05: { doc: 'brd', lit: ['business_requirements'] },
+  S11: { doc: 'brd', lit: ['business_rules'] },
+  S12: { doc: 'brd', lit: ['business_rules'] },
+  S13: { doc: 'brd', lit: ['business_rules'] },
+  S14: { doc: 'brd', lit: ['shadow_zones'] },
+  S15: { doc: 'brd', lit: ['shadow_zones'] },
+  S16: { doc: 'brd', lit: ['shadow_zones'] },
+  S17: { doc: 'brd', lit: ['decisions'] },
+  S18: { doc: 'brd', lit: ['decisions'] },
+  S19: { doc: 'brd', lit: ['stakeholders'] },
+  S56: { doc: 'brd', lit: ['opportunity'] },
+  S63: { doc: 'brd', lit: ['business_requirements'] },
+  S64: { doc: 'brd', lit: ['business_requirements'] },
+  S65: { doc: 'brd', lit: ['synthesis_check'], absence: true },
+  S66: { doc: 'brd', lit: ['transition_requirements'] },
+  // `S83` paraissait constater une absence — « aucun utilisateur direct entendu » — mais la
+  // vérification l'a démentie : elle a besoin de parties prenantes entendues pour parler, et
+  // `stakeholders` vidée, elle se tait. La mesure de l'état vide le disait déjà, S83 n'y figurait pas.
+  S83: { doc: 'brd', lit: ['stakeholders'] },
+  S84: { doc: 'brd', lit: ['business_requirements'] },
+  S86: { doc: 'brd', lit: ['initiative.derived_from'] },
+  S89: { doc: 'brd', lit: ['decision_rights'], absence: true },
+  S92: { doc: 'brd', lit: ['stakeholders'] },
+  S93: { doc: 'brd', lit: ['stakeholders'] },
+  S95: { doc: 'brd', lit: ['candidate_needs'] },
+  S97: { doc: 'brd', lit: ['hypotheses'] },
+  S113: { doc: 'brd', lit: ['stakeholders'] },
+};
+
+// Les règles qui n'ont pas encore dit ce qu'elles lisent. La liste est explicite et doit rétrécir :
+// un test vérifie que `LECTURES` et celle-ci couvrent **exactement** le registre, de sorte qu'une
+// règle nouvelle ne puisse pas être ajoutée sans être classée dans l'une des deux.
+export const NON_DECLAREES = [
+  'S00', 'S06', 'S07', 'S08', 'S09', 'S10', 'S20', 'S21', 'S22', 'S23',
+  'S24', 'S25', 'S26', 'S27', 'S28', 'S29', 'S30', 'S31', 'S32', 'S33',
+  'S34', 'S35', 'S36', 'S37', 'S38', 'S39', 'S40', 'S41', 'S42', 'S43',
+  'S44', 'S45', 'S46', 'S47', 'S48', 'S49', 'S50', 'S51', 'S52', 'S53',
+  'S54', 'S55', 'S57', 'S58', 'S59', 'S60', 'S61', 'S62', 'S67', 'S68',
+  'S69', 'S70', 'S71', 'S72', 'S73', 'S74', 'S75', 'S76', 'S77', 'S78',
+  'S79', 'S80', 'S81', 'S82', 'S85', 'S87', 'S88', 'S90', 'S91', 'S94',
+  'S96', 'S98', 'S99', 'S100', 'S101', 'S102', 'S103', 'S104', 'S105', 'S106',
+  'S107', 'S108', 'S109', 'S110', 'S111', 'S112', 'S114', 'S115', 'S116', 'S117',
+  'S118', 'S119', 'S120', 'S121', 'S122', 'S123', 'S124', 'S125', 'S126', 'S127',
+  'S128', 'S129', 'S130',
+];
+
+// Une lecture est remplie si le chemin désigne quelque chose qui porte de l'information : un tableau
+// non vide, un objet qui a au moins une clé, ou une valeur écrite. Un tableau vide et un objet vide
+// ne disent rien — c'est tout l'objet de cette table.
+const lecture = (s, chemin) => chemin.split('.').reduce((o, k) => (o == null ? undefined : o[k]), s);
+const rempli = (s, chemin) => {
+  const v = lecture(s, chemin);
+  if (Array.isArray(v)) return v.length > 0;
+  if (v && typeof v === 'object') return Object.keys(v).length > 0;
+  return ecrit(v);
+};
+
+// Les règles qui, sur cet état, n'ont rien eu à lire. Ne pas savoir n'est pas constater : ce que cette
+// fonction rend est la troisième colonne d'un rapport — ni vrai, ni faux, mais **non mesuré, et
+// pourquoi**.
+export function abstentions(s) {
+  const doc = s?.document ?? 'brd';
+  return Object.entries(LECTURES)
+    .filter(([, d]) => d.doc === doc && !d.absence)
+    .filter(([, d]) => d.lit.every(p => !rempli(s, p)))
+    .map(([rule, d]) => ({
+      rule,
+      lit: [...d.lit],
+      message: `non mesurée : ${d.lit.map(p => `\`${p}\``).join(' et ')} ${d.lit.length > 1 ? 'sont vides' : 'est vide'}`,
+    }));
+}
