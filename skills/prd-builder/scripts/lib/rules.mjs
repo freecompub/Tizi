@@ -1169,6 +1169,13 @@ export function checkPlan(s, refs = {}) {
   const mapTasks = new Set(arr(prd.story_map).flatMap(a => arr(a.tasks).map(t => t.id)));
   const known = id => frsAll.size === 0 || frsAll.has(id);
   const stories = arr(s.stories).filter(live), tasks = arr(s.tasks).filter(live), examples = arr(s.examples).filter(live);
+  // Une règle d'itération dans un projet qui n'en a pas n'a pas de sens, et le code ne le disait que
+  // pour `S48`. Les cinq autres parcouraient `s.iterations` — vide en cadence `flux` — et se taisaient
+  // par accident plutôt que par décision : sur un plan au fil de l'eau, elles s'annonçaient « non
+  // mesurées » à chaque vérification, pour la vie du projet, sans jamais pouvoir devenir un constat.
+  // Mesuré avant de changer : aucun état du dépôt n'a `cadence: flux` AVEC des itérations, donc cette
+  // liaison ne retire aucun constat existant — elle dit ce que les règles voulaient dire.
+  const iterations = settings.cadence === 'flux' ? [] : arr(s.iterations);
   const storyIds = new Map(stories.map(x => [x.id, x])), taskIds = new Map(tasks.map(x => [x.id, x]));
   const sizeIdx = v => SIZE_ORDER.indexOf(v);
   const push = (x, kind, text) => checkText(kind, text, { waived: waivedOf(x) }).forEach(f => out.push({ ...f, id: x.id }));
@@ -1293,7 +1300,7 @@ export function checkPlan(s, refs = {}) {
     const r = riskSize(t, s, refs);
     if (Math.abs(SIZE_ORDER.indexOf(t.size) - SIZE_ORDER.indexOf(r.size)) >= 2) out.push({ rule: 'S74', id: t.id, message: `taille ${t.size} retenue, taille de risque calculée ${r.size} (${r.factors.map(([n, v]) => `${n} ${v}`).join(', ') || 'aucun facteur'}) : écart à justifier` });
   }
-  if (settings.attention_capacity) for (const it of arr(s.iterations).filter(i => !['terminé'].includes(i.status))) {
+  if (settings.attention_capacity) for (const it of iterations.filter(i => !['terminé'].includes(i.status))) {
     const load = tasks.filter(t => t.iteration === it.id && t.status !== 'abandonné').reduce((n, t) => n + plannedAttention(t, settings, riskSize(t, s, refs)), 0);
     if (load > settings.attention_capacity) out.push({ rule: 'S75', id: it.id, message: `attention humaine prévue ${load} min pour ${settings.attention_capacity} min disponibles : la relecture limitera le débit, pas les agents` });
   }
@@ -1318,7 +1325,7 @@ export function checkPlan(s, refs = {}) {
   // IT-2 vidé, le lint ne disait rien et la carte se rendait « IT-2 *(proposé)* — — ». Le but n'est
   // dû qu'une fois l'itération investie — des tâches posées, un engagement déclaré, ou l'itération
   // commencée. Une coquille future encore vide ne l'a pas : c'est le dernier moment responsable.
-  for (const it of arr(s.iterations)) {
+  for (const it of iterations) {
     if (ecrit(it.goal)) continue;
     const n = tasks.filter(t => t.iteration === it.id).length;
     const preuves = [
@@ -1330,7 +1337,7 @@ export function checkPlan(s, refs = {}) {
   }
   // Revues et releases (S58, S59)
   const todayStr = new Date().toISOString().slice(0, 10);
-  arr(s.iterations).forEach((it, i, all) => {
+  iterations.forEach((it, i, all) => {
     const ended = it.status === 'terminé' || (it.end && String(it.end).slice(0, 10) < todayStr);
     if (ended && !it.review?.team?.date) out.push({ rule: 'S58', id: it.id, message: `itération ${it.status === 'terminé' ? 'terminée' : 'dont la date de fin est passée'} sans sprint review (/tizi-sprint-review)` });
     if (!it.review?.team?.date) return;
@@ -1345,7 +1352,7 @@ export function checkPlan(s, refs = {}) {
     if (r.status === 'livrée' && r.outcome === 'a_mesurer' && !arr(r.observations).length) out.push({ rule: 'S59', id: r.release, message: 'release livrée sans observation des utilisateurs ni conclusion sur l\'outcome' });
   }
   if (settings.cadence !== 'flux') {
-    for (const it of arr(s.iterations)) {
+    for (const it of iterations) {
       const cap = it.capacity || settings.sprint?.capacity || 0;
       const load = tasks.filter(t => t.iteration === it.id).reduce((n, t) => n + (weights[t.size] ?? 0), 0);
       if (!cap) out.push({ rule: 'S48', id: it.id, message: 'itération sans capacité définie' });
@@ -2499,12 +2506,18 @@ export const STRUCT_RULES = {
 //
 // `doc` dit de quel document la règle relève : une règle du BRD n'est pas « non mesurée » sur un
 // plan, elle ne s'y applique pas. Première tranche : les 28 règles émises par `checkBrd`.
+// Six règles d'itération ne valent que si le projet travaille en itérations. La condition est dans le
+// code (`const iterations`), et la voici en clair : sans elle, un plan au fil de l'eau s'entendait dire
+// « non mesurée » six fois à chaque vérification, pour la vie du projet, sans que ça puisse jamais
+// devenir un constat. Une règle hors de son réglage n'est pas non mesurée : elle ne s'applique pas.
+const CADENCE_ITERATIVE = { chemin: 'settings.cadence', sauf: ['flux'] };
+
 export const LECTURES = {
   S01: { doc: 'brd', lit: ['objectives'] },
   S02: { doc: 'brd', lit: ['business_requirements'] },
   S03: { doc: 'brd', lit: ['business_requirements'] },
-  S04: { doc: 'brd', lit: ['business_requirements'] },
-  S05: { doc: 'brd', lit: ['business_requirements'] },
+  S04: { doc: 'brd', lit: ['business_requirements'], quand: { chemin: 'phase', sauf: ['assess', 'discover', 'define'] } },
+  S05: { doc: 'brd', lit: ['business_requirements'], quand: { chemin: 'phase', sauf: ['assess', 'discover', 'define'] } },
   S11: { doc: 'brd', lit: ['business_rules'] },
   S12: { doc: 'brd', lit: ['business_rules'] },
   S13: { doc: 'brd', lit: ['business_rules'] },
@@ -2517,7 +2530,7 @@ export const LECTURES = {
   S56: { doc: 'brd', lit: ['opportunity'] },
   S63: { doc: 'brd', lit: ['business_requirements'] },
   S64: { doc: 'brd', lit: ['business_requirements'] },
-  S65: { doc: 'brd', lit: ['synthesis_check'], absence: true },
+  S65: { doc: 'brd', lit: ['synthesis_check'], absence: true, quand: { chemin: 'phase', vaut: ['define', 'govern'] } },
   S66: { doc: 'brd', lit: ['transition_requirements'] },
   // `S83` paraissait constater une absence — « aucun utilisateur direct entendu » — mais la
   // vérification l'a démentie : elle a besoin de parties prenantes entendues pour parler, et
@@ -2530,7 +2543,7 @@ export const LECTURES = {
   S93: { doc: 'brd', lit: ['stakeholders'] },
   S95: { doc: 'brd', lit: ['candidate_needs'] },
   S97: { doc: 'brd', lit: ['hypotheses'] },
-  S113: { doc: 'brd', lit: ['stakeholders'] },
+  S113: { doc: 'brd', lit: ['stakeholders'], quand: { chemin: 'phase', vaut: ['define', 'govern'] } },
 
   // ── Le plan : les 28 règles de `checkPlan` qui se déclarent proprement ──
   // Deux y manquent à dessein, et `NON_DECLAREES` les garde : `S09` est émise depuis **dix** endroits
@@ -2547,25 +2560,28 @@ export const LECTURES = {
   S45: { doc: 'plan', lit: ['tasks'] },
   S46: { doc: 'plan', lit: ['tasks'] },
   S47: { doc: 'plan', lit: ['tasks'] },
-  S48: { doc: 'plan', lit: ['iterations'] },
+  S48: { doc: 'plan', lit: ['iterations'], quand: CADENCE_ITERATIVE },
+  // En cadence `flux`, c'est `S49` qui prend le relais : la limite d'encours remplace la capacité
+  // d'itération, et son absence est elle-même le constat.
+  S49: { doc: 'plan', lit: ['settings.flow.wip_limit'], absence: true, quand: { chemin: 'settings.cadence', vaut: ['flux'] } },
   S50: { doc: 'plan', lit: ['examples'] },
   // Les mesures, vérifications et spikes viennent de la conception et du PRD, pas du plan : ce que
   // `S51` lit est en amont, d'où les chemins sous `refs`.
   S51: { doc: 'plan', lit: ['refs.sad.security_measures', 'refs.sad.verifications', 'refs.sad.spikes', 'refs.prd.preserved_behaviors', 'refs.prd.transition_requirements'] },
   S52: { doc: 'plan', lit: ['stories'] },
-  S58: { doc: 'plan', lit: ['iterations'] },
+  S58: { doc: 'plan', lit: ['iterations'], quand: CADENCE_ITERATIVE },
   S59: { doc: 'plan', lit: ['release_tracking'] },
   S60: { doc: 'plan', lit: ['stories'] },
   S61: { doc: 'plan', lit: ['stories'] },
   S62: { doc: 'plan', lit: ['stories'] },
   S72: { doc: 'plan', lit: ['tasks'] },
   S74: { doc: 'plan', lit: ['tasks'] },
-  S75: { doc: 'plan', lit: ['iterations'] },
-  S76: { doc: 'plan', lit: ['iterations'] },
-  S77: { doc: 'plan', lit: ['iterations'] },
+  S75: { doc: 'plan', lit: ['iterations'], quand: CADENCE_ITERATIVE },
+  S76: { doc: 'plan', lit: ['iterations'], quand: CADENCE_ITERATIVE },
+  S77: { doc: 'plan', lit: ['iterations'], quand: CADENCE_ITERATIVE },
   S78: { doc: 'plan', lit: ['stories'] },
   S129: { doc: 'plan', lit: ['stories'] },
-  S130: { doc: 'plan', lit: ['iterations'] },
+  S130: { doc: 'plan', lit: ['iterations'], quand: CADENCE_ITERATIVE },
 };
 
 // Les règles qui n'ont pas encore dit ce qu'elles lisent. La liste est explicite et doit rétrécir :
@@ -2574,12 +2590,12 @@ export const LECTURES = {
 export const NON_DECLAREES = [
   'S00', 'S06', 'S07', 'S08', 'S09', 'S10', 'S20', 'S21', 'S22', 'S23',
   'S24', 'S25', 'S26', 'S27', 'S28', 'S29', 'S30', 'S31', 'S32', 'S33',
-  'S34', 'S35', 'S36', 'S49', 'S53', 'S54', 'S55', 'S57', 'S67', 'S68',
-  'S69', 'S70', 'S71', 'S73', 'S79', 'S80', 'S81', 'S82', 'S85', 'S87',
-  'S88', 'S90', 'S91', 'S94', 'S96', 'S98', 'S99', 'S100', 'S101', 'S102',
-  'S103', 'S104', 'S105', 'S106', 'S107', 'S108', 'S109', 'S110', 'S111', 'S112',
-  'S114', 'S115', 'S116', 'S117', 'S118', 'S119', 'S120', 'S121', 'S122', 'S123',
-  'S124', 'S125', 'S126', 'S127', 'S128',
+  'S34', 'S35', 'S36', 'S53', 'S54', 'S55', 'S57', 'S67', 'S68', 'S69',
+  'S70', 'S71', 'S73', 'S79', 'S80', 'S81', 'S82', 'S85', 'S87', 'S88',
+  'S90', 'S91', 'S94', 'S96', 'S98', 'S99', 'S100', 'S101', 'S102', 'S103',
+  'S104', 'S105', 'S106', 'S107', 'S108', 'S109', 'S110', 'S111', 'S112', 'S114',
+  'S115', 'S116', 'S117', 'S118', 'S119', 'S120', 'S121', 'S122', 'S123', 'S124',
+  'S125', 'S126', 'S127', 'S128',
 ];
 
 // Une lecture est remplie si le chemin désigne quelque chose qui porte de l'information : un tableau
@@ -2596,13 +2612,24 @@ const rempli = (s, chemin) => {
 // Les règles qui, sur cet état, n'ont rien eu à lire. Ne pas savoir n'est pas constater : ce que cette
 // fonction rend est la troisième colonne d'un rapport — ni vrai, ni faux, mais **non mesuré, et
 // pourquoi**.
+// Une règle hors de son réglage ou de sa phase n'est ni un constat ni une abstention : elle est hors
+// jeu, exactement comme une règle du BRD sur un plan. `vaut` est une liste blanche, `sauf` une liste
+// noire — chacune recopie la forme que le code emploie déjà, pour que le test puisse les confronter.
+export const applicable = (s, d) => {
+  if (!d?.quand) return true;
+  const v = lecture(s, d.quand.chemin);
+  if (d.quand.vaut) return d.quand.vaut.includes(v);
+  if (d.quand.sauf) return !d.quand.sauf.includes(v);
+  return true;
+};
+
 export function abstentions(s, refs = {}) {
   const doc = s?.document ?? 'brd';
   // Plusieurs règles du plan ne lisent pas l'état mais les handoffs amont — `S39` les releases du PRD,
   // `S51` les mesures et les spikes de la conception. Les chemins sous `refs` les désignent.
   const base = { ...s, refs };
   return Object.entries(LECTURES)
-    .filter(([, d]) => d.doc === doc && !d.absence)
+    .filter(([, d]) => d.doc === doc && !d.absence && applicable(s, d))
     .filter(([, d]) => d.lit.every(p => !rempli(base, p)))
     .map(([rule, d]) => ({
       rule,
