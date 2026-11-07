@@ -42,6 +42,9 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
 
 | Piste | Date | Où |
 |---|---|---|
+| **`S87` s'effaçait devant une règle muette.** Elle disait déjà qu'un présent locuteur d'aucune source n'a pas parlé, et se taisait sur trois statuts au motif que « le statut le disait déjà, et S81 s'en charge ». Pour `à interroger` c'était faux : `S81` parle d'une SOURCE attribuée à quelqu'un de non entendu, et qui n'est locuteur de rien n'est attribué à aucune source. Sur le deuxième dossier réel, Tom portait `à interroger` et figurait dans `present` des six sources du cadrage, locuteur d'aucune — les deux règles se sont tues, et c'est l'utilisateur qui a dû écrire « t'as posé aucune question ». Seuil à deux présences muettes : rejouée, la règle nomme Tom dès la deuxième source | 5 novembre 2026 | `le-present-muet-et-le-contact-jamais-parti` |
+| **S127 : un contact donné et jamais utilisé.** L'adresse de Toto a été donnée au deuxième message. La moitié du travail a été faite proprement — `contacts.yaml`, `.gitignore`, exclusion vérifiée, `joignable_par: courriel` —, puis `reach-out.mjs` n'a pas été lancé une seule fois sur les trois sessions. Ce qui l'attendait, mesuré : `S126` puis `requested_by` vide, deux refus justes qui se lèvent avec une question à l'utilisateur, et aucune n'a été posée. Quatre conditions qui valent ensemble, chacune retirant une raison légitime de n'avoir rien envoyé | 5 novembre 2026 | `le-present-muet-et-le-contact-jamais-parti` |
+| **Les deux défauts sont le même, et c'est le défaut 5.** L'agent sait qu'il manque quelque chose, l'écrit correctement, et n'en fait rien — il a même nommé le manque dans sa décision d'opportunité (« principalement d'une voix — Dédé ») et s'en est servi comme d'un risque à porter, au lieu de se tourner vers les deux personnes qu'il venait d'inscrire comme présentes. Les deux se détectent sans lire un transcript : la donnée était déjà dans l'état | 5 novembre 2026 | `le-present-muet-et-le-contact-jamais-parti` |
 | **Une entrée de la cartographie vaut un nombre de personnes, pas une.** Le point d'étape annonçait « 3 partie(s) prenante(s) entendue(s) sur 4 » sur le troisième dossier réel. Trois des quatre sont des personnes nommées ; la quatrième, SH-04, est « membre(s) du bureau assurant la saisie, non présent(s) au cadrage », sans nom — le dossier ignore s'ils sont un ou cinq. Un compte d'ENTRÉES donné pour un compte de personnes, lu tel quel par la dimension `couverture` de la porte de synthèse | 4 novembre 2026 | `une-partie-prenante-peut-valoir-plusieurs-personnes` |
 | **`personnes` et `entendues`**, et une entrée nommée n'écrit ni l'un ni l'autre : un nom désigne quelqu'un. Trois états comme partout — un nombre, zéro, ou non mesuré. Sans nom ni effectif, l'entrée ne vaut pas 1 par défaut : le total devient un plancher, s'annonce « sur au moins N », et les entrées qui l'empêchent se nomment sous la table | 4 novembre 2026 | `une-partie-prenante-peut-valoir-plusieurs-personnes` |
 | **S123 : un statut ne se divise pas.** « interrogée » sur un groupe de quatre dont un seul a parlé fait compter quatre voix pour une. S122 couvre l'autre moitié : l'entrée qui ne dit pas combien elle vaut, ou qui l'écrit de façon illisible — `Number('')` valait 0, et une entrée nommée et interrogée comptait alors pour zéro voix | 4 novembre 2026 | `une-partie-prenante-peut-valoir-plusieurs-personnes` |
@@ -332,6 +335,15 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
   18 sessions et 415 phrases interrogatives — est obtenue en **rejouant le passé**, pas en vivant des
   tours. Deux nombres suffiront, relevés sur un ou deux vrais entretiens : combien de fois il a parlé,
   et combien de fois il avait raison.
+
+  **Premier relevé, 5 novembre 2026 — le deuxième dossier réel.** Le hook rejoué tour par tour sur les
+  trois sessions du jour, en tronquant le transcript à chaque tour d'agent : **il a parlé 0 fois sur
+  49 tours**. Donc zéro fausse alerte en usage, ce qui était l'objection principale contre le passage
+  en bloquant. Mais il n'avait rien à attraper — 20 phrases interrogatives en tout, et aucun groupe de
+  répétition, même en relâchant le seuil à 0,55 et 3 mots communs. Le second nombre, combien de fois il
+  avait raison, reste donc **indéterminé** : il ne s'est jamais exprimé. Et 20 questions sur trois
+  sessions est mince — les quatre répétitions de la mesure d'origine venaient de sessions bien plus
+  longues. Un argument de moins contre le blocage, et la décision toujours ouverte.
 
   Et une troisième voie à ne pas oublier, qui est celle que je recommanderais ensuite : bloquer
   **seulement quand il est sûr** — zone d'ombre reconnue et `posee` vide —, et se contenter de prévenir

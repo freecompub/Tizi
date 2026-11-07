@@ -455,6 +455,26 @@ test('S87 : présent dans une source, locuteur d\'aucune', () => {
   assert.ok(!checkState(brd(vus, [{ id: 'SRC-001', type: 'cadrage', stakeholders: ['SH-01'], present: ['SH-03'] }]))
     .some(x => x.rule === 'S87' && x.id === 'SH-03'), 'le statut le disait déjà');
 
+  // Mais une seule fois, et pas six. S81 parle d'une SOURCE attribuée à quelqu'un de non entendu ; un
+  // présent qui n'est locuteur de rien n'est attribué à aucune source, donc S81 est muette elle aussi
+  // et S87 s'effaçait devant une règle qui n'avait rien à dire. Sur le deuxième dossier réel, Tom
+  // portait `à interroger` et figurait dans `present` des six sources du cadrage, locuteur d'aucune.
+  const deuxFois = [
+    { id: 'SRC-001', type: 'cadrage', stakeholders: ['SH-01'], present: ['SH-01', 'SH-03'] },
+    { id: 'SRC-002', type: 'entretien', stakeholders: ['SH-01'], present: ['SH-01', 'SH-03'] },
+  ];
+  const vu = checkState(brd(vus, deuxFois)).find(x => x.rule === 'S87' && x.id === 'SH-03');
+  assert.ok(vu, 'présent deux fois sans jamais parler, et le statut ne l\'explique plus');
+  assert.match(vu.message, /sur 2 sources/, 'le compte est ce qui distingue un échange d\'un dossier');
+  assert.match(vu.message, /hors de la salle, pas dedans/);
+  // Les deux autres statuts de `NON_ENTENDU` gardent l'échappatoire entière : ils n'ont pas été
+  // mesurés, et chacun a déjà son lecteur — S115 et S117 pour la question en vol, S116 et S83 pour
+  // le renoncement écrit.
+  for (const status of ['sollicitée', 'non disponible']) {
+    const autre = [sh('SH-01'), sh('SH-02'), sh('SH-03', { status, sollicitee_le: '2026-01-02', joignable_par: 'courriel', sollicitee_zone: 'ZO-1', indisponible_motif: 'sans réponse' })];
+    assert.ok(!checkState(brd(autre, deuxFois)).some(x => x.rule === 'S87' && x.id === 'SH-03'), status);
+  }
+
   // Un présent inconnu du registre est une référence morte, comme un locuteur inconnu.
   assert.ok(codes(brd(vus, [{ id: 'SRC-001', type: 'cadrage', stakeholders: ['SH-01'], present: ['SH-99'] }])).includes('S09'));
 });
@@ -1777,6 +1797,50 @@ test('S115 : au deuxième tour, l\'attente se calcule au lieu de se déclarer', 
   assert.match(aveugle.find(f => f.rule === 'S115' && /ne porte de date/.test(f.message)).message, /aucune de ses 1 source\(s\) ne porte de date : on ne peut pas savoir si elle a répondu depuis/);
   // Et l'état ne prétend pas qu'une question vit : « on ne sait pas » n'est pas « elle attend ».
   assert.equal(sollicitationEtat(etat('2026-11-03', '').stakeholders[0], etat('2026-11-03', '').sources), 'fait');
+});
+
+// Le dossier peut écrire à quelqu'un, il a quelque chose à lui demander, et rien n'est jamais parti.
+// Sur le deuxième dossier réel, l'adresse de Toto a été donnée au deuxième message. L'agent a fait la
+// moitié du travail proprement — gabarit copié, adresse dans `contacts.yaml`, ligne au `.gitignore`,
+// exclusion vérifiée, `joignable_par: courriel` posé — puis `reach-out.mjs` n'a pas été lancé une
+// seule fois sur les trois sessions, et le statut est resté `à interroger`.
+test('S127 : tout est là pour écrire à quelqu\'un, et rien n\'est jamais parti', () => {
+  const etat = (sh, zones, contacts) => checkState({
+    document: 'brd', phase: 'discover',
+    stakeholders: [{ id: 'SH-04', name: 'Toto', status: 'à interroger', joignable_par: 'courriel', power: 'faible', impact: 'fort', influence: 'positive', quadrant: 'consulter', ...sh }],
+    shadow_zones: zones,
+  }, contacts === 'rien regardé' ? {} : { contacts });
+  const f = (d) => d.filter(x => x.rule === 'S127');
+  const ZO = [{ id: 'ZO-002', question: 'q', ask_to: 'SH-04', status: 'ouverte' }];
+  const CO = { 'SH-04': 'toto@exemple.fr' };
+
+  const vu = f(etat({}, ZO, CO));
+  assert.equal(vu.length, 1, 'les quatre conditions réunies, et la règle parle');
+  assert.equal(vu[0].id, 'SH-04');
+  assert.match(vu[0].message, /une question ouverte lui est adressée \(ZO-002\)/);
+  assert.match(vu[0].message, /reach-out\.mjs --sh SH-04/, 'le message dit quoi lancer');
+  assert.match(vu[0].message, /pas une raison de renoncer/, 'un refus de script nomme ce qui manque');
+  // Plusieurs questions : le pluriel se lit, et chacune est nommée.
+  assert.match(f(etat({}, [...ZO, { id: 'ZO-009', question: 'q', ask_to: 'SH-04', status: 'ouverte' }], CO))[0].message,
+    /2 questions ouvertes lui sont adressées \(ZO-002, ZO-009\)/);
+
+  // Chaque condition retire une raison légitime de n'avoir rien envoyé, et son absence suffit à taire
+  // la règle. Rien à demander : ne pas écrire est correct.
+  assert.deepEqual(f(etat({}, [{ id: 'ZO-002', question: 'q', ask_to: 'SH-04', status: 'levée', resolution: 'SRC-001' }], CO)), []);
+  assert.deepEqual(f(etat({}, [{ id: 'ZO-002', question: 'q', ask_to: 'SH-01', status: 'ouverte' }], CO)), []);
+  // Une question en vol, ou une réponse déjà reçue : S115 et S117 en parlent, pas celle-ci.
+  assert.deepEqual(f(etat({ status: 'sollicitée', sollicitee_le: '2026-01-02', sollicitee_zone: 'ZO-002' }, ZO, CO)), []);
+  assert.deepEqual(f(etat({ status: 'interrogée' }, ZO, CO)), []);
+  assert.deepEqual(f(etat({ sollicitee_le: '2026-01-02' }, ZO, CO)), []);
+  // Un canal qui ne porte pas d'écrit : l'agent ne peut rien composer lui-même.
+  assert.deepEqual(f(etat({ joignable_par: 'téléphone' }, ZO, CO)), []);
+  // Aucune coordonnée : c'est S114 qui le dit, et une seule règle à la fois.
+  assert.deepEqual(f(etat({}, ZO, null)), []);
+  assert.ok(etat({}, ZO, null).some(x => x.rule === 'S114'), 'une seule règle à la fois, et c\'est S114');
+  // Et les trois états de `contacts` : personne n'a regardé le disque, on ne conclut rien.
+  assert.deepEqual(f(etat({}, ZO, 'rien regardé')), []);
+  // Ne pas savoir joindre quelqu'un est un fait, pas une faute.
+  assert.deepEqual(f(etat({ joignable_par: '' }, ZO, CO)), []);
 });
 
 test('S114 : le canal est dans l\'état, la coordonnée est à côté et hors de git', () => {
