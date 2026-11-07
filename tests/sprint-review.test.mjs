@@ -111,10 +111,57 @@ test('export approuvé périmé par la sprint review : averti avant, expliqué a
   assert.match(doc, /Alice/);
   assert.match(doc, /relancer plan-operations\.mjs --target github/);
 
-  // Et le refus de l'exécuteur nomme désormais sa cause.
+  // Et le refus de l'exécuteur nomme désormais sa cause. Il la constate par l'empreinte que la clôture a
+  // journalisée, et non par une comparaison de dates : la revue est déclarée la veille de la préparation
+  // du plan — une équipe date sa revue du jour de fin du sprint et clôture le lendemain — et c'est
+  // précisément le cas que la comparaison ratait.
+  const ops = yaml.load(readFileSync(join(repo, 'plan/demo/exports/github/operations.yaml'), 'utf8'));
+  const ferme = yaml.load(readFileSync(sp, 'utf8'));
+  assert.equal(ferme.governance.backlog_sync.length, 1);
+  assert.equal(ferme.governance.backlog_sync[0].from_state_sha256, ops.plan.state_sha256, 'la trace porte l\'empreinte que l\'export cite');
+  assert.equal(ferme.governance.backlog_sync[0].iteration, 'IT-1');
+  assert.deepEqual(ferme.governance.backlog_sync[0].tasks, ['TK-002']);
+  assert.ok(String(ferme.iterations[0].review.team.date) < String(ops.generated), 'la revue est déclarée avant la préparation : sans la trace, les dates ne la voient pas');
   const apres = node(script('backlog-executor', 'apply-operations.mjs'), ['plan/demo/exports/github/operations.yaml', '--state', 'plan/demo/state.yaml', '--dry-run'], { cwd: repo });
   assert.notEqual(apres.code, 0);
   assert.match(apres.err, /plan périmé/);
-  assert.match(apres.err, /sprint review a été enregistrée depuis : IT-1/);
+  assert.match(apres.err, /La sprint review de IT-1, clôturée le \d{4}-\d{2}-\d{2}, a reporté 1 fusion dans le plan \(TK-002\)/);
   assert.match(apres.err, /aucune approbation ne se reporte d'un plan à l'autre/);
+
+  // Une trace qui ne correspond pas à l'empreinte de cet export prouve que la cause est ailleurs : le
+  // refus tient, et il ne nomme pas un coupable plausible à la place de la vraie cause.
+  const p3 = yaml.load(readFileSync(sp, 'utf8'));
+  p3.governance.backlog_sync[0].from_state_sha256 = 'f'.repeat(64);
+  writeFileSync(sp, yaml.dump(p3, { lineWidth: 120 }));
+  const ailleurs = node(script('backlog-executor', 'apply-operations.mjs'), ['plan/demo/exports/github/operations.yaml', '--state', 'plan/demo/state.yaml', '--dry-run'], { cwd: repo });
+  assert.notEqual(ailleurs.code, 0);
+  assert.match(ailleurs.err, /plan périmé/);
+  assert.doesNotMatch(ailleurs.err, /sprint review/i);
+});
+
+// Un état écrit avant le journal des reports n'a pas de trace. La déduction par dates y reste donc, parce
+// qu'elle est tout ce que cet état permet de dire — et elle ne dit rien de plus qu'une coïncidence de dates.
+test('export périmé sans journal de report : la cause est déduite des dates, faute de trace', () => {
+  const repo = join(sandbox(), 'repo');
+  const sp = join(repo, 'plan/demo/state.yaml');
+  const aujourdhui = new Date().toISOString().slice(0, 10);
+
+  const plan = yaml.load(readFileSync(sp, 'utf8'));
+  plan.governance.backlog_approvals = [];
+  writeFileSync(sp, yaml.dump(plan, { lineWidth: 120 }));
+  assert.equal(node(script('plan-builder', 'plan-operations.mjs'), ['plan/demo/state.yaml', '--target', 'github', '--offline'], { cwd: repo }).code, 0);
+  const sha = readFileSync(join(repo, 'plan/demo/exports/github/operations.yaml.sha256'), 'utf8').trim().split(/\s+/)[0];
+
+  // L'export est approuvé, puis une revue est déclarée aujourd'hui : l'état change, l'export est périmé,
+  // et aucun `backlog_sync` n'existe — rien n'a été journalisé par une clôture.
+  const p2 = yaml.load(readFileSync(sp, 'utf8'));
+  p2.governance.backlog_approvals = [{ target: 'github', sha256: sha, autonomy: 'manuel', ops: [], reviewed: [], declared_by: 'Alice', date: '2026-10-23' }];
+  p2.iterations[0].review.team.date = aujourdhui;
+  assert.equal(p2.governance.backlog_sync, undefined);
+  writeFileSync(sp, yaml.dump(p2, { lineWidth: 120 }));
+
+  const r = node(script('backlog-executor', 'apply-operations.mjs'), ['plan/demo/exports/github/operations.yaml', '--state', 'plan/demo/state.yaml', '--dry-run'], { cwd: repo });
+  assert.notEqual(r.code, 0);
+  assert.match(r.err, /plan périmé/);
+  assert.match(r.err, new RegExp(`sprint review a été enregistrée depuis : IT-1 le ${aujourdhui}`));
 });
