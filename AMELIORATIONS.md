@@ -42,6 +42,8 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
 
 | Piste | Date | Où |
 |---|---|---|
+| **Deux contraintes figées, et la qualité devient la variable (`S133`).** Deuxième des cinq grilles. Le tableau 18.1 de Rubin marque **non recommandées** deux des quatre combinaisons de contraintes, pour la même raison : « si on sur-contraint les trois, c'est la qualité qui devient la variable » — et c'est la seule des trois que personne ne déclare, donc elle cède en silence. Mesuré avant d'écrire, et **la mesure a trouvé mieux que ce que je cherchais** : le modèle porte DÉJÀ les deux dimensions. `window` (« la fenêtre où elle se joue, quand elle en a une : campagne, rentrée, échéance ») est dans le gabarit du PRD depuis le début et n'était lue par **personne**, comme `learning_goal` et `containment` ; la part de Must se calcule depuis `priority`. Rien ne les croisait. **Aucun champ nouveau** | 7 novembre 2026 | `la-qualite-devient-la-variable` |
+| **Une règle du pouce se lit, elle ne se contrôle pas.** Le même chapitre donne les 60 à 70 % de Must par release. `S133` ne s'en sert PAS comme seuil : elle ne constate que le cas où **rien ne peut céder** — une fenêtre à tenir et pas une exigence qui soit autre chose que Must. Un constat à 70 % rendrait des faux qu'on apprendrait à déroger, et une dérogation qu'on apprend à écrire désarme le contrôle sans laisser de trace. Deux cas du test le verrouillent, à 50 % et à 75 %, parce qu'un seuil à 70 % passait le premier et pas le second | 7 novembre 2026 | `la-qualite-devient-la-variable` |
 | **La Definition of Done est lue (`S131`), et confrontée aux NFR (`S132`).** Première des cinq grilles de l'étape 4. Mesuré avant d'écrire : `definition_of_done` est écrite dans les quatre plans du dépôt, apparaît dans les rendus et les handoffs, et **aucune des 131 règles ne la lisait** — aucune porte ne l'exigeait non plus. Un plan pouvait être figé, livré et revu sans jamais dire ce que « fini » veut dire. `S131` la réclame dès Schedule, pas avant : pendant le découpage son absence n'est pas un trou, c'est une étape pas encore faite. Les quatre plans en ont une, donc aucun constat existant ne bouge | 7 novembre 2026 | `la-definition-of-done-et-les-nfr` |
 | **La mesure a écarté le rapprochement évident, et c'est elle qui a trouvé la bonne question.** Rubin : chaque NFR est une cible de premier choix pour la DoD. Mais `stage` vaut `tests \| integration \| recette \| exploitation`, et **aucune de ces valeurs ne désigne l'incrément** : aucun champ ne permet de demander « cette NFR est-elle dans la DoD ? ». `S132` demande l'inverse, le seul cas qui compte : une NFR que **personne ne vérifiera** — aucune vérification de la conception ne la cible, et la DoD ne la cite pas. La citation se lit par le **second fil** (un identifiant écrit dans la phrase, « p95 sous 2 s (NFR-001) »), ce qui évite d'apparier deux textes libres : un contrôle de forme y aurait produit des faux constats qu'on aurait appris à déroger — « pire que pas de règle » | 7 novembre 2026 | `la-definition-of-done-et-les-nfr` |
 | **`audit-builder` : auditer un document écrit ailleurs.** Huitième skill, et le premier qui ne construit rien. Mesuré avant d'écrire, et la mesure a réduit le travail : je craignais qu'un document étranger récolte une avalanche de constats faute de porter les traces que Tizi tient de sa fabrication. Le BRD d'exemple privé de toute cette trace rend **32 constats et 26 règles non mesurables**, là où le même dossier complet en avait 2 — un document écrit ailleurs récolte des **abstentions**, pas des accusations. Et un backlog s'audite sans aucune trace Tizi : 18 constats avant, 18 après. Donc **aucune règle nouvelle** : ce qui manquait était le tri (`verdicts()` dans `rules.mjs`, quatre listes qui partitionnent le registre) et sa mise en page (`audit.mjs`, qui ne porte aucune grille — les grilles, ce sont les règles) | 7 novembre 2026 | `l-audit-d-un-document-ecrit-ailleurs` |
@@ -382,6 +384,22 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
   Et une troisième voie à ne pas oublier, qui est celle que je recommanderais ensuite : bloquer
   **seulement quand il est sûr** — zone d'ombre reconnue et `posee` vide —, et se contenter de prévenir
   dans les autres cas. Sur la mesure, **trois des quatre** répétitions tombaient dans ce cas sûr.
+- **La part de Must par release ne se lit nulle part.** `S133` ne constate que le cas extrême, à
+  dessein. Le nombre lui-même — la règle du pouce des 60-70 % — mériterait d'être **affiché** sans être
+  jugé, et le mécanisme existe déjà : `INDICATIF` dans `gates.mjs`, « cette mesure se lit, elle ne se
+  juge pas », que `coverageRows` rend en `_indicatif_`. Une métrique de couverture `must_share` au seuil
+  indicatif suffirait. Pas fait parce qu'elle ajoute une ligne à la table de couverture du PRD **et de
+  son handoff**, donc elle régénère deux documents d'`exemple/`, qui est figé par consigne.
+- **La combinaison « tout figé » du tableau 18.1 n'est pas contrôlée.** `S133` couvre la seconde ligne
+  non recommandée — périmètre + date. La première, les trois dimensions figées, demande la **capacité**,
+  qui vit dans le plan (`settings.sprint.capacity`, `iterations[].capacity`) et non dans le PRD. Le plan
+  reçoit les releases par `refs.prd.releases` : la règle y serait donc écrivable, et elle croiserait les
+  trois. À mesurer d'abord — aucun état du dépôt n'a de release avec fenêtre, donc il n'y a pas de corpus.
+- **Trois champs de release que personne ne lit**, trouvés en mesurant celle-ci : `learning_goal`
+  (« hypothèse principale testée ») et `containment` (« pilote, feature flag, cohorte… ») n'ont aucun
+  lecteur, et `window` n'en avait aucun avant `S133`. Le gabarit les propose, aucun état ne les remplit,
+  rien ne les réclame. Ce sont les trois champs qui portent l'apprentissage d'une release, c'est-à-dire
+  ce que Rubin appelle le `validated learning` : à décider s'ils doivent être lus ou retirés.
 - **Aucune étape de vérification ne désigne l'incrément.** `stage` vaut `tests`, `integration`,
   `recette` ou `exploitation` : les quatre sont en aval. Rubin demande que chaque NFR soit une cible de
   la Definition of Done, c'est-à-dire de ce qu'on fait à **chaque** incrément, et le modèle n'a pas de
@@ -547,7 +565,7 @@ prose.** Écrire le skill d'audit d'abord, c'est écrire ses grilles en Markdown
    jamais une approche contre une autre approche** ; et, du glossaire, « une règle peut être enfreinte
    quand la pragmatique de la situation l'exige » — un écart est une question, pas un défaut.
 4. **Une grille par PR ensuite**, chacune enrichissant l'audit du même coup : ✔ la Definition of Done
-   confrontée aux NFR (`S131`, `S132`, 7 novembre 2026) ; les contraintes de release (les deux combinaisons non recommandées, et la
+   confrontée aux NFR (`S131`, `S132`, 7 novembre 2026) ; ✔ les contraintes de release (`S133`, 7 novembre 2026) ; les contraintes de release (les deux combinaisons non recommandées, et la
    proportion de must-have rendue comme une **mesure** et non comme un reproche, parce que 60-70 % est
    une règle du pouce) ; DEEP au niveau du backlog ; le goulot de compétence ; le gâchis d'innovation.
 
