@@ -42,6 +42,8 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
 
 | Piste | Date | Où |
 |---|---|---|
+| **Le goulot de compétence : Tizi l'avait déjà, et le trou était ailleurs (`S135`).** Quatrième des cinq grilles. Rubin : un engagement de 150 h qui tient dans 140-197 h et qui est pourtant mauvais, parce qu'une seule personne sait faire l'IHM et n'a que 14-21 h — **un total qui tient ne dit rien de la ressource rare**. Mesuré : la ressource rare de Tizi n'est pas une compétence mais l'**attention humaine**, et `S75` la contrôle depuis longtemps (« la relecture limitera le débit, pas les agents »). Le trou venait de la FORME de la règle : `S75` est en forme d'itération, donc **au fil de l'eau personne ne regardait** — et la limite d'encours de `S49` compte des TÂCHES, ce qui est exactement le total qui tient. Une seule tâche XL confiée à un agent sature la relecture d'une semaine sans dépasser un encours de un. `S135` est le pendant de `S75` au fil de l'eau, sur l'unité du flux | 7 novembre 2026 | `l-attention-limite-aussi-le-fil-de-l-eau` |
+| **`positif` : un réglage dont zéro veut dire « non suivi ».** Troisième forme de condition, après `vaut`/`sauf` et `rempli`. `rempli` ne suffisait pas : `ecrit(0)` rend **vrai**, parce que « 0 » est une valeur écrite — et le modèle emploie 0 pour dire « non suivi » (`attention_capacity`, `sprint.capacity`). Du même coup, la déclaration de `S75` est **corrigée** : son garde n'était pas dit, et un projet qui a explicitement renoncé à suivre son attention s'entendait réclamer la mesure. Un plan vide passe donc de 35 abstentions à 34 | 7 novembre 2026 | `l-attention-limite-aussi-le-fil-de-l-eau` |
 | **DEEP a donné une règle et non quatre (`S134`), et c'est la mesure qui l'a décidé.** Troisième des cinq grilles. Des quatre lettres, une seule n'avait aucun lecteur. `E` (émergent) n'est pas un défaut qu'un état puisse constater — `iterations` et `replenishments` portent le renouvellement. `E` (estimé) ne peut pas se sur-investir : S, M, L, XL sont toutes aussi grossières, donc une taille posée tôt est exactement ce que Rubin demande. `P` a son véhicule, `game`, dont `S61` vérifie déjà l'ordre. Reste `D` : `S134` constate une story **affinée pour une autre release que celle du plan**. Écrire quatre règles pour quatre lettres aurait été recopier une grille au lieu de la mesurer | 7 novembre 2026 | `deep-un-backlog-trop-pret` |
 | **Le signe retenu coûte des heures, pas une minute.** `S134` ne se déclenche que sur l'**example mapping** — une session tenue avec le métier, le développement et le test, ou des règles écrites. Pas sur la taille ni sur le rang : ceux-là coûtent une minute et la grille les **réclame** à tous les horizons. C'est la distinction qui empêche la règle de reprocher précisément ce que DEEP demande, et une mutation du test le verrouille | 7 novembre 2026 | `deep-un-backlog-trop-pret` |
 | **Deux contraintes figées, et la qualité devient la variable (`S133`).** Deuxième des cinq grilles. Le tableau 18.1 de Rubin marque **non recommandées** deux des quatre combinaisons de contraintes, pour la même raison : « si on sur-contraint les trois, c'est la qualité qui devient la variable » — et c'est la seule des trois que personne ne déclare, donc elle cède en silence. Mesuré avant d'écrire, et **la mesure a trouvé mieux que ce que je cherchais** : le modèle porte DÉJÀ les deux dimensions. `window` (« la fenêtre où elle se joue, quand elle en a une : campagne, rentrée, échéance ») est dans le gabarit du PRD depuis le début et n'était lue par **personne**, comme `learning_goal` et `containment` ; la part de Must se calcule depuis `priority`. Rien ne les croisait. **Aucun champ nouveau** | 7 novembre 2026 | `la-qualite-devient-la-variable` |
@@ -386,6 +388,13 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
   Et une troisième voie à ne pas oublier, qui est celle que je recommanderais ensuite : bloquer
   **seulement quand il est sûr** — zone d'ombre reconnue et `posee` vide —, et se contenter de prévenir
   dans les autres cas. Sur la mesure, **trois des quatre** répétitions tombaient dans ce cas sûr.
+- **La capacité d'une personne nommée n'existe pas, et je ne l'ai pas inventée.** La version littérale
+  du goulot de Rubin — une personne, une spécialité, sa disponibilité — n'est pas exprimable : `assignee`
+  existe dans le gabarit du plan et n'a **qu'un seul lecteur**, `retro-evidence.mjs`, un rapport de
+  rétrospective. Aucune capacité par personne nulle part. L'inventer serait poser un modèle de personnes
+  — noms, spécialités, disponibilités — que Tizi n'a pas voulu, parce que dans son modèle le travail est
+  fait par des agents et le goulot est l'attention humaine. À rouvrir seulement si un dossier réel montre
+  que la compétence redevient le goulot.
 - **Le backlog n'a pas d'ordre, au-delà de `game`.** `P` de DEEP dit qu'il est improbable que tout le
   backlog soit priorisé, et la règle inverse — reprocher une sur-priorisation — n'est pas écrivable :
   `game` (ouverture, milieu, fin) donne trois classes, pas un rang, et `S61` en vérifie déjà le respect.
@@ -572,7 +581,7 @@ prose.** Écrire le skill d'audit d'abord, c'est écrire ses grilles en Markdown
    jamais une approche contre une autre approche** ; et, du glossaire, « une règle peut être enfreinte
    quand la pragmatique de la situation l'exige » — un écart est une question, pas un défaut.
 4. **Une grille par PR ensuite**, chacune enrichissant l'audit du même coup : ✔ la Definition of Done
-   confrontée aux NFR (`S131`, `S132`, 7 novembre 2026) ; ✔ les contraintes de release (`S133`, 7 novembre 2026) ; ✔ DEEP au niveau du backlog (`S134`, 7 novembre 2026) ; les contraintes de release (les deux combinaisons non recommandées, et la
+   confrontée aux NFR (`S131`, `S132`, 7 novembre 2026) ; ✔ les contraintes de release (`S133`, 7 novembre 2026) ; ✔ DEEP au niveau du backlog (`S134`, 7 novembre 2026) ; ✔ le goulot de compétence (`S135`, 7 novembre 2026) ; les contraintes de release (les deux combinaisons non recommandées, et la
    proportion de must-have rendue comme une **mesure** et non comme un reproche, parce que 60-70 % est
    une règle du pouce) ; DEEP au niveau du backlog ; le goulot de compétence ; le gâchis d'innovation.
 
