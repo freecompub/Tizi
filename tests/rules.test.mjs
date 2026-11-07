@@ -2557,6 +2557,58 @@ test('S129 : une story dit pour qui, quoi et pourquoi, où que ce soit sauf null
 // dépôt portent toutes le leur, et celui de IT-2 vidé, le lint ne disait rien et la carte se rendait
 // « ### IT-2 *(proposé)* — — ». Le but n'est dû qu'une fois l'itération investie : une coquille future
 // encore vide ne l'a pas, c'est le dernier moment responsable.
+// ── DEEP : le détail n'a pas à être uniforme (S134) ──────────────────────────
+// La grille de Rubin au niveau du BACKLOG, là où INVEST est au niveau de la story. Deux de ses quatre
+// lettres inversent l'intuition : `D` dit que le détail ne doit PAS être uniforme, et `P` qu'il est
+// improbable que tout le backlog soit priorisé — un backlog entièrement détaillé et entièrement
+// priorisé est un défaut, pas une qualité.
+//
+// Mesuré avant d'écrire, et la mesure a réduit la grille à UNE règle. `E` (émergent) n'est pas un
+// défaut qu'un état puisse constater ; `E` (estimé) ne peut pas se sur-investir, parce que S, M, L, XL
+// sont toutes aussi grossières — une taille posée tôt est exactement ce que Rubin demande ; `P` a son
+// véhicule, `game`, dont `S61` vérifie déjà l'ordre. Écrire quatre règles pour quatre lettres aurait
+// été recopier une grille au lieu de la mesurer.
+test('S134 : une story affinée pour plus tard, et ce qui ne se reproche pas', () => {
+  const story = o => ({ id: 'US-001', title: 'Bloquer', who: 'agente', what: 'être bloquée', why: 'ne pas transmettre',
+    map_task: 'T-01', frs: ['FR-001'], release: 'REL-2', size: 'M', ...o });
+  const plan = sts => ({ document: 'plan', phase: 'schedule', settings: { cadence: 'sprint', release: 'REL-1' }, stories: sts });
+  const parle = s => checkState(s).some(f => f.rule === 'S134');
+
+  // Une session tenue pour une release qui n'est pas celle du plan : des heures de trois personnes.
+  assert.ok(parle(plan([story({ example_map: { session: { date: '2026-10-21' } } })])));
+  // Des règles écrites, même sans session datée, sont le même investissement.
+  assert.ok(parle(plan([story({ example_map: { rules: [{ ref: 'RG-001', text: 'x' }] } })])));
+  // Ce qui coûte une minute et que la grille RÉCLAME ne se reproche pas : une taille, un rang.
+  assert.ok(!parle(plan([story({ size: 'L', game: 'milieu' })])), 'une taille et un rang posés d\'avance sont ce que DEEP demande');
+  assert.ok(!parle(plan([story({ example_map: {} })])), 'un bloc vide n\'est pas un investissement');
+  assert.ok(!parle(plan([story({ example_map: { session: { date: '   ' } } })])), 'une date blanche n\'est pas une session tenue');
+  // La story de la release en cours est celle qu'on DOIT affiner : jamais de reproche.
+  assert.ok(!parle(plan([story({ release: 'REL-1', example_map: { session: { date: '2026-10-21' }, rules: [{ ref: 'RG-001' }] } })])));
+  // Une story sans release ne dépasse aucun horizon.
+  assert.ok(!parle(plan([story({ release: undefined, example_map: { session: { date: '2026-10-21' } } })])));
+
+  // Un garde, pas une lecture : sans release en cours, il n'y a pas d'horizon à dépasser.
+  const sansHorizon = { ...plan([story({ example_map: { session: { date: '2026-10-21' } } })]), settings: { cadence: 'sprint' } };
+  assert.ok(!parle(sansHorizon), 'sans `settings.release`, la règle ne s\'applique pas');
+  assert.equal(applicable(sansHorizon, declarations('S134')[0]), false);
+  assert.equal(applicable(plan([]), declarations('S134')[0]), true);
+
+  // Le constat nomme l'investissement et ce qu'il coûte deux fois.
+  const m = checkState(plan([story({ example_map: { session: { date: '2026-10-21' }, rules: [{ ref: 'RG-001' }] } })])).find(f => f.rule === 'S134').message;
+  assert.match(m, /affinée pour REL-2 alors que le plan porte sur REL-1/);
+  assert.match(m, /session d'example mapping tenue le 2026-10-21, 1 règle écrite/);
+  assert.match(m, /ce qui est loin se décrit gros/);
+
+  // Et les deux plans du dépôt ne bougent pas : toutes leurs stories sont dans la release en cours.
+  for (const d of ['demo', 'flux']) {
+    const s = yaml.load(readFileSync(new URL(`../exemple/plan/${d}/state.yaml`, import.meta.url).pathname, 'utf8'));
+    const refs = yaml.load(readFileSync(new URL(`../exemple/plan/${d}/refs.yaml`, import.meta.url).pathname, 'utf8'));
+    assert.deepEqual(checkState(s, { refs }).filter(f => f.rule === 'S134'), []);
+    assert.ok(s.stories.every(x => x.release === s.settings.release),
+      `${d} : si une story part sur une autre release, ce test doit être relu`);
+  }
+});
+
 // ── Deux contraintes figées, et la qualité devient la variable (S133) ────────
 // Le tableau 18.1 de Rubin marque non recommandées deux des quatre combinaisons de contraintes : tout
 // figé, et périmètre + date figés. La raison est la même — « si on sur-contraint les trois, c'est la
@@ -3103,11 +3155,11 @@ test('ce que LECTURES déclare est ce que le code fait : vidée, la règle se ta
       }
     }
   }
-  // 151 déclarations pour 134 règles — quinze règles portent le même numéro dans deux documents, et
+  // 152 déclarations pour 135 règles — quinze règles portent le même numéro dans deux documents, et
   // `S10`, `S53`, `S54`, `S69`, `S79`, `S105`, `S108` lisent ailleurs selon le document. Chacune est
   // vérifiée document par document, d'où le compte : 18 déclarations transverses qui valent pour les
   // quatre, 24 qui nomment plusieurs documents, le reste un seul.
-  assert.equal(verifiees, 243, 'chaque déclaration est vérifiée sur chaque document qu\'elle vise');
+  assert.equal(verifiees, 244, 'chaque déclaration est vérifiée sur chaque document qu\'elle vise');
 });
 
 // Les quatorze règles qui ne lisent pas l'état mais ce qui vit à CÔTÉ de lui. Le test ci-dessus les
@@ -3184,7 +3236,7 @@ test('abstentions : les trois autres documents, et les lectures qui sont en amon
     assert.equal(abstentions(vide).length, combien, `${doc} : le compte des règles qui n'ont rien eu à lire`);
   }
   const vide = { document: 'plan', phase: 'schedule', settings: { cadence: 'sprint', release: 'REL-1' } };
-  assert.equal(abstentions(vide).length, 34, 'un plan vide en itérations');
+  assert.equal(abstentions(vide).length, 35, 'un plan vide en itérations');
   assert.equal(abstentions({ document: 'plan', phase: 'schedule', settings: { cadence: 'flux' } }).length, 28,
     'au fil de l\'eau, les six règles d\'itération ne s\'appliquent pas');
 

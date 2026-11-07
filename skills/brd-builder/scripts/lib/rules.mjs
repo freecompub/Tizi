@@ -1398,6 +1398,40 @@ export function checkPlan(s, refs = {}) {
     if (!tasks.some(t => arr(t.transition).includes(tr.id))) out.push({ rule: 'S51', id: tr.id, message: `exigence de transition (${tr.kind ?? '?'}) planifiée dans aucune tâche` });
   }
 
+  // ── Le détail n'a pas à être uniforme (S134) ──
+  // DEEP, la grille de Rubin au niveau du BACKLOG, là où INVEST est au niveau de la story. Deux de ses
+  // quatre lettres inversent l'intuition : `D` dit que le détail ne doit **pas** être uniforme — les
+  // éléments proches sont fins, les lointains grossiers — et `P` qu'il est improbable que tout le
+  // backlog soit priorisé. Un backlog entièrement détaillé et entièrement priorisé est un **défaut**,
+  // pas une qualité : c'est de l'effort dépensé sur ce qui va changer.
+  //
+  // Mesuré avant d'écrire, et la mesure a **réduit la grille à une seule règle**. Des quatre lettres :
+  //   `D` détail au-delà de l'horizon → rien ne le voyait, et c'est cette règle.
+  //   `E` émergent → `replenishments` et `iterations` portent le renouvellement ; un backlog qui ne
+  //       bouge pas n'est pas un défaut qu'un état puisse constater.
+  //   `E` estimé → les tailles de Tizi sont S, M, L, XL, toutes aussi grossières. Il n'y a donc pas de
+  //       précision à sur-investir : une taille posée tôt est exactement ce que Rubin demande.
+  //   `P` priorisé → `game` (ouverture, milieu, fin) porte l'ordre, et `S61` en vérifie déjà le respect.
+  // Écrire quatre règles pour quatre lettres aurait été recopier une grille au lieu de la mesurer.
+  //
+  // Le signe retenu est l'**example mapping** : une session avec le métier, le développement et le
+  // test, et des règles écrites. C'est des heures de trois personnes. Dépensées sur une story qui n'est
+  // pas dans la release en cours, c'est le défaut que `D` nomme — et il n'y a rien à reprocher à une
+  // taille ou à un rang posés d'avance, qui coûtent une minute et que la grille réclame.
+  if (ecrit(settings.release)) {
+    for (const st of stories) {
+      if (!ecrit(st.release) || st.release === settings.release) continue;
+      const session = st.example_map?.session?.date;
+      const regles = arr(st.example_map?.rules).length;
+      if (!ecrit(session) && !regles) continue;
+      const preuves = [
+        ecrit(session) ? `session d'example mapping tenue le ${session}` : '',
+        regles ? `${regles} règle${regles > 1 ? 's' : ''} écrite${regles > 1 ? 's' : ''}` : '',
+      ].filter(Boolean);
+      out.push({ rule: 'S134', id: st.id, message: `affinée pour ${st.release} alors que le plan porte sur ${settings.release} (${preuves.join(', ')}) : le détail d'un backlog n'a pas à être uniforme — ce qui est loin se décrit gros, parce qu'il changera avant d'être pris. Un example mapping est une heure du métier, du développement et du test ; la dépenser ici, c'est la dépenser deux fois` });
+    }
+  }
+
   // ── La Definition of Done, et ce qu'elle devrait rattraper (S131, S132) ──
   // « Opérer sans Definition of Done forte, c'est délivrer une licence d'accumuler de la dette »
   // (Rubin, *Essential Scrum*, ch. 4). Mesuré sur le dépôt avant d'écrire : `definition_of_done` est
@@ -2528,6 +2562,7 @@ export const STRUCT_RULES = {
   S130: 'itération investie sans but',
   S131: 'plan sans Definition of Done', S132: 'NFR que rien ne vérifiera',
   S133: 'périmètre et date figés tous les deux',
+  S134: 'détail dépensé au-delà de l\'horizon',
   S01: 'objectif non mesurable', S02: 'exigence sans objectif', S03: 'exigence sans besoin sourcé', S04: 'exigence sans critère d\'acceptation',
   S05: 'priorité ou release manquante', S06: 'exigence sans origine', S07: 'Must sans scénario d\'erreur', S08: 'NFR incomplète',
   S09: 'référence inexistante', S10: 'référence vers un élément abandonné', S11: 'règle métier sans source', S12: 'règle sans niveau d\'application',
@@ -2731,6 +2766,8 @@ export const LECTURES = {
   S132: { doc: 'plan', lit: ['refs.prd.non_functional'] },
   // Elle croise la fenêtre d'une release et la priorité de ses exigences : les deux sont dans l'état.
   S133: { doc: 'prd', lit: ['releases'] },
+  // Un garde, pas une lecture : sans release en cours, il n'y a pas d'horizon à dépasser.
+  S134: { doc: 'plan', lit: ['stories'], quand: { chemin: 'settings.release', rempli: true } },
 
   // ── Les règles transverses : elles tournent sur les quatre documents ──
   // `S00` refuse un document que ce catalogue ne sait pas vérifier. Elle n'a donc de déclaration pour
