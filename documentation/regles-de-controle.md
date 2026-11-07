@@ -1,8 +1,8 @@
 # Règles de contrôle, étape par étape
 
-**Ce document est généré par `doc-regles.mjs`. Ne le modifie pas à la main.** Une liste de 136 règles écrite à la main dérive au premier changement du catalogue, et une liste qui dérive est pire qu'une absence de liste : on la croit. Les énoncés ci-dessous sont ceux du catalogue (`skills/*/scripts/lib/rules.mjs`), les conditions de porte celles de `lib/gates.mjs`, les seuils ceux de `COVERAGE_DEFAULTS`. Pour le régénérer : `node doc-regles.mjs`. Pour vérifier qu'il est à jour : `node doc-regles.mjs --verifier`.
+**Ce document est généré par `doc-regles.mjs`. Ne le modifie pas à la main.** Une liste de 137 règles écrite à la main dérive au premier changement du catalogue, et une liste qui dérive est pire qu'une absence de liste : on la croit. Les énoncés ci-dessous sont ceux du catalogue (`skills/*/scripts/lib/rules.mjs`), les conditions de porte celles de `lib/gates.mjs`, les seuils ceux de `COVERAGE_DEFAULTS`. Pour le régénérer : `node doc-regles.mjs`. Pour vérifier qu'il est à jour : `node doc-regles.mjs --verifier`.
 
-Au total : **128 règles de structure** (`S00`–`S127`), **8 règles de rédaction** (`L01`–`L08`), **10 conditions** à la porte de PR, **10** à la porte de release, **6 garde-fous** d'export, et les conditions calculées des portes de phase des cinq documents à phases.
+Au total : **129 règles de structure** (`S00`–`S128`), **8 règles de rédaction** (`L01`–`L08`), **10 conditions** à la porte de PR, **10** à la porte de release, **6 garde-fous** d'export, et les conditions calculées des portes de phase des cinq documents à phases.
 
 ## Comment lire une règle
 
@@ -462,14 +462,14 @@ Calculée par `release-matrix.mjs` depuis le plan figé et les rapports collect�
 
 Une exigence non prouvée se corrige, ou s'assume par une dérogation dans `waivers` — qui ne compte que si elle dit **pourquoi** et **qui l'a approuvée**. Le catalogue de règles ne vérifie pas cette étape (`S00`) : un état de tests se vérifie avec `release-matrix.mjs`.
 
-## Règles de structure communes aux quatre documents (39)
+## Règles de structure communes aux quatre documents (40)
 
 Elles s'appliquent au BRD, au PRD, à la conception et au plan. Les étapes 5 et 6 ne reçoivent pas ce catalogue.
 
 | Code | Objet | Ce que dit le constat |
 |---|---|---|
 | `S00` | document hors du catalogue | document « … » : ce catalogue vérifie …, et rien d'autre — un état d'implémentation se vérifie avec pr-gate.mjs et trace-check.mjs, un état de tests avec release-matrix.mjs |
-| `S09` | référence inexistante | représentée par « … », qui n'est pas une partie prenante connue · représentation appuyée sur …, qui n'existe pas dans les sources · guide d'entretien pour …, qui n'est pas dans la cartographie · déclarée comme correction de …, qui n'existe pas dans les sources · coordonnée dans `contacts.yaml` à un identifiant qui n'est pas une partie prenante de l'état : une coordonnée qui ne désigne personne ne sert à rien, et elle a pu être recopiée de travers · sollicitée sur …, qui n'est pas une zone d'ombre de l'état · source déclarée comme confirmation de …, qui n'existe pas |
+| `S09` | référence inexistante | représentée par « … », qui n'est pas une partie prenante connue · représentation appuyée sur …, qui n'existe pas dans les sources · guide d'entretien pour …, qui n'est pas dans la cartographie · déclarée comme correction de …, qui n'existe pas dans les sources · `…` renvoie vers …, qui n'existe pas dans l'état · coordonnée dans `contacts.yaml` à un identifiant qui n'est pas une partie prenante de l'état : une coordonnée qui ne désigne personne ne sert à rien, et elle a pu être recopiée de travers · sollicitée sur …, qui n'est pas une zone d'ombre de l'état · source déclarée comme confirmation de …, qui n'existe pas |
 | `S53` | handoff amont altéré | empreinte du handoff non relevée à l'ingestion (lancer verify-handoff.mjs et reporter sha256 dans l'état) · handoff ingéré introuvable · le handoff a changé depuis l'ingestion : relancer l'ingestion et faire le point sur les écarts |
 | `S54` | seuil de couverture non atteint | … : … % pour un seuil de … % (manquent : …) ; corriger, ou déclarer une dérogation dans `waivers` avec sa raison et son approbateur |
 | `S68` | espace réservé resté | espace réservé resté dans … : « … » |
@@ -507,6 +507,7 @@ Elles s'appliquent au BRD, au PRD, à la conception et au plan. Les étapes 5 et
 | `S125` | sollicitation écrite inscrite sur la personne et pas sur la question | … porte `sollicitee_zone: …`…, et `posee` est vide : on a inscrit sur la personne ce qu'on n'a pas inscrit sur la question. Un passage par départ — `- { date: "AAAA-MM-JJ", canal: "…" }` —, sinon rien ne dit combien de fois celle-ci est partie, et une zone ouverte a l'air neuve |
 | `S126` | contact parti sans que l'autorisation de l'utilisateur soit écrite | autorisation n° … de `contact_autorise` sans dire par quel outil (`outil`) : autoriser « un contact » n'autorise rien de précis — un courriel n'est pas un WhatsApp sur un numéro personnel · autorisation d'écrire par « … » sans date lisible (`le`, AAAA-MM-JJ…) : une autorisation qu'on ne peut pas situer dans le temps ne se vérifie pas, et une décision invérifiable est une case cochée · sollicitée par « … » sans que rien n'autorise de lui écrire par cet outil (`contact_autorise`) : l'option est celle de l'utilisateur, pas celle de la personne au bout, qui n'a rien choisi. Sa décision s'écrit — `- { outil: …, le: "AAAA-MM-JJ" }` — et par OUTIL, parce qu'autoriser un courriel n'autorise pas un message sur un numéro personnel |
 | `S127` | contact disponible, question en attente, et rien n'est jamais parti | joignable par « … », sa coordonnée est dans `contacts.yaml`, … (…) — et aucune sollicitation n'est jamais partie. Tout ce qu'il faut pour écrire est là : `reach-out.mjs --sh …`. Si le script refuse, son refus nomme ce qui manque, et ce qui manque est une question à poser à l'utilisateur, pas une raison de renoncer |
+| `S128` | identifiant cité dans une phrase qui ne mène nulle part, ou attribution qui contredit le registre | cite … dans son texte, et … n'existe pas dans l'état : un renvoi écrit dans la phrase se suit comme les autres, et celui-là ne mène nulle part · attribue … à « … » dans son texte, et … ne porte aucun locuteur (`stakeholders`) : le nom écrit à la main est la seule trace de qui a parlé, et rien ne le confirme · attribue … à « … » dans son texte, quand le registre donne … : la même parole est écrite deux fois, et les deux écritures se contredisent |
 
 ## Garde-fous de l'export (6)
 
@@ -536,7 +537,7 @@ Chaque règle, les étapes où elle s'applique, et la fonction du catalogue qui 
 | `S06` | 2 | exigence sans origine | `checkPrd` |
 | `S07` | 2 | Must sans scénario d'erreur | `checkPrd` |
 | `S08` | 2 | NFR incomplète | `checkPrd` |
-| `S09` | 1, 2, 3, 4 | référence inexistante | `checkPlan`, `checkPrd`, `checkRepresentation`, `checkSad`, `confirmationFindings`, `contactFindings`, `interviewFindings`, `relectureFindings`, `sollicitationFindings` |
+| `S09` | 1, 2, 3, 4 | référence inexistante | `checkPlan`, `checkPrd`, `checkRepresentation`, `checkSad`, `confirmationFindings`, `contactFindings`, `interviewFindings`, `relectureFindings`, `renvoiFindings`, `sollicitationFindings` |
 | `S10` | 1, 2 | référence vers un élément abandonné | `deadRefs` |
 | `S11` | 1 | règle métier sans source | `checkBrd` |
 | `S12` | 1 | règle sans niveau d'application | `checkBrd` |
@@ -655,3 +656,4 @@ Chaque règle, les étapes où elle s'applique, et la fonction du catalogue qui 
 | `S125` | 1, 2, 3, 4 | sollicitation écrite inscrite sur la personne et pas sur la question | `questionPoseeFindings` |
 | `S126` | 1, 2, 3, 4 | contact parti sans que l'autorisation de l'utilisateur soit écrite | `autorisationFindings` |
 | `S127` | 1, 2, 3, 4 | contact disponible, question en attente, et rien n'est jamais parti | `contactFindings` |
+| `S128` | 1, 2, 3, 4 | identifiant cité dans une phrase qui ne mène nulle part, ou attribution qui contredit le registre | `proseFindings` |

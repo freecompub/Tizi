@@ -1485,7 +1485,10 @@ test('le nombre de questions suit la dépendance, pas le canal', async () => {
 test('S115 : une sollicitation peut porter plusieurs zones, et chacune se vérifie', () => {
   const etat = sollicitee_zone => ({
     document: 'brd', phase: 'discover',
-    stakeholders: [{ id: 'SH-01', name: 'Nadia', status: 'sollicitée', sollicitee_le: ilYA(1), sollicitee_zone, joignable_par: 'courriel', end_user: true, power: 'faible', impact: 'fort', influence: 'positive', quadrant: 'consulter' }],
+    // SH-02 existe : ZO-003 lui est adressée, et une zone adressée à quelqu'un que le registre ne
+    // porte pas est un renvoi mort que `S09` dit désormais — la fixture le portait sans le vouloir.
+    stakeholders: [{ id: 'SH-01', name: 'Nadia', status: 'sollicitée', sollicitee_le: ilYA(1), sollicitee_zone, joignable_par: 'courriel', end_user: true, power: 'faible', impact: 'fort', influence: 'positive', quadrant: 'consulter' },
+      { id: 'SH-02', name: 'Karim', role: 'r', status: 'interrogée', power: 'faible', impact: 'fort', influence: 'positive', quadrant: 'consulter' }],
     shadow_zones: [
       { id: 'ZO-001', type: 'attendu_implicite', question: 'A ?', ask_to: 'SH-01', status: 'ouverte' },
       { id: 'ZO-002', type: 'attendu_implicite', question: 'B ?', ask_to: 'SH-01', status: 'ouverte' },
@@ -1841,6 +1844,98 @@ test('S127 : tout est là pour écrire à quelqu\'un, et rien n\'est jamais part
   assert.deepEqual(f(etat({}, ZO, 'rien regardé')), []);
   // Ne pas savoir joindre quelqu'un est un fait, pas une faute.
   assert.deepEqual(f(etat({ joignable_par: '' }, ZO, CO)), []);
+});
+
+// LES DEUX FILS DE TRAÇABILITÉ. Un état pointe vers ses propres éléments par un CHAMP de renvoi, et
+// aussi dans la phrase : « Ressaisie annuelle : … (SRC-003, Dédé) ». Mesuré sur le deuxième dossier
+// réel : 136 renvois par champ, 58 en prose dans treize champs, 37 de ces derniers nommant aussi le
+// locuteur. Et sur les onze manières dont un BRD pointe vers une source, UNE SEULE était vérifiée —
+// éprouvées une par une avec un `SRC-997` qui n'existe pas, les dix autres ne disaient rien.
+test('S09 : les onze chemins vers une source, et pas un seul relu', () => {
+  const etat = f => {
+    const s = {
+      document: 'brd', phase: 'discover',
+      sources: [{ id: 'SRC-001', type: 'cadrage', date: '2026-01-02', stakeholders: ['SH-01'], quote: 'q' }],
+      stakeholders: [{ id: 'SH-01', name: 'Nadia', role: 'r', status: 'interrogée', power: 'faible', impact: 'fort', influence: 'positive', quadrant: 'consulter' }],
+      candidate_needs: [{ id: 'BC-001', text: 'x', sources: [{ ref: 'SRC-001', location: 'point 1' }], status: 'proposé' }],
+      shadow_zones: [{ id: 'ZO-001', type: 'attendu_implicite', question: 'A ?', ask_to: 'SH-01', status: 'ouverte', origin: 'SRC-001', related: ['BC-001'] }],
+      risks: [{ id: 'R-01', text: 'x', origin: 'ZO-001', related: ['SH-01'], likelihood: 'moyenne', impact: 'moyen', response: 'surveiller', status: 'ouvert' }],
+      success_signals: [{ text: 'x', measurable: true, source: 'SRC-001' }],
+      constraints: [{ type: 'legale', text: 'x', source: 'SRC-001', implication: 'y' }],
+    };
+    f(s);
+    return checkState(s).filter(x => x.rule === 'S09').map(x => x.message);
+  };
+  // L'état entier se résout : aucun renvoi mort.
+  assert.deepEqual(etat(() => {}), []);
+
+  // Chacun des chemins qui ne disait rien, éprouvé avec un identifiant qui n'existe pas. La forme
+  // objet (`{ ref, location }`), la chaîne nue et la liste se lisent toutes les trois.
+  const mort = [
+    ['candidate_needs[0].sources[0].ref', s => s.candidate_needs[0].sources[0].ref = 'SRC-997'],
+    ['success_signals[0].source', s => s.success_signals[0].source = 'SRC-997'],
+    ['constraints[0].source', s => s.constraints[0].source = 'SRC-997'],
+    ['shadow_zones[0].origin', s => s.shadow_zones[0].origin = 'SRC-997'],
+    ['shadow_zones[0].related', s => s.shadow_zones[0].related = ['BC-997']],
+    ['shadow_zones[0].ask_to', s => s.shadow_zones[0].ask_to = 'SH-997'],
+    ['risks[0].origin', s => s.risks[0].origin = 'ZO-997'],
+    ['risks[0].related', s => s.risks[0].related = ['SH-997']],
+  ];
+  for (const [quoi, casse] of mort) {
+    const m = etat(casse);
+    assert.equal(m.length, 1, `${quoi} : ${JSON.stringify(m)}`);
+    assert.match(m[0], /qui n'existe pas dans l'état/, quoi);
+  }
+
+  // Un préfixe dont l'état ne porte AUCUN élément n'a pas de registre : on ne conclut rien. Les trois
+  // états comme partout — savoir qu'il existe, savoir qu'il manque, et ne pas savoir.
+  assert.deepEqual(etat(s => s.shadow_zones[0].related = ['FR-997']), []);
+  // Et ce qui n'est pas un identifiant ne se résout pas : `origin` porte aussi des mots.
+  assert.deepEqual(etat(s => s.shadow_zones[0].origin = 'cadrage'), []);
+
+  // Un seul constat par renvoi mort : les appels plus anciens relisent déjà certains champs, et deux
+  // constats pour un seul renvoi feraient douter du compte.
+  const double = etat(s => { s.stakeholders[0].status = 'sollicitée'; s.stakeholders[0].sollicitee_le = '2026-01-02';
+    s.stakeholders[0].joignable_par = 'courriel'; s.stakeholders[0].sollicitee_zone = ['ZO-997']; });
+  assert.equal(double.length, 1, `sollicitee_zone ne se dit qu'une fois : ${JSON.stringify(double)}`);
+});
+
+// Le second fil. Un seul endroit de tout le code lisait un identifiant à l'intérieur d'un texte —
+// `REPONDUE` sur `shadow_zones.resolution` — et seulement comme un oui/non : il ne résout jamais
+// QUELLE source. Un `(SRC-099, Dédé)` glissé dans le canevas du dossier réel ne changeait pas une
+// ligne du lint. La seconde moitié de la règle est celle qui pouvait dériver en silence : une
+// attribution recopiée à la main à côté du registre. Mesuré avant de l'écrire : 37 attributions en
+// prose sur le dossier réel, 37 qui concordent — la règle verrouille une propriété vraie.
+test('S128 : un identifiant écrit dans la phrase se suit comme les autres', () => {
+  const etat = (texte, f = () => {}) => {
+    const s = {
+      document: 'brd', phase: 'discover',
+      sources: [{ id: 'SRC-001', type: 'cadrage', date: '2026-01-02', stakeholders: ['SH-01'], quote: 'q' }],
+      stakeholders: [{ id: 'SH-01', name: 'Dédé', role: 'r', status: 'interrogée', power: 'faible', impact: 'fort', influence: 'positive', quadrant: 'consulter' },
+        { id: 'SH-02', name: 'Samir', role: 'r', status: 'interrogée', power: 'faible', impact: 'fort', influence: 'positive', quadrant: 'consulter' }],
+      opportunity: { canvas: { problems: [texte] } },
+    };
+    f(s);
+    return checkState(s).filter(x => x.rule === 'S128').map(x => x.message);
+  };
+
+  // La forme du dossier réel, et elle concorde : rien à dire.
+  assert.deepEqual(etat('Ressaisie annuelle des mêmes données (SRC-001, Dédé)'), []);
+  // Un identifiant cité qui ne mène nulle part.
+  assert.match(etat('Ressaisie annuelle (SRC-099)')[0], /cite SRC-099 dans son texte/);
+  // Le nom écrit à la main contredit le registre : la même parole, écrite deux fois.
+  assert.match(etat('Ressaisie annuelle (SRC-001, Samir)')[0], /quand le registre donne Dédé/);
+  // La source ne porte aucun locuteur : le nom en prose est la seule trace, et rien ne la confirme.
+  assert.match(etat('Ressaisie annuelle (SRC-001, Dédé)', s => s.sources[0].stakeholders = [])[0],
+    /ne porte aucun locuteur/);
+  // Un identifiant mort n'est dit qu'une fois, même quand il porte une attribution.
+  assert.equal(etat('Ressaisie annuelle (SRC-099, Dédé)').length, 1);
+  // Un préfixe sans registre : on ne conclut rien — une norme citée n'est pas un renvoi interne.
+  assert.deepEqual(etat('Conforme à ISO-29148 et au RGPD-2016'), []);
+  // Ni une date, ni un code de règle : ni l'un ni l'autre n'a la forme d'un identifiant.
+  assert.deepEqual(etat('Mesuré du 2026-11-05 au 2026-2027, voir S121 et L08'), []);
+  // Et un champ de renvoi n'est pas de la prose : c'est `S09` qui le lit, et une seule fois.
+  assert.deepEqual(etat('x', s => s.shadow_zones = [{ id: 'ZO-001', type: 'attendu_implicite', question: 'A ?', ask_to: 'SH-997', status: 'ouverte' }]), []);
 });
 
 test('S114 : le canal est dans l\'état, la coordonnée est à côté et hors de git', () => {
