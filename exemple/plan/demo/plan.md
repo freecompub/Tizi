@@ -79,7 +79,7 @@ Du 2026-10-26 au 2026-11-06 · Charge 11 / capacité 6 · Engagement : déclaré
 
 Processus — on garde : ateliers de 20 min · on arrête : — · on essaie : relire les PR d'agents le matin
 
-### IT-2 *(proposé)* — Journal
+### IT-2 *(proposé)* — Tirer parti des refus : le superviseur les consulte, les agents y sont formés
 
 Du 2026-11-09 au 2026-11-20 · Charge 2 / capacité 6 · Engagement : **non déclaré** · Statut : proposé
 

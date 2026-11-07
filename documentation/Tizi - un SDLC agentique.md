@@ -1,6 +1,6 @@
 # Tizi — un SDLC agentique, du recueil du besoin au déploiement
 
-Oct 24, 2026 · @Samir Alili
+Nov 7, 2026 · @Samir Alili
 
 ## Sommaire
 
@@ -131,7 +131,7 @@ Quand les agents réalisent les tâches, le temps de codage devient court et bon
 
 ### Sprint review et rétrospective
 
-Chaque itération se clôt par une commande dédiée, `/tizi-sprint-review` (l’agent `tizi-sprint-review` dans Copilot), qui prépare tout en une fois à partir des mesures réelles et produit un document en deux parties, comme Scrum les distingue :
+Chaque itération se clôt par une commande dédiée, `/tizi-sprint-review` (l’agent `tizi-sprint-review` dans Copilot), qui prépare tout en une fois à partir des mesures réelles et produit un document en deux parties, comme Scrum les distingue (Rubin, ch. 21 et 22 : la revue inspecte le **produit**, la rétrospective inspecte le **processus**) :
 
 - **la sprint review**, avec les parties prenantes, regarde le produit : ce qui a été réalisé et prouvé, puis l’adaptation du backlog — pour chaque tâche non finie, continuer, découper ou reporter ; les tailles à revoir ; la prévision par le débit ;
 - **la rétrospective**, entre membres de l’équipe, regarde la façon de travailler : ce que le sprint a coûté comparé au précédent (attente de relecture, allers-retours, attention prévue et consommée, temps bloqué), les causes de blocage récurrentes, chacune avec une action et un responsable, et le suivi des actions décidées au sprint précédent, avec leur effet dans les chiffres.
@@ -901,19 +901,22 @@ Les **seuils** et les **dérogations** sont un seul système pour les cinq docum
 
 ## Sources
 
-Trois ouvrages ont été lus en entier en octobre 2026 : deux ont servi à confronter les étapes 1 et 2, le troisième les étapes 2 et 4. Les tableaux et paragraphes ci-dessous indiquent d’où vient chaque pratique ajoutée ou confirmée.
+Quatre ouvrages ont été lus en entier, trois en octobre 2026 et le quatrième le 7 novembre : deux ont servi à confronter les étapes 1 et 2, le troisième les étapes 2 et 4, le quatrième l’étape 4 et le vocabulaire commun à toutes. Les tableaux et paragraphes ci-dessous indiquent d’où vient chaque pratique ajoutée ou confirmée.
 
 ### Notes de lecture
 
-Les notes prises à la lecture sont versionnées à côté de ce document : `notes-Constantinidis-et-BABOK-v3.md` et `notes-Patton-User-Story-Mapping.md`. Elles suivent l’ordre des chapitres, par **tranches de lecture**, annexes et glossaires compris, et conservent les rapprochements relevés en chemin. Ce sont elles qui permettent de vérifier une correspondance du tableau sans rouvrir les livres, et de voir ce qui a été lu sans être retenu.
+Les notes prises à la lecture sont versionnées à côté de ce document : `notes-Constantinidis-et-BABOK-v3.md`, `notes-Patton-User-Story-Mapping.md` et `notes-Rubin-Essential-Scrum.md`. Elles suivent l’ordre des chapitres, par **tranches de lecture**, annexes et glossaires compris, et conservent les rapprochements relevés en chemin. Ce sont elles qui permettent de vérifier une correspondance du tableau sans rouvrir les livres, et de voir ce qui a été lu sans être retenu.
 
 Deux rapprochements y sont notés à l’endroit où ils sont apparus : les **zones d’ombre** portent déjà ce nom chez Constantinidis (ch. 4, à propos des incompréhensions qu’un cahier des charges laisse volontairement dans l’ombre et qui reportent le conflit à la livraison), et les **Perspectives** du BABOK — les lentilles à travers lesquelles un praticien voit son travail selon le contexte — sont nos lentilles de revue.
+
+Les notes de Rubin en portent deux autres, et ce sont celles qui tiennent le plus loin. Les **trois verdicts** de Tizi — vrai, faux, *non mesuré* — ont leur définition à l’entrée `assumption` de son glossaire : « une croyance présumée vraie **alors qu’aucun apprentissage validé ne l’établit** », opposée à `validated learning` ; « ne pas savoir n’est pas constater » n’est donc pas une trouvaille de ce dépôt. Et son chapitre 23 distingue une **pratique** — obligatoire — de l’**approche** qui la réalise localement, intransposable d’une équipe à l’autre : c’est l’armature du skill d’audit à construire, puisqu’elle interdit d’auditer une approche contre une autre approche.
 
 ### Ouvrages de référence
 
 - Yves Constantinidis, [*Expression des besoins pour le SI — Guide d’élaboration du cahier des charges*](https://actualitte.com/livres/584526/extraits/expression-des-besoins-pour-le-si-yves-constantinidis-9782212675771), Eyrolles, collection Solutions d’entreprise. Édition de 2010 lue ; réédition parue le 11 janvier 2018.
 - International Institute of Business Analysis (IIBA), [*A Guide to the Business Analysis Body of Knowledge (BABOK Guide)*, version 3](https://randolph.ocln.org/Record/292590), Toronto, 2015 ; [annonce de parution du 15 avril 2015](https://www.modernanalyst.com/Resources/News/tabid/177/ID/3243/IIBA-LAUNCHES-THE-ESSENTIAL-STANDARD-FOR-BUSINESS-ANALYSIS.aspx).
 - Jeff Patton, *User Story Mapping: Discover the Whole Story, Build the Right Product*, O’Reilly, 2014, 324 p. Sa contribution est détaillée plus bas, avec les chapitres.
+- Kenneth S. Rubin, *Essential Scrum: A Practical Guide to the Most Popular Agile Process*, Addison-Wesley, 2012, 498 p. Lu le 7 novembre 2026, après la construction des dix étapes : sa contribution est donc d’abord une **confrontation**, détaillée plus bas.
 
 ### Correspondance avec le SDLC
 
@@ -970,3 +973,9 @@ Le design thinking de hve-core (agent DT Coach et skills `dt-*`, même commit du
 Les contrôles de hve-core (même commit) ont apporté : la suite d’évaluation d’équivalence avec la référence, transposée en évaluation par ablation ; la règle « erreur d’intégrité plutôt que faux succès » des évaluations ; la revue de code multi-perspectives rattachée à un commit ; le vérificateur adversarial des constats ; l’interdiction des scores de confiance dans les rapports ; le principe « le sous-agent propose, le parent vérifie » ; les règles de cohérence des ADR sur les espaces réservés et les chiffres non sourcés ; la mention de relecture humaine dans les documents produits ; et le traitement de tout contenu importé comme donnée.
 
 BMAD-METHOD (version 7 en préversion, commit du 18 octobre 2026) a apporté : la mesure du déclenchement des skills par marqueur, avec séparation entraînement/test fixe ; le budget de taille et le gel de ce que l’agent reçoit (fiche de contexte, compréhension validée) ; les lentilles de revue « manques de vérification » et « affirmations lues comme un témoignage » ; les décisions d’architecture formulées comme des règles qui empêchent une divergence ; le contrôle des collisions entre tâches ; et la rétrospective fondée sur les preuves du dépôt. N’ont pas été repris : le nombre minimal de constats imposé à un relecteur, la boucle d’implémentation sans surveillance, et les personas.
+
+**Kenneth Rubin** a d’abord **confirmé**, le livre ayant été lu après la construction des dix étapes, et c’est le sens qu’il faut donner à sa place ici. Trois correspondances sont littérales : `S77` — une action de rétrospective sans suivi — est la pathologie qu’il tient pour la plus grave des dix (ch. 22, « si on ne va pas au bout, ne perdons pas notre temps en rétro »), et sa prescription, mettre les actions d’amélioration dans le sprint backlog **avant** les fonctions en baissant la capacité d’autant — « ne séparez pas : intégrez » —, est exactement ce que `S77` rend incontournable ; `S76` reprend le retour d’un élément inachevé au backlog au bon rang, sans rallonger le sprint (ch. 4) ; et `S49` applique sa limite d’encours. Les deux revues de fin d’itération suivent la distinction de ses chapitres 21 et 22.
+
+Il a **apporté** une règle : `S130`, le but d’itération (ch. 4, « le but du sprint est le fondement d’un engagement mutuel » — l’équipe s’engage à l’atteindre, le commanditaire s’engage à ne pas le changer en cours de route). Le champ existait, deux rendus et deux fiches de revue l’imprimaient, `gates.mjs` faisait de l’engagement la porte de Govern, et rien n’exigeait le but sur lequel cet engagement porte : on pouvait s’engager, et sur rien.
+
+Il a surtout **ouvert des trous**, mesurés sur le dépôt et inscrits dans `AMELIORATIONS.md` avec l’ordre de leur traitement : la Definition of Done n’est lue par aucune règle alors qu’« opérer sans Definition of Done forte, c’est délivrer une licence d’accumuler de la dette » (ch. 8), et chaque NFR est chez lui une cible de premier choix pour cette liste (ch. 5) ; l’**économie** est absente — sur les 131 libellés de règles, un seul contient un mot de coût, de budget, de valeur, de profit ou de délai — `S88`, « valeur hors énumération » — et c’est un faux positif, quand son chapitre 18 marque *non recommandées* deux des quatre combinaisons de contraintes et nomme la conséquence, « si l’on sur-contraint les trois, c’est la qualité qui devient la variable » ; **DEEP** n’a pas d’équivalent au niveau du backlog, et deux de ses lettres inversent l’intuition, puisqu’un backlog entièrement détaillé et entièrement priorisé y est un défaut (ch. 6) ; enfin `S48` compare une charge à une capacité globale et ne verra jamais le **goulot de compétence** qu’il démontre au chapitre 19, où un engagement tient dans la capacité de l’équipe et reste mauvais parce qu’une seule personne sait faire le travail concerné.

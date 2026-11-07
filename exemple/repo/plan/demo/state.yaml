@@ -65,7 +65,7 @@ tasks:
   - { id: TK-004, kind: dev, title: "Notificateur", story: US-002, elements: [CT-03], operations: [OP-003], depends_on: [TK-001], size: XL, assignee_type: agent, iteration: IT-1, status: validé }
 iterations:
   - { id: IT-1, goal: "Bloquer les dossiers incomplets", start: "2026-10-26", end: "2026-11-06", capacity: 6, commitment: { declared_by: Alice, date: "2026-10-23" }, status: en_cours, review: { team: { date: "2026-11-06", grades: { experience: 3, fonctionnelle: 4, code: 4 }, process: { keep: ["ateliers de 20 min"], try: ["relire les PR d'agents le matin"] } } } }
-  - { id: IT-2, goal: "Journal", start: "2026-11-09", end: "2026-11-20", capacity: 6, status: proposé }
+  - { id: IT-2, goal: "Tirer parti des refus : le superviseur les consulte, les agents y sont formés", start: "2026-11-09", end: "2026-11-20", capacity: 6, status: proposé }
 release_tracking:
   - { release: REL-1, status: livrée, readiness: [{ activity: ACT-01, grade: B, note: "message à affiner" }], measurement: [{ metric: MET-01, how: "taux de rejet dans l'outil partenaire", window: "4 semaines", owner: Alice }], observations: [{ date: "2026-11-20", what: "3 agentes observées, aucune transmission incomplète" }], outcome: partiel }
 shadow_zones:

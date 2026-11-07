@@ -2550,6 +2550,44 @@ test('S129 : une story dit pour qui, quoi et pourquoi, où que ce soit sauf null
   assert.deepEqual(checkState(plan({ stories: [story()] })).filter(f => f.rule === 'L08' && f.id === 'US-1'), []);
 });
 
+// Rubin, *Essential Scrum*, ch. 4 : « The sprint goal is the foundation of a mutual commitment made by
+// the team and the product owner » — l'équipe s'engage à l'atteindre, le commanditaire s'engage à ne pas
+// le changer. Tizi lisait déjà l'engagement (`gates.mjs` en fait la porte de Govern) et jamais le but sur
+// lequel il porte : on pouvait s'engager, et sur rien. Mesuré avant d'écrire : les douze itérations du
+// dépôt portent toutes le leur, et celui de IT-2 vidé, le lint ne disait rien et la carte se rendait
+// « ### IT-2 *(proposé)* — — ». Le but n'est dû qu'une fois l'itération investie : une coquille future
+// encore vide ne l'a pas, c'est le dernier moment responsable.
+test('S130 : un engagement porte sur un but, et une coquille vide n\'en a pas encore', () => {
+  const plan = its => ({ document: 'plan', phase: 'schedule',
+    settings: { cadence: 'sprint', release: 'REL-1', sprint: { capacity: 6 } }, iterations: its });
+  const it = o => ({ id: 'IT-1', start: '2026-10-26', end: '2026-11-06', capacity: 6, status: 'proposé', goal: 'Bloquer les dossiers incomplets', ...o });
+  const tache = o => ({ id: 'TK-1', kind: 'dev', title: 'Contrôle de complétude', story: 'US-1', size: 'S', assignee_type: 'humain', iteration: 'IT-1', status: 'validé', ...o });
+
+  // Un but écrit : la règle se tait, quel que soit l'investissement.
+  assert.deepEqual(seules(plan([it()]), 'S130'), []);
+  assert.deepEqual(seules({ ...plan([it({ status: 'en_cours' })]), tasks: [tache()] }, 'S130'), []);
+
+  // Une coquille future : ni tâche, ni engagement, pas commencée. Rien n'est dû, et rien n'est dit.
+  assert.deepEqual(seules(plan([it({ goal: '' })]), 'S130'), []);
+  assert.deepEqual(seules(plan([it({ goal: '   ' })]), 'S130'), [], 'des espaces ne font pas un investissement');
+
+  // Trois investissements, chacun suffit à rendre le but dû.
+  assert.deepEqual(seules({ ...plan([it({ goal: '' })]), tasks: [tache()] }, 'S130'), ['IT-1']);
+  assert.deepEqual(seules(plan([it({ goal: '', commitment: { declared_by: 'Alice', date: '2026-10-23' } })]), 'S130'), ['IT-1']);
+  assert.deepEqual(seules(plan([it({ goal: '', status: 'en_cours' })]), 'S130'), ['IT-1']);
+  assert.deepEqual(seules(plan([it({ goal: '', status: 'terminé' })]), 'S130'), ['IT-1']);
+
+  // Et des espaces ne sont pas un but.
+  assert.deepEqual(seules(plan([it({ goal: '   ', status: 'en_cours' })]), 'S130'), ['IT-1']);
+
+  // Le constat nomme la preuve de l'investissement, pour qu'on sache pourquoi le but est dû.
+  const m = checkState({ ...plan([it({ goal: '', status: 'en_cours', commitment: { declared_by: 'Alice', date: '2026-10-23' } })]), tasks: [tache(), tache({ id: 'TK-2' })] })
+    .find(f => f.rule === 'S130').message;
+  assert.match(m, /2 tâches y sont posées/);
+  assert.match(m, /engagement déclaré par Alice/);
+  assert.match(m, /itération en cours/);
+});
+
 test('les règles du plan que rien n\'exerçait : S37, S38, S42, S46, S47, S49, S59, S62', () => {
   const plan = extra => ({ document: 'plan', phase: 'schedule', settings: { cadence: 'sprint', release: 'REL-1' }, ...extra });
   const story = o => ({ id: 'US-1', title: 'Accuser réception', status: 'validé', release: 'REL-1',
