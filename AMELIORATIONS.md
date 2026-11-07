@@ -42,6 +42,8 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
 
 | Piste | Date | Où |
 |---|---|---|
+| **La Definition of Done est lue (`S131`), et confrontée aux NFR (`S132`).** Première des cinq grilles de l'étape 4. Mesuré avant d'écrire : `definition_of_done` est écrite dans les quatre plans du dépôt, apparaît dans les rendus et les handoffs, et **aucune des 131 règles ne la lisait** — aucune porte ne l'exigeait non plus. Un plan pouvait être figé, livré et revu sans jamais dire ce que « fini » veut dire. `S131` la réclame dès Schedule, pas avant : pendant le découpage son absence n'est pas un trou, c'est une étape pas encore faite. Les quatre plans en ont une, donc aucun constat existant ne bouge | 7 novembre 2026 | `la-definition-of-done-et-les-nfr` |
+| **La mesure a écarté le rapprochement évident, et c'est elle qui a trouvé la bonne question.** Rubin : chaque NFR est une cible de premier choix pour la DoD. Mais `stage` vaut `tests \| integration \| recette \| exploitation`, et **aucune de ces valeurs ne désigne l'incrément** : aucun champ ne permet de demander « cette NFR est-elle dans la DoD ? ». `S132` demande l'inverse, le seul cas qui compte : une NFR que **personne ne vérifiera** — aucune vérification de la conception ne la cible, et la DoD ne la cite pas. La citation se lit par le **second fil** (un identifiant écrit dans la phrase, « p95 sous 2 s (NFR-001) »), ce qui évite d'apparier deux textes libres : un contrôle de forme y aurait produit des faux constats qu'on aurait appris à déroger — « pire que pas de règle » | 7 novembre 2026 | `la-definition-of-done-et-les-nfr` |
 | **`audit-builder` : auditer un document écrit ailleurs.** Huitième skill, et le premier qui ne construit rien. Mesuré avant d'écrire, et la mesure a réduit le travail : je craignais qu'un document étranger récolte une avalanche de constats faute de porter les traces que Tizi tient de sa fabrication. Le BRD d'exemple privé de toute cette trace rend **32 constats et 26 règles non mesurables**, là où le même dossier complet en avait 2 — un document écrit ailleurs récolte des **abstentions**, pas des accusations. Et un backlog s'audite sans aucune trace Tizi : 18 constats avant, 18 après. Donc **aucune règle nouvelle** : ce qui manquait était le tri (`verdicts()` dans `rules.mjs`, quatre listes qui partitionnent le registre) et sa mise en page (`audit.mjs`, qui ne porte aucune grille — les grilles, ce sont les règles) | 7 novembre 2026 | `l-audit-d-un-document-ecrit-ailleurs` |
 | **L'armature du chapitre 23, inscrite dans le skill.** Une *pratique* est obligatoire, l'*approche* qui la réalise est locale et intransposable — l'élan en peluche de Vancouver marchait très bien là-bas. Donc **on n'audite jamais une approche contre une autre approche** : un écart est une question à poser à l'équipe et sort dans sa propre section, jamais parmi les constats. La discipline d'import est celle d'`adopt.mjs` : un champ que le document ne porte pas reste **absent** et va dans `audit.uncertain` avec ce qui le lèverait. Une liste d'incertitudes vide sur un document étranger est signalée comme suspecte plutôt que tue | 7 novembre 2026 | `l-audit-d-un-document-ecrit-ailleurs` |
 | **Un test a attrapé un mensonge dans mon propre rapport, et une faiblesse dans le test.** La première version annonçait « 23 + 24 + 26 + 64 = 131 » : une addition fausse de six, parce que je comptais les règles de rédaction dans la partition des règles de structure. Et la vérification par mutation a trouvé un trou dans le test lui-même — `indexOf` rend -1 sur une clause absente, et -1 est inférieur à tout, donc le test de position passait sur un rapport qui ne portait plus la clause du tout. Les deux corrigés, le second éprouvé en retirant la clause | 7 novembre 2026 | `l-audit-d-un-document-ecrit-ailleurs` |
@@ -380,6 +382,24 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
   Et une troisième voie à ne pas oublier, qui est celle que je recommanderais ensuite : bloquer
   **seulement quand il est sûr** — zone d'ombre reconnue et `posee` vide —, et se contenter de prévenir
   dans les autres cas. Sur la mesure, **trois des quatre** répétitions tombaient dans ce cas sûr.
+- **Aucune étape de vérification ne désigne l'incrément.** `stage` vaut `tests`, `integration`,
+  `recette` ou `exploitation` : les quatre sont en aval. Rubin demande que chaque NFR soit une cible de
+  la Definition of Done, c'est-à-dire de ce qu'on fait à **chaque** incrément, et le modèle n'a pas de
+  mot pour ça. `S132` contourne en demandant l'inverse — une NFR que personne ne vérifiera —, ce qui
+  attrape le cas grave mais pas le cas tiède : une NFR vérifiée en recette seulement, alors qu'elle
+  devrait l'être à chaque tâche, passe sans bruit. Une cinquième valeur (`incrément`) rendrait le
+  rapprochement direct, et elle touche le gabarit de la conception, le handoff et le plan : c'est une
+  décision de modèle, pas une règle de plus.
+- **La Definition of Ready est rendue et appliquée par personne.** Mesuré : `definition_of_ready` n'a
+  **qu'un seul lecteur** dans tout le dépôt, `render-plan.mjs:179`, qui l'imprime — et elle n'est
+  renseignée dans **aucun** des états, donc chaque plan publie une section « Definition of Ready »
+  suivie d'une liste vide. Pendant ce temps `storyReadiness()` calcule la préparation d'après des
+  critères **écrits en dur** (FR, tâche de story map, example mapping, règles sans exemple, zones
+  ouvertes, demande de changement en attente, spike, taille XL). Deux définitions de la même chose :
+  l'une écrite et affichée, l'autre calculée et opposable, et rien ne les relie. C'est exactement la
+  dérive que `les-documents-et-leur-generateur` a trouvée ailleurs. Trois issues, et c'est une décision
+  de l'utilisateur : rendre la définition calculée (le document affiche ce que l'outil applique), lire
+  la définition écrite (et alors il faut un langage pour l'exprimer), ou retirer le champ.
 - **Aucun dossier d'audit d'exemple.** `exemple/` est figé par consigne, et l'entrée d'`audit-builder`
   est par nature un document ÉTRANGER que le dépôt n'a pas. Les tests fabriquent le leur à partir du
   BRD d'exemple privé de sa trace, ce qui vérifie le code mais ne montre rien à qui prend le skill en
@@ -526,8 +546,8 @@ prose.** Écrire le skill d'audit d'abord, c'est écrire ses grilles en Markdown
    Vancouver marchait très bien là-bas et était intransposable à l'équipe chinoise), donc **on n'audite
    jamais une approche contre une autre approche** ; et, du glossaire, « une règle peut être enfreinte
    quand la pragmatique de la situation l'exige » — un écart est une question, pas un défaut.
-4. **Une grille par PR ensuite**, chacune enrichissant l'audit du même coup : la Definition of Done
-   confrontée aux NFR ; les contraintes de release (les deux combinaisons non recommandées, et la
+4. **Une grille par PR ensuite**, chacune enrichissant l'audit du même coup : ✔ la Definition of Done
+   confrontée aux NFR (`S131`, `S132`, 7 novembre 2026) ; les contraintes de release (les deux combinaisons non recommandées, et la
    proportion de must-have rendue comme une **mesure** et non comme un reproche, parce que 60-70 % est
    une règle du pouce) ; DEEP au niveau du backlog ; le goulot de compétence ; le gâchis d'innovation.
 

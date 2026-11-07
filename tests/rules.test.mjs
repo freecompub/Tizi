@@ -2557,6 +2557,74 @@ test('S129 : une story dit pour qui, quoi et pourquoi, où que ce soit sauf null
 // dépôt portent toutes le leur, et celui de IT-2 vidé, le lint ne disait rien et la carte se rendait
 // « ### IT-2 *(proposé)* — — ». Le but n'est dû qu'une fois l'itération investie : une coquille future
 // encore vide ne l'a pas, c'est le dernier moment responsable.
+// ── La Definition of Done, et ce qu'elle devrait rattraper (S131, S132) ──────
+// « Opérer sans Definition of Done forte, c'est délivrer une licence d'accumuler de la dette »
+// (Rubin, ch. 4). Mesuré avant d'écrire : `definition_of_done` est écrite dans les quatre plans du
+// dépôt, apparaît dans les rendus et les handoffs, et **aucune des 131 règles ne la lisait** — aucune
+// porte ne l'exigeait non plus. Un plan pouvait être figé, livré et revu sans dire ce que « fini » veut
+// dire. Les quatre plans en ont une, donc la règle ne déplace aucun constat existant.
+test('S131 : un plan qui ne dit pas ce que « fini » veut dire, et seulement quand c\'est dû', () => {
+  const plan = o => ({ document: 'plan', phase: 'schedule', settings: { cadence: 'sprint', release: 'REL-1' }, ...o });
+  const parle = (s, r = 'S131') => checkState(s).some(f => f.rule === r);
+
+  assert.ok(parle(plan({})), 'aucune Definition of Done en Schedule : la règle doit parler');
+  assert.ok(parle(plan({ definition_of_done: [] })), 'une liste vide ne dit rien de plus qu\'un champ absent');
+  assert.ok(parle(plan({ definition_of_done: ['  ', ''] })), 'des lignes blanches ne sont pas une définition');
+  assert.ok(!parle(plan({ definition_of_done: ['Code revu et fusionné'] })), 'une ligne écrite suffit à la faire taire');
+
+  // Rien avant Schedule : une Definition of Done qui manque pendant le découpage n'est pas un trou,
+  // c'est une étape pas encore faite. Elle est due dès qu'on commence à déclarer des choses finies.
+  for (const phase of ['slice', 'refine']) {
+    assert.ok(!parle(plan({ phase })), `S131 ne s'applique pas en ${phase} et devrait se taire`);
+    assert.equal(applicable(plan({ phase }), declarations('S131')[0]), false, `${phase} : la déclaration contredit le code`);
+  }
+  for (const phase of ['schedule', 'govern', 'review']) {
+    assert.ok(parle(plan({ phase })), `S131 est due en ${phase}`);
+    assert.equal(applicable(plan({ phase }), declarations('S131')[0]), true, `${phase} : la déclaration contredit le code`);
+  }
+  // Elle constate une ABSENCE : elle n'a donc jamais à se dire « non mesurée ».
+  assert.ok(declarations('S131')[0].absence);
+  assert.ok(!abstentions(plan({})).some(x => x.rule === 'S131'));
+  assert.match(checkState(plan({})).find(f => f.rule === 'S131').message, /ce que « fini » veut dire/);
+});
+
+// La confrontation que Rubin donne, et que Tizi avait tous les éléments pour faire : « chaque NFR est
+// une cible de premier choix pour la Definition of Done ». Mesuré d'abord, et la mesure a écarté le
+// rapprochement évident : `stage` vaut `tests | integration | recette | exploitation`, et AUCUNE de ces
+// valeurs ne désigne l'incrément — on ne peut donc pas demander par un champ « cette NFR est-elle dans
+// la DoD ? ». On demande l'inverse, qui est le seul cas qui compte : une NFR que personne ne vérifiera.
+test('S132 : une NFR que rien ne vérifiera, ni la conception ni la Definition of Done', () => {
+  const nfr = { id: 'NFR-001', category: 'performance', statement: 'Le contrôle doit être rapide.', priority: 'must' };
+  const plan = (dod, sad = {}) => [{ document: 'plan', phase: 'schedule', settings: { cadence: 'sprint', release: 'REL-1' }, definition_of_done: dod },
+    { refs: { prd: { non_functional: [nfr] }, sad } }];
+  const parle = ([s, ctx]) => checkState(s, ctx).some(f => f.rule === 'S132');
+
+  assert.ok(parle(plan(['Code revu'])), 'aucune vérification et une DoD qui ne la cite pas : rien ne la vérifiera');
+  // La conception la vérifie : la DoD n'a rien à rattraper.
+  assert.ok(!parle(plan(['Code revu'], { verifications: [{ id: 'NR-01', nfr: 'NFR-001', stage: 'tests' }] })));
+  // Ou la DoD la porte à chaque incrément. La citation se lit par le SECOND FIL — un identifiant écrit
+  // DANS la phrase, comme `S128` le relit déjà : aucun changement de forme de la Definition of Done, et
+  // aucun appariement de deux textes libres, qui aurait produit des faux constats.
+  assert.ok(!parle(plan(['p95 sous 2 s (NFR-001)'])), 'une ligne de DoD qui cite la NFR la couvre');
+  assert.ok(parle(plan(['p95 sous 2 s'])), 'la même ligne sans l\'identifiant ne la couvre pas : rien ne la résout');
+  // Une NFR que personne n'attend ne se reproche pas.
+  assert.ok(!parle([{ ...plan([])[0] }, { refs: { prd: { non_functional: [{ ...nfr, priority: 'wont' }] } } }]));
+
+  // Le message dit les trois issues, et nomme l'absence de DoD quand c'est le cas.
+  const [s, ctx] = plan(['Code revu']);
+  assert.match(checkState(s, ctx).find(f => f.rule === 'S132').message, /Soit la conception la vérifie.*soit la DoD la porte.*soit elle est déclarée/s);
+  assert.match(checkState(plan([])[0], ctx).find(f => f.rule === 'S132').message, /il n'y a pas de Definition of Done/);
+
+  // Ce qu'elle lit est en AMONT : sans handoff, elle n'a rien à lire et le dit.
+  assert.ok(abstentions(s).some(x => x.rule === 'S132'), 'sans les NFR du PRD, S132 s\'abstient');
+  assert.ok(!abstentions(s, ctx).some(x => x.rule === 'S132'), 'avec elles, elle mesure');
+
+  // Et les plans du dépôt ne bougent pas : NFR-001 y porte sa vérification NR-01.
+  const reel = yaml.load(readFileSync(new URL('../exemple/plan/demo/state.yaml', import.meta.url).pathname, 'utf8'));
+  const refs = yaml.load(readFileSync(new URL('../exemple/plan/demo/refs.yaml', import.meta.url).pathname, 'utf8'));
+  assert.deepEqual(checkState(reel, { refs }).filter(f => ['S131', 'S132'].includes(f.rule)), []);
+});
+
 test('S130 : un engagement porte sur un but, et une coquille vide n\'en a pas encore', () => {
   const plan = its => ({ document: 'plan', phase: 'schedule',
     settings: { cadence: 'sprint', release: 'REL-1', sprint: { capacity: 6 } }, iterations: its });
@@ -2985,11 +3053,11 @@ test('ce que LECTURES déclare est ce que le code fait : vidée, la règle se ta
       }
     }
   }
-  // 148 déclarations pour 131 règles — quinze règles portent le même numéro dans deux documents, et
+  // 150 déclarations pour 133 règles — quinze règles portent le même numéro dans deux documents, et
   // `S10`, `S53`, `S54`, `S69`, `S79`, `S105`, `S108` lisent ailleurs selon le document. Chacune est
   // vérifiée document par document, d'où le compte : 18 déclarations transverses qui valent pour les
   // quatre, 24 qui nomment plusieurs documents, le reste un seul.
-  assert.equal(verifiees, 240, 'chaque déclaration est vérifiée sur chaque document qu\'elle vise');
+  assert.equal(verifiees, 242, 'chaque déclaration est vérifiée sur chaque document qu\'elle vise');
 });
 
 // Les quatorze règles qui ne lisent pas l'état mais ce qui vit à CÔTÉ de lui. Le test ci-dessus les
@@ -3066,8 +3134,8 @@ test('abstentions : les trois autres documents, et les lectures qui sont en amon
     assert.equal(abstentions(vide).length, combien, `${doc} : le compte des règles qui n'ont rien eu à lire`);
   }
   const vide = { document: 'plan', phase: 'schedule', settings: { cadence: 'sprint', release: 'REL-1' } };
-  assert.equal(abstentions(vide).length, 33, 'un plan vide en itérations');
-  assert.equal(abstentions({ document: 'plan', phase: 'schedule', settings: { cadence: 'flux' } }).length, 27,
+  assert.equal(abstentions(vide).length, 34, 'un plan vide en itérations');
+  assert.equal(abstentions({ document: 'plan', phase: 'schedule', settings: { cadence: 'flux' } }).length, 28,
     'au fil de l\'eau, les six règles d\'itération ne s\'appliquent pas');
 
   // Sur les dossiers réels : ce qui reste non mesuré se nomme, et dit pourquoi.
