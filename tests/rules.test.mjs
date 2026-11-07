@@ -2503,6 +2503,53 @@ test('les règles de la conception que rien n\'exerçait : S21, S25, S26, S33, S
   }
 });
 
+// `references/phase-slice.md` demande « un titre court … et en dessous qui, quoi, pourquoi », et dit de la
+// forme « En tant que… afin de… » qu'elle est « un bon démarreur de conversation, pas une obligation ».
+// Les trois champs existaient, `render-plan.mjs` les imprimait, et rien ne les exigeait : mesuré sur les
+// 36 stories du dépôt, 6 seulement les renseignaient. Une règle sur la FORME du titre aurait épinglé la
+// seule story correcte — titre court, trois champs remplis — et laissé passer les deux qui mettaient
+// tout dans la phrase et rendaient « Quoi : — · Pourquoi : — ». C'est la place du pourquoi qui se tient
+// ici, pas le moule de la phrase.
+test('S129 : une story dit pour qui, quoi et pourquoi, où que ce soit sauf nulle part', () => {
+  const plan = extra => ({ document: 'plan', phase: 'schedule', settings: { cadence: 'sprint', release: 'REL-1' }, ...extra });
+  const story = o => ({ id: 'US-1', title: 'Journal des refus', status: 'validé', release: 'REL-1',
+    lane: 'standard', map_task: 'T-03', frs: ['FR-001'], size: 'M',
+    persona: 'PER-01', what: 'consulter les refus', why: 'repérer les erreurs fréquentes', ...o });
+
+  // Un titre court avec les trois champs : c'est la forme que la référence demande, et la règle se tait.
+  assert.deepEqual(seules(plan({ stories: [story()] }), 'S129'), []);
+
+  // Chaque absence se constate séparément, et le constat nomme ce qui manque.
+  assert.deepEqual(seules(plan({ stories: [story({ what: '' })] }), 'S129'), ['US-1']);
+  assert.deepEqual(seules(plan({ stories: [story({ why: '' })] }), 'S129'), ['US-1']);
+  assert.deepEqual(seules(plan({ stories: [story({ what: '   ', why: '' })] }), 'S129'), ['US-1'], 'des espaces ne disent rien');
+  const troisMuets = checkState(plan({ stories: [story({ persona: '', what: '', why: '' })] })).find(f => f.rule === 'S129');
+  assert.match(troisMuets.message, /pour qui/);
+  assert.match(troisMuets.message, /quoi/);
+  assert.match(troisMuets.message, /pourquoi/);
+
+  // Le « qui » accepte `persona` OU `who`, parce que `render-plan.mjs` prend déjà `persona` en repli :
+  // la règle demande ce que le document a besoin de lire, pas un champ de plus.
+  assert.deepEqual(seules(plan({ stories: [story({ persona: '', who: 'Superviseur' })] }), 'S129'), []);
+  assert.match(checkState(plan({ stories: [story({ persona: '', who: '' })] })).find(f => f.rule === 'S129').message, /`who` ou `persona`/);
+
+  // La voie rapide n'est pas concernée : sa complétude est un autre contrat (origine observée et un
+  // exemple), et le titre d'un défaut est son symptôme.
+  const rapide = story({ persona: '', what: '', why: '', title: 'Libellé d\'erreur peu clair',
+    frs: [], map_task: '', lane: 'rapide', attach_to: 'ACT-01', origin: { type: 'defaut', ref: 'DEF-001' } });
+  assert.deepEqual(seules(plan({ stories: [rapide] }), 'S129'), []);
+
+  // Le titre d'une story passe désormais par les règles de rédaction, avec son quoi et son pourquoi.
+  // L01 et L07 s'y appliquent — une story ne promet pas « simple » et ne nomme pas un écran.
+  assert.ok(checkState(plan({ stories: [story({ title: 'Recherche rapide' })] })).some(f => f.rule === 'L01'));
+  assert.ok(checkState(plan({ stories: [story({ why: 'que l\'écran soit plus clair' })] })).some(f => f.rule === 'L07'));
+  assert.ok(checkState(plan({ stories: [story({ what: 'consulter les refus…' })] })).some(f => f.rule === 'L02'));
+  // L08 en est exclue : vérifié sur les 36 stories du dépôt, elle frappait 36 fois sur 36. Une story
+  // n'est pas un énoncé normatif et ne porte pas de « doit ».
+  assert.ok(!TEXT_RULES.find(r => r.id === 'L08').applies.includes('US'));
+  assert.deepEqual(checkState(plan({ stories: [story()] })).filter(f => f.rule === 'L08' && f.id === 'US-1'), []);
+});
+
 test('les règles du plan que rien n\'exerçait : S37, S38, S42, S46, S47, S49, S59, S62', () => {
   const plan = extra => ({ document: 'plan', phase: 'schedule', settings: { cadence: 'sprint', release: 'REL-1' }, ...extra });
   const story = o => ({ id: 'US-1', title: 'Accuser réception', status: 'validé', release: 'REL-1',

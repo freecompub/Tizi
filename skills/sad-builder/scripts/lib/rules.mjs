@@ -21,13 +21,13 @@ export const TEXT_RULES = [
       'ergonomique(?:s|ment)?', 'performant(?:e|es|s)?', 'efficace(?:s|ment)?', 'optimal(?:e|es|ement)?', 'optimaux', 'robuste(?:s)?', 'flexible(?:s)?',
       'moderne(?:s)?', 'adapté(?:e|es|s)?', 'approprié(?:e|es|s)?', 'suffisant(?:e|es|s)?', 'raisonnable(?:s|ment)?', 'user[- ]friendly',
       'si possible', 'si nécessaire', 'le cas échéant', 'notamment', 'etc\\.?', 'et/ou', 'au mieux', 'dans la mesure du possible']),
-    applies: ['BR', 'AC', 'FR', 'NFR', 'RG', 'OBJ', 'GOAL', 'AD'],
+    applies: ['BR', 'AC', 'FR', 'NFR', 'RG', 'OBJ', 'GOAL', 'AD', 'US'],
   },
   {
     id: 'L02', name: 'points_de_suspension',
     message: () => 'points de suspension : l\'énumération est incomplète, la rendre exhaustive ou la décrire en intention',
     re: /(\.\.\.|…)/u,
-    applies: ['BR', 'AC', 'FR', 'NFR', 'RG'],
+    applies: ['BR', 'AC', 'FR', 'NFR', 'RG', 'US'],
   },
   {
     id: 'L03', name: 'enonce_multiple',
@@ -63,7 +63,7 @@ export const TEXT_RULES = [
       'écrans?', 'boutons?', 'pages?', 'menus?', 'fenêtres?', 'pop-?ups?', 'onglets?', 'listes? déroulantes?', 'cases? à cocher', 'champs? de saisie', 'cliqu\\p{L}*',
       // Produits et langages : un choix de conception.
       'PostgreSQL', 'MySQL', 'MongoDB', 'Oracle', 'Redis', 'Kafka', 'RabbitMQ', 'Elasticsearch', 'Kotlin', 'Java', 'Python', 'Next(?:\\.js)?', 'GraphQL']),
-    applies: ['FR', 'AC'],
+    applies: ['FR', 'AC', 'US'],
   },
   {
     id: 'L08', name: 'formulation_non_normative',
@@ -1176,6 +1176,13 @@ export function checkPlan(s, refs = {}) {
   const tasksOf = id => tasks.filter(t => t.story === id);
   for (const st of stories) {
     if (!st.title) out.push({ rule: 'S62', id: st.id, message: 'story sans titre court' });
+    // Le titre d'une story était le seul texte de toute la chaîne à ne passer par aucune règle de
+    // rédaction : neuf types l'étaient, pas celui-là. L01 (terme non mesurable), L02 (points de
+    // suspension) et L07 (implementation) s'y appliquent désormais, avec le quoi et le pourquoi —
+    // « afin d'être plus efficace » est un pourquoi qui ne se mesure pas. L08 en est exclue
+    // volontairement : vérifié sur les 36 stories du dépôt, elle frappait 36 fois sur 36, parce
+    // qu'une story n'est pas un énoncé normatif et ne porte pas de « doit ».
+    push(st, 'US', [st.title, st.what, st.why].filter(Boolean).join(' '));
     if (st.lane === 'rapide') {
       if (!st.attach_to) out.push({ rule: 'S78', id: st.id, message: `story en voie rapide sans épopée (attach_to)${st.origin?.type === 'defaut' ? ' : la rattacher à l\'activité de l\'exigence que le défaut contredit' : ''}` });
       const why = [];
@@ -1186,6 +1193,22 @@ export function checkPlan(s, refs = {}) {
       if (why.length) out.push({ rule: 'S60', id: st.id, message: `voie rapide non conforme : ${why.join(' ; ')} ; suivre le chemin normal` });
       continue;
     }
+    // `references/phase-slice.md` : une story « a un titre court, qu'on peut prononcer dans une
+    // conversation, et en dessous qui, quoi, pourquoi » — et la forme « En tant que…, je veux… afin
+    // de… » y est « un bon démarreur de conversation, pas une obligation ». Les trois champs existent,
+    // `render-plan.mjs` les imprime sur la carte de la story, et rien ne les exigeait : sur les
+    // 36 stories du dépôt, 6 seulement les renseignaient, et les deux stories écrites au format manuel
+    // rendaient « Quoi : — · Pourquoi : — ». Une règle sur la forme du titre aurait épinglé la seule
+    // story correcte et laissé passer les deux incomplètes ; c'est la place du pourquoi qui manquait
+    // d'être tenue, pas le moule de la phrase.
+    // Le « qui » accepte `persona`, parce que le rendu le prend déjà en repli : la règle demande ce que
+    // le document a besoin de lire, pas un champ de plus. La voie rapide n'est pas concernée — elle
+    // sort plus haut, et sa complétude est un autre contrat (`references/fast-lane.md`).
+    const sansDire = [];
+    if (!String(st.who ?? '').trim() && !String(st.persona ?? '').trim()) sansDire.push('pour qui (`who` ou `persona`)');
+    if (!String(st.what ?? '').trim()) sansDire.push('quoi (`what`)');
+    if (!String(st.why ?? '').trim()) sansDire.push('pourquoi (`why`)');
+    if (sansDire.length) out.push({ rule: 'S129', id: st.id, message: `ne dit nulle part ${sansDire.join(', ni ')} : la carte de la story l'imprime en « — », et une valeur écrite nulle part ne se priorise pas. Le titre reste court ; ces champs sont la place du reste` });
     if (!arr(st.frs).length) out.push({ rule: 'S37', id: st.id, message: 'story sans FR (une petite correction peut passer en voie rapide)' });
     for (const f of arr(st.frs)) if (!known(f)) out.push({ rule: 'S09', id: st.id, message: `FR ${f} absente du handoff du PRD` });
     if (!st.map_task) out.push({ rule: 'S38', id: st.id, message: 'story rattachée à aucune tâche de la story map' });
@@ -2417,6 +2440,7 @@ export const STRUCT_RULES = {
   S126: 'contact parti sans que l\'autorisation de l\'utilisateur soit écrite',
   S127: 'contact disponible, question en attente, et rien n\'est jamais parti',
   S128: 'identifiant cité dans une phrase qui ne mène nulle part, ou attribution qui contredit le registre',
+  S129: 'story sans qui, quoi ou pourquoi',
   S01: 'objectif non mesurable', S02: 'exigence sans objectif', S03: 'exigence sans besoin sourcé', S04: 'exigence sans critère d\'acceptation',
   S05: 'priorité ou release manquante', S06: 'exigence sans origine', S07: 'Must sans scénario d\'erreur', S08: 'NFR incomplète',
   S09: 'référence inexistante', S10: 'référence vers un élément abandonné', S11: 'règle métier sans source', S12: 'règle sans niveau d\'application',
