@@ -5,7 +5,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import yaml from '../skills/brd-builder/scripts/lib/vendor/js-yaml.mjs';
 import { tempDir, node } from './helpers.mjs';
-import { DOCUMENTS, STRUCT_RULES, TEXT_RULES, LECTURES, NON_DECLAREES, abstentions, applicable, checkState, sollicitationEtat, seuilsRelance, refsDans, coverage, coverageFindings, coverageRows, evidenceOf, contextFindings, OUTILS, familleDe, formeDuCanal, connecteursDe } from '../skills/brd-builder/scripts/lib/rules.mjs';
+import { DOCUMENTS, STRUCT_RULES, TEXT_RULES, LECTURES, NON_DECLAREES, HORS_CONTENU, abstentions, applicable, declarations, checkState, sollicitationEtat, seuilsRelance, refsDans, coverage, coverageFindings, coverageRows, evidenceOf, contextFindings, OUTILS, familleDe, formeDuCanal, connecteursDe } from '../skills/brd-builder/scripts/lib/rules.mjs';
 import { gateConditions } from '../skills/brd-builder/scripts/lib/gates.mjs';
 import { shellWrittenPaths } from '../skills/brd-builder/scripts/lib/agent-io.mjs';
 import { buildExtract } from '../skills/brd-builder/scripts/lib/sessions.mjs';
@@ -2870,35 +2870,72 @@ test('un fragment cité dans une phrase ne casse pas son bloc de citation', () =
 // a besoin de lire ; ces tests vérifient que la déclaration correspond **vraiment** au code, sans
 // quoi la table dériverait du catalogue qu'elle prétend décrire — la faute exacte trouvée dans les
 // documents d'exemple le 7 novembre.
-test('LECTURES et NON_DECLAREES couvrent le registre, exactement et sans doublon', () => {
-  const declarees = Object.keys(LECTURES);
-  assert.deepEqual(declarees.filter(r => NON_DECLAREES.includes(r)), [],
-    'une règle est à la fois déclarée et listée comme non déclarée');
+// ── Les 131 déclarations : ce que chaque règle lit, et quand elle s'applique ──
+// Mesuré une fois la table finie, et c'est le chiffre qui justifiait l'étape : sur un état entièrement
+// vide, **3 règles sur 131 parlent** au BRD (`S65`, `S89`, `S100`), **une seule** ailleurs (`S100`) —
+// et 48 s'abstiennent, qui se taisaient avant sans qu'on puisse distinguer leur silence d'un accord.
+const lireEtat = p => yaml.load(readFileSync(new URL(`../${p}`, import.meta.url).pathname, 'utf8'));
+
+test('LECTURES couvre le registre entier, et `NON_DECLAREES` est vide', () => {
   const ordre = (a, b) => +a.slice(1) - +b.slice(1);
-  assert.deepEqual([...declarees, ...NON_DECLAREES].sort(ordre), Object.keys(STRUCT_RULES).sort(ordre),
-    'toute règle du registre doit être soit déclarée dans LECTURES, soit listée dans NON_DECLAREES : une règle neuve ne peut pas rester non classée');
-  for (const [r, d] of Object.entries(LECTURES)) {
-    assert.ok(DOCUMENTS.includes(d.doc), `${r} : document « ${d.doc} » hors catalogue`);
-    assert.ok(Array.isArray(d.lit) && d.lit.length, `${r} : il faut dire ce qu'elle lit`);
+  assert.deepEqual(NON_DECLAREES, [],
+    'l\'étape est finie : une règle neuve dit ce qu\'elle lit, elle ne se gare plus dans une liste d\'attente');
+  assert.deepEqual(Object.keys(LECTURES).sort(ordre), Object.keys(STRUCT_RULES).sort(ordre),
+    'toute règle du registre déclare sa lecture, et rien ne se déclare qui ne soit au registre');
+  // `S00` est la seule sans déclaration, et ce n'est pas un oubli : elle REFUSE un document que ce
+  // catalogue ne vérifie pas, donc elle n'a de lecture pour aucun des quatre. Qu'elle soit la seule est
+  // ce qui empêche une règle neuve d'arriver avec une liste vide et de passer pour déclarée.
+  assert.deepEqual(Object.keys(LECTURES).filter(r => declarations(r).length === 0), ['S00']);
+
+  for (const r of Object.keys(LECTURES)) {
+    const vus = [];
+    for (const d of declarations(r)) {
+      const docs = d.doc === '*' ? DOCUMENTS : [].concat(d.doc);
+      assert.ok(docs.length && docs.every(x => DOCUMENTS.includes(x)), `${r} : document « ${d.doc} » hors catalogue`);
+      assert.ok(Array.isArray(d.lit) && d.lit.length, `${r} : il faut dire ce qu'elle lit`);
+      assert.ok(!(d.absence && d.facultatif), `${r} : « constate l'absence » et « facultatif » s'excluent — l'une parle quand c'est vide, l'autre se tait`);
+      for (const c of [].concat(d.quand ?? [])) {
+        assert.ok(c.chemin, `${r} : une condition sans chemin`);
+        assert.ok(c.vaut || c.sauf || c.rempli, `${r} : une condition qui ne dit ni \`vaut\`, ni \`sauf\`, ni \`rempli\``);
+      }
+      // Deux déclarations sur le même document : la seconde serait morte, et personne ne le verrait.
+      for (const x of docs) {
+        assert.ok(!vus.includes(x), `${r} : deux déclarations pour « ${x} »`);
+        vus.push(x);
+      }
+    }
   }
 });
 
-// Le test qui empêche la table de mentir, et qui a déjà servi : `S83` y était déclarée « constate une
-// absence », et la vérification l'a démentie — elle a besoin de parties prenantes entendues pour
-// parler. La mesure de l'état vide le disait déjà (S83 n'y figurait pas) ; je l'avais mal lue.
+// Le test qui empêche la table de mentir, et qui a déjà servi trois fois : `S83` y était déclarée
+// « constate une absence », et la vérification l'a démentie ; `S49` y était jugée sur un plan en
+// itérations, où elle ne s'applique pas ; et une assertion écrite au premier lot a été rendue fausse
+// par le second. Il tourne maintenant sur les QUATRE documents, avec un dossier réel pour chacun.
 test('ce que LECTURES déclare est ce que le code fait : vidée, la règle se tait — ou constate l\'absence', () => {
-  // Un dossier RÉEL par document déclaré, avec ses handoffs amont : la correspondance se vérifie sur
-  // ce que les scripts lisent vraiment, pas sur un état fabriqué pour l'occasion.
-  const lire = p => yaml.load(readFileSync(new URL(`../${p}`, import.meta.url).pathname, 'utf8'));
   const DOSSIERS = {
-    brd: { etat: lire('exemple/brd/demo/state.yaml'), refs: {} },
-    plan: { etat: lire('exemple/plan/demo/state.yaml'), refs: lire('exemple/plan/demo/refs.yaml') },
+    brd: { etat: lireEtat('exemple/brd/demo/state.yaml'), refs: {} },
+    prd: { etat: lireEtat('exemple/prd/demo/state.yaml'), refs: {} },
+    sad: { etat: lireEtat('exemple/sad/demo/state.yaml'), refs: {} },
+    plan: { etat: lireEtat('exemple/plan/demo/state.yaml'), refs: lireEtat('exemple/plan/demo/refs.yaml') },
+  };
+  const copie = o => JSON.parse(JSON.stringify(o));
+  const poser = (o, chemin, v) => {
+    const c = copie(o), parts = chemin.split('.'), feuille = parts.pop();
+    let cur = c;
+    for (const k of parts) cur = (cur[k] = cur[k] ?? {});
+    cur[feuille] = v;
+    return c;
   };
   const vider = (o, chemins) => {
-    const c = JSON.parse(JSON.stringify(o));
+    const c = copie(o);
     for (const chemin of chemins) {
-      const parts = chemin.split('.');
-      const feuille = parts.pop();
+      // `*` : le document entier. Vider « tout » veut dire retirer toutes les collections d'éléments —
+      // les blocs de métadonnées n'en sont pas, et c'est la liste de `placeholderFindings` qui le dit.
+      if (chemin === '*') {
+        for (const [k, v] of Object.entries(c)) if (!HORS_CONTENU.includes(k) && Array.isArray(v)) delete c[k];
+        continue;
+      }
+      const parts = chemin.split('.'), feuille = parts.pop();
       const parent = parts.reduce((x, k) => (x && x[k]) || {}, c);
       delete parent[feuille];
     }
@@ -2907,44 +2944,106 @@ test('ce que LECTURES déclare est ce que le code fait : vidée, la règle se ta
   // Les valeurs connues des champs qui conditionnent une règle, pour placer l'état DANS son réglage
   // avant de la juger : `S49` ne vaut qu'au fil de l'eau, et la juger sur un plan en itérations
   // reviendrait à lui reprocher un silence qui n'est pas le sien.
-  const VALEURS = { phase: ['assess', 'discover', 'define', 'govern'], 'settings.cadence': ['sprint', 'flux'] };
-  const poser = (o, chemin, v) => {
-    const c = JSON.parse(JSON.stringify(o));
-    const parts = chemin.split('.');
-    const feuille = parts.pop();
-    let cur = c;
-    for (const k of parts) cur = (cur[k] = cur[k] ?? {});
-    cur[feuille] = v;
-    return c;
+  const VALEURS = {
+    phase: ['assess', 'discover', 'define', 'frame', 'specify', 'explore', 'design', 'slice', 'refine', 'schedule', 'review', 'govern'],
+    'settings.cadence': ['sprint', 'flux'],
+    existing_product: [true],
   };
+  // De quoi satisfaire une condition `rempli` : une collection qui porte un élément.
+  const QUELQUE_CHOSE = { 'ctx.constitution.principles': [{ id: 'PR-1', status: 'actif' }], 'ctx.contacts': { 'SH-01': 'x@y.z' } };
+  const defaut = [{ id: 'X-1' }];
+
   let verifiees = 0;
-  for (const [regle, d] of Object.entries(LECTURES)) {
-    const dossier = DOSSIERS[d.doc];
-    assert.ok(dossier, `${regle} : aucun dossier réel pour vérifier les règles de « ${d.doc} »`);
-    let depart = { ...dossier.etat, refs: dossier.refs };
-    if (d.quand) {
-      const valeurs = VALEURS[d.quand.chemin];
-      assert.ok(valeurs, `${regle} : valeurs connues de ${d.quand.chemin} absentes du test`);
-      const dedans = valeurs.find(v => applicable(poser(depart, d.quand.chemin, v), d));
-      assert.ok(dedans, `${regle} : aucune valeur de ${d.quand.chemin} ne la rend applicable`);
-      depart = poser(depart, d.quand.chemin, dedans);
+  for (const regle of Object.keys(LECTURES)) {
+    for (const d of declarations(regle)) {
+      for (const doc of d.doc === '*' ? DOCUMENTS : [].concat(d.doc)) {
+        const dossier = DOSSIERS[doc];
+        assert.ok(dossier, `${regle} : aucun dossier réel pour vérifier les règles de « ${doc} »`);
+        let base = { ...dossier.etat, document: doc, refs: dossier.refs }, ctx = {};
+        // 1. placer l'état et son contexte DANS le réglage de la règle, sinon on juge son silence
+        //    là où elle n'a rien à dire.
+        for (const c of [].concat(d.quand ?? [])) {
+          if (c.chemin.startsWith('ctx.')) {
+            assert.ok(c.rempli, `${regle} : une condition sur le contexte ne sait se satisfaire que par \`rempli\``);
+            ctx = poser(ctx, c.chemin.slice(4), QUELQUE_CHOSE[c.chemin] ?? defaut);
+            continue;
+          }
+          if (c.rempli) { base = poser(base, c.chemin, QUELQUE_CHOSE[c.chemin] ?? defaut); continue; }
+          const valeurs = VALEURS[c.chemin];
+          assert.ok(valeurs, `${regle} : valeurs connues de ${c.chemin} absentes du test`);
+          const dedans = valeurs.find(v => applicable(poser(base, c.chemin, v), { quand: c }));
+          assert.ok(dedans, `${regle} : aucune valeur de ${c.chemin} ne la rend applicable`);
+          base = poser(base, c.chemin, dedans);
+        }
+        // 2. vider ce qu'elle a déclaré lire, dans l'état comme à côté de lui.
+        ctx = vider(ctx, d.lit.filter(p => p.startsWith('ctx.')).map(p => p.slice(4)));
+        const { refs, ...etat } = vider(base, d.lit.filter(p => !p.startsWith('ctx.')));
+        const parle = checkState(etat, { ...ctx, refs }).some(f => f.rule === regle);
+        if (d.absence) assert.ok(parle, `${regle} est déclarée « absence » : sur un ${doc}, elle devrait parler quand ${d.lit.join(', ')} est vide`);
+        else assert.ok(!parle, `${regle} parle encore sur un ${doc} alors que ${d.lit.join(', ')} est vide : la déclaration ne dit pas tout ce qu'elle lit`);
+        verifiees++;
+      }
     }
-    const { refs, ...etat } = vider(depart, d.lit);
-    const parle = checkState(etat, { refs }).some(f => f.rule === regle);
-    if (d.absence) assert.ok(parle, `${regle} est déclarée « absence » : elle devrait parler quand ${d.lit.join(', ')} est vide`);
-    else assert.ok(!parle, `${regle} parle encore alors que ${d.lit.join(', ')} est vide : la déclaration ne dit pas tout ce qu'elle lit`);
-    verifiees++;
   }
-  assert.equal(verifiees, 57, 'deux tranches déclarées, plus `S49` que sa condition de cadence a rendue déclarable');
+  // 148 déclarations pour 131 règles — quinze règles portent le même numéro dans deux documents, et
+  // `S10`, `S53`, `S54`, `S69`, `S79`, `S105`, `S108` lisent ailleurs selon le document. Chacune est
+  // vérifiée document par document, d'où le compte : 18 déclarations transverses qui valent pour les
+  // quatre, 24 qui nomment plusieurs documents, le reste un seul.
+  assert.equal(verifiees, 240, 'chaque déclaration est vérifiée sur chaque document qu\'elle vise');
 });
 
-test('abstentions : un BRD vide rend 24 règles non mesurées en Define, 26 en Govern', () => {
+// Les quatorze règles qui ne lisent pas l'état mais ce qui vit à CÔTÉ de lui. Le test ci-dessus les
+// effleure sans les attraper — les dossiers d'exemple n'ont ni guide d'entretien ni liste de contrôle,
+// donc « vider » n'y change rien et le silence est acquis d'avance. Ici le fichier existe d'abord : la
+// règle parle, puis on le retire et elle se tait. C'est la déclaration qui est mise à l'épreuve.
+test('les lectures qui ne sont pas dans l\'état : le fichier existe, la règle parle ; il s\'en va, elle se tait', () => {
+  const brd = lireEtat('exemple/brd/demo/state.yaml');
+  const parle = (regle, ctx) => checkState(brd, ctx).some(f => f.rule === regle);
+
+  // S80 : une liste de contrôle cochée sans relecteur nommé.
+  const liste = [{ file: 'cl-brd.md', text: '- [x] CL-BRD-001 Les objectifs sont mesurables ?\n' }];
+  assert.ok(parle('S80', { checklists: liste }), 'S80 doit parler sur une case cochée sans relecteur');
+  assert.ok(!parle('S80', {}), 'sans liste de contrôle, S80 n\'a rien à lire');
+  assert.deepEqual(declarations('S80')[0].lit, ['ctx.checklists']);
+
+  // S104 : un fichier qui part en citant un identifiant qu'il ne glose nulle part.
+  const id = brd.business_requirements[0].id;
+  const sortant = [{ file: 'releve.md', text: `Peux-tu confirmer ${id} ? Merci.\n` }];
+  assert.ok(parle('S104', { checklists: sortant }), 'S104 doit parler sur une adresse nue dans un fichier qui part');
+  assert.ok(!parle('S104', {}), 'sans fichier sortant, S104 n\'a rien à lire');
+  assert.deepEqual(declarations('S104')[0].lit, ['ctx.interviews', 'ctx.checklists']);
+
+  // S96 : un guide d'entretien pour quelqu'un qui a parlé depuis, sans qu'une source en vienne.
+  const qui = brd.sources.flatMap(s => s.stakeholders ?? [])[0];
+  assert.ok(qui, 'le dossier d\'exemple doit avoir au moins un locuteur');
+  assert.ok(parle('S96', { interviews: [{ file: `guide-${qui}.md`, text: '' }] }), 'S96 doit parler sur un guide périmé');
+  assert.ok(!parle('S96', {}), 'sans guide, S96 n\'a rien à lire');
+
+  // S70 : une fiche de contexte au-delà du budget. Elle ne se mesure qu'au RENDU, et `lint.mjs` ne
+  // rend rien : déclarée `facultatif`, elle ne réclame donc jamais sa mesure à qui ne peut pas la faire.
+  const plan = { ...lireEtat('exemple/plan/demo/state.yaml'), settings: { context_budget: { max: 10 } } };
+  assert.ok(checkState(plan, { cards: [{ id: 'TK-1', tokens: 99 }] }).some(f => f.rule === 'S70'));
+  assert.ok(!checkState(plan, {}).some(f => f.rule === 'S70'));
+  assert.ok(declarations('S70')[0].facultatif, 'une fiche qu\'on n\'a pas rendue n\'est pas une fiche trop longue');
+  assert.ok(!abstentions(plan, {}).some(x => x.rule === 'S70'), 'et elle ne se plaint pas auprès du lint, qui ne rend aucune fiche');
+
+  // S79 : un garde, pas une lecture. Sans constitution, la règle n'existe pas ; avec elle, l'absence
+  // de `principles_applicable` devient le constat.
+  const constitution = { principles: [{ id: 'PR-1', status: 'actif' }] };
+  assert.ok(parle('S79', { constitution }), 'avec une constitution active, le BRD doit dire quels principes s\'appliquent');
+  assert.ok(!parle('S79', {}), 'sans constitution, S79 ne s\'applique pas');
+  assert.equal(applicable({ ctx: {} }, declarations('S79')[0]), false, 'la déclaration dit le même garde que le code');
+  assert.equal(applicable({ ctx: { constitution }, phase: 'define' }, declarations('S79')[0]), true);
+});
+
+test('abstentions : un BRD vide ne constate que trois choses, et s\'abstient quarante-huit fois', () => {
   const vide = { document: 'brd', phase: 'define' };
   assert.deepEqual([...new Set(checkState(vide).map(f => f.rule))].sort(),
     ['S100', 'S65', 'S89'], 'sur un état vide, seules les règles qui constatent une absence parlent');
   const a = abstentions(vide);
-  assert.equal(a.length, 24, 'les 28 déclarées, moins les deux qui constatent une absence, moins `S04` et `S05` qui ne valent qu\'à partir de Govern');
-  assert.equal(abstentions({ document: 'brd', phase: 'govern' }).length, 26, 'en Govern, `S04` et `S05` s\'appliquent et rejoignent la liste');
+  assert.equal(a.length, 48, 'quarante-huit règles n\'ont rien eu à lire, et se taisaient sans le dire');
+  assert.equal(abstentions({ document: 'brd', phase: 'govern' }).length, 50, 'en Govern, `S04` et `S05` s\'appliquent et rejoignent la liste');
+  assert.equal(abstentions({ document: 'brd', phase: 'discover' }).length, 47, 'avant Define, `S65` et `S113` ne s\'appliquent pas encore');
   assert.ok(a.every(x => x.message.startsWith('non mesurée :')), 'le constat dit qu\'il ne constate rien');
   assert.match(a.find(x => x.rule === 'S02').message, /`business_requirements` est vide/);
 
@@ -2953,35 +3052,39 @@ test('abstentions : un BRD vide rend 24 règles non mesurées en Define, 26 en G
   assert.ok(!abstentions({ document: 'brd', business_requirements: [{ id: 'BR-1' }] }).some(x => x.rule === 'S02'));
 
   // Sur un dossier réel, presque tout est mesuré : ce qui reste le dit par son nom.
-  const reel = yaml.load(readFileSync(new URL('../exemple/brd/demo/state.yaml', import.meta.url).pathname, 'utf8'));
-  assert.deepEqual(abstentions(reel).map(x => x.rule).sort(), ['S86', 'S97']);
+  assert.deepEqual(abstentions(lireEtat('exemple/brd/demo/state.yaml')).map(x => x.rule).sort(), ['S86', 'S97']);
 
   // Une règle du BRD n'est pas « non mesurée » sur un plan : elle ne s'y applique pas.
-  assert.ok(!abstentions({ document: 'plan', phase: 'schedule' }).some(x => LECTURES[x.rule].doc === 'brd'));
+  const duBrd = r => declarations(r).every(d => [].concat(d.doc).includes('brd') && d.doc !== '*');
+  assert.ok(!abstentions({ document: 'plan', phase: 'schedule' }).some(x => duBrd(x.rule)));
 });
 
-test('abstentions : le plan, et les lectures qui sont en amont', () => {
-  const lire = p => yaml.load(readFileSync(new URL(`../${p}`, import.meta.url).pathname, 'utf8'));
+test('abstentions : les trois autres documents, et les lectures qui sont en amont', () => {
+  for (const [doc, phase, combien] of [['prd', 'specify', 37], ['sad', 'design', 34]]) {
+    const vide = { document: doc, phase };
+    assert.deepEqual([...new Set(checkState(vide).map(f => f.rule))], ['S100'], `sur un ${doc} vide, une seule règle parle`);
+    assert.equal(abstentions(vide).length, combien, `${doc} : le compte des règles qui n'ont rien eu à lire`);
+  }
   const vide = { document: 'plan', phase: 'schedule', settings: { cadence: 'sprint', release: 'REL-1' } };
-  assert.deepEqual([...new Set(checkState(vide).map(f => f.rule))], ['S100'], 'sur un plan vide, une seule règle parle');
-  assert.equal(abstentions(vide).length, 28, 'les 28 règles du plan déclarées n\'ont rien eu à lire');
+  assert.equal(abstentions(vide).length, 33, 'un plan vide en itérations');
+  assert.equal(abstentions({ document: 'plan', phase: 'schedule', settings: { cadence: 'flux' } }).length, 27,
+    'au fil de l\'eau, les six règles d\'itération ne s\'appliquent pas');
 
-  // Sur le dossier réel, avec ses handoffs : tout était mesurable.
-  assert.deepEqual(abstentions(lire('exemple/plan/demo/state.yaml'), lire('exemple/plan/demo/refs.yaml')), []);
+  // Sur les dossiers réels : ce qui reste non mesuré se nomme, et dit pourquoi.
+  const plan = lireEtat('exemple/plan/demo/state.yaml');
+  assert.deepEqual(abstentions(plan, { refs: lireEtat('exemple/plan/demo/refs.yaml') }), []);
+  // Le PRD d'exemple a été écrit avant que le PRD ait un registre de parties prenantes : seize règles
+  // sur qui a parlé n'ont jamais eu de quoi se prononcer, et c'est exactement ce qu'il faut voir.
+  const muettes = abstentions(lireEtat('exemple/prd/demo/state.yaml'));
+  assert.equal(muettes.length, 18);
+  assert.equal(muettes.filter(x => x.lit.includes('sources')).length, 8);
+  assert.equal(muettes.filter(x => x.lit.includes('stakeholders')).length, 9);
 
   // `S39` et `S51` lisent l'amont, pas l'état : sans les handoffs elles n'ont rien à lire, avec eux si.
-  const s = lire('exemple/plan/demo/state.yaml');
-  const sansAmont = abstentions(s).map(x => x.rule);
+  const sansAmont = abstentions(plan).map(x => x.rule);
   assert.ok(sansAmont.includes('S39') && sansAmont.includes('S51'), 'sans handoff amont, les deux règles qui le lisent s\'abstiennent');
-  assert.match(abstentions(s).find(x => x.rule === 'S39').message, /refs\.prd\.releases/);
-
-  // Le plan en flux n'a pas d'itérations, et les six règles qui en parlent ne s'y appliquent pas : elles
-  // ont quitté la liste depuis que `CADENCE_ITERATIVE` le déclare. Ne reste que la mesure des outcomes,
-  // qu'un projet au fil de l'eau peut parfaitement remplir.
-  const flux = abstentions(lire('exemple/plan/flux/state.yaml'), lire('exemple/plan/flux/refs.yaml'));
-  assert.deepEqual(flux.map(x => x.rule), ['S59']);
+  assert.match(abstentions(plan).find(x => x.rule === 'S39').message, /refs\.prd\.releases/);
 });
-
 
 // ── `quand` : une règle hors de son réglage ne s'applique pas ────────────────
 // Mesuré avant d'écrire : en faisant varier la phase et la cadence sur les mêmes données, **5 règles
@@ -2993,7 +3096,7 @@ test('abstentions : le plan, et les lectures qui sont en amont', () => {
 // Ce test est la contrepartie de ma propre mise en garde : le test de correspondance ne vérifiait que
 // les lectures, pas les conditions, et un `quand` inventé aurait pu mentir sans que rien le dise. Il
 // est donc pris des deux côtés — dans son réglage la règle parle, hors de son réglage elle se tait.
-test('applicable : `vaut` est une liste blanche, `sauf` une liste noire', () => {
+test('applicable : `vaut` est une liste blanche, `sauf` une liste noire, `rempli` un garde', () => {
   assert.equal(applicable({ phase: 'define' }, {}), true, 'sans condition, une règle s\'applique');
   assert.equal(applicable({ phase: 'define' }, { quand: { chemin: 'phase', vaut: ['define', 'govern'] } }), true);
   assert.equal(applicable({ phase: 'discover' }, { quand: { chemin: 'phase', vaut: ['define', 'govern'] } }), false);
@@ -3001,22 +3104,51 @@ test('applicable : `vaut` est une liste blanche, `sauf` une liste noire', () => 
   assert.equal(applicable({ settings: { cadence: 'sprint' } }, { quand: { chemin: 'settings.cadence', sauf: ['flux'] } }), true);
   // Une valeur absente n'est pas « flux » : la liste noire laisse passer, comme le fait le code.
   assert.equal(applicable({}, { quand: { chemin: 'settings.cadence', sauf: ['flux'] } }), true);
+  // `rempli` : un garde. Une collection vide, un objet vide et un champ absent ne gardent rien.
+  const garde = { quand: { chemin: 'security_catalogs', rempli: true } };
+  assert.equal(applicable({ security_catalogs: ['ASVS'] }, garde), true);
+  assert.equal(applicable({ security_catalogs: [] }, garde), false);
+  assert.equal(applicable({}, garde), false);
+  // Plusieurs conditions valent TOUTES ensemble : il suffit qu'une seule manque.
+  const deux = { quand: [{ chemin: 'phase', vaut: ['define'] }, { chemin: 'sources', rempli: true }] };
+  assert.equal(applicable({ phase: 'define', sources: [{ id: 'SRC-1' }] }, deux), true);
+  assert.equal(applicable({ phase: 'govern', sources: [{ id: 'SRC-1' }] }, deux), false);
+  assert.equal(applicable({ phase: 'define', sources: [] }, deux), false);
 });
 
 test('les conditions déclarées sont celles du code : dans son réglage la règle parle, hors de lui elle se tait', () => {
-  const lire = p => yaml.load(readFileSync(new URL(`../${p}`, import.meta.url).pathname, 'utf8'));
   const parle = (etat, regle, ctx = {}) => checkState(etat, ctx).some(f => f.rule === regle);
 
-  // Les quatre règles de phase, sur le dossier réel : chacune prise dans une phase où elle doit
+  // Les quatre règles de phase du BRD, sur le dossier réel : chacune prise dans une phase où elle doit
   // parler, puis dans une phase où elle ne s'applique pas.
-  const brd = lire('exemple/brd/demo/state.yaml');
+  const brd = lireEtat('exemple/brd/demo/state.yaml');
+  const duBrd = regle => declarations(regle).find(d => [].concat(d.doc).includes('brd'));
   for (const [regle, dedans, dehors] of [['S04', 'govern', 'define'], ['S05', 'govern', 'define'],
     ['S65', 'define', 'discover'], ['S113', 'define', 'discover']]) {
     assert.ok(parle({ ...brd, phase: dedans }, regle), `${regle} devrait parler en ${dedans}`);
     assert.ok(!parle({ ...brd, phase: dehors }, regle), `${regle} ne s'applique pas en ${dehors} et devrait se taire`);
-    assert.equal(applicable({ ...brd, phase: dedans }, LECTURES[regle]), true, `${regle} : la déclaration contredit le code en ${dedans}`);
-    assert.equal(applicable({ ...brd, phase: dehors }, LECTURES[regle]), false, `${regle} : la déclaration contredit le code en ${dehors}`);
+    assert.equal(applicable({ ...brd, phase: dedans }, duBrd(regle)), true, `${regle} : la déclaration contredit le code en ${dedans}`);
+    assert.equal(applicable({ ...brd, phase: dehors }, duBrd(regle)), false, `${regle} : la déclaration contredit le code en ${dehors}`);
   }
+
+  // Les deux règles d'effectif n'existent pas avant Discover : la carte des parties prenantes n'est pas
+  // encore faite, le tour de table n'a donné que des noms.
+  for (const regle of ['S122', 'S123']) {
+    assert.equal(applicable({ phase: 'assess' }, duBrd(regle)), false, `${regle} ne s'applique pas à l'ouverture`);
+    assert.equal(applicable({ phase: 'discover' }, duBrd(regle)), true);
+    assert.ok(!parle({ ...brd, phase: 'assess' }, regle), `${regle} devrait se taire à l'ouverture`);
+  }
+
+  // `S55` : un garde, pas une lecture. Sans catalogue de sécurité déclaré, il n'y a pas de contrôle de
+  // référence à exiger d'une mesure d'atténuation ; avec un catalogue, la règle redevient due.
+  const sad = lireEtat('exemple/sad/demo/state.yaml');
+  assert.ok(sad.security_catalogs?.length, 'le dossier de conception d\'exemple doit déclarer un catalogue');
+  assert.equal(applicable(sad, declarations('S55')[0]), true);
+  assert.equal(applicable({ ...sad, security_catalogs: [] }, declarations('S55')[0]), false);
+  const menaces = (sad.threats ?? []).filter(t => t.treatment === 'attenuer').map(t => ({ ...t, controls: [] }));
+  assert.ok(menaces.length, 'et au moins une menace à atténuer');
+  assert.ok(parle({ ...sad, threats: menaces }, 'S55'), 'avec un catalogue, une atténuation sans contrôle se reproche');
+  assert.ok(!parle({ ...sad, threats: menaces, security_catalogs: [] }, 'S55'), 'sans catalogue, elle ne se reproche pas');
 
   // La cadence : un plan qui fait parler trois des six règles d'itération à la fois, puis le même
   // plan au fil de l'eau, où aucune des six n'a plus lieu d'être.
@@ -3031,24 +3163,47 @@ test('les conditions déclarées sont celles du code : dans son réglage la règ
   assert.deepEqual(enSprint, ['S48', 'S58', 'S130'], 'ce plan doit faire parler trois des six règles d\'itération');
   for (const r of ITERATIVES) {
     assert.ok(!parle(plan('flux'), r), `${r} ne s'applique pas au fil de l'eau et devrait se taire`);
-    assert.equal(applicable(plan('flux'), LECTURES[r]), false, `${r} : la déclaration contredit le code en flux`);
+    assert.equal(applicable(plan('flux'), declarations(r)[0]), false, `${r} : la déclaration contredit le code en flux`);
   }
   // Et `S49` prend le relais : au fil de l'eau, la limite d'encours manquante EST le constat.
   assert.ok(parle(plan('flux'), 'S49'));
   assert.ok(!parle(plan('sprint'), 'S49'));
 });
 
+// ── `facultatif` : rien à surveiller n'est pas « non mesuré » ────────────────
+// La catégorie est née d'une mesure, et elle a corrigé la table : déclarées comme les autres, dix-neuf
+// règles rendaient le PRD d'exemple « 33 fois non mesuré », dont la moitié sur des choses qu'un PRD n'a
+// aucune raison d'avoir — pas de dérogation de seuil, donc pas de dérogation muette. Un rapport qui
+// crie trente-trois fois ne se lit pas mieux qu'un rapport muet.
+test('facultatif : pas de dérogation, pas de dérogation muette — et le silence est alors un constat', () => {
+  const vide = { document: 'brd', phase: 'define' };
+  const muettes = abstentions(vide).map(x => x.rule);
+  for (const r of ['S106', 'S107', 'S80', 'S96', 'S104', 'S109', 'S98', 'S99', 'S101', 'S124', 'S119', 'S120', 'S121', 'S88']) {
+    assert.ok(declarations(r).every(d => d.facultatif), `${r} : ce qu'elle surveille est facultatif`);
+    assert.ok(!muettes.includes(r), `${r} ne devrait pas réclamer une mesure que rien n'appelle`);
+  }
+  // Et le contraire : ce que le document est CENSÉ porter reste une case vide, pas un acquit.
+  for (const r of ['S02', 'S19', 'S81', 'S87', 'S102', 'S114', 'S122']) {
+    assert.ok(declarations(r).every(d => !d.facultatif), `${r} : un BRD est censé porter ce qu'elle lit`);
+    assert.ok(muettes.includes(r), `${r} devrait dire qu'elle n'a rien eu à lire`);
+  }
+  // `S100` reste à part : une porte franchie sans trace se constate par l'absence de la trace, et
+  // c'est la seule règle qui parle sur un état entièrement vide dans les quatre documents.
+  assert.ok(declarations('S100')[0].absence);
+  assert.ok(!muettes.includes('S100'));
+});
+
 test('le bruit permanent a disparu de la scène 3, et rien d\'autre n\'a bougé', () => {
-  const lire = p => yaml.load(readFileSync(new URL(`../${p}`, import.meta.url).pathname, 'utf8'));
   // Avant : sept abstentions dont six règles d'itération, à vie, sur un projet qui n'en aura jamais.
-  assert.deepEqual(abstentions(lire('exemple/plan/flux/state.yaml'), lire('exemple/plan/flux/refs.yaml')).map(x => x.rule),
+  assert.deepEqual(abstentions(lireEtat('exemple/plan/flux/state.yaml'), { refs: lireEtat('exemple/plan/flux/refs.yaml') }).map(x => x.rule),
     ['S59'], 'au fil de l\'eau, seule la mesure des outcomes reste non mesurée — elle, un projet en flux peut la remplir');
   // Le plan en itérations n'a rien perdu.
-  assert.deepEqual(abstentions(lire('exemple/plan/demo/state.yaml'), lire('exemple/plan/demo/refs.yaml')), []);
+  assert.deepEqual(abstentions(lireEtat('exemple/plan/demo/state.yaml'), { refs: lireEtat('exemple/plan/demo/refs.yaml') }), []);
   // Et les règles qui ne dépendent pas de la phase continuent de s'abstenir quand il n'y a rien à lire.
-  const brd = lire('exemple/brd/demo/state.yaml');
+  const brd = lireEtat('exemple/brd/demo/state.yaml');
   delete brd.business_requirements;
-  assert.deepEqual(abstentions({ ...brd, phase: 'discover' }).map(x => x.rule),
-    ['S02', 'S03', 'S63', 'S64', 'S84', 'S86', 'S97'], 'S04 et S05 ne s\'appliquent qu\'à partir de Govern et ont quitté la liste');
+  const sansExigences = abstentions({ ...brd, phase: 'discover' }).map(x => x.rule);
+  assert.deepEqual(sansExigences.filter(r => ['S02', 'S03', 'S04', 'S05', 'S63', 'S64', 'S84'].includes(r)),
+    ['S02', 'S03', 'S63', 'S64', 'S84'], 'S04 et S05 ne s\'appliquent qu\'à partir de Govern et ont quitté la liste');
   assert.ok(abstentions({ ...brd, phase: 'govern' }).map(x => x.rule).includes('S04'));
 });
