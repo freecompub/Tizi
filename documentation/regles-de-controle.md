@@ -1,8 +1,8 @@
 # Règles de contrôle, étape par étape
 
-**Ce document est généré par `doc-regles.mjs`. Ne le modifie pas à la main.** Une liste de 141 règles écrite à la main dérive au premier changement du catalogue, et une liste qui dérive est pire qu'une absence de liste : on la croit. Les énoncés ci-dessous sont ceux du catalogue (`skills/*/scripts/lib/rules.mjs`), les conditions de porte celles de `lib/gates.mjs`, les seuils ceux de `COVERAGE_DEFAULTS`. Pour le régénérer : `node doc-regles.mjs`. Pour vérifier qu'il est à jour : `node doc-regles.mjs --verifier`.
+**Ce document est généré par `doc-regles.mjs`. Ne le modifie pas à la main.** Une liste de 142 règles écrite à la main dérive au premier changement du catalogue, et une liste qui dérive est pire qu'une absence de liste : on la croit. Les énoncés ci-dessous sont ceux du catalogue (`skills/*/scripts/lib/rules.mjs`), les conditions de porte celles de `lib/gates.mjs`, les seuils ceux de `COVERAGE_DEFAULTS`. Pour le régénérer : `node doc-regles.mjs`. Pour vérifier qu'il est à jour : `node doc-regles.mjs --verifier`.
 
-Au total : **133 règles de structure** (`S00`–`S132`), **8 règles de rédaction** (`L01`–`L08`), **10 conditions** à la porte de PR, **10** à la porte de release, **6 garde-fous** d'export, et les conditions calculées des portes de phase des cinq documents à phases.
+Au total : **134 règles de structure** (`S00`–`S133`), **8 règles de rédaction** (`L01`–`L08`), **10 conditions** à la porte de PR, **10** à la porte de release, **6 garde-fous** d'export, et les conditions calculées des portes de phase des cinq documents à phases.
 
 ## Comment lire une règle
 
@@ -176,7 +176,7 @@ Un passage de porte s'écrit dans `phase_log` — la phase qui se clôt, celle q
 - chaque zone d'ombre assumée dit pourquoi
 - aucun avertissement ni corrigé ni dérogé (lint.mjs)
 
-### Règles de structure de l'étape 2 (23)
+### Règles de structure de l'étape 2 (24)
 
 Hors celles qui portent sur les quatre documents, listées plus bas. La dernière colonne dit quand une règle vaut aussi ailleurs — son énoncé y est souvent différent.
 
@@ -205,6 +205,7 @@ Hors celles qui portent sur les quatre documents, listées plus bas. La dernièr
 | `S91` | locuteur absent de la salle qu'il a fait parler | … est locuteur de cette source mais absent de « present » : on ne parle pas depuis l'extérieur de la pièce — « present » est la salle entière, silencieux ET locuteurs | aussi étape 1 |
 | `S94` | représentation non déclarée, ou tenue pour une voix | déclarée représentée par elle-même : la représentation désigne quelqu'un d'autre · représentée par … et jamais entendue : une zone ouverte la nomme, mais aucune ne lui est adressée (`ask_to`) — une question sur quelqu'un n'est pas une question à quelqu'un · représentée par … et jamais entendue, sans qu'aucune zone ouverte ne lui soit adressée : une représentation dit qui répond pour elle, elle ne remplace pas sa voix · jamais entendue et aucune représentation déclarée, alors qu'une autre partie prenante se dit représentante d'un groupe : si c'est d'elle qu'il s'agit, dis-le en `represented_by` | aussi étape 1 |
 | `S110` | représentation sans la source où elle se dit | déclaré représentant de « … » sans dire où il le dit (`represents_source`) : une représentation se lit dans une source, sinon elle se déduit — et une déduction fausse fait parler quelqu'un au nom d'un groupe qui ne l'a pas mandaté · représentation de « … » appuyée sur …, où il n'est pas locuteur : ce qu'un tiers dit de lui ne le mandate pas — cite la source où il le dit lui-même | aussi étape 1 |
+| `S133` | périmètre et date figés tous les deux | fenêtre « … » à tenir et … exigence… sur … en Must : le périmètre et la date sont figés tous les deux, et la seule variable qui reste est la qualité — celle que personne ne déclare et qui cède en silence. Dire ce qui peut céder (`should`, `could`) ou ce qui est hors périmètre (`wont`), ou dire que la fenêtre est indicative | — |
 
 ### Métriques de couverture et seuils par défaut
 
@@ -665,3 +666,4 @@ Chaque règle, les étapes où elle s'applique, et la fonction du catalogue qui 
 | `S130` | 4 | itération investie sans but | `checkPlan` |
 | `S131` | 4 | plan sans Definition of Done | `checkPlan` |
 | `S132` | 4 | NFR que rien ne vérifiera | `checkPlan` |
+| `S133` | 2 | périmètre et date figés tous les deux | `checkPrd` |

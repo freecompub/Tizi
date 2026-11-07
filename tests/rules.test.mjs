@@ -2557,6 +2557,56 @@ test('S129 : une story dit pour qui, quoi et pourquoi, où que ce soit sauf null
 // dépôt portent toutes le leur, et celui de IT-2 vidé, le lint ne disait rien et la carte se rendait
 // « ### IT-2 *(proposé)* — — ». Le but n'est dû qu'une fois l'itération investie : une coquille future
 // encore vide ne l'a pas, c'est le dernier moment responsable.
+// ── Deux contraintes figées, et la qualité devient la variable (S133) ────────
+// Le tableau 18.1 de Rubin marque non recommandées deux des quatre combinaisons de contraintes : tout
+// figé, et périmètre + date figés. La raison est la même — « si on sur-contraint les trois, c'est la
+// qualité qui devient la variable », et c'est la seule des trois que personne ne déclare : elle cède en
+// silence. Mesuré avant d'écrire, et la mesure a trouvé mieux que ce que je cherchais : le modèle porte
+// DÉJÀ les deux dimensions. `window` est dans le gabarit du PRD depuis le début et n'est lue par
+// personne, comme `learning_goal` et `containment` ; la part de Must se calcule depuis `priority`.
+// Aucun champ nouveau. Et le seuil est 100 %, pas la règle du pouce des 60-70 % : une règle du pouce se
+// lit, elle ne se contrôle pas — un constat entre les deux rendrait des faux qu'on apprendrait à déroger.
+test('S133 : une fenêtre à tenir et rien qui puisse céder', () => {
+  const fr = o => ({ id: 'FR-001', statement: 'Le système doit bloquer.', pattern: 'ubiquitous', priority: 'must', release: 'REL-1', status: 'validé', ...o });
+  const prd = (rel, frs) => ({ document: 'prd', phase: 'specify', releases: [{ id: 'REL-1', name: 'MVP', status: 'validé', ...rel }], functional_requirements: frs });
+  const parle = s => checkState(s).some(f => f.rule === 'S133');
+
+  // Les deux dimensions figées : la règle parle.
+  assert.ok(parle(prd({ window: 'rentrée de septembre' }, [fr(), fr({ id: 'FR-002' })])));
+  // Une seule des deux : rien n'est sur-contraint.
+  assert.ok(!parle(prd({}, [fr(), fr({ id: 'FR-002' })])), 'sans fenêtre, le périmètre seul ne sur-contraint rien');
+  assert.ok(!parle(prd({ window: '   ' }, [fr()])), 'une fenêtre blanche n\'est pas une date à tenir');
+  // Quelque chose peut céder : ni constat, ni reproche.
+  for (const p of ['should', 'could', 'wont']) {
+    assert.ok(!parle(prd({ window: 'rentrée' }, [fr(), fr({ id: 'FR-002', priority: p })])),
+      `une exigence en ${p} est ce qui peut céder : la règle doit se taire`);
+  }
+  // Une release sans exigence n'a pas de périmètre figé : elle n'a pas de périmètre.
+  assert.ok(!parle(prd({ window: 'rentrée' }, [])));
+  // Les exigences d'une AUTRE release ne comptent pas dans celle-ci. L'exigence voisine est en Must à
+  // dessein : avec un `should`, le cas ne discriminait rien — le filtre retiré, la règle se taisait
+  // quand même. Éprouvé en retirant `f.release === r.id`.
+  assert.ok(!parle(prd({ window: 'rentrée' }, [fr({ release: 'REL-2' })])),
+    'une release vide de ses propres exigences ne se reproche rien, même si une autre est tout en Must');
+  // La règle du pouce n'est PAS un seuil, et c'est le cœur de la décision : 50 % de Must ne se
+  // reproche pas, et 75 % non plus. Seul le cas où rien ne peut céder se constate. Les deux cas sont
+  // là parce qu'un seuil à 70 % passait le premier et pas le second.
+  assert.ok(!parle(prd({ window: 'rentrée' }, [fr(), fr({ id: 'FR-002', priority: 'should' })])), '50 % de Must');
+  assert.ok(!parle(prd({ window: 'rentrée' }, [fr(), fr({ id: 'FR-002' }), fr({ id: 'FR-003' }),
+    fr({ id: 'FR-004', priority: 'should' })])), '75 % de Must : au-dessus de la règle du pouce, et rien à reprocher');
+
+  // Le constat nomme la variable qui reste, et les deux issues.
+  const m = checkState(prd({ window: 'rentrée de septembre' }, [fr()])).find(f => f.rule === 'S133').message;
+  assert.match(m, /rentrée de septembre/);
+  assert.match(m, /la seule variable qui reste est la qualité/);
+  assert.match(m, /`should`, `could`.*`wont`.*fenêtre est indicative/s);
+
+  // Et le PRD du dépôt ne bouge pas : sa release n'a pas de fenêtre.
+  const reel = yaml.load(readFileSync(new URL('../exemple/prd/demo/state.yaml', import.meta.url).pathname, 'utf8'));
+  assert.deepEqual(checkState(reel).filter(f => f.rule === 'S133'), []);
+  assert.ok(!reel.releases.some(r => r.window), 'si une release du dépôt reçoit une fenêtre, ce test doit être relu');
+});
+
 // ── La Definition of Done, et ce qu'elle devrait rattraper (S131, S132) ──────
 // « Opérer sans Definition of Done forte, c'est délivrer une licence d'accumuler de la dette »
 // (Rubin, ch. 4). Mesuré avant d'écrire : `definition_of_done` est écrite dans les quatre plans du
@@ -3053,11 +3103,11 @@ test('ce que LECTURES déclare est ce que le code fait : vidée, la règle se ta
       }
     }
   }
-  // 150 déclarations pour 133 règles — quinze règles portent le même numéro dans deux documents, et
+  // 151 déclarations pour 134 règles — quinze règles portent le même numéro dans deux documents, et
   // `S10`, `S53`, `S54`, `S69`, `S79`, `S105`, `S108` lisent ailleurs selon le document. Chacune est
   // vérifiée document par document, d'où le compte : 18 déclarations transverses qui valent pour les
   // quatre, 24 qui nomment plusieurs documents, le reste un seul.
-  assert.equal(verifiees, 242, 'chaque déclaration est vérifiée sur chaque document qu\'elle vise');
+  assert.equal(verifiees, 243, 'chaque déclaration est vérifiée sur chaque document qu\'elle vise');
 });
 
 // Les quatorze règles qui ne lisent pas l'état mais ce qui vit à CÔTÉ de lui. Le test ci-dessus les
@@ -3128,7 +3178,7 @@ test('abstentions : un BRD vide ne constate que trois choses, et s\'abstient qua
 });
 
 test('abstentions : les trois autres documents, et les lectures qui sont en amont', () => {
-  for (const [doc, phase, combien] of [['prd', 'specify', 37], ['sad', 'design', 34]]) {
+  for (const [doc, phase, combien] of [['prd', 'specify', 38], ['sad', 'design', 34]]) {
     const vide = { document: doc, phase };
     assert.deepEqual([...new Set(checkState(vide).map(f => f.rule))], ['S100'], `sur un ${doc} vide, une seule règle parle`);
     assert.equal(abstentions(vide).length, combien, `${doc} : le compte des règles qui n'ont rien eu à lire`);

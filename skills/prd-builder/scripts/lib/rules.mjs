@@ -910,6 +910,28 @@ export function checkPrd(s) {
   for (const d of arr(s.design_decisions).filter(live)) {
     if (d.status === 'validé' && !d.decided_by) out.push({ rule: 'S17', id: d.id, message: 'décision validée sans décideur déclaré' });
   }
+  // ── Deux contraintes figées, et la qualité devient la variable (S133) ──
+  // Le tableau 18.1 de Rubin (*Essential Scrum*, ch. 18) marque **non recommandées** deux des quatre
+  // combinaisons de contraintes : tout figé, et périmètre + date figés. La raison est la même dans les
+  // deux cas — « si on sur-contraint les trois, c'est la qualité qui devient la variable », et c'est la
+  // seule des trois qui ne se négocie pas, parce que personne ne la déclare : elle cède en silence.
+  //
+  // Mesuré avant d'écrire, et la mesure a trouvé mieux que ce que je cherchais : le modèle porte DÉJÀ
+  // les deux dimensions. `window` est dans le gabarit depuis le début — « la fenêtre où elle se joue,
+  // quand elle en a une (campagne, rentrée, échéance) » — et n'est lue par personne, comme
+  // `learning_goal` et `containment`. La part de Must se calcule depuis `priority`, qui est sur chaque
+  // exigence. Rien ne croisait les deux. Aucun champ nouveau n'est donc nécessaire.
+  //
+  // Le seuil est 100 %, pas la règle du pouce des 60-70 % : une règle du pouce ne se contrôle pas, elle
+  // se lit. Ici le constat ne porte que sur le cas où **rien ne peut céder** — une fenêtre à tenir et
+  // pas une exigence qui soit autre chose que Must. Entre les deux, c'est au PRD de savoir ce qu'il
+  // fait, et un contrôle y rendrait des faux constats qu'on apprendrait à déroger.
+  for (const r of arr(s.releases).filter(live)) {
+    if (!ecrit(r.window)) continue;                       // pas de date à tenir : rien n'est sur-contraint
+    const sienne = arr(s.functional_requirements).filter(f => live(f) && f.release === r.id);
+    if (!sienne.length || sienne.some(f => f.priority !== 'must')) continue;   // quelque chose peut céder
+    out.push({ rule: 'S133', id: r.id, message: `fenêtre « ${r.window} » à tenir et ${sienne.length} exigence${sienne.length > 1 ? 's' : ''} sur ${sienne.length} en Must : le périmètre et la date sont figés tous les deux, et la seule variable qui reste est la qualité — celle que personne ne déclare et qui cède en silence. Dire ce qui peut céder (\`should\`, \`could\`) ou ce qui est hors périmètre (\`wont\`), ou dire que la fenêtre est indicative` });
+  }
   // `prd-builder/references/shadow-zones.md` prescrit « Renseigne `parties` et `arbiter` (le décideur du
   // domaine dans `decision_rights`, jamais partie au conflit) » — et rien ne le vérifiait : `S15` et
   // `S16` n'existaient que dans `checkBrd`, où le conflit est une `contradiction` de sous-type
@@ -2505,6 +2527,7 @@ export const STRUCT_RULES = {
   S129: 'story sans qui, quoi ou pourquoi',
   S130: 'itération investie sans but',
   S131: 'plan sans Definition of Done', S132: 'NFR que rien ne vérifiera',
+  S133: 'périmètre et date figés tous les deux',
   S01: 'objectif non mesurable', S02: 'exigence sans objectif', S03: 'exigence sans besoin sourcé', S04: 'exigence sans critère d\'acceptation',
   S05: 'priorité ou release manquante', S06: 'exigence sans origine', S07: 'Must sans scénario d\'erreur', S08: 'NFR incomplète',
   S09: 'référence inexistante', S10: 'référence vers un élément abandonné', S11: 'règle métier sans source', S12: 'règle sans niveau d\'application',
@@ -2706,6 +2729,8 @@ export const LECTURES = {
   S131: { doc: 'plan', lit: ['definition_of_done'], absence: true, quand: { chemin: 'phase', vaut: ['schedule', 'govern', 'review'] } },
   // Ce qu'elle lit est en amont : les NFR viennent du PRD, leurs vérifications de la conception.
   S132: { doc: 'plan', lit: ['refs.prd.non_functional'] },
+  // Elle croise la fenêtre d'une release et la priorité de ses exigences : les deux sont dans l'état.
+  S133: { doc: 'prd', lit: ['releases'] },
 
   // ── Les règles transverses : elles tournent sur les quatre documents ──
   // `S00` refuse un document que ce catalogue ne sait pas vérifier. Elle n'a donc de déclaration pour
