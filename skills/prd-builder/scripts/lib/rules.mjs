@@ -1326,6 +1326,30 @@ export function checkPlan(s, refs = {}) {
     const load = tasks.filter(t => t.iteration === it.id && t.status !== 'abandonné').reduce((n, t) => n + plannedAttention(t, settings, riskSize(t, s, refs)), 0);
     if (load > settings.attention_capacity) out.push({ rule: 'S75', id: it.id, message: `attention humaine prévue ${load} min pour ${settings.attention_capacity} min disponibles : la relecture limitera le débit, pas les agents` });
   }
+  // ── Le goulot ne se voit pas dans un total (S135) ──
+  // Rubin montre un engagement de 150 h qui tient dans une capacité de 140-197 h et qui est pourtant
+  // mauvais : une seule personne sait faire l'IHM, et elle n'a que 14-21 h. **Un total qui tient ne dit
+  // rien de la ressource rare.** Mesuré avant d'écrire, et la mesure a trouvé que Tizi faisait déjà ce
+  // contrôle, sous un autre nom et pour la ressource qui est rare dans SON modèle : quand les agents
+  // codent, le goulot est l'attention humaine, et `S75` compare l'attention prévue d'une itération à
+  // `settings.attention_capacity` — « la relecture limitera le débit, pas les agents ».
+  //
+  // Le trou est ailleurs : `S75` est en forme d'itération, donc **au fil de l'eau personne ne regarde**.
+  // Un projet en flux a sa limite d'encours (`S49`), comptée en TÂCHES — et c'est exactement le total
+  // qui tient de Rubin : une seule tâche XL confiée à un agent peut saturer la relecture d'une semaine.
+  // L'unité du flux est le réapprovisionnement, qui porte son engagement comme une itération porte le
+  // sien : c'est le même couple que `S48` et `S49`, l'une par itération et l'autre au fil de l'eau.
+  if (settings.cadence === 'flux' && settings.attention_capacity) {
+    const parId = new Map(tasks.map(t => [t.id, t]));
+    for (const rp of arr(s.replenishments).filter(r => !['terminé', 'abandonné'].includes(r.status))) {
+      const siennes = arr(rp.tasks).map(id => parId.get(id)).filter(Boolean);
+      if (!siennes.length) continue;
+      const load = siennes.reduce((n, t) => n + plannedAttention(t, settings, riskSize(t, s, refs)), 0);
+      if (load <= settings.attention_capacity) continue;
+      const lourde = siennes.map(t => [t, plannedAttention(t, settings, riskSize(t, s, refs))]).sort((a, b) => b[1] - a[1])[0];
+      out.push({ rule: 'S135', id: rp.id, message: `attention humaine prévue ${load} min pour ${settings.attention_capacity} min disponibles sur ${siennes.length} tâche${siennes.length > 1 ? 's' : ''} tirée${siennes.length > 1 ? 's' : ''} (la plus lourde : ${lourde[0].id}, ${lourde[1]} min) : la limite d'encours compte des tâches, pas des minutes de relecture — et c'est la relecture qui limitera le débit, pas les agents` });
+    }
+  }
   // Stratégie ouverture / milieu / fin (S61)
   const storyById = new Map(stories.map(x => [x.id, x]));
   const itIdx = id => (id && itIndex.has(id) ? itIndex.get(id) : Infinity);
@@ -2563,6 +2587,7 @@ export const STRUCT_RULES = {
   S131: 'plan sans Definition of Done', S132: 'NFR que rien ne vérifiera',
   S133: 'périmètre et date figés tous les deux',
   S134: 'détail dépensé au-delà de l\'horizon',
+  S135: 'encours qui sature la relecture',
   S01: 'objectif non mesurable', S02: 'exigence sans objectif', S03: 'exigence sans besoin sourcé', S04: 'exigence sans critère d\'acceptation',
   S05: 'priorité ou release manquante', S06: 'exigence sans origine', S07: 'Must sans scénario d\'erreur', S08: 'NFR incomplète',
   S09: 'référence inexistante', S10: 'référence vers un élément abandonné', S11: 'règle métier sans source', S12: 'règle sans niveau d\'application',
@@ -2754,7 +2779,10 @@ export const LECTURES = {
   S62: { doc: 'plan', lit: ['stories'] },
   S72: { doc: 'plan', lit: ['tasks'] },
   S74: { doc: 'plan', lit: ['tasks'] },
-  S75: { doc: 'plan', lit: ['iterations'], quand: CADENCE_ITERATIVE },
+  // Le garde `settings.attention_capacity` manquait à cette déclaration : le code teste la véracité
+  // du nombre (« 0 = non suivi »), et la table se taisait là-dessus. Un projet qui a dit ne pas suivre
+  // son attention ne doit pas s'entendre réclamer la mesure.
+  S75: { doc: 'plan', lit: ['iterations'], quand: [CADENCE_ITERATIVE, { chemin: 'settings.attention_capacity', positif: true }] },
   S76: { doc: 'plan', lit: ['iterations'], quand: CADENCE_ITERATIVE },
   S77: { doc: 'plan', lit: ['iterations'], quand: CADENCE_ITERATIVE },
   S78: { doc: 'plan', lit: ['stories'] },
@@ -2768,6 +2796,8 @@ export const LECTURES = {
   S133: { doc: 'prd', lit: ['releases'] },
   // Un garde, pas une lecture : sans release en cours, il n'y a pas d'horizon à dépasser.
   S134: { doc: 'plan', lit: ['stories'], quand: { chemin: 'settings.release', rempli: true } },
+  // Le pendant de `S75` au fil de l'eau : même garde, autre unité.
+  S135: { doc: 'plan', lit: ['replenishments'], quand: [{ chemin: 'settings.cadence', vaut: ['flux'] }, { chemin: 'settings.attention_capacity', positif: true }] },
 
   // ── Les règles transverses : elles tournent sur les quatre documents ──
   // `S00` refuse un document que ce catalogue ne sait pas vérifier. Elle n'a donc de déclaration pour
@@ -2890,6 +2920,12 @@ export const applicable = (s, d) => {
     if (c.vaut && !c.vaut.includes(v)) return false;
     if (c.sauf && c.sauf.includes(v)) return false;
     if (c.rempli && !porteQuelqueChose(v)) return false;
+    // `positif` : un réglage numérique dont **0 veut dire « non suivi »**. `rempli` ne suffit pas —
+    // `ecrit(0)` rend vrai, parce que « 0 » est une valeur écrite. Le motif existe dans le modèle
+    // (`settings.attention_capacity`, `sprint.capacity`, « 0 = non suivi »), et le code teste la
+    // véracité du nombre : la déclaration doit dire la même chose, sinon elle réclame une mesure à un
+    // projet qui a explicitement dit ne pas la suivre.
+    if (c.positif && !(Number(v) > 0)) return false;
   }
   return true;
 };

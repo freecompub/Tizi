@@ -2557,6 +2557,70 @@ test('S129 : une story dit pour qui, quoi et pourquoi, où que ce soit sauf null
 // dépôt portent toutes le leur, et celui de IT-2 vidé, le lint ne disait rien et la carte se rendait
 // « ### IT-2 *(proposé)* — — ». Le but n'est dû qu'une fois l'itération investie : une coquille future
 // encore vide ne l'a pas, c'est le dernier moment responsable.
+// ── Le goulot ne se voit pas dans un total (S135) ────────────────────────────
+// Rubin montre un engagement de 150 h qui tient dans une capacité de 140-197 h et qui est pourtant
+// mauvais : une seule personne sait faire l'IHM, et elle n'a que 14-21 h. Un total qui tient ne dit
+// rien de la ressource rare. Mesuré avant d'écrire, et la mesure a trouvé que Tizi faisait DÉJÀ ce
+// contrôle, sous un autre nom et pour la ressource rare de SON modèle : quand les agents codent, le
+// goulot est l'attention humaine, et `S75` compare l'attention prévue d'une itération à sa capacité.
+// Le trou est ailleurs : `S75` est en forme d'itération, donc au fil de l'eau personne ne regarde — et
+// la limite d'encours de `S49` compte des TÂCHES, ce qui est exactement le total qui tient de Rubin.
+test('S135 : au fil de l\'eau, la limite d\'encours compte des tâches et pas des minutes', () => {
+  const tache = o => ({ id: 'TK-001', kind: 'dev', title: 'T', story: 'US-001', size: 'M', assignee_type: 'agent', status: 'validé', ...o });
+  const plan = (o, taches, rps) => ({ document: 'plan', phase: 'schedule',
+    settings: { cadence: 'flux', release: 'REL-1', sizes: { S: 1, M: 2, L: 3, XL: 5 }, flow: { wip_limit: 1 }, ...o },
+    tasks: taches, replenishments: rps });
+  const rp = o => ({ id: 'RP-1', date: '2026-10-23', tasks: ['TK-001'], status: 'validé', ...o });
+  const parle = s => checkState(s).some(f => f.rule === 'S135');
+
+  // Une seule tâche, dans la limite d'encours — et la relecture est saturée. C'est le cas de Rubin.
+  const une = plan({ attention_capacity: 30 }, [tache({ size: 'XL' })], [rp()]);
+  assert.ok(parle(une), 'une tâche XL confiée à un agent sature la relecture, et l\'encours tient');
+  assert.ok(!checkState(une).some(f => f.rule === 'S49'), 'la limite d\'encours, elle, est respectée : c\'est tout le propos');
+  // Assez d'attention : rien à dire.
+  assert.ok(!parle(plan({ attention_capacity: 600 }, [tache({ size: 'XL' })], [rp()])));
+  // La borne exacte, et elle manquait : à capacité égale, la relecture tient — c'est un dépassement
+  // qui se reproche, pas une égalité. Une tâche S coûte 45 min d'attention par défaut (15 de
+  // validation, 0 question, 30 de revue). Éprouvé en remplaçant `<=` par `<`.
+  assert.ok(!parle(plan({ attention_capacity: 45 }, [tache({ size: 'S' })], [rp()])), 'à capacité égale, rien à reprocher');
+  assert.ok(parle(plan({ attention_capacity: 44 }, [tache({ size: 'S' })], [rp()])), 'une minute de trop se reproche');
+  // « 0 = non suivi » : un projet qui a dit ne pas suivre son attention ne s'entend rien réclamer.
+  const zero = plan({ attention_capacity: 0 }, [tache({ size: 'XL' })], [rp()]);
+  assert.ok(!parle(zero));
+  assert.equal(applicable(zero, declarations('S135')[0]), false, '`positif` : zéro n\'est pas une capacité suivie');
+  assert.equal(applicable(plan({}, [], []), declarations('S135')[0]), false, 'absente non plus');
+  assert.equal(applicable(plan({ attention_capacity: 30 }, [], []), declarations('S135')[0]), true);
+  // En cadence sprint, c'est `S75` qui regarde : pas deux constats pour un.
+  const sprint = { ...plan({ attention_capacity: 30 }, [tache({ size: 'XL', iteration: 'IT-1' })], [rp()]), settings: { cadence: 'sprint', release: 'REL-1', attention_capacity: 30, sizes: { S: 1, M: 2, L: 3, XL: 5 } } };
+  assert.ok(!parle(sprint), 'S135 ne s\'applique pas en cadence sprint');
+  assert.equal(applicable(sprint, declarations('S135')[0]), false);
+  // Un réapprovisionnement terminé ou vide ne se reproche rien.
+  assert.ok(!parle(plan({ attention_capacity: 30 }, [tache({ size: 'XL' })], [rp({ status: 'terminé' })])));
+  assert.ok(!parle(plan({ attention_capacity: 30 }, [tache({ size: 'XL' })], [rp({ tasks: [] })])));
+  assert.ok(!parle(plan({ attention_capacity: 30 }, [tache({ size: 'XL' })], [rp({ tasks: ['TK-999'] })])), 'une tâche inexistante ne compte pas');
+
+  // Le constat nomme la tâche la plus lourde : c'est par là qu'on commence à découper.
+  const m = checkState(plan({ attention_capacity: 30 }, [tache({ size: 'XL' }), tache({ id: 'TK-002', size: 'S' })], [rp({ tasks: ['TK-001', 'TK-002'] })])).find(f => f.rule === 'S135').message;
+  assert.match(m, /la plus lourde : TK-001/);
+  assert.match(m, /compte des tâches, pas des minutes de relecture/);
+
+  // Et le plan au fil de l'eau du dépôt ne bouge pas : il ne suit pas son attention.
+  const reel = yaml.load(readFileSync(new URL('../exemple/plan/flux/state.yaml', import.meta.url).pathname, 'utf8'));
+  const refs = yaml.load(readFileSync(new URL('../exemple/plan/flux/refs.yaml', import.meta.url).pathname, 'utf8'));
+  assert.deepEqual(checkState(reel, { refs }).filter(f => f.rule === 'S135'), []);
+  assert.ok(!reel.settings.attention_capacity, 'si ce plan se met à suivre son attention, ce test doit être relu');
+});
+
+test('`positif` : un réglage dont zéro veut dire « non suivi »', () => {
+  const d = { quand: { chemin: 'settings.attention_capacity', positif: true } };
+  assert.equal(applicable({ settings: { attention_capacity: 30 } }, d), true);
+  assert.equal(applicable({ settings: { attention_capacity: 0 } }, d), false, 'zéro est une valeur écrite, et pourtant « non suivi »');
+  assert.equal(applicable({ settings: {} }, d), false);
+  // `rempli` ne suffisait pas, et c'est la raison d'être de cette forme : `ecrit(0)` rend vrai.
+  assert.equal(applicable({ settings: { attention_capacity: 0 } }, { quand: { chemin: 'settings.attention_capacity', rempli: true } }), true,
+    'démonstration : `rempli` tient zéro pour renseigné, parce qu\'il l\'est');
+});
+
 // ── DEEP : le détail n'a pas à être uniforme (S134) ──────────────────────────
 // La grille de Rubin au niveau du BACKLOG, là où INVEST est au niveau de la story. Deux de ses quatre
 // lettres inversent l'intuition : `D` dit que le détail ne doit PAS être uniforme, et `P` qu'il est
@@ -3066,7 +3130,7 @@ test('LECTURES couvre le registre entier, et `NON_DECLAREES` est vide', () => {
       assert.ok(!(d.absence && d.facultatif), `${r} : « constate l'absence » et « facultatif » s'excluent — l'une parle quand c'est vide, l'autre se tait`);
       for (const c of [].concat(d.quand ?? [])) {
         assert.ok(c.chemin, `${r} : une condition sans chemin`);
-        assert.ok(c.vaut || c.sauf || c.rempli, `${r} : une condition qui ne dit ni \`vaut\`, ni \`sauf\`, ni \`rempli\``);
+        assert.ok(c.vaut || c.sauf || c.rempli || c.positif, `${r} : une condition qui ne dit ni \`vaut\`, ni \`sauf\`, ni \`rempli\`, ni \`positif\``);
       }
       // Deux déclarations sur le même document : la seconde serait morte, et personne ne le verrait.
       for (const x of docs) {
@@ -3139,6 +3203,8 @@ test('ce que LECTURES déclare est ce que le code fait : vidée, la règle se ta
             continue;
           }
           if (c.rempli) { base = poser(base, c.chemin, QUELQUE_CHOSE[c.chemin] ?? defaut); continue; }
+          // `positif` attend un nombre strictement positif, pas une collection : « 0 = non suivi ».
+          if (c.positif) { base = poser(base, c.chemin, 1); continue; }
           const valeurs = VALEURS[c.chemin];
           assert.ok(valeurs, `${regle} : valeurs connues de ${c.chemin} absentes du test`);
           const dedans = valeurs.find(v => applicable(poser(base, c.chemin, v), { quand: c }));
@@ -3155,11 +3221,11 @@ test('ce que LECTURES déclare est ce que le code fait : vidée, la règle se ta
       }
     }
   }
-  // 152 déclarations pour 135 règles — quinze règles portent le même numéro dans deux documents, et
+  // 153 déclarations pour 136 règles — quinze règles portent le même numéro dans deux documents, et
   // `S10`, `S53`, `S54`, `S69`, `S79`, `S105`, `S108` lisent ailleurs selon le document. Chacune est
   // vérifiée document par document, d'où le compte : 18 déclarations transverses qui valent pour les
   // quatre, 24 qui nomment plusieurs documents, le reste un seul.
-  assert.equal(verifiees, 244, 'chaque déclaration est vérifiée sur chaque document qu\'elle vise');
+  assert.equal(verifiees, 245, 'chaque déclaration est vérifiée sur chaque document qu\'elle vise');
 });
 
 // Les quatorze règles qui ne lisent pas l'état mais ce qui vit à CÔTÉ de lui. Le test ci-dessus les
@@ -3236,7 +3302,9 @@ test('abstentions : les trois autres documents, et les lectures qui sont en amon
     assert.equal(abstentions(vide).length, combien, `${doc} : le compte des règles qui n'ont rien eu à lire`);
   }
   const vide = { document: 'plan', phase: 'schedule', settings: { cadence: 'sprint', release: 'REL-1' } };
-  assert.equal(abstentions(vide).length, 35, 'un plan vide en itérations');
+  // Trente-quatre et non trente-cinq : `S75` déclare désormais son garde (`attention_capacity`
+  // positive), donc un plan qui n'a pas dit suivre son attention ne s'entend plus réclamer la mesure.
+  assert.equal(abstentions(vide).length, 34, 'un plan vide en itérations');
   assert.equal(abstentions({ document: 'plan', phase: 'schedule', settings: { cadence: 'flux' } }).length, 28,
     'au fil de l\'eau, les six règles d\'itération ne s\'appliquent pas');
 

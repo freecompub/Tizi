@@ -1,8 +1,8 @@
 # Règles de contrôle, étape par étape
 
-**Ce document est généré par `doc-regles.mjs`. Ne le modifie pas à la main.** Une liste de 143 règles écrite à la main dérive au premier changement du catalogue, et une liste qui dérive est pire qu'une absence de liste : on la croit. Les énoncés ci-dessous sont ceux du catalogue (`skills/*/scripts/lib/rules.mjs`), les conditions de porte celles de `lib/gates.mjs`, les seuils ceux de `COVERAGE_DEFAULTS`. Pour le régénérer : `node doc-regles.mjs`. Pour vérifier qu'il est à jour : `node doc-regles.mjs --verifier`.
+**Ce document est généré par `doc-regles.mjs`. Ne le modifie pas à la main.** Une liste de 144 règles écrite à la main dérive au premier changement du catalogue, et une liste qui dérive est pire qu'une absence de liste : on la croit. Les énoncés ci-dessous sont ceux du catalogue (`skills/*/scripts/lib/rules.mjs`), les conditions de porte celles de `lib/gates.mjs`, les seuils ceux de `COVERAGE_DEFAULTS`. Pour le régénérer : `node doc-regles.mjs`. Pour vérifier qu'il est à jour : `node doc-regles.mjs --verifier`.
 
-Au total : **135 règles de structure** (`S00`–`S134`), **8 règles de rédaction** (`L01`–`L08`), **10 conditions** à la porte de PR, **10** à la porte de release, **6 garde-fous** d'export, et les conditions calculées des portes de phase des cinq documents à phases.
+Au total : **136 règles de structure** (`S00`–`S135`), **8 règles de rédaction** (`L01`–`L08`), **10 conditions** à la porte de PR, **10** à la porte de release, **6 garde-fous** d'export, et les conditions calculées des portes de phase des cinq documents à phases.
 
 ## Comment lire une règle
 
@@ -348,7 +348,7 @@ Un passage de porte s'écrit dans `phase_log` — la phase qui se clôt, celle q
 - chaque zone d'ombre assumée dit pourquoi
 - aucun avertissement ni corrigé ni dérogé (lint.mjs)
 
-### Règles de structure de l'étape 4 (32)
+### Règles de structure de l'étape 4 (33)
 
 Hors celles qui portent sur les quatre documents, listées plus bas. La dernière colonne dit quand une règle vaut aussi ailleurs — son énoncé y est souvent différent.
 
@@ -386,6 +386,7 @@ Hors celles qui portent sur les quatre documents, listées plus bas. La dernièr
 | `S131` | plan sans Definition of Done | plan sans Definition of Done : rien ne dit ce que « fini » veut dire, et chaque tâche le décidera pour elle-même. C'est ce qui s'accumule sans se voir — une dette qu'aucune règle ne peut rattraper après coup, parce qu'il n'existe aucune trace de ce qui n'a pas été fait | — |
 | `S132` | NFR que rien ne vérifiera | NFR que rien ne vérifiera : la conception ne lui donne aucune vérification, et la Definition of Done ne la cite pas…. Soit la conception la vérifie, soit la DoD la porte à chaque incrément — en la citant dans sa ligne, « … (…) » — soit elle est déclarée `priority: wont` et personne ne l'attend | — |
 | `S134` | détail dépensé au-delà de l'horizon | affinée pour … alors que le plan porte sur … (…) : le détail d'un backlog n'a pas à être uniforme — ce qui est loin se décrit gros, parce qu'il changera avant d'être pris. Un example mapping est une heure du métier, du développement et du test ; la dépenser ici, c'est la dépenser deux fois | — |
+| `S135` | encours qui sature la relecture | attention humaine prévue … min pour … min disponibles sur … tâche… tirée… (la plus lourde : …, … min) : la limite d'encours compte des tâches, pas des minutes de relecture — et c'est la relecture qui limitera le débit, pas les agents | — |
 
 ### Métriques de couverture et seuils par défaut
 
@@ -669,3 +670,4 @@ Chaque règle, les étapes où elle s'applique, et la fonction du catalogue qui 
 | `S132` | 4 | NFR que rien ne vérifiera | `checkPlan` |
 | `S133` | 2 | périmètre et date figés tous les deux | `checkPrd` |
 | `S134` | 4 | détail dépensé au-delà de l'horizon | `checkPlan` |
+| `S135` | 4 | encours qui sature la relecture | `checkPlan` |
