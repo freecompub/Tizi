@@ -1375,6 +1375,38 @@ export function checkPlan(s, refs = {}) {
   for (const tr of arr(prd.transition_requirements).filter(t => !release || !t.release || t.release === release)) {
     if (!tasks.some(t => arr(t.transition).includes(tr.id))) out.push({ rule: 'S51', id: tr.id, message: `exigence de transition (${tr.kind ?? '?'}) planifiée dans aucune tâche` });
   }
+
+  // ── La Definition of Done, et ce qu'elle devrait rattraper (S131, S132) ──
+  // « Opérer sans Definition of Done forte, c'est délivrer une licence d'accumuler de la dette »
+  // (Rubin, *Essential Scrum*, ch. 4). Mesuré sur le dépôt avant d'écrire : `definition_of_done` est
+  // écrite dans les quatre plans, apparaît dans les rendus et les handoffs, et **aucune des 131 règles
+  // ne la lisait** — aucune porte ne l'exigeait non plus. Un plan pouvait donc être figé, livré et
+  // revu sans jamais dire ce que « fini » veut dire.
+  //
+  // Rien avant `schedule` : une Definition of Done qui manque pendant le découpage n'est pas un trou,
+  // c'est une étape pas encore faite. Elle est due dès qu'une itération ou un encours est posé, parce
+  // que c'est là qu'on commence à déclarer des choses finies.
+  const dod = arr(s.definition_of_done).map(x => String(x ?? '')).filter(x => x.trim());
+  if (['schedule', 'govern', 'review'].includes(s.phase) && !dod.length) {
+    out.push({ rule: 'S131', id: 'definition_of_done', message: 'plan sans Definition of Done : rien ne dit ce que « fini » veut dire, et chaque tâche le décidera pour elle-même. C\'est ce qui s\'accumule sans se voir — une dette qu\'aucune règle ne peut rattraper après coup, parce qu\'il n\'existe aucune trace de ce qui n\'a pas été fait' });
+  }
+  // La confrontation que Rubin donne, et que Tizi avait tous les éléments pour faire : **chaque NFR est
+  // une cible de premier choix pour la Definition of Done**. Mesuré d'abord, parce que le rapprochement
+  // n'était pas évident : `stage` vaut `tests | integration | recette | exploitation`, et AUCUNE de ces
+  // valeurs ne désigne l'incrément. On ne peut donc pas demander « cette NFR est-elle dans la DoD ? »
+  // par un champ. Mais on peut demander l'inverse, qui est le seul cas qui compte : une NFR que
+  // personne ne vérifiera jamais. Si aucune vérification de la conception ne la cible et que la DoD ne
+  // la cite pas, elle n'a aucun point de contrôle sur tout le chemin.
+  // La citation se lit par le SECOND FIL — un identifiant écrit DANS la phrase, comme `S128` le relit
+  // déjà : une ligne de DoD qui dit « p95 sous 2 s (NFR-001) » cite NFR-001, sans qu'il faille changer
+  // la forme de la Definition of Done ni apparier deux textes libres, ce qui aurait produit des faux
+  // constats qu'on aurait appris à déroger.
+  const citeesParLaDoD = new Set(dod.flatMap(refsDans));
+  const verifiees = new Set(arr(refs.sad?.verifications).map(v => v.nfr).filter(Boolean));
+  for (const n of arr(refs.prd?.non_functional)) {
+    if (n.priority === 'wont' || verifiees.has(n.id) || citeesParLaDoD.has(n.id)) continue;
+    out.push({ rule: 'S132', id: n.id, message: `NFR que rien ne vérifiera : la conception ne lui donne aucune vérification, et la Definition of Done ne la cite pas${dod.length ? '' : ' (et il n\'y a pas de Definition of Done)'}. Soit la conception la vérifie, soit la DoD la porte à chaque incrément — en la citant dans sa ligne, « … (${n.id}) » — soit elle est déclarée \`priority: wont\` et personne ne l'attend` });
+  }
   return out;
 }
 
@@ -2472,6 +2504,7 @@ export const STRUCT_RULES = {
   S128: 'identifiant cité dans une phrase qui ne mène nulle part, ou attribution qui contredit le registre',
   S129: 'story sans qui, quoi ou pourquoi',
   S130: 'itération investie sans but',
+  S131: 'plan sans Definition of Done', S132: 'NFR que rien ne vérifiera',
   S01: 'objectif non mesurable', S02: 'exigence sans objectif', S03: 'exigence sans besoin sourcé', S04: 'exigence sans critère d\'acceptation',
   S05: 'priorité ou release manquante', S06: 'exigence sans origine', S07: 'Must sans scénario d\'erreur', S08: 'NFR incomplète',
   S09: 'référence inexistante', S10: 'référence vers un élément abandonné', S11: 'règle métier sans source', S12: 'règle sans niveau d\'application',
@@ -2669,6 +2702,10 @@ export const LECTURES = {
   S78: { doc: 'plan', lit: ['stories'] },
   S129: { doc: 'plan', lit: ['stories'] },
   S130: { doc: 'plan', lit: ['iterations'], quand: CADENCE_ITERATIVE },
+  // Due dès qu'on commence à déclarer des choses finies, et son absence EST le constat.
+  S131: { doc: 'plan', lit: ['definition_of_done'], absence: true, quand: { chemin: 'phase', vaut: ['schedule', 'govern', 'review'] } },
+  // Ce qu'elle lit est en amont : les NFR viennent du PRD, leurs vérifications de la conception.
+  S132: { doc: 'plan', lit: ['refs.prd.non_functional'] },
 
   // ── Les règles transverses : elles tournent sur les quatre documents ──
   // `S00` refuse un document que ce catalogue ne sait pas vérifier. Elle n'a donc de déclaration pour
