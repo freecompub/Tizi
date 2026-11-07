@@ -42,6 +42,10 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
 
 | Piste | Date | Où |
 |---|---|---|
+| **Les 131 règles disent ce qu'elles lisent : l'étape 2 est finie.** Les 74 restantes déclarées, `NON_DECLAREES` vide, et un test l'exige : une règle neuve dit ce qu'elle lit, elle ne se gare plus. Le chiffre, mesuré une fois la table finie : sur un état entièrement vide, **3 règles sur 131 parlent** au BRD, **une seule** ailleurs, et **48 s'abstiennent**. La démonstration est dans le dépôt — `exemple/sad/green` rendait « Vérification : aucun avertissement. » ; il rend maintenant ce même verdict suivi de **24 règles qui n'ont jamais eu de quoi se prononcer**. Le document n'a pas changé ; ce qu'on en sait, si. 148 déclarations pour 131 règles, parce que **quinze portent le même numéro dans deux documents** : `S04` attend un critère d'acceptation sur une exigence métier au BRD et sur une exigence fonctionnelle au PRD, et seul le premier attend une phase | 7 novembre 2026 | `ce-que-lisent-les-74-dernieres` |
+| **Deux doctrines ont tranché les cas douteux, et elles ont évité trois notions à la table.** (1) On déclare ce que la règle **parcourt**, pas ce contre quoi elle résout : `S98` parcourt `governance.reviewers` et résout contre `stakeholders`, et un renvoi qui ne résout pas est l'affaire de `S09`. Déclarer les deux aurait demandé une lecture conjonctive, fausse partout ailleurs. (2) Un **garde** n'est pas une lecture, c'est une applicabilité : `if (arr(s.security_catalogs).length && …)` sur `S55`, `if (!contacts) continue` sur `S127` disent quand la règle existe, pas ce qu'elle lit — d'où la forme `rempli` dans `quand`. Et `S09`, mise de côté comme « demandant une décision, pas une copie » : ce ne sont pas dix règles, c'en est une, et `renvoiFindings` la fait déjà sur le document entier — sa lecture est donc le document | 7 novembre 2026 | `ce-que-lisent-les-74-dernieres` |
+| **`facultatif` : une quatrième catégorie née d'une mesure.** Déclarées comme les autres, dix-neuf règles rendaient le PRD d'exemple « 33 fois non mesuré », dont la moitié sur des choses qu'un PRD n'a aucune raison d'avoir — pas de dérogation de seuil, donc pas de dérogation muette. Ce que la règle surveille est optionnel, et son silence est alors un **vrai constat de conformité**. Le critère est écrit : une abstention ne vaut que si le document est **censé** porter ce que la règle lit. Et les abstentions se groupent par **lecture** dans le lint — dix-huit lignes disaient trois choses, c'est le même défaut que les cinquante-deux constats de `S118` réduits à un | 7 novembre 2026 | `ce-que-lisent-les-74-dernieres` |
+| **Le test de correspondance tourne sur les quatre documents : 240 vérifications.** Un dossier réel par document, chaque déclaration éprouvée sur chaque document qu'elle vise, et les lectures de contexte prises à l'endroit — le fichier existe d'abord, la règle parle, puis il s'en va et elle se tait. Il a attrapé deux erreurs de ma main (`S73` et `S79`, deux gardes omis), et les **huit mutations** éprouvées sur la table le font échouer : une règle retirée, une lecture fausse, une lecture manquante, un `facultatif` de trop, un `facultatif` retiré, une condition inventée, un garde retiré, une lecture de contexte fausse | 7 novembre 2026 | `ce-que-lisent-les-74-dernieres` |
 | **Une règle hors de son réglage ne s'applique pas — elle n'est pas « non mesurée ».** Mesuré avant d'écrire, en faisant varier phase et cadence sur les mêmes données : **5 règles du BRD** changent de comportement selon la phase (`S04`, `S05`, `S65`, `S100`, `S113`) et **2 du plan** selon la cadence (`S48`, `S49`). Sept, pas des dizaines — la mesure a réduit la proposition d'un ordre de grandeur. `quand` déclare la condition : `vaut` en liste blanche, `sauf` en liste noire, chacune recopiant la forme que le code emploie. Effet sur `exemple/plan/flux` : **7 abstentions deviennent 1**, et la seule qui reste — `S59`, la mesure des outcomes — est celle qu'un projet au fil de l'eau peut remplir. Sur un BRD, `S04` et `S05` cessent de se dire non mesurées en Discover et Define, où elles ne valent pas | 7 novembre 2026 | `ce-que-lit-le-plan` |
 | **Le bruit permanent venait d'un silence accidentel dans le code.** Six règles d'itération — `S58`, `S75`, `S76`, `S77`, `S130` et `S48` — parcouraient `s.iterations`, vide en cadence `flux`, et se taisaient **par accident** plutôt que par décision : seule `S48` portait la condition. Une liaison unique, `const iterations = settings.cadence === 'flux' ? [] : arr(s.iterations)`, dit maintenant ce que les règles voulaient dire. Vérifié avant de changer qu'aucun état du dépôt n'a `cadence: flux` **avec** des itérations : la liaison ne retire donc aucun constat existant | 7 novembre 2026 | `ce-que-lit-le-plan` |
 | **Le test de correspondance a été étendu avant le `quand`, comme annoncé.** Il ne vérifiait que les lectures : un `quand` inventé aurait pu mentir sans que rien le dise. Il est désormais pris **des deux côtés** — dans son réglage la règle parle, hors de son réglage elle se tait — et il place d'abord l'état dans le réglage de la règle avant de la juger, sans quoi `S49` se faisait reprocher un silence qui n'était pas le sien. Il a attrapé trois erreurs de ma main dès le premier passage | 7 novembre 2026 | `ce-que-lit-le-plan` |
@@ -497,11 +501,12 @@ prose.** Écrire le skill d'audit d'abord, c'est écrire ses grilles en Markdown
 
 1. **Le but d'une itération** (`S130`). Le trou est prouvé, pas supposé. Aucune autorisation nécessaire :
    les 12 itérations du dépôt portent déjà leur but.
-2. **Tizi apprend à dire « je n'ai pas pu mesurer ».** Aujourd'hui `checkState` rend des constats, et
-   l'absence de constat est indiscernable de « non mesurable » : tant que c'est vrai, un rapport d'audit
-   ne peut pas avoir sa troisième colonne et le silence ressemble à « tout va bien ». Le livre donne le
-   vocabulaire exact (`assumption` contre `validated learning`). À mesurer d'abord : combien des règles
-   ont une condition d'applicabilité qu'elles taisent.
+2. **Tizi apprend à dire « je n'ai pas pu mesurer ».** ✔ Fait le 7 novembre 2026, en trois temps : la
+   table des lectures (`LECTURES`), les conditions d'applicabilité (`quand`), puis les 74 dernières
+   déclarations et la catégorie `facultatif`. Les 131 règles disent ce qu'elles lisent, `abstentions()`
+   rend la troisième colonne, et la mesure demandée a été faite : **sept règles** taisaient une condition
+   d'applicabilité — cinq de phase, deux de cadence —, et **dix-neuf** surveillent quelque chose
+   d'optionnel, dont le silence est un constat et non une case vide.
 3. **`audit-builder`.** Un importeur qui lit un BRD/PRD/backlog écrit ailleurs et le pose dans la forme
    d'état de Tizi en marquant `incertain` ce qu'il ne peut pas établir — la discipline d'`adopt.mjs`,
    « rien n'est déduit sans preuve ». Puis `checkState` tourne dessus et le rapport sort à trois
@@ -547,9 +552,19 @@ Define : « Objectifs servis par au moins une exigence : 0 % pour un seuil de 10
 Reste à mesurer, donc, avant de proposer quoi que ce soit : une abstention peut-elle citer la porte qui
 attend cette collection ? Je ne sais pas encore ce que ça coûte.
 
-Et le **quatrième verdict « sans objet »** reste écarté pour l'instant : avec sept règles concernées, un
-mot de plus dans un vocabulaire que les gens doivent apprendre coûte plus qu'il ne rapporte. Le chiffre
-décidera, une fois les 74 règles restantes déclarées.
+**Et la question a maintenant un nom, posé par la fin de l'étape 2 (7 novembre).** Trancher entre une
+abstention et un `facultatif` demande de savoir si le document est **censé** porter ce que la règle lit.
+Sur les 131 règles, ce jugement a été rendu une par une, à la main, et il est écrit en commentaire au-dessus
+de la table. C'est le seul endroit de `rules.mjs` où une connaissance est recopiée au lieu d'être lue :
+ce qu'un document doit porter **à une phase donnée** vit dans `gates.mjs` et dans les seuils de couverture.
+Dix-neuf règles sont `facultatif` aujourd'hui, et aucune ne le dit *selon la phase* — or une liste de
+contrôle de relecture est facultative avant la gouvernance et due à la gouvernance. Le relier demanderait
+de faire lire les portes par `LECTURES`, et c'est la même mesure que celle d'au-dessus.
+
+Et le **quatrième verdict « sans objet »** reste écarté. Le chiffre devait décider une fois les 74 règles
+déclarées : il a décidé, et il dit non. Dix-neuf règles sont sorties des abstentions par `facultatif`, et
+elles ne demandent pas un mot de plus dans le vocabulaire — elles demandent que le silence d'une règle sans
+objet soit lu comme un constat, ce qu'il est désormais. Trois verdicts suffisent.
 
 ## Écartées
 
