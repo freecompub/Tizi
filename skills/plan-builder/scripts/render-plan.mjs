@@ -7,7 +7,7 @@
 // Usage : node render-plan.mjs <state.yaml> [--include-proposed]
 import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { arr, txt, table, list, loadState, writeOut, fail, prLabel, today, humanReviewFooter, approxTokens } from './lib/common.mjs';
+import { arr, txt, table, list, loadState, writeOut, fail, prLabel, today, humanReviewFooter, approxTokens, ecrit } from './lib/common.mjs';
 import { checkPlan, storyReadiness, taskCycles, coverage, iterationStats, capacitySuggestion, riskSize, plannedAttention, coverageRows, contextFindings } from './lib/rules.mjs';
 
 const args = process.argv.slice(2);
@@ -119,7 +119,9 @@ if (!flux) {
   for (const it of arr(s.iterations)) {
     const its = tasks.filter(t => t.iteration === it.id);
     const cap = it.capacity || settings.sprint?.capacity || 0;
-    h(3, `${it.id}${mark(it)} — ${txt(it.goal)}`);
+    // Un tiret ne dit pas un but. `S130` l'exige dès que l'itération est investie ; une coquille
+    // future encore vide n'en a pas, et le titre se tait alors plutôt que d'écrire « — — ».
+    h(3, `${it.id}${mark(it)}${ecrit(it.goal) ? ` — ${it.goal}` : ''}`);
     p(`Du ${txt(it.start)} au ${txt(it.end)} · Charge ${load(its)} / capacité ${cap || '—'} · Engagement : ${it.commitment?.declared_by ? `déclaré par ${it.commitment.declared_by} le ${txt(it.commitment.date)}` : '**non déclaré**'} · Statut : ${txt(it.status)}\n`);
     p(list(its.map(t => `${t.status === 'terminé' ? '✓ ' : ''}${t.id} (${t.size}, ${txt(t.assignee_type)}) — ${txt(t.title)}`)));
     if (it.status === 'terminé' || it.review?.team?.date) {

@@ -1309,6 +1309,25 @@ export function checkPlan(s, refs = {}) {
   }
   void storyById;
   const weights = settings.sizes ?? { S: 1, M: 2, L: 3, XL: 5 };
+  // ── Un engagement porte sur un but (S130) ──
+  // « The sprint goal is the foundation of a mutual commitment made by the team and the product
+  // owner » (Rubin, Essential Scrum, ch. 4) : l'équipe s'engage à l'atteindre, le commanditaire
+  // s'engage à ne pas le changer en cours de route. Tizi lisait déjà l'engagement — `gates.mjs` en
+  // fait la porte de Govern — et jamais le but sur lequel il porte : on pouvait s'engager, et sur
+  // rien. Mesuré avant d'écrire : les douze itérations du dépôt portent toutes le leur, et celui de
+  // IT-2 vidé, le lint ne disait rien et la carte se rendait « IT-2 *(proposé)* — — ». Le but n'est
+  // dû qu'une fois l'itération investie — des tâches posées, un engagement déclaré, ou l'itération
+  // commencée. Une coquille future encore vide ne l'a pas : c'est le dernier moment responsable.
+  for (const it of arr(s.iterations)) {
+    if (ecrit(it.goal)) continue;
+    const n = tasks.filter(t => t.iteration === it.id).length;
+    const preuves = [
+      n ? `${n} tâche${n > 1 ? 's' : ''} y ${n > 1 ? 'sont posées' : 'est posée'}` : '',
+      ecrit(it.commitment?.declared_by) ? `engagement déclaré par ${it.commitment.declared_by}` : '',
+      ['en_cours', 'terminé'].includes(it.status) ? `itération ${it.status === 'terminé' ? 'terminée' : 'en cours'}` : '',
+    ].filter(Boolean);
+    if (preuves.length) out.push({ rule: 'S130', id: it.id, message: `itération sans but (${preuves.join(', ')}) : un engagement porte sur quelque chose — l'équipe s'engage à atteindre le but, le commanditaire s'engage à ne pas le changer en cours de route — et les deux documents de revue s'ouvrent sur « Objectif de l'itération : — »` });
+  }
   // Revues et releases (S58, S59)
   const todayStr = new Date().toISOString().slice(0, 10);
   arr(s.iterations).forEach((it, i, all) => {
@@ -2441,6 +2460,7 @@ export const STRUCT_RULES = {
   S127: 'contact disponible, question en attente, et rien n\'est jamais parti',
   S128: 'identifiant cité dans une phrase qui ne mène nulle part, ou attribution qui contredit le registre',
   S129: 'story sans qui, quoi ou pourquoi',
+  S130: 'itération investie sans but',
   S01: 'objectif non mesurable', S02: 'exigence sans objectif', S03: 'exigence sans besoin sourcé', S04: 'exigence sans critère d\'acceptation',
   S05: 'priorité ou release manquante', S06: 'exigence sans origine', S07: 'Must sans scénario d\'erreur', S08: 'NFR incomplète',
   S09: 'référence inexistante', S10: 'référence vers un élément abandonné', S11: 'règle métier sans source', S12: 'règle sans niveau d\'application',

@@ -5,7 +5,7 @@
 // Usage : node sprint-review.mjs <plan/<slug>/state.yaml> --iteration IT-n
 import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { arr, txt, table, list, loadState, writeOut, fail, today } from './lib/common.mjs';
+import { arr, txt, table, list, loadState, writeOut, fail, today, ecrit } from './lib/common.mjs';
 import { iterationStats, capacitySuggestion, storyReadiness } from './lib/rules.mjs';
 
 const args = process.argv.slice(2);
@@ -24,7 +24,9 @@ const storyOf = id => stories.find(x => x.id === id);
 const release = s.settings?.release;
 
 // ── Revue d'équipe ──
-const t = [`# Revue d'équipe — ${itId} (${txt(it.goal)})`, '', `Préparée le ${today()}. À tenir entre ceux qui ont construit, avant la revue avec les parties prenantes.`, ''];
+// Deux fiches s'ouvraient sur le but de l'itération, et l'écrivaient « (—) » quand il n'y en avait
+// pas. `S130` constate cette absence ; ici on se tait, au lieu d'annoncer un objectif vide.
+const t = [`# Revue d'équipe — ${itId}${ecrit(it.goal) ? ` (${it.goal})` : ''}`, '', `Préparée le ${today()}. À tenir entre ceux qui ont construit, avant la revue avec les parties prenantes.`, ''];
 t.push('## Le produit', '', 'Essayer tout ce qui a été construit, puis noter de 1 à 5. Chaque constat devient une story (souvent en voie rapide).', '');
 t.push(table(['Qualité', 'Note (1 à 5)', 'Pourquoi'], [['Expérience : simple, agréable, cohérente', '', ''], ['Fonctionnelle : fait ce qui était convenu, sans défaut', '', ''], ['Code : facile à maintenir, ou dette ajoutée ?', '', '']]));
 t.push('## Le plan', '', 'Décider ensemble ce qui est réellement fini au sens de la Definition of Done. Les chiffres ci-dessous partent des statuts actuels.', '');
@@ -37,7 +39,7 @@ const sugg = capacitySuggestion(s);
 if (sugg) t.push(`Capacité suggérée d'après ${sugg.basedOn.join(', ')} : ${sugg.velocity}, dont charge humaine ${sugg.humanLoad}.`, '');
 
 // ── Revue avec les parties prenantes ──
-const r = [`# Revue avec les parties prenantes — ${itId}`, '', `Préparée le ${today()}. Objectif de l'itération : ${txt(it.goal)}.`, ''];
+const r = [`# Revue avec les parties prenantes — ${itId}`, '', `Préparée le ${today()}.${ecrit(it.goal) ? ` Objectif de l'itération : ${it.goal}.` : ''}`, ''];
 r.push('## Ce qui a été construit', '', table(['Story', 'Démonstration prévue', 'Tâches finies'], [...new Set(tasks.map(x => x.story).filter(Boolean))].map(id => {
   const x = storyOf(id); const ts = tasks.filter(y => y.story === id);
   return [`${id} — ${txt(x?.title)}`, txt(x?.demo), `${ts.filter(y => y.status === 'terminé').length}/${ts.length}`];

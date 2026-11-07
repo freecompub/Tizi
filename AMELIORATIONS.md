@@ -42,6 +42,8 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
 
 | Piste | Date | Où |
 |---|---|---|
+| **On pouvait s'engager, et sur rien.** `iterations[].goal` était imprimé en trois endroits (`render-plan.mjs:122`, `sprint-review.mjs:27` et `:40`) et vérifié par **aucune** des 130 règles, alors que Tizi lisait déjà l'**engagement** — `gates.mjs:323` en fait la porte de Govern. Mesuré : les **12 itérations du dépôt portent toutes leur but**, et celui de IT-2 vidé, le lint ne disait **rien** (0 mention) et la carte se rendait `### IT-2 *(proposé)* — —`. `S130` constate l'absence, et seulement **une fois l'itération investie** — des tâches posées, un engagement déclaré, ou l'itération commencée. Une coquille future encore vide n'a pas à l'avoir : c'est le dernier moment responsable, et le constat nomme laquelle des trois preuves le rend dû. Source : Rubin, *Essential Scrum*, ch. 4 — « le but du sprint est le fondement d'un engagement mutuel », l'équipe s'engage à l'atteindre, le commanditaire s'engage à ne pas le changer | 7 novembre 2026 | `un-engagement-porte-sur-un-but` |
+| **Un tiret ne dit pas un but.** Les trois rendus écrivaient `txt(it.goal)`, donc `— —` sur la carte d'itération et « Objectif de l'itération : —. » sur la fiche de revue avec les parties prenantes, et `(—)` sur celle de l'équipe. Ils se taisent désormais quand il n'y a rien à lire, comme les fiches de story depuis `les-documents-et-leur-generateur`. Aucun document du dépôt ne change — les 12 buts sont écrits —, ce que le test de non-dérive confirme | 7 novembre 2026 | `un-engagement-porte-sur-un-but` |
 | **Les documents d'exemple avaient dérivé de leurs générateurs, et rien ne le voyait.** Découvert en voulant régénérer deux fiches de story : **52 fichiers dérivés** hors date de génération (48 du plan, 1 BRD, 3 conception), 13 autres à la date seule. La dérive mentait dans les deux sens — `brd.md` affichait deux avertissements (`S04`, `S05`) que l'état n'avait plus (**il accusait à tort**), `sad.md` en cachait deux (`S71`) et ignorait la colonne « Règle » de la table ADR (**il dissimulait**), et les en-têtes venaient d'un générateur antérieur. Personne ne comparait | 7 novembre 2026 | `les-documents-et-leur-generateur` |
 | **Le test qui l'empêche de revenir.** Chaque document versionné d'`exemple/` et d'`evals/fixtures/` est comparé à un rendu frais de son état. La **date de génération est exclue** (elle change à chaque rendu et ne dit rien de l'état) et les **versions figées sont hors du test** : leur handoff scelle le document autant que l'état (`source_doc`), et une baseline garde ce qui était vrai alors. Vérifié qu'il mord : un « Pourquoi » réécrit à la main est attrapé, une date de génération modifiée ne l'est pas | 7 novembre 2026 | `les-documents-et-leur-generateur` |
 | **Trois tirets disent moins que rien.** `render-plan.mjs` n'écrit la ligne qui/quoi/pourquoi que s'il y a quelque chose à lire — `S129` garantit qu'une story de voie normale a toujours de quoi la remplir, et la voie rapide porte sa substance dans son origine et sa reproduction. Au passage, la fiche de tâche écrivait `txt(st.who)` **sans** le repli sur `persona` que la fiche de story avait : les deux fiches parlaient de la même story et se contredisaient sur son « qui » | 7 novembre 2026 | `les-documents-et-leur-generateur` |
@@ -436,6 +438,86 @@ ci-dessus en viennent. Il restait aussi, non corrigé :
   machine : il trompait un lecteur. Reste à décider si cette mesure doit exister pour de vrai (un script
   qui dit, sur un portefeuille, combien de questions un council rapporte par passage) ou si les
   compteurs doivent disparaître, puisque les questions sont désormais gardées une par une.
+
+### Lecture d'*Essential Scrum* (Rubin) — le plan (7 novembre)
+
+Le livre lu en entier, notes dans `documentation/` à la manière de Patton et de Constantinidis. Il
+confirme plusieurs choix de Tizi, parfois mot pour mot : `S77` (action de rétrospective sans suivi) est
+la pathologie que Rubin tient pour **la plus grave des dix** — « si on ne va pas au bout, ne perdons pas
+notre temps en rétro » — et sa prescription, mettre les actions d'amélioration dans le sprint backlog
+*avant* les features en baissant la capacité d'autant (« ne séparez pas : intégrez »), est exactement ce
+que `S77` rend incontournable. `S76` reprend le retour d'un élément inachevé au backlog au bon rang, sans
+rallonger le sprint. Et les trois verdicts de Tizi ont leur définition au glossaire du livre :
+`assumption` = « une croyance présumée vraie **alors qu'aucun apprentissage validé ne l'établit** »,
+opposée à `validated learning`.
+
+Les trous, mesurés sur le dépôt et non supposés :
+
+- **Le but d'itération n'est contrôlé par rien.** `iterations[].goal` est imprimé en trois endroits
+  (`render-plan.mjs:122`, `sprint-review.mjs:27` et `:40`) et vérifié par **aucune** des 130 règles.
+  Vidé celui de IT-2 dans `exemple/plan/demo`, le lint n'a rien dit (0 mention) et la carte s'est rendue
+  en `### IT-2 *(proposé)* — —`. Or Tizi lit déjà l'**engagement** — `gates.mjs:323` en fait la porte de
+  Govern : on pouvait donc s'engager, et sur rien.
+- **La Definition of Done n'est jamais lue.** `definition_of_done` apparaît dans quatre fichiers, tous
+  des **rendus** ; aucune règle n'exige qu'elle soit non vide. Rubin : « opérer sans Definition of Done
+  forte, c'est délivrer une licence d'accumuler de la dette ». Et il donne la confrontation que Tizi a
+  tous les éléments pour faire : **chaque NFR est une cible de premier choix pour la DoD**.
+- **L'économie est absente, et c'est le trou structurel.** Sur les 130 libellés de règles, **un seul**
+  contient un mot d'économie (`S88`, « valeur hors énumération ») et c'est un faux positif. Absents du
+  dépôt entier : `coût du délai`, `WSJF`, `MRF` / `minimum releasable`, `seuil de confiance`. Or le
+  tableau 18.1 marque **non recommandées** deux des quatre combinaisons de contraintes (tout figé ;
+  périmètre + date figés), avec la raison : « si on sur-contraint les trois, **c'est la qualité qui
+  devient la variable** ». Les `releases` de Tizi portent `id`, `name`, `status` — pas de date, pas de
+  type de contrainte, pas de « won't have » déclaré. Et la règle du pouce des **60 à 70 % de must-have
+  par release** est calculable aujourd'hui (`priority: must` est sur chaque FR) : personne ne la calcule.
+- **DEEP n'existe pas, et deux de ses lettres inversent l'intuition.** Tizi a INVEST pour la story et
+  rien au niveau du backlog. Or `D` dit que le détail **ne doit pas** être uniforme, et `P` qu'il est
+  improbable que tout le backlog soit priorisé. Un backlog entièrement détaillé et entièrement priorisé
+  est un **défaut**, pas une qualité.
+- **Deux trous isolés.** Le **goulot de compétence** : Rubin montre un engagement de 150 h qui tient dans
+  une capacité de 140-197 h et qui est pourtant mauvais, parce qu'une seule personne sait faire l'IHM et
+  n'a que 14-21 h ; `S48` compare une charge à une capacité globale et ne verra jamais ça. Et le
+  **gâchis d'innovation**, défini au glossaire : « survient souvent quand **une solution prescrite est
+  fournie avec un élément de backlog** » — c'est le `N` d'INVEST, noté « non mesurable sur un état », et
+  il l'est sur le texte.
+
+Le plan, dans cet ordre, et son fil : **les grilles du livre doivent être du code avant d'être de la
+prose.** Écrire le skill d'audit d'abord, c'est écrire ses grilles en Markdown et doubler ce que
+`rules.mjs` devrait calculer — la dérive exacte que `les-documents-et-leur-generateur` a trouvée.
+
+1. **Le but d'une itération** (`S130`). Le trou est prouvé, pas supposé. Aucune autorisation nécessaire :
+   les 12 itérations du dépôt portent déjà leur but.
+2. **Tizi apprend à dire « je n'ai pas pu mesurer ».** Aujourd'hui `checkState` rend des constats, et
+   l'absence de constat est indiscernable de « non mesurable » : tant que c'est vrai, un rapport d'audit
+   ne peut pas avoir sa troisième colonne et le silence ressemble à « tout va bien ». Le livre donne le
+   vocabulaire exact (`assumption` contre `validated learning`). À mesurer d'abord : combien des règles
+   ont une condition d'applicabilité qu'elles taisent.
+3. **`audit-builder`.** Un importeur qui lit un BRD/PRD/backlog écrit ailleurs et le pose dans la forme
+   d'état de Tizi en marquant `incertain` ce qu'il ne peut pas établir — la discipline d'`adopt.mjs`,
+   « rien n'est déduit sans preuve ». Puis `checkState` tourne dessus et le rapport sort à trois
+   colonnes : constaté faux / constaté vrai / **non mesurable, et pourquoi**. Les grilles ne sont pas
+   réécrites : **ce sont les règles**. Avec, inscrite dans le `SKILL.md`, l'armature du chapitre 23 :
+   une *pratique* Scrum est obligatoire, une *approche* est sa réalisation locale (l'élan en peluche de
+   Vancouver marchait très bien là-bas et était intransposable à l'équipe chinoise), donc **on n'audite
+   jamais une approche contre une autre approche** ; et, du glossaire, « une règle peut être enfreinte
+   quand la pragmatique de la situation l'exige » — un écart est une question, pas un défaut.
+4. **Une grille par PR ensuite**, chacune enrichissant l'audit du même coup : la Definition of Done
+   confrontée aux NFR ; les contraintes de release (les deux combinaisons non recommandées, et la
+   proportion de must-have rendue comme une **mesure** et non comme un reproche, parce que 60-70 % est
+   une règle du pouce) ; DEEP au niveau du backlog ; le goulot de compétence ; le gâchis d'innovation.
+
+Chaque étape commence par une mesure sur le corpus avant d'écrire la règle, comme pour
+`le-pourquoi-d-une-story` — où la mesure avait retourné la conception.
+
+**Trouvé en mesurant, et laissé ouvert :** les 12 itérations du dépôt n'ont que **deux buts distincts**,
+et l'un des deux est `goal: "Journal"`. Un mot, un nom, aucune intention : il nomme une fonctionnalité
+là où Rubin demande « le but métier et la valeur du sprint » (ses exemples commencent tous par un verbe —
+*Support initial report generation*, *Load and curate North America map data*). L'autre but,
+« Bloquer les dossiers incomplets », est juste. Deux points de mesure ne font pas une règle de forme —
+c'est précisément le piège dans lequel `le-pourquoi-d-une-story` était tombé avant de mesurer. Reste donc
+à trancher : corriger le but de l'exemple (cela touche `exemple/`, donc sur autorisation), et décider si
+« un but d'itération qui nomme une fonctionnalité au lieu de dire une intention » mérite une règle une
+fois qu'on aura des buts venus de vrais dossiers.
 
 ## Écartées
 
