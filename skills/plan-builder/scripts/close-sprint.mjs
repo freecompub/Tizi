@@ -60,6 +60,12 @@ if (existsSync(implPath)) {
       console.warn(`Avertissement : l'export ${a.target} approuvé le ${a.date ?? '—'} par ${a.declared_by ?? '—'} (empreinte ${String(a.sha256).slice(0, 12)}…) devient périmé — le report des fusions modifie l'état du plan.`);
       console.warn(`  S'il n'a pas encore été appliqué : relance plan-operations.mjs --target ${a.target} après la sprint review, et fais réapprouver la nouvelle empreinte.`);
     }
+    // Le refus de l'exécuteur arrive loin d'ici, et une date déclarée ne dit pas quand le report a eu
+    // lieu : l'équipe date sa revue du jour de fin du sprint, et la clôture tourne le lendemain. On laisse
+    // donc la trace exacte de l'empreinte que ce report périme, pour que le refus la nomme au lieu de la
+    // déduire d'une comparaison de dates qui rate précisément ce cas.
+    plan.governance = plan.governance ?? {};
+    plan.governance.backlog_sync = [...arr(plan.governance.backlog_sync), { from_state_sha256: digestAvant, iteration: itId, date: today(), tasks: [...synced] }];
     writeOut(statePath, `# État du plan — tâches fusionnées reportées par close-sprint.mjs le ${today()}\n${yaml.dump(plan, { lineWidth: 120 })}`);
   }
 }

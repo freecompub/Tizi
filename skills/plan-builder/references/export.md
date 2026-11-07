@@ -39,3 +39,5 @@ Les noms des types Jira varient selon les projets : ils se règlent dans `settin
 L'utilisateur relit `operations.md` puis déclare son approbation. Enregistre-la dans `governance.backlog_approvals` : cible, **empreinte exacte** affichée par `plan-operations.mjs`, niveau d'autonomie (`complet`, `partiel` par défaut, `manuel`), opérations « à relire » qu'il accepte nommément (`reviewed`), et en niveau manuel la liste des opérations autorisées (`ops`). N'enregistre jamais une approbation que l'utilisateur n'a pas déclarée.
 
 Toute modification du plan après approbation, ou une autre exécution entre-temps, rend le plan d'opérations périmé : l'exécuteur le refusera, et il faudra le préparer de nouveau.
+
+La cause la plus fréquente est la sprint review, qui reporte les fusions dans le plan. `close-sprint.mjs` journalise donc dans `governance.backlog_sync` l'empreinte qu'il périme, l'itération et les tâches reportées : l'exécuteur y retrouve l'empreinte citée par l'export refusé et nomme sa cause, au lieu de la déduire des dates déclarées — une équipe date sa revue du jour de fin du sprint et clôture le lendemain, donc la date ne la désignait pas.
