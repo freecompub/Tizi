@@ -2887,26 +2887,34 @@ test('LECTURES et NON_DECLAREES couvrent le registre, exactement et sans doublon
 // absence », et la vérification l'a démentie — elle a besoin de parties prenantes entendues pour
 // parler. La mesure de l'état vide le disait déjà (S83 n'y figurait pas) ; je l'avais mal lue.
 test('ce que LECTURES déclare est ce que le code fait : vidée, la règle se tait — ou constate l\'absence', () => {
-  const reel = yaml.load(readFileSync(new URL('../exemple/brd/demo/state.yaml', import.meta.url).pathname, 'utf8'));
-  const vider = (s, chemins) => {
-    const c = JSON.parse(JSON.stringify(s));
+  // Un dossier RÉEL par document déclaré, avec ses handoffs amont : la correspondance se vérifie sur
+  // ce que les scripts lisent vraiment, pas sur un état fabriqué pour l'occasion.
+  const lire = p => yaml.load(readFileSync(new URL(`../${p}`, import.meta.url).pathname, 'utf8'));
+  const DOSSIERS = {
+    brd: { etat: lire('exemple/brd/demo/state.yaml'), refs: {} },
+    plan: { etat: lire('exemple/plan/demo/state.yaml'), refs: lire('exemple/plan/demo/refs.yaml') },
+  };
+  const vider = (o, chemins) => {
+    const c = JSON.parse(JSON.stringify(o));
     for (const chemin of chemins) {
       const parts = chemin.split('.');
       const feuille = parts.pop();
-      const parent = parts.reduce((o, k) => (o && o[k]) || {}, c);
+      const parent = parts.reduce((x, k) => (x && x[k]) || {}, c);
       delete parent[feuille];
     }
     return c;
   };
   let verifiees = 0;
   for (const [regle, d] of Object.entries(LECTURES)) {
-    if (d.doc !== 'brd') continue;
-    const parle = checkState(vider(reel, d.lit)).some(f => f.rule === regle);
+    const dossier = DOSSIERS[d.doc];
+    assert.ok(dossier, `${regle} : aucun dossier réel pour vérifier les règles de « ${d.doc} »`);
+    const { refs, ...etat } = vider({ ...dossier.etat, refs: dossier.refs }, d.lit);
+    const parle = checkState(etat, { refs }).some(f => f.rule === regle);
     if (d.absence) assert.ok(parle, `${regle} est déclarée « absence » : elle devrait parler quand ${d.lit.join(', ')} est vide`);
     else assert.ok(!parle, `${regle} parle encore alors que ${d.lit.join(', ')} est vide : la déclaration ne dit pas tout ce qu'elle lit`);
     verifiees++;
   }
-  assert.equal(verifiees, 28, 'la première tranche déclare les 28 règles émises par checkBrd');
+  assert.equal(verifiees, 56, 'deux tranches déclarées : les 28 règles de checkBrd et les 28 de checkPlan qui se déclarent proprement');
 });
 
 test('abstentions : un BRD vide rend 26 règles non mesurées, et dit pourquoi', () => {
@@ -2927,5 +2935,26 @@ test('abstentions : un BRD vide rend 26 règles non mesurées, et dit pourquoi',
   assert.deepEqual(abstentions(reel).map(x => x.rule).sort(), ['S86', 'S97']);
 
   // Une règle du BRD n'est pas « non mesurée » sur un plan : elle ne s'y applique pas.
-  assert.deepEqual(abstentions({ document: 'plan', phase: 'schedule' }), []);
+  assert.ok(!abstentions({ document: 'plan', phase: 'schedule' }).some(x => LECTURES[x.rule].doc === 'brd'));
+});
+
+test('abstentions : le plan, et les lectures qui sont en amont', () => {
+  const lire = p => yaml.load(readFileSync(new URL(`../${p}`, import.meta.url).pathname, 'utf8'));
+  const vide = { document: 'plan', phase: 'schedule', settings: { cadence: 'sprint', release: 'REL-1' } };
+  assert.deepEqual([...new Set(checkState(vide).map(f => f.rule))], ['S100'], 'sur un plan vide, une seule règle parle');
+  assert.equal(abstentions(vide).length, 28, 'les 28 règles du plan déclarées n\'ont rien eu à lire');
+
+  // Sur le dossier réel, avec ses handoffs : tout était mesurable.
+  assert.deepEqual(abstentions(lire('exemple/plan/demo/state.yaml'), lire('exemple/plan/demo/refs.yaml')), []);
+
+  // `S39` et `S51` lisent l'amont, pas l'état : sans les handoffs elles n'ont rien à lire, avec eux si.
+  const s = lire('exemple/plan/demo/state.yaml');
+  const sansAmont = abstentions(s).map(x => x.rule);
+  assert.ok(sansAmont.includes('S39') && sansAmont.includes('S51'), 'sans handoff amont, les deux règles qui le lisent s\'abstiennent');
+  assert.match(abstentions(s).find(x => x.rule === 'S39').message, /refs\.prd\.releases/);
+
+  // Le plan en flux n'a pas d'itérations : les six règles qui en parlent le disent, au lieu de se taire.
+  const flux = abstentions(lire('exemple/plan/flux/state.yaml'), lire('exemple/plan/flux/refs.yaml'));
+  assert.deepEqual(flux.map(x => x.rule).sort((a, b) => +a.slice(1) - +b.slice(1)),
+    ['S48', 'S58', 'S59', 'S75', 'S76', 'S77', 'S130']);
 });

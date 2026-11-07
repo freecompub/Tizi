@@ -2531,6 +2531,41 @@ export const LECTURES = {
   S95: { doc: 'brd', lit: ['candidate_needs'] },
   S97: { doc: 'brd', lit: ['hypotheses'] },
   S113: { doc: 'brd', lit: ['stakeholders'] },
+
+  // ── Le plan : les 28 règles de `checkPlan` qui se déclarent proprement ──
+  // Deux y manquent à dessein, et `NON_DECLAREES` les garde : `S09` est émise depuis **dix** endroits
+  // différents et demande une décision, pas une copie ; `S49` ne vaut qu'en cadence `flux`, et une
+  // applicabilité conditionnée par un réglage est une notion que cette table n'a pas encore.
+  S37: { doc: 'plan', lit: ['stories'] },
+  S38: { doc: 'plan', lit: ['stories'] },
+  S39: { doc: 'plan', lit: ['refs.prd.releases'] },
+  S40: { doc: 'plan', lit: ['tasks'] },
+  S41: { doc: 'plan', lit: ['stories'] },
+  S42: { doc: 'plan', lit: ['stories'] },
+  S43: { doc: 'plan', lit: ['stories', 'tasks'] },
+  S44: { doc: 'plan', lit: ['tasks'] },
+  S45: { doc: 'plan', lit: ['tasks'] },
+  S46: { doc: 'plan', lit: ['tasks'] },
+  S47: { doc: 'plan', lit: ['tasks'] },
+  S48: { doc: 'plan', lit: ['iterations'] },
+  S50: { doc: 'plan', lit: ['examples'] },
+  // Les mesures, vérifications et spikes viennent de la conception et du PRD, pas du plan : ce que
+  // `S51` lit est en amont, d'où les chemins sous `refs`.
+  S51: { doc: 'plan', lit: ['refs.sad.security_measures', 'refs.sad.verifications', 'refs.sad.spikes', 'refs.prd.preserved_behaviors', 'refs.prd.transition_requirements'] },
+  S52: { doc: 'plan', lit: ['stories'] },
+  S58: { doc: 'plan', lit: ['iterations'] },
+  S59: { doc: 'plan', lit: ['release_tracking'] },
+  S60: { doc: 'plan', lit: ['stories'] },
+  S61: { doc: 'plan', lit: ['stories'] },
+  S62: { doc: 'plan', lit: ['stories'] },
+  S72: { doc: 'plan', lit: ['tasks'] },
+  S74: { doc: 'plan', lit: ['tasks'] },
+  S75: { doc: 'plan', lit: ['iterations'] },
+  S76: { doc: 'plan', lit: ['iterations'] },
+  S77: { doc: 'plan', lit: ['iterations'] },
+  S78: { doc: 'plan', lit: ['stories'] },
+  S129: { doc: 'plan', lit: ['stories'] },
+  S130: { doc: 'plan', lit: ['iterations'] },
 };
 
 // Les règles qui n'ont pas encore dit ce qu'elles lisent. La liste est explicite et doit rétrécir :
@@ -2539,15 +2574,12 @@ export const LECTURES = {
 export const NON_DECLAREES = [
   'S00', 'S06', 'S07', 'S08', 'S09', 'S10', 'S20', 'S21', 'S22', 'S23',
   'S24', 'S25', 'S26', 'S27', 'S28', 'S29', 'S30', 'S31', 'S32', 'S33',
-  'S34', 'S35', 'S36', 'S37', 'S38', 'S39', 'S40', 'S41', 'S42', 'S43',
-  'S44', 'S45', 'S46', 'S47', 'S48', 'S49', 'S50', 'S51', 'S52', 'S53',
-  'S54', 'S55', 'S57', 'S58', 'S59', 'S60', 'S61', 'S62', 'S67', 'S68',
-  'S69', 'S70', 'S71', 'S72', 'S73', 'S74', 'S75', 'S76', 'S77', 'S78',
-  'S79', 'S80', 'S81', 'S82', 'S85', 'S87', 'S88', 'S90', 'S91', 'S94',
-  'S96', 'S98', 'S99', 'S100', 'S101', 'S102', 'S103', 'S104', 'S105', 'S106',
-  'S107', 'S108', 'S109', 'S110', 'S111', 'S112', 'S114', 'S115', 'S116', 'S117',
-  'S118', 'S119', 'S120', 'S121', 'S122', 'S123', 'S124', 'S125', 'S126', 'S127',
-  'S128', 'S129', 'S130',
+  'S34', 'S35', 'S36', 'S49', 'S53', 'S54', 'S55', 'S57', 'S67', 'S68',
+  'S69', 'S70', 'S71', 'S73', 'S79', 'S80', 'S81', 'S82', 'S85', 'S87',
+  'S88', 'S90', 'S91', 'S94', 'S96', 'S98', 'S99', 'S100', 'S101', 'S102',
+  'S103', 'S104', 'S105', 'S106', 'S107', 'S108', 'S109', 'S110', 'S111', 'S112',
+  'S114', 'S115', 'S116', 'S117', 'S118', 'S119', 'S120', 'S121', 'S122', 'S123',
+  'S124', 'S125', 'S126', 'S127', 'S128',
 ];
 
 // Une lecture est remplie si le chemin désigne quelque chose qui porte de l'information : un tableau
@@ -2564,11 +2596,14 @@ const rempli = (s, chemin) => {
 // Les règles qui, sur cet état, n'ont rien eu à lire. Ne pas savoir n'est pas constater : ce que cette
 // fonction rend est la troisième colonne d'un rapport — ni vrai, ni faux, mais **non mesuré, et
 // pourquoi**.
-export function abstentions(s) {
+export function abstentions(s, refs = {}) {
   const doc = s?.document ?? 'brd';
+  // Plusieurs règles du plan ne lisent pas l'état mais les handoffs amont — `S39` les releases du PRD,
+  // `S51` les mesures et les spikes de la conception. Les chemins sous `refs` les désignent.
+  const base = { ...s, refs };
   return Object.entries(LECTURES)
     .filter(([, d]) => d.doc === doc && !d.absence)
-    .filter(([, d]) => d.lit.every(p => !rempli(s, p)))
+    .filter(([, d]) => d.lit.every(p => !rempli(base, p)))
     .map(([rule, d]) => ({
       rule,
       lit: [...d.lit],

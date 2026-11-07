@@ -42,6 +42,7 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
 
 | Piste | Date | Où |
 |---|---|---|
+| **Ce que lit le plan : 28 déclarations de plus, 56 sur 131.** Deuxième tranche, celle de `checkPlan`. Les 28 ont concordé avec le code du premier coup, vérifiées une à une sur le dossier réel. Un plan vide annonce désormais `S100` **et 28 règles non mesurées** ; `exemple/plan/demo` n'en a **aucune** — tout était mesurable ; et `exemple/plan/flux`, qui n'a pas d'itérations, en annonce **7**, au lieu de six règles d'itération silencieuses qu'on prenait pour satisfaites. Au passage, deux règles ne lisent pas l'état mais **les handoffs amont** — `S39` les releases du PRD, `S51` les mesures et les spikes de la conception : `abstentions()` prend donc les refs, et les chemins sous `refs.` les désignent. Le test de correspondance couvre maintenant **un dossier réel par document déclaré**, avec ses handoffs | 7 novembre 2026 | `ce-que-lit-le-plan` |
 | **Sur un état entièrement vide, 3 règles sur 131 parlaient.** Mesuré avant d'écrire : un BRD vide récolte `S65`, `S89` et `S100` ; un PRD, un SAD, un plan vides n'en récoltent qu'une, `S100`. Les 128 autres se taisaient, et rien ne distinguait ce silence d'un « tout va bien » — **un document où il n'y a rien passait pour un document presque propre**. En regardant le code, il n'y a pas deux silences mais **trois sortes de règle** : celles qui ont besoin d'une lecture pour parler, celles qui **constatent l'absence** (toujours mesurables dans leur phase), et les mixtes comme `S89`. `LECTURES` déclare ce que chaque règle lit, `abstentions()` rend les cases vides, et le lint les affiche : un BRD quasi vide annonce désormais 6 avertissements **et 26 règles non mesurées**, chacune nommant la collection absente. Première tranche : les 28 règles de `checkBrd` ; `NON_DECLAREES` tient les 103 autres, et un test exige que les deux listes couvrent **exactement** le registre — une règle neuve ne peut pas rester non classée | 7 novembre 2026 | `ne-pas-savoir-nest-pas-constater` |
 | **Le test a démenti une de mes déclarations avant que je l'écrive.** `S83` (« aucun utilisateur direct entendu ») paraissait constater une absence ; vidé `stakeholders`, elle se tait — elle a besoin de parties prenantes entendues pour parler. Ma propre mesure de l'état vide le disait déjà, S83 n'y figurait pas, et je l'avais mal lue. Le test qui compare chaque déclaration au comportement réel du code — vidée, la règle se tait, ou bien elle constate l'absence — est ce qui empêche cette table de dériver du catalogue qu'elle décrit, la faute exacte trouvée dans les documents d'exemple le même jour | 7 novembre 2026 | `ne-pas-savoir-nest-pas-constater` |
 | **Le livre reste dehors.** Le PDF d'*Essential Scrum* est resté non suivi tout le temps de la lecture, mais rien ne l'empêchait : un `git add -A` distrait l'emportait dans l'historique d'un dépôt **public**, et un ouvrage sous droits n'en sort plus. `/documentation/*.pdf` ferme la porte. Avec une **exception nommée** — `!/documentation/Tizi - un SDLC agentique.pdf` —, parce que le PDF du document de référence a été retiré en attendant un réexport depuis le Markdown vivant et doit pouvoir revenir : une règle qui bloquerait ce retour échangerait un risque contre un autre. Vérifié dans les deux sens avec `git check-ignore -v` : le livre est pris par la règle, le document de référence par la négation | 7 novembre 2026 | `le-livre-reste-dehors` |
@@ -526,6 +527,26 @@ règle, une fois qu'on aura des buts venus de vrais dossiers. Le but de l'exempl
 (autorisation du 7 novembre) : `Tirer parti des refus : le superviseur les consulte, les agents y sont
 formés` — un but, et ses deux élaborations nommées, qui sont exactement les deux tâches de IT-2
 (`TK-007`, le journal de la story US-005, et `TK-008`, la formation de `TR-01`).
+
+### Une troisième dimension d'applicabilité (7 novembre)
+
+`LECTURES` sait dire de quel **document** relève une règle et quelle **lecture** il lui faut. Elle ne sait
+pas encore dire qu'une règle ne vaut que sous un **réglage**. Deux cas l'ont montré en déclarant le plan :
+
+- **`S49`** (limite d'encours) ne s'applique qu'en cadence `flux`. En cadence `sprint` elle ne se tait pas
+  faute de données : elle ne s'applique pas. Elle est restée dans `NON_DECLAREES` pour cette raison.
+- **Les six règles d'itération** (`S48`, `S58`, `S75`, `S76`, `S77`, `S130`) s'annoncent « non mesurées »
+  sur `exemple/plan/flux`, ce qui est **vrai** — `iterations` est vide — mais se lit étrangement quand la
+  cadence a délibérément décidé de ne pas avoir d'itérations.
+
+Les deux faces du même manque. Trois issues possibles : un champ `quand` sur la déclaration (une
+condition sur l'état, pas une lecture) ; un quatrième verdict « sans objet » distinct de « non mesuré » ;
+ou laisser tel quel, en acceptant qu'« il n'y avait rien à lire » couvre les deux cas. Le troisième choix
+est le moins coûteux et le moins juste : « on ne mesure pas » et « ça ne s'applique pas » ne sont pas la
+même chose, et c'est exactement le reproche que `S68` fait ailleurs à un espace réservé resté en place.
+
+À noter : la même question se posera pour les **phases**. `S65` ne vaut qu'en Define et Govern, `S89` à la
+fin de Discover. Une applicabilité par phase est déjà dans le code, nulle part dans la déclaration.
 
 ## Écartées
 
