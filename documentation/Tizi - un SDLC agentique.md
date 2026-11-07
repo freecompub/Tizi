@@ -888,12 +888,18 @@ La liste complète — chaque règle, chaque condition de porte, étape par éta
 | Codes | Signification |
 | --- | --- |
 | `L01`–`L08` | Règles de rédaction de la vérification de forme (termes vagues, énoncé multiple, pronom sans antécédent…) |
-| `S00`–`S108` | Règles de structure de la vérification de forme, communes à tous les skills |
+| `S00`–`S130` | Règles de structure de la vérification de forme, communes à tous les skills |
 | `G1`–`G6` | Garde-fous de contenu de l’export (secrets, chemins locaux, adresses, références non résolues, éléments non validés, longueurs) |
 | `C1`–`C10` | Conditions de la porte de PR (étape 5) |
 | `R1`–`R10` | Conditions de la porte de release (étape 6) |
 
 Les **portes de phase** des cinq documents à phases (BRD, PRD, conception, plan, tests) se calculent dans `lib/gates.mjs` et s’affichent au point d’étape. Elles ne portent que les conditions **calculables** : ce qui se juge — « le MVP satisfait les critères », « assez de stories sont prêtes », « les participants se reconnaîtraient dans la synthèse » — reste dans les fichiers de phase et se tranche avec l’utilisateur. Le compte dit « n tenues sur m mesurées », jamais « la porte est franchie ». Chaque condition a **trois** états : tenue, en échec, non mesurée ; une condition non mesurée ne s’affiche jamais ✓, parce qu’une absence de mesure n’est pas une réussite.
+
+Les **règles** ont les mêmes trois états que les conditions de porte, et elles ne les ont que depuis le 7 novembre 2026. Avant, `checkState` ne rendait que des constats : une règle qui se taisait parce qu’elle n’avait rien à lire était indiscernable d’une règle satisfaite. Mesuré sur un état entièrement vide, **3 règles sur 131 parlaient** au BRD et **une seule** ailleurs — un document où il n’y a rien passait pour un document presque propre, et c’est le seul trou qui empêchait un rapport d’audit d’avoir sa troisième colonne. Chaque règle déclare donc, dans `LECTURES`, ce qu’elle **parcourt** (`lit`), pour quels documents elle vaut (`doc`), et à quelles conditions elle s’applique (`quand` : `vaut` en liste blanche, `sauf` en liste noire, `rempli` pour un garde). `abstentions()` rend les cases vides, et le lint les affiche groupées par lecture. 148 déclarations pour 131 règles, parce que quinze règles portent le même numéro dans deux documents sans y lire la même chose.
+
+Deux distinctions font tout le travail, et elles sont faciles à confondre. Une règle qui **constate l’absence** (`absence`) parle précisément quand sa lecture est vide : `S100` réclame la trace d’une porte franchie, et c’est l’absence de trace qui est le constat. Une règle **facultative** (`facultatif`) surveille quelque chose que le document n’a aucune raison d’avoir : pas de dérogation de seuil, donc pas de dérogation muette — son silence est un vrai constat de conformité. Entre les deux, une abstention, qui ne vaut que si le document est **censé** porter ce que la règle lit. Ce jugement est rendu règle par règle et écrit au-dessus de la table ; le relier à ce que les portes exigent **à une phase donnée** est la question laissée ouverte.
+
+Un test compare chaque déclaration au comportement réel du code sur un dossier d’exemple de chaque document — vidée de ce qu’elle déclare lire, la règle doit se taire, ou constater l’absence —, et un autre exige que `LECTURES` couvre le registre exactement : une règle neuve ne peut pas être ajoutée sans dire ce qu’elle lit. C’est la parade au défaut qu’une table de description porte par nature, celui d’une documentation qui dérive de ce qu’elle décrit.
 
 Un passage de porte s’écrit dans `phase_log`, avec sa date, son décideur et l’état de la porte au passage ; un retour en arrière s’y écrit aussi, avec `kind: retour`, la zone d’ombre qui l’a provoqué et sa raison. `S100` et `S101` réclament la trace, et un retour ne tient pas lieu de porte.
 

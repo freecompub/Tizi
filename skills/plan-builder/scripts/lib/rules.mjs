@@ -1516,6 +1516,10 @@ export function coverageFindings(s, refs = {}) {
 // S68 : un texte d'élément vivant contient un espace réservé (TODO, TBD, XXX, ???, {{…}}, « à compléter »).
 const PLACEHOLDER_RE = /\bTODO\b|\bTBD\b|\bFIXME\b|\bXXX\b|\?\?\?|\{\{[^}]*\}\}|à compléter|à définir plus tard|lorem ipsum/i;
 const SKIP_KEYS = new Set(['status', 'lint_waivers', 'decision', 'automation', 'kind', 'type', 'subtype', 'severity', 'lifecycle', 'cadence', 'phase']);
+// Les blocs de métadonnées : ce qui n'est pas du contenu du document. `placeholderFindings` les
+// écarte depuis toujours, et `LECTURES` s'appuie sur la MÊME liste pour dire quand une règle qui
+// parcourt tout le document n'a rien eu à lire — deux listes auraient fini par diverger.
+export const HORS_CONTENU = ['governance', 'session', 'questions', 'council_runs', 'refs', 'settings'];
 export function placeholderFindings(s) {
   const out = [];
   const visit = (v, owner, path) => {
@@ -1526,7 +1530,7 @@ export function placeholderFindings(s) {
       for (const [k, x] of Object.entries(v)) if (!SKIP_KEYS.has(k)) visit(x, v.id ?? owner, path ? `${path}.${k}` : k);
     }
   };
-  for (const [k, v] of Object.entries(s)) if (!['governance', 'session', 'questions', 'council_runs', 'refs', 'settings'].includes(k)) visit(v, k, k);
+  for (const [k, v] of Object.entries(s)) if (!HORS_CONTENU.includes(k)) visit(v, k, k);
   return out;
 }
 // S69 : un chiffre précis dans un énoncé dont l'élément n'a aucune source. Généraliser, ou citer la source qui le fixe.
@@ -2496,35 +2500,80 @@ export const STRUCT_RULES = {
 // passe pour un document presque propre. C'est le trou qu'un audit de documents écrits ailleurs ne
 // peut pas combler sans cette table.
 //
-// En regardant le code plutôt qu'en le supposant, il n'y a pas deux silences mais **trois sortes de
-// règle** :
-//   `lit`           la ou les lectures dont la règle a besoin. Toutes vides → elle n'a **rien mesuré**.
-//   `absence: true` la règle **constate l'absence** : elle parle précisément quand la lecture est
-//                   vide, et reste donc mesurable dans sa phase. `S89` est mixte — elle parcourt
-//                   `decision_rights` et reproche en plus les domaines dus qui manquent.
-//   absente d'ici   pas encore classée : elle figure dans `NON_DECLAREES`, et un test l'exige.
+// Une déclaration de lecture porte quatre choses, dont une seule est obligatoire :
+//   doc       pour quels documents la règle peut parler : `'brd'`, `'prd'`, `'sad'`, `'plan'`, une
+//             liste de ceux-là, ou `'*'` pour les quatre. Une règle du BRD n'est pas « non mesurée »
+//             sur un plan : elle ne s'y applique pas.
+//   lit       les chemins que la règle PARCOURT. Qu'UN seul porte quelque chose suffit : elle a eu de
+//             la matière. `'*'` vaut pour les règles qui ne nomment pas leurs champs et parcourent le
+//             document entier.
+//   absence   la règle CONSTATE l'absence : elle parle précisément quand la lecture est vide, et reste
+//             donc mesurable. `S89` est mixte — elle parcourt `decision_rights` et reproche en plus
+//             les domaines dus qui manquent.
+//   facultatif ce que la règle surveille est FACULTATIF : vide, il n'y a rien à surveiller, et son
+//             silence est un vrai constat de conformité, pas une case vide.
 //
-// `doc` dit de quel document la règle relève : une règle du BRD n'est pas « non mesurée » sur un
-// plan, elle ne s'y applique pas. Première tranche : les 28 règles émises par `checkBrd`.
+// Le critère qui sépare `facultatif` d'une abstention, et c'est lui qui a fait le tri des 74 : une
+// abstention ne vaut que si le document est CENSÉ porter ce que la règle lit. Un dossier sans objectif
+// ne peut pas dire si ses objectifs sont mesurables, et il est censé en avoir : c'est une case vide.
+// Un dossier sans dérogation de seuil n'a aucune dérogation muette, et il n'est pas censé en avoir :
+// le silence est un constat, « rien à reprocher ». Mesuré avant de trancher : sans cette distinction,
+// le PRD d'exemple s'entendait dire 33 fois « non mesurée », dont la moitié sur des choses qu'il n'a
+// aucune raison d'avoir — et un rapport qui crie 33 fois ne se lit pas plus qu'un rapport muet.
+// La limite, écrite plutôt que cachée : ce jugement est le mien, règle par règle. Ce qu'un document
+// doit porter À UNE PHASE DONNÉE est une connaissance qui existe déjà ailleurs, dans les portes et
+// leurs seuils, et personne ne l'a encore reliée à cette table. C'est la question laissée ouverte.
+//   quand     la ou les conditions d'applicabilité, toutes requises : `vaut` est une liste blanche,
+//             `sauf` une liste noire, `rempli` exige que le chemin porte quelque chose.
+// Une règle peut porter PLUSIEURS déclarations, dans un tableau : la même règle ne lit pas la même
+// chose dans un PRD et dans un plan — `S108` regarde `source_brd` chez l'un, `refs` chez l'autre.
+//
+// Deux doctrines ont tranché tous les cas douteux, et sans elles la table aurait eu besoin de trois
+// notions de plus :
+//   1. On déclare ce que la règle PARCOURT, pas ce contre quoi elle résout. `S98` parcourt
+//      `governance.reviewers` et résout contre `stakeholders` ; un renvoi qui ne résout pas est
+//      l'affaire de `S09`, qui lit le document entier. Déclarer les deux aurait demandé une lecture
+//      conjonctive — « elle a besoin de TOUTES » —, et la conjonction aurait été fausse partout
+//      ailleurs, où un seul des chemins suffit.
+//   2. Un GARDE n'est pas une lecture : c'est une applicabilité. `if (arr(s.security_catalogs).length
+//      && …)` sur `S55`, `if (!contacts) continue` sur `S127` : ces deux-là ne disent pas ce que la
+//      règle lit, ils disent quand elle existe. Ils vont dans `quand`, avec `rempli`.
+//
+// Les chemins préfixés `ctx.` désignent ce qui vit À CÔTÉ de l'état et non dedans : les guides
+// d'entretien, les listes de contrôle, `contacts.yaml`, la constitution du produit, les fiches de
+// contexte rendues. Quatorze règles sur les 131 ne lisent pas l'état, et la table le dit — sans quoi
+// elle aurait affirmé qu'elles lisent un champ qui n'existe nulle part.
+const CADENCE_ITERATIVE = { chemin: 'settings.cadence', sauf: ['flux'] };
 // Six règles d'itération ne valent que si le projet travaille en itérations. La condition est dans le
 // code (`const iterations`), et la voici en clair : sans elle, un plan au fil de l'eau s'entendait dire
 // « non mesurée » six fois à chaque vérification, pour la vie du projet, sans que ça puisse jamais
 // devenir un constat. Une règle hors de son réglage n'est pas non mesurée : elle ne s'applique pas.
-const CADENCE_ITERATIVE = { chemin: 'settings.cadence', sauf: ['flux'] };
+// La carte des parties prenantes n'existe pas avant Discover : le tour de table ne donne que des noms.
+const PHASES_DE_CARTE = { chemin: 'phase', vaut: ['discover', 'define', 'govern'] };
+// Les règles qui parcourent le document entier plutôt qu'un champ nommé.
+const TOUT = ['*'];
 
 export const LECTURES = {
-  S01: { doc: 'brd', lit: ['objectives'] },
+  // ── Le BRD ──
+  // Quinze règles portent le même numéro dans deux documents — mesuré, pas supposé : `S01`, `S04`,
+  // `S05`, `S10`, `S15` à `S17`, `S81`, `S84`, `S87`, `S90`, `S91`, `S94`, `S110`. Ce sont des
+  // homonymes, pas des règles partagées : `S04` attend un critère d'acceptation sur une exigence
+  // métier au BRD et sur une exigence fonctionnelle au PRD, et seul le premier attend une phase.
+  // Une seule déclaration pour les deux aurait menti sur l'un des deux à chaque fois.
+  S01: [{ doc: 'brd', lit: ['objectives'] }, { doc: 'prd', lit: ['goals'] }],
   S02: { doc: 'brd', lit: ['business_requirements'] },
   S03: { doc: 'brd', lit: ['business_requirements'] },
-  S04: { doc: 'brd', lit: ['business_requirements'], quand: { chemin: 'phase', sauf: ['assess', 'discover', 'define'] } },
-  S05: { doc: 'brd', lit: ['business_requirements'], quand: { chemin: 'phase', sauf: ['assess', 'discover', 'define'] } },
+  S04: [{ doc: 'brd', lit: ['business_requirements'], quand: { chemin: 'phase', sauf: ['assess', 'discover', 'define'] } },
+    { doc: 'prd', lit: ['functional_requirements'] }],
+  S05: [{ doc: 'brd', lit: ['business_requirements'], quand: { chemin: 'phase', sauf: ['assess', 'discover', 'define'] } },
+    { doc: 'prd', lit: ['functional_requirements'] }],
   S11: { doc: 'brd', lit: ['business_rules'] },
   S12: { doc: 'brd', lit: ['business_rules'] },
   S13: { doc: 'brd', lit: ['business_rules'] },
   S14: { doc: 'brd', lit: ['shadow_zones'] },
-  S15: { doc: 'brd', lit: ['shadow_zones'] },
-  S16: { doc: 'brd', lit: ['shadow_zones'] },
-  S17: { doc: 'brd', lit: ['decisions'] },
+  S15: { doc: ['brd', 'prd'], facultatif: true, lit: ['shadow_zones'] },
+  S16: { doc: ['brd', 'prd'], facultatif: true, lit: ['shadow_zones'] },
+  S17: [{ doc: ['brd', 'sad'], lit: ['decisions'] }, { doc: 'prd', lit: ['design_decisions', 'goals'] }],
   S18: { doc: 'brd', lit: ['decisions'] },
   S19: { doc: 'brd', lit: ['stakeholders'] },
   S56: { doc: 'brd', lit: ['opportunity'] },
@@ -2536,7 +2585,7 @@ export const LECTURES = {
   // vérification l'a démentie : elle a besoin de parties prenantes entendues pour parler, et
   // `stakeholders` vidée, elle se tait. La mesure de l'état vide le disait déjà, S83 n'y figurait pas.
   S83: { doc: 'brd', lit: ['stakeholders'] },
-  S84: { doc: 'brd', lit: ['business_requirements'] },
+  S84: [{ doc: 'brd', lit: ['business_requirements'] }, { doc: 'prd', lit: ['functional_requirements'] }],
   S86: { doc: 'brd', lit: ['initiative.derived_from'] },
   S89: { doc: 'brd', lit: ['decision_rights'], absence: true },
   S92: { doc: 'brd', lit: ['stakeholders'] },
@@ -2545,10 +2594,48 @@ export const LECTURES = {
   S97: { doc: 'brd', lit: ['hypotheses'] },
   S113: { doc: 'brd', lit: ['stakeholders'], quand: { chemin: 'phase', vaut: ['define', 'govern'] } },
 
-  // ── Le plan : les 28 règles de `checkPlan` qui se déclarent proprement ──
-  // Deux y manquent à dessein, et `NON_DECLAREES` les garde : `S09` est émise depuis **dix** endroits
-  // différents et demande une décision, pas une copie ; `S49` ne vaut qu'en cadence `flux`, et une
-  // applicabilité conditionnée par un réglage est une notion que cette table n'a pas encore.
+  // ── Le PRD ──
+  S06: { doc: 'prd', lit: ['functional_requirements'] },
+  S07: { doc: 'prd', lit: ['functional_requirements'] },
+  S08: { doc: 'prd', lit: ['nfrs'] },
+  S20: { doc: 'prd', lit: ['business_rules'] },
+  S57: { doc: 'prd', lit: ['hypotheses'] },
+  S67: { doc: 'prd', lit: ['concepts'] },
+  // Mixte, comme `S89` : sur un produit existant en spécification, l'absence de comportement à
+  // préserver EST le constat ; partout ailleurs la règle parcourt la collection et demande la preuve
+  // que chacun existe. Les deux gardes sont ceux du code, et `vaut: [true]` plutôt que `rempli` parce
+  // qu'`existing_product` est un booléen — `rempli` dirait « renseigné » d'un `false`.
+  // La limite, écrite plutôt que cachée : un produit existant qui ne se déclare pas comme tel sort du
+  // réglage, et la table ne réclamera pas sa mesure. Le code, lui, continue d'exiger la preuve de
+  // chaque comportement déclaré : c'est une abstention qu'on ne signale pas, jamais un faux constat.
+  S73: { doc: 'prd', lit: ['preserved_behaviors'], absence: true, quand: [{ chemin: 'existing_product', vaut: [true] }, { chemin: 'phase', vaut: ['specify', 'govern'] }] },
+  S82: { doc: 'prd', lit: ['metrics'] },
+  S85: { doc: 'prd', lit: ['functional_requirements'] },
+
+  // ── La conception ──
+  S21: { doc: 'sad', lit: ['drivers'] },
+  S22: { doc: 'sad', lit: ['drivers'] },
+  S23: { doc: 'sad', lit: ['decisions'] },
+  S24: { doc: 'sad', lit: ['decisions'] },
+  S25: { doc: 'sad', lit: ['decisions'] },
+  S71: { doc: 'sad', lit: ['decisions'] },
+  // Deux boucles, deux collections : un élément existant sans preuve, une relation existante sans preuve.
+  S28: { doc: 'sad', lit: ['elements', 'relations'] },
+  S33: { doc: 'sad', lit: ['elements'] },
+  S34: { doc: 'sad', lit: ['elements'] },
+  S36: { doc: 'sad', lit: ['elements'] },
+  // Ce que la conception alloue vient du PRD, et le handoff est recopié dans l'état sous `prd_ref`.
+  S26: { doc: 'sad', lit: ['prd_ref.functional_requirements'] },
+  S27: { doc: 'sad', lit: ['prd_ref.nfrs', 'nfr_responses'] },
+  S35: { doc: 'sad', lit: ['prd_ref.business_rules'] },
+  S30: { doc: 'sad', lit: ['data_entities'] },
+  S31: { doc: 'sad', lit: ['data_entities'] },
+  S29: { doc: 'sad', lit: ['interfaces'] },
+  S32: { doc: 'sad', lit: ['threats'] },
+  // Un garde, pas une lecture : sans catalogue de référence déclaré, il n'y a pas de contrôle à exiger.
+  S55: { doc: 'sad', lit: ['threats'], quand: { chemin: 'security_catalogs', rempli: true } },
+
+  // ── Le plan ──
   S37: { doc: 'plan', lit: ['stories'] },
   S38: { doc: 'plan', lit: ['stories'] },
   S39: { doc: 'plan', lit: ['refs.prd.releases'] },
@@ -2582,31 +2669,113 @@ export const LECTURES = {
   S78: { doc: 'plan', lit: ['stories'] },
   S129: { doc: 'plan', lit: ['stories'] },
   S130: { doc: 'plan', lit: ['iterations'], quand: CADENCE_ITERATIVE },
+
+  // ── Les règles transverses : elles tournent sur les quatre documents ──
+  // `S00` refuse un document que ce catalogue ne sait pas vérifier. Elle n'a donc de déclaration pour
+  // aucun des quatre : elle est la porte AVANT le catalogue, et sur un document vérifiable elle ne
+  // peut ni constater ni s'abstenir. Zéro déclaration, et un test exige qu'elle soit la seule.
+  S00: [],
+  // `S09` est émise depuis dix endroits, et c'est ce qui l'avait fait mettre de côté — « elle demande
+  // une décision, pas une copie ». La décision, la voici : ce n'est pas dix règles, c'en est une,
+  // « un renvoi qui ne mène nulle part », et `renvoiFindings` la fait déjà sur le document ENTIER,
+  // champ de renvoi par champ de renvoi, registre déduit des identifiants présents. Sa lecture est
+  // donc le document. Les neuf autres sites sont des cas particuliers du même constat, posés plus tôt.
+  S09: { doc: '*', lit: TOUT },
+  S10: [{ doc: 'brd', lit: ['business_requirements'] }, { doc: 'prd', lit: ['functional_requirements'] }],
+  // Le handoff amont n'existe que là où un document en ingère un : le BRD n'a personne en amont.
+  S53: [{ doc: 'prd', facultatif: true, lit: ['source_brd.path'] }, { doc: 'sad', facultatif: true, lit: ['source_prd.path'] }, { doc: 'plan', facultatif: true, lit: ['refs.paths'] }],
+  // `S54` et `S105` jugent des seuils de couverture, et une couverture se calcule sur des populations :
+  // celles de `coverage()`, document par document. Collections vides, rien n'est mesuré — c'est
+  // précisément le défaut que `coverage()` a corrigé en rendant `met: null` au lieu de « 100 % atteint ».
+  S54: [
+    { doc: 'brd', lit: ['business_requirements', 'objectives'] },
+    { doc: 'prd', lit: ['functional_requirements', 'brd_ref.requirements'] },
+    { doc: 'sad', lit: ['prd_ref.functional_requirements', 'prd_ref.nfrs', 'drivers'] },
+    { doc: 'plan', lit: ['stories', 'refs.prd.releases', 'refs.sad.security_measures', 'refs.sad.verifications'] },
+  ],
+  S105: [
+    { doc: 'brd', lit: ['business_requirements', 'objectives'] },
+    { doc: 'prd', lit: ['functional_requirements', 'brd_ref.requirements'] },
+    { doc: 'sad', lit: ['prd_ref.functional_requirements', 'prd_ref.nfrs', 'drivers'] },
+    { doc: 'plan', lit: ['stories', 'refs.prd.releases', 'refs.sad.security_measures', 'refs.sad.verifications'] },
+  ],
+  S106: { doc: '*', facultatif: true, lit: ['waivers', 'coverage_waivers'] },
+  S107: { doc: '*', facultatif: true, lit: ['coverage_thresholds', 'coverage_waivers', 'settings.thresholds'] },
+  S68: { doc: '*', lit: TOUT },
+  S69: [{ doc: 'brd', lit: ['business_requirements', 'business_rules', 'objectives'] }, { doc: 'prd', lit: ['functional_requirements'] }],
+  // La fiche de contexte ne se mesure qu'au RENDU : `lint.mjs` ne rend rien, donc il ne passe pas de
+  // fiches et `S70` ne sera jamais mesurée par lui. La table le dit plutôt que de le taire — c'est une
+  // limite du lint, et c'est le genre de silence que cette table existe pour rendre visible.
+  S70: { doc: 'plan', facultatif: true, lit: ['ctx.cards'] },
+  S79: [
+    { doc: ['brd', 'prd'], lit: ['principles_applicable'], absence: true, quand: [{ chemin: 'ctx.constitution.principles', rempli: true }, { chemin: 'phase', vaut: ['define', 'specify', 'govern'] }] },
+    { doc: 'sad', lit: ['constitution_check'], absence: true, quand: [{ chemin: 'ctx.constitution.principles', rempli: true }, { chemin: 'phase', vaut: ['govern'] }] },
+  ],
+  S80: { doc: '*', facultatif: true, lit: ['ctx.checklists'] },
+  S81: { doc: ['brd', 'prd'], lit: ['sources'] },
+  S87: { doc: ['brd', 'prd'], lit: ['sources'] },
+  S91: { doc: ['brd', 'prd'], lit: ['sources'] },
+  // `checkEnum` ne juge que des champs énumérés, et ils sont dans cinq collections : le type d'une
+  // source, la vraisemblance et l'ampleur d'un risque, le canal par lequel on joint quelqu'un ou par
+  // lequel une question est partie, le genre d'une interface.
+  S88: { doc: '*', facultatif: true, lit: ['sources', 'risks', 'stakeholders', 'shadow_zones', 'interfaces'] },
+  S90: { doc: ['brd', 'prd'], lit: ['stakeholders'] },
+  S94: { doc: ['brd', 'prd'], lit: ['stakeholders'] },
+  S110: { doc: ['brd', 'prd'], lit: ['stakeholders'] },
+  S96: { doc: '*', facultatif: true, lit: ['ctx.interviews'] },
+  S98: { doc: '*', facultatif: true, lit: ['governance.reviewers'] },
+  S99: { doc: '*', facultatif: true, lit: ['governance.review_rounds', 'governance.comments'] },
+  // La seule des 131 qui parle sur un état entièrement vide dans les quatre documents : une porte
+  // franchie sans trace se constate par l'absence de la trace.
+  S100: { doc: '*', lit: ['phase_log'], absence: true },
+  S101: { doc: '*', facultatif: true, lit: ['phase_log'] },
+  S124: { doc: '*', facultatif: true, lit: ['phase_log'] },
+  S102: { doc: ['brd', 'prd', 'sad'], lit: ['sources'] },
+  S103: { doc: ['brd', 'prd', 'sad'], lit: ['sources'] },
+  S111: { doc: ['brd', 'prd', 'sad'], lit: ['sources'] },
+  S112: { doc: ['brd', 'prd', 'sad'], lit: ['sources'] },
+  S118: { doc: ['brd', 'prd', 'sad'], lit: ['sources'] },
+  S104: { doc: '*', facultatif: true, lit: ['ctx.interviews', 'ctx.checklists'] },
+  S108: [{ doc: 'prd', facultatif: true, lit: ['source_brd.path'] }, { doc: 'sad', facultatif: true, lit: ['source_prd.path'] }, { doc: 'plan', facultatif: true, lit: ['refs.prd', 'refs.sad'] }],
+  S109: { doc: '*', facultatif: true, lit: ['risks'] },
+  S114: { doc: ['brd', 'prd', 'sad'], lit: ['stakeholders'] },
+  S115: { doc: ['brd', 'prd', 'sad'], lit: ['stakeholders'] },
+  S116: { doc: ['brd', 'prd', 'sad'], lit: ['stakeholders'] },
+  S117: { doc: ['brd', 'prd', 'sad'], lit: ['stakeholders'] },
+  S119: { doc: '*', facultatif: true, lit: ['shadow_zones'] },
+  S120: { doc: '*', facultatif: true, lit: ['shadow_zones'] },
+  S121: { doc: '*', facultatif: true, lit: ['shadow_zones'] },
+  S122: { doc: ['brd', 'prd', 'sad'], lit: ['stakeholders'], quand: PHASES_DE_CARTE },
+  S123: { doc: ['brd', 'prd', 'sad'], lit: ['stakeholders'], quand: PHASES_DE_CARTE },
+  S125: { doc: ['brd', 'prd', 'sad'], lit: ['stakeholders'] },
+  S126: { doc: ['brd', 'prd', 'sad'], lit: ['stakeholders', 'connecteurs', 'settings.connecteurs'] },
+  // Un garde, pas une lecture : sans `contacts.yaml`, la règle n'a pas de coordonnée à confronter, et
+  // « on n'a pas regardé le disque » n'est pas « la coordonnée manque ».
+  S127: { doc: ['brd', 'prd', 'sad'], lit: ['stakeholders'], quand: { chemin: 'ctx.contacts', rempli: true } },
+  S128: { doc: '*', lit: TOUT },
 };
 
-// Les règles qui n'ont pas encore dit ce qu'elles lisent. La liste est explicite et doit rétrécir :
-// un test vérifie que `LECTURES` et celle-ci couvrent **exactement** le registre, de sorte qu'une
-// règle nouvelle ne puisse pas être ajoutée sans être classée dans l'une des deux.
-export const NON_DECLAREES = [
-  'S00', 'S06', 'S07', 'S08', 'S09', 'S10', 'S20', 'S21', 'S22', 'S23',
-  'S24', 'S25', 'S26', 'S27', 'S28', 'S29', 'S30', 'S31', 'S32', 'S33',
-  'S34', 'S35', 'S36', 'S53', 'S54', 'S55', 'S57', 'S67', 'S68', 'S69',
-  'S70', 'S71', 'S73', 'S79', 'S80', 'S81', 'S82', 'S85', 'S87', 'S88',
-  'S90', 'S91', 'S94', 'S96', 'S98', 'S99', 'S100', 'S101', 'S102', 'S103',
-  'S104', 'S105', 'S106', 'S107', 'S108', 'S109', 'S110', 'S111', 'S112', 'S114',
-  'S115', 'S116', 'S117', 'S118', 'S119', 'S120', 'S121', 'S122', 'S123', 'S124',
-  'S125', 'S126', 'S127', 'S128',
-];
+// Les règles qui n'ont pas encore dit ce qu'elles lisent. Elle est VIDE depuis le 7 novembre 2026, et
+// un test l'exige : les 131 règles du registre sont déclarées, et une règle nouvelle ne peut plus être
+// ajoutée sans dire ce qu'elle lit. Le constant reste pour que l'étape soit relisible — il a porté 103
+// règles, puis 74, puis aucune.
+export const NON_DECLAREES = [];
 
 // Une lecture est remplie si le chemin désigne quelque chose qui porte de l'information : un tableau
 // non vide, un objet qui a au moins une clé, ou une valeur écrite. Un tableau vide et un objet vide
 // ne disent rien — c'est tout l'objet de cette table.
 const lecture = (s, chemin) => chemin.split('.').reduce((o, k) => (o == null ? undefined : o[k]), s);
-const rempli = (s, chemin) => {
-  const v = lecture(s, chemin);
+const porteQuelqueChose = v => {
   if (Array.isArray(v)) return v.length > 0;
   if (v && typeof v === 'object') return Object.keys(v).length > 0;
   return ecrit(v);
+};
+const rempli = (s, chemin) => {
+  // `*` : le document entier. Une règle qui ne nomme pas ses champs — `S09`, `S68`, `S128` — n'a rien
+  // lu quand le document ne porte aucune collection d'éléments. C'est la même liste d'exclusion que
+  // `placeholderFindings`, et c'est elle qui fait foi : les blocs de métadonnées ne sont pas du contenu.
+  if (chemin === '*') return Object.entries(s ?? {}).some(([k, v]) => !HORS_CONTENU.includes(k) && Array.isArray(v) && v.length > 0);
+  return porteQuelqueChose(lecture(s, chemin));
 };
 
 // Les règles qui, sur cet état, n'ont rien eu à lire. Ne pas savoir n'est pas constater : ce que cette
@@ -2614,26 +2783,39 @@ const rempli = (s, chemin) => {
 // pourquoi**.
 // Une règle hors de son réglage ou de sa phase n'est ni un constat ni une abstention : elle est hors
 // jeu, exactement comme une règle du BRD sur un plan. `vaut` est une liste blanche, `sauf` une liste
-// noire — chacune recopie la forme que le code emploie déjà, pour que le test puisse les confronter.
+// noire, `rempli` exige que le chemin porte quelque chose — chacune recopie la forme que le code
+// emploie déjà, pour que le test puisse les confronter. Plusieurs conditions valent toutes ensemble.
 export const applicable = (s, d) => {
-  if (!d?.quand) return true;
-  const v = lecture(s, d.quand.chemin);
-  if (d.quand.vaut) return d.quand.vaut.includes(v);
-  if (d.quand.sauf) return !d.quand.sauf.includes(v);
+  for (const c of [].concat(d?.quand ?? [])) {
+    const v = lecture(s, c.chemin);
+    if (c.vaut && !c.vaut.includes(v)) return false;
+    if (c.sauf && c.sauf.includes(v)) return false;
+    if (c.rempli && !porteQuelqueChose(v)) return false;
+  }
   return true;
 };
 
-export function abstentions(s, refs = {}) {
+// Les déclarations d'une règle, toujours sous forme de liste : une règle peut ne pas lire la même
+// chose selon le document.
+export const declarations = rule => [].concat(LECTURES[rule] ?? []);
+const porteSurLeDoc = (d, doc) => d.doc === '*' || d.doc === doc || (Array.isArray(d.doc) && d.doc.includes(doc));
+
+export function abstentions(s, ctx = {}) {
   const doc = s?.document ?? 'brd';
-  // Plusieurs règles du plan ne lisent pas l'état mais les handoffs amont — `S39` les releases du PRD,
-  // `S51` les mesures et les spikes de la conception. Les chemins sous `refs` les désignent.
-  const base = { ...s, refs };
-  return Object.entries(LECTURES)
-    .filter(([, d]) => d.doc === doc && !d.absence && applicable(s, d))
-    .filter(([, d]) => d.lit.every(p => !rempli(base, p)))
-    .map(([rule, d]) => ({
-      rule,
-      lit: [...d.lit],
-      message: `non mesurée : ${d.lit.map(p => `\`${p}\``).join(' et ')} ${d.lit.length > 1 ? 'sont vides' : 'est vide'}`,
-    }));
+  // Plusieurs règles ne lisent pas l'état mais les handoffs amont — `S39` les releases du PRD, `S51`
+  // les mesures et les spikes de la conception —, et quatorze autres lisent ce qui vit à côté du
+  // fichier : les guides d'entretien, les listes de contrôle, `contacts.yaml`, la constitution, les
+  // fiches de contexte rendues. `refs` reste à la racine, où les chemins l'attendent depuis le début.
+  const base = { ...s, refs: ctx.refs ?? {}, ctx };
+  const out = [];
+  for (const [rule, decl] of Object.entries(LECTURES)) {
+    for (const d of [].concat(decl)) {
+      if (!porteSurLeDoc(d, doc) || d.absence || d.facultatif || !applicable(base, d)) continue;
+      if (!d.lit.every(p => !rempli(base, p))) continue;
+      out.push({ rule, lit: [...d.lit],
+        message: `non mesurée : ${d.lit.map(p => (p === '*' ? 'le document ne porte aucune collection' : `\`${p}\``)).join(' et ')}${d.lit.includes('*') ? '' : ` ${d.lit.length > 1 ? 'sont vides' : 'est vide'}`}` });
+      break;   // une règle ne s'abstient qu'une fois, même si deux déclarations la visent
+    }
+  }
+  return out;
 }

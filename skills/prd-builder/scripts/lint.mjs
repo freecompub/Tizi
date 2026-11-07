@@ -32,7 +32,8 @@ const contacts = existsSync(contactsPath) ? loadState(contactsPath) : null;
 const interviews = (() => { const d = join(dirname(statePath), 'interviews'); return existsSync(d) ? readdirSync(d).filter(f => f.endsWith('.md')).map(f => ({ file: f, text: readFileSync(join(d, f), 'utf8') })) : []; })();
 // S53 vit dans le catalogue, comme le reste : le contrôle des handoffs ingérés était ici, et `status.mjs`
 // ne pouvait donc pas le faire — la porte annonçait moins d'avertissements que le lint.
-let findings = checkState(state, { refs, constitution, contacts, checklists, interviews, handoffs: ingestedHandoffs(state, statePath, refs) });
+const ctx = { refs, constitution, contacts, checklists, interviews, handoffs: ingestedHandoffs(state, statePath, refs) };
+let findings = checkState(state, ctx);
 if (only.size) findings = findings.filter(f => only.has(f.id));
 // Un avertissement dérogé ne disparaît pas : il change de liste. Un trou nommé se répare, un trou
 // silencieux se propage — et une dérogation invisible est un contrôle désarmé sans trace.
@@ -77,10 +78,27 @@ if (!args.includes('--json') && attente.length) {
 // rend la case vide visible. Les lignes évitent la forme `[Sxx]` à dessein : la signature des tests
 // dorés capture ce motif pour comparer les CONSTATS, et une abstention n'est pas un constat.
 if (!args.includes('--json')) {
-  const muettes = abstentions(state, refs);
+  // La table dit aussi ce qui se lit À CÔTÉ de l'état — guides d'entretien, listes de contrôle,
+  // `contacts.yaml`, constitution du produit. On lui passe donc le MÊME contexte qu'à `checkState` :
+  // deux contextes différents, et une règle pouvait se dire non mesurée alors qu'elle avait mesuré.
+  const muettes = abstentions(state, ctx);
   if (muettes.length) {
+    // Groupées par LECTURE, et pas règle par règle. Mesuré sur le PRD d'exemple : dix-huit lignes
+    // disaient trois choses — « pas de sources », « pas de parties prenantes », « pas de métriques ».
+    // Dix-huit lignes pour trois faits noient les constats au-dessus, et c'est le même défaut que les
+    // cinquante-deux constats de S118 réduits à un. Le libellé reste quand la lecture ne porte qu'une
+    // règle ; au-delà, les numéros suffisent — `doc-regles.mjs` les nomme toutes.
+    const parLecture = new Map();
+    for (const f of muettes) {
+      const cle = f.message.replace(/^non mesurée : /, '');
+      parLecture.set(cle, [...(parLecture.get(cle) ?? []), f.rule]);
+    }
     console.log(`\n${muettes.length} règle(s) non mesurée(s) — elles n'ont rien eu à lire :`);
-    for (const f of muettes) console.log(`  \u2205 ${f.rule} — ${STRUCT_RULES[f.rule]} : ${f.message.replace(/^non mesurée : /, '')}`);
+    for (const [quoi, regles] of [...parLecture].sort((a, b) => b[1].length - a[1].length)) {
+      console.log(regles.length === 1
+        ? `  \u2205 ${quoi} → ${regles[0]} — ${STRUCT_RULES[regles[0]]}`
+        : `  \u2205 ${quoi} → ${regles.length} règles : ${regles.join(', ')}`);
+    }
     console.log('  Ni vrai, ni faux : une case vide. L\'absence de constat ne vaut pas constat de conformité.');
   }
 }
