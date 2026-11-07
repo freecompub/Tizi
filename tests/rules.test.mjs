@@ -2557,6 +2557,71 @@ test('S129 : une story dit pour qui, quoi et pourquoi, où que ce soit sauf null
 // dépôt portent toutes le leur, et celui de IT-2 vidé, le lint ne disait rien et la carte se rendait
 // « ### IT-2 *(proposé)* — — ». Le but n'est dû qu'une fois l'itération investie : une coquille future
 // encore vide ne l'a pas, c'est le dernier moment responsable.
+// ── Le gâchis d'innovation : une solution prescrite avec la story ────────────
+// « Le gâchis d'innovation survient souvent quand une solution prescrite est fournie avec un élément de
+// backlog » (Rubin, glossaire). C'est le `N` d'INVEST, noté « non mesurable sur un état » dans ce dépôt
+// — et il ne l'est pas sur un état, il l'est sur le TEXTE. `L07` le faisait déjà pour les stories.
+// Le trou était une DIVERGENCE : `L06` et `L07` disent la même chose à deux niveaux et portaient deux
+// listes de mots séparées, qui avaient divergé de douze motifs. Les sept qui comptent manquaient du côté
+// des stories, et ce sont ceux par lesquels une solution prescrite arrive.
+const vocabulaireDe = id => {
+  const src = TEXT_RULES.find(r => r.id === id).re.source;
+  const m = src.match(/\(\^\|\[\^\\p\{L\}\]\)\((.*)\)\(\?=/s);
+  assert.ok(m, `${id} : la forme du motif a changé, ce test ne sait plus le lire`);
+  return m[1].split('|');
+};
+
+test('L06 et L07 tirent d\'un seul vocabulaire, et ne peuvent plus diverger', () => {
+  assert.deepEqual(vocabulaireDe('L06'), vocabulaireDe('L07'),
+    'les deux règles de solution prescrite ont deux vocabulaires : c\'est la divergence qui a laissé « Excel » hors de portée d\'une story');
+  // Les deux messages, eux, restent différents : ce n'est pas le même reproche au même niveau.
+  const l06 = TEXT_RULES.find(r => r.id === 'L06'), l07 = TEXT_RULES.find(r => r.id === 'L07');
+  assert.match(l06.message('écran'), /remonter au besoin/);
+  assert.match(l07.message('API'), /comportement observable/);
+  assert.deepEqual(l06.applies, ['BR', 'OBJ']);
+  assert.deepEqual(l07.applies, ['FR', 'AC', 'US']);
+});
+
+test('les sept motifs par lesquels une solution prescrite arrive atteignent enfin une story', () => {
+  const story = texte => ({ document: 'plan', phase: 'schedule', settings: { cadence: 'sprint', release: 'REL-1' },
+    stories: [{ id: 'US-001', title: texte, who: 'superviseur', what: texte, why: 'suivre les refus', map_task: 'T-01', frs: ['FR-001'], release: 'REL-1' }] });
+  const dit = texte => checkState(story(texte)).filter(f => f.rule === 'L07').map(f => f.message);
+
+  // Les sept qui manquaient. « Un tableau de bord Excel pour le superviseur » passait sans un mot.
+  for (const mot of ['Excel', 'dashboard', 'tableau de bord', 'logiciel', 'progiciel', 'appli mobile', 'formulaire web']) {
+    const m = dit(`Il faut un ${mot} pour le superviseur`);
+    assert.equal(m.length, 1, `« ${mot} » dans une story ne se relève toujours pas`);
+    assert.match(m[0], /décrit l'implémentation/);
+  }
+  // Ceux qui marchaient marchent encore.
+  for (const mot of ['API', 'base de données', 'PostgreSQL', 'écran']) {
+    assert.equal(dit(`Il faut une ${mot} pour le superviseur`).length, 1, `« ${mot} » a cessé d'être relevé`);
+  }
+  // Et un énoncé qui dit le BESOIN ne se reproche rien : c'est tout l'objet de la règle.
+  assert.deepEqual(dit('Consulter les refus de transmission des trente derniers jours'), []);
+
+  // Au BRD, les mêmes mots reçoivent l'autre message : remonter au besoin, pas reformuler.
+  const brd = { document: 'brd', phase: 'define',
+    business_requirements: [{ id: 'BR-001', statement: 'Le service doit disposer d\'un tableau de bord Excel.', status: 'validé' }] };
+  const l06 = checkState(brd).filter(f => f.rule === 'L06');
+  assert.equal(l06.length, 1);
+  assert.match(l06[0].message, /décrit un moyen, pas un besoin métier/);
+});
+
+test('le vocabulaire unifié ne déplace aucun constat du dépôt', () => {
+  // Mesuré avant de réunir les deux listes, et vérifié ici : sur les quatre documents, le vocabulaire
+  // unifié rend EXACTEMENT les deux mêmes constats qu'avant — `écran` dans BR-001, `base de données`
+  // dans FR-001. C'est ce qui a permis de le faire sans régénérer un document d'exemple.
+  const lire = p => yaml.load(readFileSync(new URL(`../${p}`, import.meta.url).pathname, 'utf8'));
+  const dit = (etat, ctx, regle) => checkState(etat, ctx).filter(f => f.rule === regle).map(f => f.id);
+  assert.deepEqual(dit(lire('exemple/brd/demo/state.yaml'), {}, 'L06'), ['BR-001']);
+  assert.deepEqual(dit(lire('exemple/prd/demo/state.yaml'), {}, 'L07'), ['FR-001']);
+  for (const d of ['demo', 'flux']) {
+    assert.deepEqual(dit(lire(`exemple/plan/${d}/state.yaml`), { refs: lire(`exemple/plan/${d}/refs.yaml`) }, 'L07'), [],
+      `aucune story du dépôt ne prescrit de solution : si l'une s'y met, ce test doit être relu`);
+  }
+});
+
 // ── Le goulot ne se voit pas dans un total (S135) ────────────────────────────
 // Rubin montre un engagement de 150 h qui tient dans une capacité de 140-197 h et qui est pourtant
 // mauvais : une seule personne sait faire l'IHM, et elle n'a que 14-21 h. Un total qui tient ne dit

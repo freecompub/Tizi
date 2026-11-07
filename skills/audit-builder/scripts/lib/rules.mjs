@@ -13,6 +13,39 @@ import { porteDe, seuilsDe, derogationDe, derogationsDe, cleDerogation, verdictS
 
 const words = list => new RegExp(`(^|[^\\p{L}])(${list.join('|')})(?=$|[^\\p{L}])`, 'iu');
 
+// ── Le vocabulaire d'une solution prescrite ─────────────────────────────────
+// « Le gâchis d'innovation survient souvent quand **une solution prescrite est fournie avec un élément
+// de backlog** » (Rubin, *Essential Scrum*, glossaire). C'est le `N` d'INVEST — négociable —, noté
+// « non mesurable sur un état » dans ce dépôt. Il ne l'est pas sur un état ; il l'est sur le TEXTE, et
+// `L07` le faisait déjà pour les stories : « décrit l'implémentation : reformuler en comportement
+// observable ». La grille était donc aux trois quarts écrite.
+//
+// Le trou était une DIVERGENCE. `L06` (exigence métier, objectif) et `L07` (exigence fonctionnelle,
+// critère, story) disent la même chose à deux niveaux — remonter au besoin d'un côté, reformuler en
+// comportement de l'autre — et portaient deux listes de mots séparées, qui avaient divergé de douze
+// motifs. Les sept qui comptent manquaient du côté des stories, et ce sont précisément ceux par
+// lesquels une solution prescrite arrive : `Excel`, `dashboard`, `tableau de bord`, `logiciel`,
+// `progiciel`, `appli mobile`, `formulaire web`. « Un tableau de bord Excel pour le superviseur » dans
+// une story passait sans un mot, quand les mêmes mots dans une exigence métier étaient relevés.
+//
+// UNE liste, donc, et deux messages — chaque niveau garde le sien. Un test compare les deux vocabulaires
+// et refuse qu'ils se séparent de nouveau. Mesuré avant de les réunir : sur les quatre documents du
+// dépôt, le vocabulaire unifié rend EXACTEMENT les deux mêmes constats qu'avant, `écran` dans BR-001 et
+// `base de données` dans FR-001. Aucun document ne bouge.
+const SOLUTIONS_PRESCRITES = [
+  // Interface : ni le besoin métier ni le comportement observable ne se décrivent par des écrans.
+  'écrans?', 'boutons?', 'pages?', 'menus?', 'fenêtres?', 'pop-?ups?', 'onglets?', 'listes? déroulantes?',
+  'cases? à cocher', 'champs? de saisie', 'formulaires? web', 'cliqu\\p{L}*', 'clics?',
+  // Outils et progiciels : la manière dont une solution prescrite arrive le plus souvent.
+  'appli(?:cation)?s? (?:mobile|web)', 'appli', 'logiciel', 'progiciel', 'tableau de bord', 'dashboard', 'Excel',
+  // Technique : le choix relève de la conception.
+  'base de données', 'tables?', 'API', 'endpoints?', 'serveurs?', 'microservices?', 'composants?',
+  'requêtes? SQL', 'JSON', 'REST', 'cache', 'file de messages', 'framework',
+  // Produits et langages : un choix de conception, jamais un besoin.
+  'PostgreSQL', 'MySQL', 'MongoDB', 'Oracle', 'Redis', 'Kafka', 'RabbitMQ', 'Elasticsearch',
+  'React', 'Swift', 'Node(?:\\.js)?', 'Kotlin', 'Java', 'Python', 'Next(?:\\.js)?', 'GraphQL',
+];
+
 export const TEXT_RULES = [
   {
     id: 'L01', name: 'terme_vague',
@@ -50,19 +83,13 @@ export const TEXT_RULES = [
   {
     id: 'L06', name: 'solution_dans_le_brd',
     message: t => `« ${t.trim()} » décrit un moyen, pas un besoin métier : remonter au besoin`,
-    re: words(['écrans?', 'boutons?', 'menus?', 'clics?', 'cliquer', 'onglets?', 'pop-?ups?', 'liste déroulante', 'champs? de saisie', 'formulaires? web',
-      'appli(?:cation)?s? (?:mobile|web)', 'appli', 'logiciel', 'progiciel', 'base de données', 'API', 'serveurs?', 'tableau de bord', 'dashboard', 'Excel']),
+    re: words(SOLUTIONS_PRESCRITES),
     applies: ['BR', 'OBJ'],
   },
   {
     id: 'L07', name: 'implementation_dans_le_prd',
     message: t => `« ${t.trim()} » décrit l'implémentation : reformuler en comportement observable (le choix relève de la conception)`,
-    re: words(['base de données', 'tables?', 'API', 'endpoints?', 'serveurs?', 'microservices?', 'composants?', 'requêtes? SQL', 'JSON', 'REST', 'cache',
-      'file de messages', 'framework', 'React', 'Swift', 'Node(?:\\.js)?',
-      // Interface : le PRD décrit des comportements, pas des écrans.
-      'écrans?', 'boutons?', 'pages?', 'menus?', 'fenêtres?', 'pop-?ups?', 'onglets?', 'listes? déroulantes?', 'cases? à cocher', 'champs? de saisie', 'cliqu\\p{L}*',
-      // Produits et langages : un choix de conception.
-      'PostgreSQL', 'MySQL', 'MongoDB', 'Oracle', 'Redis', 'Kafka', 'RabbitMQ', 'Elasticsearch', 'Kotlin', 'Java', 'Python', 'Next(?:\\.js)?', 'GraphQL']),
+    re: words(SOLUTIONS_PRESCRITES),
     applies: ['FR', 'AC', 'US'],
   },
   {
