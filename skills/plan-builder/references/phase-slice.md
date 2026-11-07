@@ -12,6 +12,7 @@
 
 1. Pour chaque tâche de la story map (`T-xx`) affectée à la release, propose une ou plusieurs stories. Une story :
    - a un **titre court**, qu'on peut prononcer dans une conversation, et en dessous **qui**, **quoi**, **pourquoi**. La forme « En tant que…, je veux… afin de… » est un bon démarreur de conversation, pas une obligation : ne force pas une story dans ce moule quand il ne convient pas ;
+     Ces trois-là s'écrivent dans l'état : `who` (ou `persona`), `what`, `why`. Ils sont imprimés sur la carte de la story, et `S129` constate celui qui n'est nulle part — une valeur qu'on ne lit pas ne se priorise pas. Le titre, lui, reste court : la phrase complète n'est pas une place de rangement ;
    - couvre au moins une FR de la release ; une FR peut être répartie sur plusieurs stories (par exemple cas nominal, puis cas d'erreur) ;
    - est **verticale** : elle traverse les couches nécessaires pour produire un résultat observable, plutôt qu'une couche technique seule ;
    - est assez petite pour tenir dans une itération (ou quelques jours de flux).

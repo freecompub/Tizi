@@ -1,8 +1,8 @@
 # Règles de contrôle, étape par étape
 
-**Ce document est généré par `doc-regles.mjs`. Ne le modifie pas à la main.** Une liste de 137 règles écrite à la main dérive au premier changement du catalogue, et une liste qui dérive est pire qu'une absence de liste : on la croit. Les énoncés ci-dessous sont ceux du catalogue (`skills/*/scripts/lib/rules.mjs`), les conditions de porte celles de `lib/gates.mjs`, les seuils ceux de `COVERAGE_DEFAULTS`. Pour le régénérer : `node doc-regles.mjs`. Pour vérifier qu'il est à jour : `node doc-regles.mjs --verifier`.
+**Ce document est généré par `doc-regles.mjs`. Ne le modifie pas à la main.** Une liste de 138 règles écrite à la main dérive au premier changement du catalogue, et une liste qui dérive est pire qu'une absence de liste : on la croit. Les énoncés ci-dessous sont ceux du catalogue (`skills/*/scripts/lib/rules.mjs`), les conditions de porte celles de `lib/gates.mjs`, les seuils ceux de `COVERAGE_DEFAULTS`. Pour le régénérer : `node doc-regles.mjs`. Pour vérifier qu'il est à jour : `node doc-regles.mjs --verifier`.
 
-Au total : **129 règles de structure** (`S00`–`S128`), **8 règles de rédaction** (`L01`–`L08`), **10 conditions** à la porte de PR, **10** à la porte de release, **6 garde-fous** d'export, et les conditions calculées des portes de phase des cinq documents à phases.
+Au total : **130 règles de structure** (`S00`–`S129`), **8 règles de rédaction** (`L01`–`L08`), **10 conditions** à la porte de PR, **10** à la porte de release, **6 garde-fous** d'export, et les conditions calculées des portes de phase des cinq documents à phases.
 
 ## Comment lire une règle
 
@@ -20,13 +20,13 @@ Elles portent sur le texte des énoncés, dans les cinq documents, selon le type
 
 | Code | Porte sur | Énoncé du constat |
 |---|---|---|
-| `L01` | `BR`, `AC`, `FR`, `NFR`, `RG`, `OBJ`, `GOAL`, `AD` | terme non mesurable « … » : remplacer par un comportement observable ou une valeur cible |
-| `L02` | `BR`, `AC`, `FR`, `NFR`, `RG` | points de suspension : l'énumération est incomplète, la rendre exhaustive ou la décrire en intention |
+| `L01` | `BR`, `AC`, `FR`, `NFR`, `RG`, `OBJ`, `GOAL`, `AD`, `US` | terme non mesurable « … » : remplacer par un comportement observable ou une valeur cible |
+| `L02` | `BR`, `AC`, `FR`, `NFR`, `RG`, `US` | points de suspension : l'énumération est incomplète, la rendre exhaustive ou la décrire en intention |
 | `L03` | `BR`, `FR`, `RG` | « … » : l'énoncé contient peut-être plusieurs exigences, vérifier s'il faut le scinder |
 | `L04` | `BR`, `FR`, `NFR`, `RG`, `AC` | l'énoncé commence par « … » : il ne se lit pas seul, remplacer par le sujet explicite |
 | `L05` | `BC`, `BR`, `FR`, `RG` | « … » : une généralisation cache souvent des exceptions, vérifier les cas où ce n'est pas vrai |
 | `L06` | `BR`, `OBJ` | « … » décrit un moyen, pas un besoin métier : remonter au besoin |
-| `L07` | `FR`, `AC` | « … » décrit l'implémentation : reformuler en comportement observable (le choix relève de la conception) |
+| `L07` | `FR`, `AC`, `US` | « … » décrit l'implémentation : reformuler en comportement observable (le choix relève de la conception) |
 | `L08` | `BR`, `FR`, `RG` | aucun « doit / doivent / devra » : l'énoncé ne dit pas clairement ce qui est exigé |
 
 ## Étape 1 — Besoin métier (BRD)
@@ -347,7 +347,7 @@ Un passage de porte s'écrit dans `phase_log` — la phase qui se clôt, celle q
 - chaque zone d'ombre assumée dit pourquoi
 - aucun avertissement ni corrigé ni dérogé (lint.mjs)
 
-### Règles de structure de l'étape 4 (27)
+### Règles de structure de l'étape 4 (28)
 
 Hors celles qui portent sur les quatre documents, listées plus bas. La dernière colonne dit quand une règle vaut aussi ailleurs — son énoncé y est souvent différent.
 
@@ -380,6 +380,7 @@ Hors celles qui portent sur les quatre documents, listées plus bas. La dernièr
 | `S76` | tâche non finie sans décision | sprint review faite, mais aucune décision (continuer, découper, reporter) pour : … | — |
 | `S77` | action de rétrospective sans suivi | actions essayées au sprint précédent sans suivi : … | — |
 | `S78` | voie rapide sans épopée | story en voie rapide sans épopée (attach_to)… | — |
+| `S129` | story sans qui, quoi ou pourquoi | ne dit nulle part … : la carte de la story l'imprime en « — », et une valeur écrite nulle part ne se priorise pas. Le titre reste court ; ces champs sont la place du reste | — |
 
 ### Métriques de couverture et seuils par défaut
 
@@ -657,3 +658,4 @@ Chaque règle, les étapes où elle s'applique, et la fonction du catalogue qui 
 | `S126` | 1, 2, 3, 4 | contact parti sans que l'autorisation de l'utilisateur soit écrite | `autorisationFindings` |
 | `S127` | 1, 2, 3, 4 | contact disponible, question en attente, et rien n'est jamais parti | `contactFindings` |
 | `S128` | 1, 2, 3, 4 | identifiant cité dans une phrase qui ne mène nulle part, ou attribution qui contredit le registre | `proseFindings` |
+| `S129` | 4 | story sans qui, quoi ou pourquoi | `checkPlan` |

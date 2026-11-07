@@ -16,6 +16,8 @@ stories:
   - id: US-001
     title: "En tant qu'agente, je veux être bloquée si le justificatif manque, afin de ne pas transmettre un dossier incomplet"
     persona: PER-01
+    what: "être bloquée si le justificatif manque"
+    why: "ne pas transmettre un dossier incomplet"
     map_task: T-01
     frs: [FR-001]
     release: REL-1
@@ -29,6 +31,8 @@ stories:
   - id: US-002
     title: "En tant qu'agente, je veux que le partenaire soit prévenu, afin d'éviter les relances"
     persona: PER-01
+    what: "que le partenaire soit prévenu"
+    why: "éviter les relances"
     map_task: T-02
     frs: [FR-002]
     release: REL-1
