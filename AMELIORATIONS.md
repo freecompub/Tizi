@@ -518,7 +518,21 @@ ci-dessus en viennent. Il restait aussi, non corrigé :
   qui dit, sur un portefeuille, combien de questions un council rapporte par passage) ou si les
   compteurs doivent disparaître, puisque les questions sont désormais gardées une par une.
 
-### Lecture d'*Essential Scrum* (Rubin) — le plan (7 novembre)
+### Lecture d'*Essential Scrum* (Rubin) — le plan, **soldé le 7 novembre 2026**
+
+> Ce bloc est conservé tel qu'il a été écrit avant le travail, parce que c'est sa valeur : il dit ce qui
+> avait été **mesuré** et ce qui était **supposé**, et la confrontation est instructive. Les cinq trous
+> décrits ci-dessous au présent sont fermés : `S130` (le but d'itération), `S131` et `S132` (la
+> Definition of Done et les NFR), `S133` (les contraintes de release), `S134` (DEEP), `S135` (le goulot),
+> `L06`/`L07` réunis (le gâchis d'innovation). Ce qui n'a PAS été fait est passé dans les entrées
+> nommées de la section `## Ouvert`, au-dessus, avec sa mesure — et c'est là qu'il faut le lire, pas ici.
+>
+> **Le bilan de la méthode : la mesure a réduit ou retourné quatre des cinq grilles.** Le rapprochement
+> DoD ↔ NFR n'était pas exprimable ; les contraintes de release n'avaient besoin d'aucun champ nouveau ;
+> DEEP a donné une règle et non quatre ; le goulot de compétence était déjà contrôlé par `S75`, et le
+> trou était la forme de la règle et non son absence ; le gâchis d'innovation était une divergence entre
+> deux listes de mots. **Une seule des cinq s'est écrite comme le livre la donnait.**
+
 
 Le livre lu en entier, notes dans `documentation/` à la manière de Patton et de Constantinidis. Il
 confirme plusieurs choix de Tizi, parfois mot pour mot : `S77` (action de rétrospective sans suivi) est
