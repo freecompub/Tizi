@@ -3,8 +3,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync, appendFileSync, readdirSync, existsSync, cpSync, mkdirSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { join } from 'node:path';
-import { sandbox, node, script, golden, lintSignature, tempDir, FIX, SKILLS } from './helpers.mjs';
+import { join, relative } from 'node:path';
+import { ROOT, sandbox, node, script, golden, lintSignature, tempDir, FIX, SKILLS } from './helpers.mjs';
 
 const DOCS = { brd: 'brd-builder', prd: 'prd-builder', sad: 'sad-builder', plan: 'plan-builder' };
 const RENDER = { brd: ['render-brd.mjs', 'brd.md'], prd: ['render-prd.mjs', 'prd.md'], sad: ['render-sad.mjs', 'sad.md'], plan: ['render-plan.mjs', 'plan.md'] };
@@ -213,3 +213,61 @@ test('relevé à relire : généré, chaque identifiant glosé sur place, et une
   // Et on ne fait pas relire un relevé vide à quelqu'un qu'on n'a pas entendu.
   assert.notEqual(run('--sh', 'SH-09').code, 0);
 });
+
+// Les documents d'exemple sont des fichiers GÉNÉRÉS, et ils avaient dérivé de leurs générateurs sans que
+// rien ne le dise. Mesuré : 52 fichiers dérivés hors date de génération. `brd.md` affichait deux
+// avertissements (S04, S05) que l'état n'avait plus, `sad.md` en cachait deux (S71) et ignorait la colonne
+// « Règle » de la table ADR, et les fiches du plan ne portaient pas ce que `render-plan.mjs` écrit. Un
+// document généré qui ne correspond plus à son état ment dans les deux sens : il accuse à tort, ou il
+// dissimule. Rien ne le voyait, parce que rien ne comparait.
+//
+// La date de génération est exclue de la comparaison : elle change à chaque rendu et ne dit rien de l'état.
+// Les versions figées sont hors du test : leur handoff scelle le document autant que l'état (`source_doc`),
+// et une baseline garde ce qui était vrai alors, même périmé.
+const sansDateDeRendu = s => s.split('\n').filter(l => !/g[e\u00e9]n[e\u00e9]r\w*\b.*\d{4}-\d{2}-\d{2}/i.test(l)).join('\n');
+const documentsDe = racine => {
+  const out = [];
+  const marche = d => {
+    for (const n of readdirSync(d, { withFileTypes: true })) {
+      if (n.isDirectory()) { if (n.name !== 'versions') marche(join(d, n.name)); }
+      else if (n.name.endsWith('.md')) out.push(relative(racine, join(d, n.name)));
+    }
+  };
+  marche(racine);
+  return out.sort();
+};
+const etatsVivants = racine => {
+  const out = [];
+  const marche = d => {
+    for (const n of readdirSync(d, { withFileTypes: true })) {
+      if (n.isDirectory()) { if (n.name !== 'versions') marche(join(d, n.name)); }
+      else if (n.name === 'state.yaml') out.push(join(d, n.name));
+    }
+  };
+  marche(racine);
+  return out;
+};
+
+for (const racine of ['exemple', join('evals', 'fixtures')]) {
+  test(`les documents de ${racine} sont ceux que leurs générateurs produisent`, () => {
+    const versionne = join(ROOT, racine);
+    const dir = join(tempDir('tizi-rendu'), 'copie');
+    cpSync(versionne, dir, { recursive: true });
+
+    let rendus = 0;
+    for (const etat of etatsVivants(dir)) {
+      const doc = /^document:\s*(\w+)/m.exec(readFileSync(etat, 'utf8'))?.[1];
+      if (!DOCS[doc]) continue;                // `impl` et `test` n'ont pas de générateur de document
+      const r = node(script(DOCS[doc], RENDER[doc][0]), [relative(dir, etat)], { cwd: dir });
+      assert.equal(r.code, 0, `render-${doc}.mjs a échoué sur ${relative(dir, etat)} : ${r.err}`);
+      rendus++;
+    }
+    assert.ok(rendus >= 3, `trop peu d'états rendus dans ${racine} (${rendus}) : le test ne mesurerait plus rien`);
+
+    for (const f of documentsDe(versionne)) {
+      const attendu = sansDateDeRendu(readFileSync(join(versionne, f), 'utf8'));
+      const frais = sansDateDeRendu(readFileSync(join(dir, f), 'utf8'));
+      assert.equal(frais, attendu, `${racine}/${f} a dérivé de son générateur : relancer render-<doc>.mjs sur son état`);
+    }
+  });
+}

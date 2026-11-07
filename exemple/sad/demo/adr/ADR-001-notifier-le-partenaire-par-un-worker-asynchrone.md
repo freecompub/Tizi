@@ -6,7 +6,7 @@ decision-makers: Alice
 
 # ADR-001 — Notifier le partenaire par un worker asynchrone
 
-> Généré à partir de `state.yaml` le 2026-10-21 (structure MADR v4). Ne pas modifier ce fichier : un ADR accepté se remplace par un nouvel ADR.
+> Généré à partir de `state.yaml` le 2026-11-07 (structure MADR v4). Ne pas modifier ce fichier : un ADR accepté se remplace par un nouvel ADR.
 
 ## Contexte et énoncé du problème
 
@@ -31,6 +31,12 @@ Justification : il protège le p95 de la transmission
 
 - Positive : latence stable
 - Négative : exploitation d'un worker
+
+### Règle
+
+**Empêche** : —
+
+**Règle** : —
 
 ### Confirmation
 

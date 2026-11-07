@@ -2,7 +2,7 @@
 
 **Version** : 1.0 — **Statut** : baseline — **Contexte** : brownfield — **PRD** : v1.0
 
-> Document généré à partir de `state.yaml` le 2026-10-21. Ne pas le modifier directement : toute correction passe par l'état de session.
+> **Copie de travail** — régénérée depuis `state.yaml` le 2026-11-07, et réécrite à chaque génération. Ne la modifie pas directement : toute correction passe par l'état. Les versions figées, s'il y en a, sont dans `versions/`.
 
 ## Statut du document
 
@@ -259,9 +259,9 @@ flowchart TB
 
 ## 5. Décisions d'architecture
 
-| ID | Décision | Statut | Option retenue | Moteurs | Décidé par |
-|---|---|---|---|---|---|
-| [ADR-001](adr/ADR-001-notifier-le-partenaire-par-un-worker-asynchrone.md) | Notifier le partenaire par un worker asynchrone | accepté | Worker asynchrone | AD-01 | Alice |
+| ID | Décision | Statut | Option retenue | Règle | Moteurs | Décidé par |
+|---|---|---|---|---|---|---|
+| [ADR-001](adr/ADR-001-notifier-le-partenaire-par-un-worker-asynchrone.md) | Notifier le partenaire par un worker asynchrone | accepté | Worker asynchrone | — | AD-01 | Alice |
 
 ## 6. Allocation des exigences fonctionnelles
 
@@ -380,6 +380,8 @@ _Vérification de forme non bloquante (catalogue `lib/rules.mjs`). Elle ne rempl
 |---|---|---|
 | AD-01 | L01 | terme non mesurable « rapidement » : remplacer par un comportement observable ou une valeur cible |
 | AD-02 | S22 | scénario de qualité sans mesure chiffrée |
+| ADR-001 | S71 | ADR accepté sans divergence empêchée : que feraient différemment deux parties construites sans lui ? |
+| ADR-001 | S71 | ADR accepté sans règle vérifiable : la décision ne guidera ni un développeur ni un agent |
 | ADR-002 | S23 | ADR avec moins de deux options : ce n'est pas une décision |
 | ADR-002 | S24 | ADR sans moteur : on ne saura pas quand le remettre en cause |
 | CT-04 | S36 | élément remplacé sans remplaçant désigné |

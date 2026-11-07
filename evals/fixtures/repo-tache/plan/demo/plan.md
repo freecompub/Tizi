@@ -2,7 +2,7 @@
 
 **Version** : 1.0 — **Statut** : baseline — **Release** : REL-1 — **Cadence** : sprint — **PRD** : v1.0 — **Conception** : v1.0
 
-> Document généré à partir de `state.yaml` et `refs.yaml` le 2026-10-20. Ne pas le modifier directement.
+> **Copie de travail** — régénérée depuis `state.yaml` et `refs.yaml` le 2026-11-07, et réécrite à chaque génération. Ne la modifie pas directement : toute correction passe par l'état. Les versions figées, s'il y en a, sont dans `versions/`.
 
 ## En bref
 
@@ -29,15 +29,17 @@
 
 ## 3. Tâches
 
-| Tâche | Type | Titre | Story | Éléments | Taille | Affectation | Dépend de | Itération | Statut |
-|---|---|---|---|---|---|---|---|---|---|
-| [TK-005](tasks/TK-005.md) | dev | Reformuler le message | US-003 | Contrôle de complétude | S | agent | — | IT-1 | terminé |
-| [TK-006](tasks/TK-006.md) | dev | Changer le schéma de DossierTransmis | US-004 | Notificateur | M | humain | — | — | validé |
-| [TK-007](tasks/TK-007.md) | dev | Journal des refus | US-005 | Contrôle de complétude | S | humain | — | IT-2 | validé |
-| [TK-001](tasks/TK-001.md) | spike | Vérifier que le partenaire accepte un webhook | spike H-001 | — | S | humain | — | IT-1 | terminé |
-| [TK-002](tasks/TK-002.md) | dev | Contrôle de complétude du dossier | US-001 | Contrôle de complétude | M | agent | — | IT-1 | validé |
-| [TK-003](tasks/TK-003.md) | securite | Sessions courtes et MFA | US-001 | API dossiers | M | humain | TK-002 | IT-1 | validé |
-| [TK-004](tasks/TK-004.md) | dev | Notificateur | US-002 | Notificateur | XL | agent | TK-001 | IT-1 | validé |
+_Quand les agents réalisent les tâches, la taille mesure le risque (allers-retours, attention humaine), pas l'effort de codage. Le risque est calculé depuis les données de la tâche ; l'attention prévue est en minutes de validation, de réponses et de revue humaines._
+
+| Tâche | Type | Titre | Story | Éléments | Taille | Risque calculé | Attention prévue | Affectation | Dépend de | Itération | Statut |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| [TK-005](tasks/TK-005.md) | dev | Reformuler le message | US-003 | Contrôle de complétude | S | S | 45 min | agent | — | IT-1 | terminé |
+| [TK-006](tasks/TK-006.md) | dev | Changer le schéma de DossierTransmis | US-004 | Notificateur | M | M | 70 min | humain | — | — | validé |
+| [TK-007](tasks/TK-007.md) | dev | Journal des refus | US-005 | Contrôle de complétude | S | S | 45 min | humain | — | IT-2 | validé |
+| [TK-001](tasks/TK-001.md) | spike | Vérifier que le partenaire accepte un webhook | spike H-001 | — | S | **M** | 45 min | humain | — | IT-1 | terminé |
+| [TK-002](tasks/TK-002.md) | dev | Contrôle de complétude du dossier | US-001 | Contrôle de complétude | M | M | 70 min | agent | — | IT-1 | validé |
+| [TK-003](tasks/TK-003.md) | securite | Sessions courtes et MFA | US-001 | API dossiers | M | M | 70 min | humain | TK-002 | IT-1 | validé |
+| [TK-004](tasks/TK-004.md) | dev | Notificateur | US-002 | Notificateur | XL | **M** | 135 min | agent | TK-001 | IT-1 | validé |
 
 ## 4. Dépendances
 
@@ -136,7 +138,7 @@ _Aucun élément._
 | FR de la release couvertes par une story | 2/2 | 100 % | 100 % | atteint |
 | Mesures de sécurité planifiées | 1/1 | 100 % | 100 % | atteint |
 | Vérifications de NFR (étape tests) planifiées | 1/1 | 100 % | 100 % | atteint |
-| Stories prêtes | 2/5 | 40 % | 0 % | atteint |
+| Stories prêtes | 2/5 | 40 % | — | _indicatif_ |
 
 ## Annexe — Points de vérification
 
@@ -146,12 +148,22 @@ _Vérification de forme non bloquante (catalogue `lib/rules.mjs`). Elle ne rempl
 |---|---|---|
 | US-002 | S41 | règle Ne pas notifier le week-end sans exemple : on ne saura pas la tester |
 | US-002 | S52 | règle « Ne pas notifier le week-end » sans référence amont : demande de changement au BRD ou au PRD |
+| US-003 | S78 | story en voie rapide sans épopée (attach_to) |
+| US-004 | S78 | story en voie rapide sans épopée (attach_to) |
 | US-004 | S60 | voie rapide non conforme : taille L ; modifie un contrat d'interface ; suivre le chemin normal |
 | EX-003 | S50 | exemple incomplet : when manquant(s) |
 | TK-004 | S43 | tâche XL : trop grosse pour une PR, à découper |
 | TK-004 | S45 | affectée à un agent alors que : taille XL au-delà de M ; story non prête |
 | TK-007 | S40 | planifiée alors que sa story US-005 n'est pas prête |
 | TK-004 | S40 | planifiée alors que sa story US-002 n'est pas prête |
+| TK-006,TK-004 | S72 | collision possible : TK-006 et TK-004 touchent CT-03, OP-003 sans dépendance entre elles ; les ordonner (depends_on) ou les fusionner |
+| TK-004 | S74 | taille XL retenue, taille de risque calculée M (opérations de contrat 2, règles métier de la story 1) : écart à justifier |
 | US-002 | S61 | story de milieu de partie planifiée avant des stories d'ouverture encore ouvertes (US-005) |
+| IT-1 | S76 | sprint review faite, mais aucune décision (continuer, découper, reporter) pour : TK-002, TK-003, TK-004 |
 | IT-1 | S48 | charge 11 au-delà de la capacité 6 |
 
+---
+
+## Relecture humaine
+
+> Ce plan a été produit avec l'assistance d'une IA, à partir de l'état de session et des sources citées. Il ne remplace ni les entretiens, ni l'observation, ni le jugement des personnes concernées. Il doit être relu par les personnes désignées ; seules les approbations déclarées et enregistrées dans l'état font foi, et aucune n'est déduite de la présence de ce document.

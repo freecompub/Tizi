@@ -2,7 +2,7 @@
 
 **Version** : 1.0 — **Statut** : baseline — **Release** : REL-1 — **Cadence** : flux — **PRD** : v1.1 — **Conception** : v1.0
 
-> Document généré à partir de `state.yaml` et `refs.yaml` le 2026-10-20. Ne pas le modifier directement.
+> **Copie de travail** — régénérée depuis `state.yaml` et `refs.yaml` le 2026-11-07, et réécrite à chaque génération. Ne la modifie pas directement : toute correction passe par l'état. Les versions figées, s'il y en a, sont dans `versions/`.
 
 ## En bref
 
@@ -19,19 +19,21 @@
 
 ## 2. Préparation des stories (Definition of Ready calculée)
 
-| Story | Titre | FR | Taille | Règles | Exemples | Prête | Ce qui manque |
-|---|---|---|---|---|---|---|---|
-| [US-001](stories/US-001.md) | En tant qu'agente, je veux être bloquée si le justificatif manque, afin de ne pas transmettre un dossier incomplet | FR-001 | M | 1 | 2 | oui | — |
-| [US-002](stories/US-002.md) | En tant qu'agente, je veux que le partenaire soit prévenu, afin d'éviter les relances | FR-002 | M | 2 | 1 | non | 1 règle(s) sans exemple ; 1 question(s) ouverte(s) ; spike non terminé (TK-001) |
+| Story | Titre | Voie | FR ou origine | Temps | Taille | Règles | Exemples | Prête | Ce qui manque |
+|---|---|---|---|---|---|---|---|---|---|
+| [US-001](stories/US-001.md) | En tant qu'agente, je veux être bloquée si le justificatif manque, afin de ne pas transmettre un dossier incomplet | standard | FR-001 | — | M | 1 | 2 | oui | — |
+| [US-002](stories/US-002.md) | En tant qu'agente, je veux que le partenaire soit prévenu, afin d'éviter les relances | standard | FR-002 | — | M | 2 | 1 | non | 1 règle(s) sans exemple ; 1 question(s) ouverte(s) ; spike non terminé (TK-001) |
 
 ## 3. Tâches
 
-| Tâche | Type | Titre | Story | Éléments | Taille | Affectation | Dépend de | Rang | Statut |
-|---|---|---|---|---|---|---|---|---|---|
-| [TK-001](tasks/TK-001.md) | spike | Vérifier que le partenaire accepte un webhook | spike H-001 | — | S | humain | — | 2 | validé |
-| [TK-002](tasks/TK-002.md) | dev | Contrôle de complétude | US-001 | Contrôle de complétude | M | agent | — | 1 | validé |
-| [TK-003](tasks/TK-003.md) | securite | Sessions courtes et MFA | US-001 | API dossiers | M | humain | TK-002 | 3 | validé |
-| [TK-004](tasks/TK-004.md) | dev | Notificateur | US-002 | Notificateur | XL | agent | TK-001 | — | validé |
+_Quand les agents réalisent les tâches, la taille mesure le risque (allers-retours, attention humaine), pas l'effort de codage. Le risque est calculé depuis les données de la tâche ; l'attention prévue est en minutes de validation, de réponses et de revue humaines._
+
+| Tâche | Type | Titre | Story | Éléments | Taille | Risque calculé | Attention prévue | Affectation | Dépend de | Rang | Statut |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| [TK-001](tasks/TK-001.md) | spike | Vérifier que le partenaire accepte un webhook | spike H-001 | — | S | **M** | 45 min | humain | — | 2 | validé |
+| [TK-002](tasks/TK-002.md) | dev | Contrôle de complétude | US-001 | Contrôle de complétude | M | M | 70 min | agent | — | 1 | validé |
+| [TK-003](tasks/TK-003.md) | securite | Sessions courtes et MFA | US-001 | API dossiers | M | M | 70 min | humain | TK-002 | 3 | validé |
+| [TK-004](tasks/TK-004.md) | dev | Notificateur | US-002 | Notificateur | XL | **M** | 135 min | agent | TK-001 | — | validé |
 
 ## 4. Dépendances
 
@@ -78,6 +80,10 @@ Limite d'encours : 1 · En cours : 0 · Lot de réapprovisionnement : 3
 | NR-01 | vérification NFR-001 (test_charge) | TK-002 |
 | H-001 | spike | TK-001 |
 
+## 6 bis. Releases : maturité et outcomes
+
+_Aucun suivi de release enregistré._
+
 ## 7. Zones d'ombre et risques
 
 | ID | Type | Question | Story | Adressée à | Bloquante |
@@ -97,6 +103,15 @@ _Aucun élément._
 - Code revu et fusionné
 - Exemples automatisés
 
+## Couverture
+
+| Métrique | Couverts | Taux | Seuil | Statut |
+|---|---|---|---|---|
+| FR de la release couvertes par une story | 2/2 | 100 % | 100 % | atteint |
+| Mesures de sécurité planifiées | 1/1 | 100 % | 100 % | atteint |
+| Vérifications de NFR (étape tests) planifiées | 1/1 | 100 % | 100 % | atteint |
+| Stories prêtes | 1/2 | 50 % | — | _indicatif_ |
+
 ## Annexe — Points de vérification
 
 _Vérification de forme non bloquante (catalogue `lib/rules.mjs`). Elle ne remplace pas le contrôle formel._
@@ -108,4 +123,10 @@ _Vérification de forme non bloquante (catalogue `lib/rules.mjs`). Elle ne rempl
 | EX-003 | S50 | exemple incomplet : when manquant(s) |
 | TK-004 | S43 | tâche XL : trop grosse pour une PR, à découper |
 | TK-004 | S45 | affectée à un agent alors que : taille XL au-delà de M ; story non prête |
+| TK-004 | S74 | taille XL retenue, taille de risque calculée M (opérations de contrat 2, règles métier de la story 1) : écart à justifier |
 
+---
+
+## Relecture humaine
+
+> Ce plan a été produit avec l'assistance d'une IA, à partir de l'état de session et des sources citées. Il ne remplace ni les entretiens, ni l'observation, ni le jugement des personnes concernées. Il doit être relu par les personnes désignées ; seules les approbations déclarées et enregistrées dans l'état font foi, et aucune n'est déduite de la présence de ce document.
