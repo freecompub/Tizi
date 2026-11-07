@@ -8,7 +8,7 @@ import { SKILLS, ROOT, run, node, script, tempDir } from './helpers.mjs';
 import yaml from '../skills/brd-builder/scripts/lib/vendor/js-yaml.mjs';
 
 const skills = readdirSync(SKILLS).filter(d => existsSync(join(SKILLS, d, 'SKILL.md')));
-test('sept skills présents', () => assert.equal(skills.length, 7));
+test('huit skills présents', () => assert.equal(skills.length, 8));
 for (const s of skills) test(`${s} : en-tête conforme à la spécification Agent Skills`, () => {
   const text = readFileSync(join(SKILLS, s, 'SKILL.md'), 'utf8');
   const fm = yaml.load(text.split(/^---$/m)[1]);

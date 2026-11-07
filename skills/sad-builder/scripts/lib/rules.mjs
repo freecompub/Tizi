@@ -2819,3 +2819,33 @@ export function abstentions(s, ctx = {}) {
   }
   return out;
 }
+
+// Les trois verdicts d'un document, et le quatrième terme qui n'en est pas un. C'est ce que demande un
+// rapport d'audit, et c'est ici que ça se calcule : « une règle n'est définie qu'ici, jamais ailleurs »
+// vaut aussi pour le tri de leurs résultats — un script de rendu qui recomposerait ces listes à sa
+// façon finirait par en donner une version différente de celle du lint.
+//   constats   ce qui est CONSTATÉ FAUX : la règle avait de quoi lire, et elle a trouvé à reprocher.
+//   muettes    ce qui n'est PAS MESURABLE : elle n'a rien eu à lire, et elle dit quoi.
+//   vrais      ce qui est CONSTATÉ VRAI : elle avait de quoi lire et n'a rien trouvé — ou ce qu'elle
+//              surveille est facultatif et n'existe pas, auquel cas « rien à reprocher » est exact.
+//   horsJeu    ni l'un ni l'autre : la règle ne s'applique pas à ce document, ou pas dans ce réglage.
+//              Ce n'est pas un verdict, et un rapport ne la compte pas — c'est pour ça qu'elle est
+//              rendue à part plutôt que fondue dans « constaté vrai », où elle aurait gonflé le
+//              dénominateur d'un audit avec des règles qui n'avaient rien à y faire.
+// Les quatre listes partitionnent le registre : un test l'exige, et c'est ce qui empêche un rapport
+// d'audit de perdre une règle en silence.
+export function verdicts(s, ctx = {}) {
+  const doc = s?.document ?? 'brd';
+  const constats = checkState(s, ctx);
+  const muettes = abstentions(s, ctx);
+  const parle = new Set(constats.map(f => f.rule));
+  const sansLecture = new Set(muettes.map(f => f.rule));
+  const base = { ...s, refs: ctx.refs ?? {}, ctx };
+  const vrais = [], horsJeu = [];
+  for (const rule of Object.keys(LECTURES)) {
+    if (parle.has(rule) || sansLecture.has(rule)) continue;
+    const visent = declarations(rule).filter(d => porteSurLeDoc(d, doc));
+    (visent.some(d => applicable(base, d)) ? vrais : horsJeu).push(rule);
+  }
+  return { constats, muettes, vrais, horsJeu };
+}

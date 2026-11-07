@@ -16,7 +16,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/skills/backlog-executor/scripts/session-capture.mjs\""
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/skills/audit-builder/scripts/session-capture.mjs\""
           }
         ]
       },
@@ -34,7 +34,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/skills/backlog-executor/scripts/session-capture.mjs\""
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/skills/audit-builder/scripts/session-capture.mjs\""
           }
         ]
       }
@@ -44,7 +44,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/skills/backlog-executor/scripts/session-capture.mjs\""
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/skills/audit-builder/scripts/session-capture.mjs\""
           }
         ]
       }
@@ -54,7 +54,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/skills/backlog-executor/scripts/session-start.mjs\""
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/skills/audit-builder/scripts/session-start.mjs\""
           }
         ]
       }
