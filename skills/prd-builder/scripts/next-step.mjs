@@ -24,6 +24,11 @@ const STEPS = [
 ];
 const slugs = new Set();
 for (const s of STEPS) if (existsSync(join(root, s.doc))) for (const d of readdirSync(join(root, s.doc))) if (existsSync(join(root, s.doc, d, 'state.yaml'))) slugs.add(d);
+// Un dossier d'audit fait exister l'initiative lui aussi : on peut arriver chez Tizi avec un cahier
+// des charges écrit ailleurs et rien d'autre. `audit/` n'est pas dans `STEPS` — un audit n'a ni phase,
+// ni porte, ni aval, et son état porte le `document` du catalogue contre lequel il est audité, pas le
+// nom de son dossier.
+if (existsSync(join(root, 'audit'))) for (const d of readdirSync(join(root, 'audit'))) if (existsSync(join(root, 'audit', d, 'state.yaml'))) slugs.add(d);
 // Une initiative peut exister par son seul chemin décidé, avant tout document.
 if (existsSync(join(root, '.tizi', 'chemins'))) for (const f of readdirSync(join(root, '.tizi', 'chemins'))) if (f.endsWith('.yaml')) slugs.add(f.replace(/\.yaml$/, ''));
 const load = (doc, slug) => { const p = join(root, doc, slug, 'state.yaml'); return existsSync(p) ? loadState(p) : null; };
@@ -56,6 +61,11 @@ function assess(slug) {
     next = o.decision === 'decoupee'
       ? go(null, `opportunité découpée${filles.length ? ` en ${filles.join(', ')}` : ''} : celle-ci est close, le travail continue dans ses filles`)
       : go(null, 'opportunité jetée : initiative close');
+  }
+  // Un audit commencé et pas rendu passe avant un document à commencer : c'est un travail en cours, et
+  // le rapport est ce qui dira par où entrer. Une fois rendu, il ne retient plus l'étape suivante.
+  else if (existsSync(join(root, 'audit', slug, 'state.yaml')) && !existsSync(join(root, 'audit', slug, 'audit.md'))) {
+    next = go('tizi-audit', 'audit d\'un document écrit ailleurs commencé et pas encore rendu : finir le rapport');
   }
   else if (!last) next = go('tizi-brd', 'aucun document : commencer par l\'évaluation de l\'opportunité (ou un PRD autonome)');
   else if (['brd', 'prd', 'sad'].includes(last)) {
@@ -115,6 +125,6 @@ function assess(slug) {
 
 const list = [...slugs].filter(s => !only || s === only).sort().map(assess);
 if (args.includes('--json')) { console.log(JSON.stringify(list, null, 2)); process.exit(0); }
-if (!list.length) { console.log('Aucune initiative dans ce dépôt. Pour commencer : tizi-brd (évaluer une opportunité), ou tizi-prd pour un PRD autonome.'); process.exit(0); }
+if (!list.length) { console.log('Aucune initiative dans ce dépôt. Pour commencer : tizi-brd (évaluer une opportunité), tizi-prd pour un PRD autonome, ou tizi-audit pour auditer un document écrit ailleurs.'); process.exit(0); }
 console.log('Avancement (BRD · PRD · conception · plan · implémentation · tests) : ✓ figé, … en cours, – non utilisé, · à venir\n');
 console.log(table(['Initiative', 'Chemin', 'Avancement', 'Étape suivante', 'Pourquoi', 'À noter'], list.map(x => [x.slug, x.path || 'non décidé', x.progress, x.next.entry ?? '—', x.next.why, x.notes.join(' ; ') || '—'])));

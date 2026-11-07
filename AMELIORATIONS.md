@@ -42,6 +42,9 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
 
 | Piste | Date | Où |
 |---|---|---|
+| **`audit-builder` : auditer un document écrit ailleurs.** Huitième skill, et le premier qui ne construit rien. Mesuré avant d'écrire, et la mesure a réduit le travail : je craignais qu'un document étranger récolte une avalanche de constats faute de porter les traces que Tizi tient de sa fabrication. Le BRD d'exemple privé de toute cette trace rend **32 constats et 26 règles non mesurables**, là où le même dossier complet en avait 2 — un document écrit ailleurs récolte des **abstentions**, pas des accusations. Et un backlog s'audite sans aucune trace Tizi : 18 constats avant, 18 après. Donc **aucune règle nouvelle** : ce qui manquait était le tri (`verdicts()` dans `rules.mjs`, quatre listes qui partitionnent le registre) et sa mise en page (`audit.mjs`, qui ne porte aucune grille — les grilles, ce sont les règles) | 7 novembre 2026 | `l-audit-d-un-document-ecrit-ailleurs` |
+| **L'armature du chapitre 23, inscrite dans le skill.** Une *pratique* est obligatoire, l'*approche* qui la réalise est locale et intransposable — l'élan en peluche de Vancouver marchait très bien là-bas. Donc **on n'audite jamais une approche contre une autre approche** : un écart est une question à poser à l'équipe et sort dans sa propre section, jamais parmi les constats. La discipline d'import est celle d'`adopt.mjs` : un champ que le document ne porte pas reste **absent** et va dans `audit.uncertain` avec ce qui le lèverait. Une liste d'incertitudes vide sur un document étranger est signalée comme suspecte plutôt que tue | 7 novembre 2026 | `l-audit-d-un-document-ecrit-ailleurs` |
+| **Un test a attrapé un mensonge dans mon propre rapport, et une faiblesse dans le test.** La première version annonçait « 23 + 24 + 26 + 64 = 131 » : une addition fausse de six, parce que je comptais les règles de rédaction dans la partition des règles de structure. Et la vérification par mutation a trouvé un trou dans le test lui-même — `indexOf` rend -1 sur une clause absente, et -1 est inférieur à tout, donc le test de position passait sur un rapport qui ne portait plus la clause du tout. Les deux corrigés, le second éprouvé en retirant la clause | 7 novembre 2026 | `l-audit-d-un-document-ecrit-ailleurs` |
 | **Les 131 règles disent ce qu'elles lisent : l'étape 2 est finie.** Les 74 restantes déclarées, `NON_DECLAREES` vide, et un test l'exige : une règle neuve dit ce qu'elle lit, elle ne se gare plus. Le chiffre, mesuré une fois la table finie : sur un état entièrement vide, **3 règles sur 131 parlent** au BRD, **une seule** ailleurs, et **48 s'abstiennent**. La démonstration est dans le dépôt — `exemple/sad/green` rendait « Vérification : aucun avertissement. » ; il rend maintenant ce même verdict suivi de **24 règles qui n'ont jamais eu de quoi se prononcer**. Le document n'a pas changé ; ce qu'on en sait, si. 148 déclarations pour 131 règles, parce que **quinze portent le même numéro dans deux documents** : `S04` attend un critère d'acceptation sur une exigence métier au BRD et sur une exigence fonctionnelle au PRD, et seul le premier attend une phase | 7 novembre 2026 | `ce-que-lisent-les-74-dernieres` |
 | **Deux doctrines ont tranché les cas douteux, et elles ont évité trois notions à la table.** (1) On déclare ce que la règle **parcourt**, pas ce contre quoi elle résout : `S98` parcourt `governance.reviewers` et résout contre `stakeholders`, et un renvoi qui ne résout pas est l'affaire de `S09`. Déclarer les deux aurait demandé une lecture conjonctive, fausse partout ailleurs. (2) Un **garde** n'est pas une lecture, c'est une applicabilité : `if (arr(s.security_catalogs).length && …)` sur `S55`, `if (!contacts) continue` sur `S127` disent quand la règle existe, pas ce qu'elle lit — d'où la forme `rempli` dans `quand`. Et `S09`, mise de côté comme « demandant une décision, pas une copie » : ce ne sont pas dix règles, c'en est une, et `renvoiFindings` la fait déjà sur le document entier — sa lecture est donc le document | 7 novembre 2026 | `ce-que-lisent-les-74-dernieres` |
 | **`facultatif` : une quatrième catégorie née d'une mesure.** Déclarées comme les autres, dix-neuf règles rendaient le PRD d'exemple « 33 fois non mesuré », dont la moitié sur des choses qu'un PRD n'a aucune raison d'avoir — pas de dérogation de seuil, donc pas de dérogation muette. Ce que la règle surveille est optionnel, et son silence est alors un **vrai constat de conformité**. Le critère est écrit : une abstention ne vaut que si le document est **censé** porter ce que la règle lit. Et les abstentions se groupent par **lecture** dans le lint — dix-huit lignes disaient trois choses, c'est le même défaut que les cinquante-deux constats de `S118` réduits à un | 7 novembre 2026 | `ce-que-lisent-les-74-dernieres` |
@@ -377,6 +380,12 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
   Et une troisième voie à ne pas oublier, qui est celle que je recommanderais ensuite : bloquer
   **seulement quand il est sûr** — zone d'ombre reconnue et `posee` vide —, et se contenter de prévenir
   dans les autres cas. Sur la mesure, **trois des quatre** répétitions tombaient dans ce cas sûr.
+- **Aucun dossier d'audit d'exemple.** `exemple/` est figé par consigne, et l'entrée d'`audit-builder`
+  est par nature un document ÉTRANGER que le dépôt n'a pas. Les tests fabriquent le leur à partir du
+  BRD d'exemple privé de sa trace, ce qui vérifie le code mais ne montre rien à qui prend le skill en
+  main. Un `exemple/audit/<slug>/` avec un document d'origine plausible et son rapport serait le
+  pendant des quatre dossiers existants — il demande une autorisation, et de quoi l'écrire : un vrai
+  cahier des charges écrit ailleurs, pas une imitation.
 - **`main` n'est pas protégée sur GitHub.** `ci-audit.mjs` le signale (« Branch not protected »,
   HTTP 404 avec un jeton sans droit d'administration), et personne ne l'a fait. Celui-là ne dépend pas
   de Tizi : quatre PR ont été fusionnées sur une branche que rien n'empêche de pousser en direct.
@@ -507,11 +516,12 @@ prose.** Écrire le skill d'audit d'abord, c'est écrire ses grilles en Markdown
    rend la troisième colonne, et la mesure demandée a été faite : **sept règles** taisaient une condition
    d'applicabilité — cinq de phase, deux de cadence —, et **dix-neuf** surveillent quelque chose
    d'optionnel, dont le silence est un constat et non une case vide.
-3. **`audit-builder`.** Un importeur qui lit un BRD/PRD/backlog écrit ailleurs et le pose dans la forme
-   d'état de Tizi en marquant `incertain` ce qu'il ne peut pas établir — la discipline d'`adopt.mjs`,
-   « rien n'est déduit sans preuve ». Puis `checkState` tourne dessus et le rapport sort à trois
-   colonnes : constaté faux / constaté vrai / **non mesurable, et pourquoi**. Les grilles ne sont pas
-   réécrites : **ce sont les règles**. Avec, inscrite dans le `SKILL.md`, l'armature du chapitre 23 :
+3. **`audit-builder`.** ✔ Fait le 7 novembre 2026. Un importeur qui lit un BRD/PRD/backlog écrit
+   ailleurs et le pose dans la forme d'état de Tizi en marquant `incertain` ce qu'il ne peut pas établir
+   — la discipline d'`adopt.mjs`, « rien n'est déduit sans preuve ». Puis `checkState` tourne dessus et
+   le rapport sort à trois colonnes : constaté faux / constaté vrai / **non mesurable, et pourquoi**.
+   Les grilles ne sont pas réécrites : **ce sont les règles**. Avec, inscrite dans le `SKILL.md`,
+   l'armature du chapitre 23 :
    une *pratique* Scrum est obligatoire, une *approche* est sa réalisation locale (l'élan en peluche de
    Vancouver marchait très bien là-bas et était intransposable à l'équipe chinoise), donc **on n'audite
    jamais une approche contre une autre approche** ; et, du glossaire, « une règle peut être enfreinte

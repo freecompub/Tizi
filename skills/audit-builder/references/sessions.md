@@ -1,0 +1,130 @@
+# Continuité entre sessions
+
+Un fichier d'état dit où l'on en est, pas comment on y est arrivé. Pour reprendre après une pause sans perdre les nuances, les options écartées ni les questions en suspens, le SDLC conserve trois couches :
+
+| Couche | Fichier | Rôle | Qui l'écrit |
+|---|---|---|---|
+| État | `<document>/<slug>/state.yaml` | Ce qui est vrai maintenant : la référence | L'agent, après chaque échange validé |
+| Condensé | `.tizi/sessions/<date>-<session>.condense.md` | Le fil de la discussion | L'agent, à la pause ou à la reprise |
+| Extrait | `.tizi/sessions/<date>-<session>.extrait.md` | Vos messages mot pour mot, les questions posées — celles de l'outil de questions avec leurs réponses proposées et la réponse de chacune, celles écrites en texte libre avec la réponse qui les a suivies —, les fichiers et les identifiants touchés | Le hook, automatiquement |
+| Transcription | `.tizi/sessions/<date>-<session>.jsonl` | L'échange complet, consultable par recherche | Le hook, automatiquement |
+| Entrée d'index | `.tizi/sessions/<date>-<session>.index.yaml` | Dates, initiatives touchées, tâche, tokens, chemins des trois fichiers ci-dessus | Le hook, automatiquement |
+
+Les quatre fichiers de session vivent **à la racine du projet** — le dépôt Git, à défaut le plus proche ancêtre qui porte `.tizi/` —, jamais dans le répertoire courant. Un `.tizi/sessions/` apparu dans un dossier d'initiative est le reste d'un défaut corrigé le 2 novembre 2026 : le magasin suivait le répertoire où se trouvait le shell, si bien qu'un `cd` en cours de session en créait un second, et chaque capture n'en mettait à jour qu'un. Les chemins écrits dans l'entrée d'index sont relatifs à cette racine, et c'est contre elle qu'ils se résolvent. Un tel dossier parasite peut être supprimé : il n'est plus écrit, et plus rien ne le lit.
+
+Les **initiatives touchées** que porte l'entrée d'index sont celles qui ont un état sur le disque. Le motif `<document>/<slug>/` se trouve aussi dans un nom de branche Git et dans un slug simplement évoqué en conversation : sans ce filtre, l'index annonçait quatre initiatives là où le dépôt en contenait une, et le rappel de début de session réclamait un condensé pour trois dossiers qui n'existaient pas.
+
+La transcription seule ne suffirait pas : elle contient des affirmations que la suite a corrigées. L'état reste la référence ; les sessions servent à retrouver le pourquoi.
+
+**Une question sort de l'extrait avec sa réponse, ou avec le fait qu'elle n'en a pas.** Un extrait qui montre des réponses sans leurs questions est pire qu'un extrait vide — et l'inverse est vrai aussi. Pour une question posée avec l'outil de questions, la réponse revient dans le résultat de l'appel et se lit là. Pour une question **en texte libre**, la réponse est le message suivant de l'utilisateur : c'est le seul endroit où elle se lit, et l'extrait les joint. Le rang affiché (`**Réponse** (message n° 7)`) est celui de la section « Messages de l'utilisateur » du même fichier, donc le lecteur peut y aller. Il y avait avant un numéro de tour qui comptait les **réponses de l'agent** — 177 au troisième dossier réel —, alors que la section des messages les numérote, eux, de 1 à 29 : deux échelles dans le même document, dont une absente. « (tour 13) » ne désignait rien, et le message n° 3, « C'est Dédé », était trois mots dont la question était perdue.
+
+Quand plusieurs réponses de l'agent précèdent un même message, l'utilisateur répond à la dernière : les précédentes portent « sans réponse : l'agent a poursuivi ». Une question posée puis recouverte par la suite du travail n'a pas été répondue, et c'est le seul constat juste.
+
+## Installer la capture
+
+Le plus simple : `node install.mjs --project <dépôt> --target claude|copilot|both` à la racine de l'archive du SDLC. À la main :
+
+**Claude Code** — dans `.claude/settings.json` :
+
+```json
+{
+  "hooks": {
+    "Stop":       [{ "hooks": [{ "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/skills/brd-builder/scripts/session-capture.mjs\"" }] }],
+    "PreCompact": [{ "hooks": [{ "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/skills/brd-builder/scripts/session-capture.mjs\"" }] }],
+    "SessionEnd": [{ "hooks": [{ "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/skills/brd-builder/scripts/session-capture.mjs\"" }] }]
+  }
+}
+```
+
+**GitHub Copilot** — dans `.github/hooks/tizi.json` :
+
+```json
+{
+  "version": 1,
+  "hooks": {
+    "Stop":       [{ "type": "command", "command": "node .github/skills/brd-builder/scripts/session-capture.mjs" }],
+    "PreCompact": [{ "type": "command", "command": "node .github/skills/brd-builder/scripts/session-capture.mjs" }],
+    "SessionEnd": [{ "type": "command", "command": "node .github/skills/brd-builder/scripts/session-capture.mjs" }]
+  }
+}
+```
+
+Le script est identique dans tous les skills ; un seul suffit. La capture se fait à **chaque fin de tour** (`Stop`), avant chaque compactage et en fin de session : la copie est donc toujours à jour, même si la session s'interrompt brutalement. Les secrets probables (jetons, clés) sont masqués dans les copies.
+
+Le script lit les deux formats de transcription : celui de Claude Code et celui de Copilot (`events.jsonl`). Copilot ne transmet pas le chemin de la transcription en fin de session : le script le retrouve alors dans `~/.copilot/session-state/<session>/`. Dans l'agent cloud de Copilot, le bac à sable est effacé à la fin du travail : rien n'y est conservé, ce qui est sans conséquence (une session de l'agent cloud aboutit à une PR, pas à une reprise).
+
+**Un fichier d'index par session.** L'index était un fichier unique, `index.yaml`, réécrit à chaque
+tour. Versionné, il produisait un conflit Git dès que deux personnes travaillaient le même jour — sur
+un fichier que personne ne modifie à la main. Chaque session écrit donc désormais sa seule entrée,
+dans son propre fichier ; les scripts lisent l'ensemble du dossier. Un `index.yaml` historique reste
+lu s'il existe, et n'est plus jamais réécrit : rien à migrer.
+
+**Une coordonnée ne sort pas par la session.** L'extrait reprend tes messages **mot pour mot**, et il se commite — seuls le `.jsonl` et les `.tmp` sont exclus par le `.gitignore`. Tout le dispositif des coordonnées était donc contourné par le chemin le plus probable de tous : `reach-out.mjs` dit « demande-la à l'utilisateur », l'utilisateur la tape dans le fil, et elle partait dans le dépôt. Les adresses de courriel et les numéros de téléphone sont désormais remplacés, dans l'extrait comme dans la copie de la transcription, par `[coordonnée masquée — voir contacts.yaml]` : la marque dit qu'il manque quelque chose et où le chercher. Ce n'est pas un secret au sens des jetons — rien n'est compromis — c'est une donnée personnelle qui reste sur la machine où elle a été donnée.
+
+**Le condensé, lui, c'est toi qui l'écris, et aucun motif ne te relira.** N'y mets jamais une adresse, un numéro ni un identifiant de messagerie. Le fichier se commite comme l'extrait, et il n'a pas de filtre : ce que tu y écris y reste. Quand une coordonnée compte pour la suite, elle va dans `contacts.yaml` du dossier, et le condensé dit au plus « ses coordonnées sont dans `contacts.yaml` ». La même règle vaut pour `session.next_action` et pour toute note de l'état : l'état se commite, part dans le handoff, et `freeze-version.mjs` en fige une copie dont rien ne se reprend.
+
+**Ce que l'extrait ne peut pas savoir.** Il est produit depuis la transcription, sans interprétation,
+et deux choses y échappent. Les **écritures faites au shell** : seules la redirection et `tee` y
+désignent un fichier ; un `sed -i`, un script ou un éditeur lancé en ligne de commande n'est pas
+traçable, et l'extrait dit alors combien de commandes ont été lancées plutôt que de conclure qu'il n'y
+a rien eu. Et les **questions dont l'hôte ne nomme pas la réponse** : Claude Code renvoie chaque
+question avec sa réponse, donc chacune est rattachée à la sienne ; là où l'hôte ne le fait pas, la
+réponse est gardée au niveau de l'appel, telle qu'elle est arrivée.
+
+Les questions en texte libre portent le **numéro du tour** qui les a posées. Deux questions sur le même
+tour se voient donc d'un coup d'œil, et l'extrait les compte en bas de section : une question ouverte
+se pose seule (`references/questions.md`), et trois dans un message reviennent à n'en poser qu'une.
+
+**Données sensibles.** Les transcriptions contiennent ce qui a été dit en séance, y compris des notes d'entretien. Décidez en équipe de ce qui est versionné. Par défaut, ajoutez `.tizi/sessions/*.jsonl` au `.gitignore` et versionnez les extraits et les condensés ; versionnez aussi les transcriptions si la reprise doit pouvoir se faire depuis une autre machine ou par une autre personne.
+
+## Avant une pause
+
+Quand l'utilisateur annonce une pause (« on s'arrête », « on reprend demain ») :
+
+1. Propose de **valider ou d'abandonner le lot en cours** : un lot proposé mais non validé n'existe que dans la conversation.
+2. Note la **prochaine action** dans `session.next_action` de l'état.
+3. Rédige le **condensé** de la session (format ci-dessous) dans `.tizi/sessions/<date>-<session>.condense.md`, à partir de ce que vous venez de faire. Le nom de fichier suit celui de l'extrait que le hook produira : date du premier message et 8 premiers caractères de l'identifiant de session.
+4. Lance `node <chemin-du-skill>/scripts/status.mjs <document>/<slug>/state.yaml` et **présente son point d'étape** — il dit les phases passées, celle en cours et les conditions qui restent avant la suivante, ce que l'utilisateur n'a aucun moyen de reconstituer seul —, puis énonce `session.next_action` en dernière ligne. Les décomptes viennent du script, jamais de la mémoire (`references/questions.md`) : le premier point d'étape de fin de session écrit à la main annonçait quatre chiffres faux sur six. Et ce que tu viens de noter comme prochaine action est précisément ce que l'utilisateur doit emporter — sur ce même dossier, la seule échéance datée et irrécupérable était absente du message, remplacée par un menu de suites possibles. À la pause il n'y a pas de choix à soumettre : symétrique de la reprise, qui présente déjà ce point d'étape.
+5. Rappelle de faire un commit.
+
+Cette séquence part de l'**annonce de l'utilisateur**, jamais d'une proposition de l'agent :
+« voulez-vous qu'on s'arrête là ? » demande la permission de travailler, et met la trace en jeu
+pour rien. Ce qui a été recueilli se réécrit dans l'état tout de suite ; le condensé et le commit
+sont dus à la pause quelle qu'en soit la raison. Ils ne sont la branche d'aucune question
+(`references/questions.md`).
+
+## À la reprise
+
+1. **Pause courte, même machine** : la reprise native de l'outil restaure la conversation entière — `claude --continue` ou `claude --resume` (Claude Code), `copilot --continue` ou `copilot --resume` (Copilot CLI), l'historique des sessions de chat (VS Code). C'est la reprise la plus fidèle ; les étapes suivantes restent utiles si la session avait été compactée.
+2. Sinon, lance `node <chemin-du-skill>/scripts/status.mjs <document>/<slug>/state.yaml` : point d'étape déterministe (phase, compteurs par statut, zones d'ombre, questions ouvertes, prochaine action, dernières sessions).
+3. Lis le **condensé** de la dernière session. Son absence est aussi rappelée par le hook de début de session, qui le signale pour chaque initiative concernée. Les outils cherchent le fichier sur le disque, pas le champ `condensed` de l'index : ce champ est écrit par le hook de capture, qui tourne après tout ce que l'agent a fait dans le tour — y compris le commit — et peut donc être vide alors que le condensé existe. S'il n'existe pas (session interrompue sans pause annoncée), rédige-le d'abord à partir de l'extrait, et fais-le valider à l'utilisateur.
+4. Pour un détail qui manque, **cherche** plutôt que de tout relire : `node <chemin-du-skill>/scripts/session-search.mjs "agents du soir" --initiative brd/<slug> --who user`.
+5. Présente le point d'étape à l'utilisateur : où l'on en est, ce qui restait en suspens, la prochaine action. Il confirme avant que tu reprennes — **c'est propre à la reprise** : une session interrompue a pu laisser l'état et la mémoire en désaccord, et lui seul sait ce qui s'est passé entre-temps. En cours de session, un jalon franchi ne se fait pas confirmer : le point d'étape se lit, et la prochaine action se fait (`references/questions.md`).
+
+En cas de contradiction entre une session et l'état, **l'état l'emporte**. Signale l'écart à l'utilisateur plutôt que de le corriger toi-même.
+
+## Format du condensé
+
+```markdown
+# Condensé de session — <date> — <initiative(s)>
+
+## Ce qui a été fait
+- <éléments proposés, validés, rejetés : identifiants et une ligne chacun>
+
+## Ce qui a été décidé, et pourquoi
+- <décision> — <raison, avec les mots de l'utilisateur quand ils comptent>
+
+## Ce qui a été écarté, et pourquoi
+- <option ou piste> — <raison>
+
+## Paroles à garder mot pour mot
+> <citation> — <qui, à propos de quoi>
+
+## En suspens
+- <question posée sans réponse, lot non validé, point à vérifier>
+
+## Prochaine action
+<une phrase>
+```
+
+Le condensé ne contient que ce qui s'est dit dans la session. Il ne remplace ni l'état ni l'extrait, et n'invente aucune raison qui n'a pas été donnée.

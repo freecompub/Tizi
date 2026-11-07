@@ -1,0 +1,275 @@
+# Poser une question
+
+Une question mal posée ne se rattrape pas : la réponse obtenue ressemble à une décision, et elle est
+enregistrée comme telle. Quand l'outil de questions de l'hôte est disponible, sers-t'en plutôt que de
+poser la question en texte libre : les choix deviennent lisibles et la réponse exploitable. La forme
+dépend de ce que tu cherches. Trois formes, qui ne s'échangent pas.
+
+| Situation | Forme |
+|---|---|
+| **Choix fermés** : les six questions du chemin (`choose-path.mjs`), le tri d'un défaut (défaut, changement, question, doublon, non reproductible), la sévérité, les domaines de relecture, le sort d'une tâche non finie en sprint review, une confirmation | Réponses proposées **et toujours une réponse libre**, avec le contexte, les conséquences de chaque choix, et une recommandation quand elle est fondée |
+| **Arbitrages** : options d'un ADR, concepts du PRD, conflit entre parties prenantes | Réponses proposées avec leurs conséquences, **sans recommandation** quand la décision revient au décideur désigné (`decision_rights`, arbitre) : la recommandation le préempterait |
+| **Élicitation** : comprendre un problème, un besoin, une façon de travailler, une règle métier | **Question ouverte, sans réponse proposée.** Proposer des réponses orienterait la personne interrogée, comme une question suggestive en entretien |
+
+## Les outils
+
+| Hôte | Outil | Ce qu'il impose |
+|---|---|---|
+| Claude Code | `AskUserQuestion` | 1 à 4 questions par appel, 2 à 4 réponses proposées par question. La réponse libre (« Other ») est ajoutée par l'outil : ne l'écris pas comme une option. Plusieurs réponses à la fois sont possibles quand les choix ne s'excluent pas |
+| VS Code (Copilot) | `vscode/askQuestions` | Accordé à tous les points d'entrée sauf `tizi-backlog`, qui n'applique qu'un plan déjà approuvé. Respecte ce que l'outil déclare ; en cas de doute, un appel par question |
+
+**Les limites se respectent, elles ne se contournent pas en tronquant.** Découpe en plusieurs appels :
+les six questions du chemin en demandent deux (quatre, puis deux), dans l'ordre, et la réponse à
+chacune est conservée. Une question qu'on supprime pour tenir dans un appel est une réponse qu'on
+invente.
+
+## Combien à la fois
+
+Deux nombres, et on les confond facilement — c'est ainsi qu'un agent finit par tout demander d'un coup.
+
+| Nombre | Ce qu'il compte |
+|---|---|
+| **cinq** | Ce que `ask-five.mjs` **retient** : les zones d'ombre ouvertes les plus déterminantes, classées par impact. Une sélection, pas un message |
+| **une** | Ce qu'on **pose** par tour : une question, le silence, la réponse réécrite dans l'état — puis la suivante |
+
+Le plafond n'est jamais un quota : rien n'oblige à poser les cinq. Une seule question qui ouvre une
+vraie conversation vaut mieux que cinq qui tiennent dans un message.
+
+**Une question, c'est un point d'interrogation.** « Combien d'enfants sont inscrits, et pour combien de
+familles ? Combien de groupes tournent dans l'année ? » n'est pas une question : c'en est trois, dans
+deux phrases, dans une puce. Le décompte porte sur ce qu'on demande, jamais sur la mise en page — trois
+nombres réclamés dans une puce restent trois questions, et le troisième revient approximatif ou pas du
+tout. Sur le premier dossier réel, un tour annoncé « trois questions courtes » en portait cinq.
+
+**Présenter une liste n'est pas poser des questions.** L'analyse croisée produit une table de constats :
+c'est une liste à **trier**, et le tri s'enregistre par son script (`cross-merge.mjs`). Elle n'attend pas
+de réponse sur le fond. Les questions, elles, viennent après, par `ask-five.mjs`, une à la fois.
+Confondre les deux actes est la façon la plus courante de noyer quelqu'un sous un formulaire.
+
+**Une question à la fois.** Pas deux, même factuelles, même courtes. Deux questions dans le même
+message reviennent à n'en poser qu'une : la personne répond à celle qu'elle a comprise, souvent la
+dernière, et l'autre disparaît sans que personne le remarque. Après la question, le silence — c'est lui
+qui fait venir la précision, pas la relance.
+
+Et ce qui se perd n'est pas que la question : c'est la **relance**. Une réponse vague à la première
+question se rattrape — « tu dis « beaucoup », ça fait combien ? ». La même réponse vague à la deuxième
+d'un lot ne se rattrape jamais : le tour est passé, les deux réponses sont enregistrées ensemble, et
+celle qui était molle le reste. C'est pourquoi chaque réponse se réécrit dans l'état avant la suivante.
+La seule exception est le choix fermé d'une même décision, plus bas — jamais une élicitation, jamais un
+arbitrage, jamais une case de canevas.
+
+**Une question dit à qui elle est posée.** Dès que plusieurs personnes répondent dans le même fil,
+la question nomme son destinataire, à la deuxième personne : « Dédé, à quoi verras-tu que c'est
+résolu ? » Sans ce nom, deux choses se perdent. La réponse arrive sans voix, et il faudra demander
+après coup qui a parlé — une question de plus, qui se pose seule, et dont la réponse est rarement
+fiable. Et celui qui pose finit par oublier que les autres sont là : il parle au clavier. Le
+destinataire ne se devine pas, il est déjà écrit — c'est l'`ask_to` de la zone d'ombre que la question
+sert à lever.
+
+Le fait que l'outil de l'hôte accepte quatre questions par appel ne change rien à cette règle : c'est
+une limite technique, pas une invitation. Quatre choix fermés dans un appel, oui ; quatre questions
+ouvertes, jamais.
+
+## Un tour, une attente
+
+Un message peut porter un rapport, une information et une demande. Si rien ne les distingue, la
+personne ne sait pas ce qu'on attend d'elle — et elle répond « ok », ce qui s'enregistre comme un
+accord sur tout ce que le message contenait.
+
+**Le dialogue est le seul signal d'une demande.** Ce qui attend une réponse quitte le texte et passe
+par l'outil de questions. Ce qui reste en texte n'attend rien : un point d'étape se lit, il ne se
+valide pas. Pas de dialogue, pas de décision à prendre. Et donc **jamais de dialogue pour informer** :
+un bouton « continuer » apprend à cliquer sans lire, et le jour où une vraie approbation arrive dans la
+même boîte, elle se fait cliquer pareil. La seule exception est celle qui précède : une question
+ouverte reste en texte, seule, **en dernier**, avec rien après elle.
+
+**Une attente par tour — et c'est une décision, pas une question.** Un appel peut porter quatre choix
+fermés s'ils appartiennent à la même décision : les six questions du chemin en sont une, les critères
+d'acceptation d'une même exigence aussi. Deux reformulations de deux problèmes différents sont deux
+décisions, donc deux tours. Le coût est en nombre de tours, et il est bon marché comparé à un « ok »
+qui valide cinq choses que personne n'a lues.
+
+**Une validation porte sur une affirmation à la fois.** « L'association communique par des groupes qui
+exposent les numéros, mêlent des publics différents et sont à recréer chaque année — est-ce juste ? »
+n'a pas de réponse : deux affirmations peuvent être vraies et la troisième fausse, et un « oui »
+enregistre les trois comme confirmées. Découpe, ou fais valider une phrase à la fois.
+
+**Une question restée sans réponse se repose seule.** Elle ne se rajoute pas à la pile du tour suivant :
+si elle n'a pas été vue la première fois, c'est qu'elle était accompagnée.
+
+**Un chiffre présenté à l'utilisateur sort d'un script.** Le rapport que porte un message compte des
+choses — tant de besoins candidats, tant de zones ouvertes, tant de sources — et les compter de
+mémoire les invente. Sur le premier dossier réel, le point d'étape de fin de session annonçait 15
+besoins candidats pour 11, 11 sources pour 10, 6 hypothèses pour 5 : chaque fois **le dernier
+identifiant lu comme un décompte**. C'est faux dès qu'un identifiant peut manquer, et il peut — un
+besoin repris par une autre initiative garde le sien, et sa place reste vide ici. `status.mjs` compte
+les entrées, par statut, sans interprétation. Un décompte de mémoire est d'autant plus dangereux qu'il
+est plausible : personne ne recompte un chiffre qui ressemble au bon.
+
+**Un identifiant ne porte pas le sens.** `OBJ-03`, `BR-01`, `ZO-038` sont des adresses : elles servent
+aux scripts, à la traçabilité et à retrouver la chose dans le fichier. Elles ne servent pas à parler.
+Alors **la première mention porte la forme humaine**, prise dans le champ voisin — `name` pour une
+personne, `question` pour une zone d'ombre, `text` ou `statement` pour un besoin, une exigence, une
+règle.
+
+**Ce qui décide, c'est la distance du lecteur à l'index.** Pas la place de l'identifiant dans la
+phrase : le même mot se lit autrement selon qui le reçoit.
+
+| Lecteur | Forme |
+|---|---|
+| Toi et les scripts | l'identifiant seul : c'est son métier |
+| **L'utilisateur** | première mention glosée, puis l'identifiant seul dans le même message |
+| **Quelqu'un qui n'a jamais vu le dossier** | glosé **sur place, à chaque fois** — ou absent |
+
+La troisième ligne est celle qu'on oublie, et c'est elle qui compte le plus, parce que ce sont des
+documents qui partent. Une partie prenante, un relecteur, un approbateur n'ont pas « moins » l'index
+sous les yeux que l'utilisateur : ils ne l'ont **jamais vu**. Pour eux, il n'y a pas de première
+mention qui couvre les suivantes, parce qu'on ne lit pas un document de trois cents lignes en
+remontant en arrière ; et il n'y a pas de renvoi possible, parce qu'il n'existe aucun endroit où
+renvoyer. Mesuré sur un relevé de relecture réel, envoyé à trois personnes : **46 identifiants** que
+le fichier où ils apparaissent ne glose nulle part. Le pire portait la validation des cinq seules
+exigences du dossier — « Premier lot d'exigences métier soumis à Dédé : BR-001 à BR-005, celles
+d'OBJ-01 […] Dédé : "Ça me convient." » : il lui dit qu'il a validé cinq choses et ne lui dit pas
+lesquelles. Un autre lui demandait de vérifier ce que « BC-002 et BC-007 » disent, et ces deux-là
+n'apparaissaient **nulle part ailleurs** dans le fichier.
+
+**Pour l'utilisateur : un critère, trois formes.** Le critère :
+*si on retirait l'identifiant, la phrase dirait-elle encore quelque chose ?* Il se décline en trois
+situations, et elles ne demandent pas la même chose. Elles valent dans la conversation ; dans un
+document qui sort, la troisième tombe.
+
+- **Dans une question, l'identifiant est interdit.** On doit pouvoir le retirer sans rien perdre —
+  donc il n'avait rien à faire là. Celui à qui on demande n'a pas besoin de l'adresse de la chose, il
+  a besoin de la chose. `ZO-003 — « directeur » de quoi : une école, une association, les deux ?` est
+  le contre-exemple complet, pris sur un dossier réel : l'identifiant ne cite rien et ne glose rien, il
+  annonce « champ ZO-003, à remplir » ; et il masquait un second défaut, un **choix fermé posé en
+  prose**, avec ses trois options dans la phrase. La même question a été reposée plus tard par l'outil,
+  correctement — un tour perdu, alors que la zone portait `action: question-utilisateur` depuis le
+  début.
+- **Dans une affirmation, la formulation est due** : la phrase doit survivre au retrait. « Le filet
+  couvre 100 % des inscriptions — **H-017** ne souffre aucune exception » ne survit pas ; « …— et
+  l'hypothèse que le virement est la seule trace survivant à la perte du dossier ne souffre aucune
+  exception (H-017) » survit.
+- **En renvoi et en étiquette, l'identifiant est permis et utile.** En renvoi, la phrase est déjà
+  complète et il dit seulement où c'est rangé : « il se verra refuser quelque chose que le document lui
+  promet (ZO-082) ». En étiquette — début de ligne, de puce, de cellule —, l'identifiant devant suivi
+  de son énoncé se lit très bien : « **RG-003** : toute inscription doit être réglée par virement »,
+  et c'est la forme de `status.mjs`. En **prose courante**, l'humain d'abord et l'identifiant entre
+  parenthèses, parce qu'une adresse en tête oblige à analyser avant de comprendre.
+
+**Et le renvoi ne sort pas du dossier.** « Il dit seulement où c'est rangé » suppose que le lecteur
+puisse y aller. Dans un document destiné à quelqu'un qui n'a pas le dossier, `(SRC-068)`, `(ZO-118)`,
+`(DD-10)` renvoient vers un fichier qu'il n'ouvrira jamais : ce n'est plus un renvoi, c'est du bruit.
+L'étiquette, elle, traverse : `**BC-003** (confirmé) — Qu'une famille déjà connue n'ait pas à réécrire
+ce que l'association détient déjà` se lit par n'importe qui. C'est la forme à reprendre partout dans
+un document qui part, listes comme prose.
+
+**Une personne s'appelle par son nom** dès que `name` est renseigné : `shLabel` rend « Samir (SH-01) ».
+Écrire « SH-02 cumule la présidence et la direction » dans le texte d'une zone d'ombre est pire
+qu'ailleurs, parce que `status.mjs` relira cette phrase à voix haute.
+
+**Et la formulation se lit dans l'état, elle ne se convoque pas de mémoire** — comme un décompte.
+`status.mjs <état> --id OBJ-03,ZO-003` la donne, en prenant le champ qui définit l'élément. Une glose
+fausse est pire qu'un identifiant nu : l'identifiant nu laisse perplexe, la glose fausse fait croire.
+C'est le défaut des décomptes de mémoire avec de la prose au lieu de chiffres.
+
+**L'exception, et son retournement.** Un identifiant peut viser quelqu'un d'autre que l'utilisateur :
+le guide d'entretien indique entre crochets la zone visée par chaque question,
+« pour l'intervieweur seulement, ne pas la lire à voix haute ». Le destinataire est alors
+l'intervieweur, pas l'interviewé, et la règle ne l'interdit pas.
+
+Mais **dès que le destinataire est la personne elle-même, l'exception s'inverse** et la règle devient
+plus stricte qu'ailleurs. Un relevé de relecture, une liste de contrôle, un dossier de revue partent
+chez quelqu'un qui n'a pas l'index : chaque identifiant y est glosé sur place, ou il n'y figure pas.
+La raison est dans la nature du document : on lui demande de vérifier que ce qu'on a écrit de lui est
+juste. Lui donner une adresse au lieu de la chose, c'est lui demander de valider ce qu'il ne peut pas
+lire — et il répondra « oui », comme c'est arrivé.
+
+**Un document qui part se génère, il ne se rédige pas.** C'est le seul moyen fiable : un script qui a
+l'état sous la main appelle `label()` et écrit la forme humaine avec son identifiant, là où l'agent
+qui rédige tape l'adresse de mémoire. La discipline ne tient pas sur trois cents lignes ; la
+génération, oui.
+
+## Quand l'outil n'existe pas
+
+En mode non interactif (`claude -p`, agent cloud) ou dans un éditeur qui ne l'expose pas, la règle ne
+change pas, seule la forme change : options **numérotées** dans le texte, chacune avec sa conséquence,
+suivies d'une ligne « Autre : … ». Et tu attends la réponse — tu ne choisis pas à la place de
+l'utilisateur au motif que l'outil manque.
+
+## Trois règles, quel que soit l'outil
+
+- **Toujours un champ de réponse libre.** Une liste fermée force une réponse qui n'est peut-être pas la
+  vraie. La réponse qui n'était pas dans la liste est souvent celle qui compte.
+- **Le contexte avec la question.** Pourquoi elle se pose maintenant, et ce qui dépend de la réponse.
+  Une question sans contexte se répond au hasard.
+- **La conséquence de chaque choix**, en une ligne. « Chaîne complète » et « voie rapide » ne veulent
+  rien dire pour qui n'a pas lu le SDLC ; « toutes les étapes, quelques jours » et « plan puis
+  implémentation, dans la journée », si.
+
+## Après la réponse
+
+- **Réécris-la dans l'état**, tout de suite, sans attendre la fin de la session.
+- **Un choix fermé s'enregistre par son script** : `choose-path.mjs` pour le chemin,
+  `defect.mjs --trier` pour un tri, `constitution.mjs --decider` pour un principe. L'agent n'écrit pas
+  la décision à la main.
+- **Aux six questions du chemin, une réponse incertaine vaut « oui ».** Le chemin ne se rétrécit pas ;
+  il s'élargit (`--elargir`) quand une étape découvre ce qu'il fallait.
+
+## Ce qui ne se demande pas
+
+Une étape **prescrite** qui **n'engage à rien** se fait. La proposer ajoute un aller-retour et une
+occasion de la perdre — et c'est ce qui arrive : sur le premier dossier réel, le council a été proposé
+au lieu d'être lancé, et le principe candidat « proposé une fois, non demandé ».
+
+| Étape | Pourquoi elle n'engage à rien |
+|---|---|
+| Le **council** (`references/council.md`) | Il ne produit que des questions candidates. Ce qui se décide, c'est leur sort, jamais sa tenue |
+| Un **principe candidat** (`constitution.mjs --proposer`) | Il entre en `PC-xx`, en attente. Seul le responsable de la constitution l'accepte ou le refuse (`--decider`) |
+| La **suite de la phase**, celle que nomme le point d'étape ou `next-step.mjs` | Elle est prescrite, et tout ce qu'elle produit est soumis avant d'être validé. L'utilisateur interrompt quand il veut : il n'a pas à autoriser d'avance |
+
+Ce qui se demande, en revanche : tout ce qui écrit dans le dépôt **hors du dossier de l'initiative**.
+Synchroniser les instructions du dépôt (`sync-agent-instructions.mjs`) en est une — elle modifie
+`AGENTS.md` et `CLAUDE.md`, et un refus est une réponse légitime.
+
+Et ne demande jamais l'autorisation de proposer. « Dis-moi si tu veux que je te le propose » fait deux
+tours là où il en faut un : propose, l'autre dispose.
+
+**Ni l'autorisation de travailler.** « Dites-moi si vous voulez que j'enchaîne maintenant, ou qu'on
+s'arrête là » porte sur des étapes que la phase prescrit et qui n'engagent rien. La règle du contexte
+le dit déjà en creux : une question énonce **ce qui dépend de la réponse**. Quand rien n'en dépend, il
+n'y a pas de question — il y a un bouton qui apprend à cliquer sans lire. **Cette interdiction porte
+sur la suite d'une phase, pas sur le passage à la phase suivante** : voir juste en dessous.
+
+**Mais un changement de phase se demande.** Ce n'est pas la suite du travail, c'est une porte : il
+s'écrit dans `phase_log` — la phase qui se clôt, celle qui s'ouvre, la date, qui a tranché, la source
+qui le porte, l'état de la porte au passage et les conditions franchies par dérogation —, il clôt ce
+qui précède, et les fichiers de phase le disent déjà —
+« **propose** le passage à Govern, **sans le décider** ». Quelque chose dépend donc de la réponse, et
+c'est un choix fermé : l'outil, les options, leurs conséquences. La question se pose **que les
+conditions de la porte soient réunies ou non** — si elles ne le sont pas, les options sont « s'arrêter
+là » et « continuer sur ce qui manque », jamais « passer la porte ». Et elle vient **après** l'état des
+lieux, jamais à sa place : `status.mjs` dit quelles phases sont passées, laquelle est en cours, et
+combien de conditions restent avant la suivante. Sur un dossier réel, l'utilisateur a annoncé « j'ai
+fini la phase BRD » alors que Define était faite, que Govern n'avait pas commencé et que quatre
+sections du document étaient encore `proposé` : personne ne lui avait jamais dit où il en était.
+
+**Et une transition qui ne se demande pas s'annonce quand même.** Le passage d'Assess à Discover suit
+la décision d'opportunité : elle a déjà été rendue par l'utilisateur, la redemander ferait un
+deuxième tour pour rien. Mais dire que la phase est close, sur quelle décision, et ce que la suivante
+couvre, ça n'est pas une question — c'est la seule chose qui empêche de découvrir trois sessions plus
+tard qu'on a changé d'étape sans le savoir.
+
+**Et la consignation n'est la branche d'aucune question.** « Sinon je consigne et je commite » laisse
+croire que la trace dépend de la réponse. Elle n'en dépend jamais : ce qui a été recueilli se réécrit
+dans l'état tout de suite, et le condensé comme le commit sont dus en fin de session quelle que soit
+la suite (`references/sessions.md`). Mettre la trace d'un côté d'un choix, c'est la faire négocier.
+
+## Ce que la question ne fait jamais
+
+- Elle ne recommande pas quand le décideur est désigné : tu prépares les options, il tranche.
+- Elle ne vaut pas approbation. Une réponse à une question n'est pas une approbation enregistrée ;
+  seule une approbation déclarée l'est.
+- Pour l'élicitation, elle ne propose rien et ne vient pas accompagnée : une seule question ouverte,
+  puis le silence. `ask-five.mjs` dit lesquelles poser maintenant ; là où le skill fournit
+  `elicitation-patterns.md`, il dit comment faire émerger le non-dit.
