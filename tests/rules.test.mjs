@@ -2557,6 +2557,71 @@ test('S129 : une story dit pour qui, quoi et pourquoi, où que ce soit sauf null
 // dépôt portent toutes le leur, et celui de IT-2 vidé, le lint ne disait rien et la carte se rendait
 // « ### IT-2 *(proposé)* — — ». Le but n'est dû qu'une fois l'itération investie : une coquille future
 // encore vide ne l'a pas, c'est le dernier moment responsable.
+// ── Un quatrième statut : « la question ne se posait pas » (S136) ────────────
+// Décision de l'utilisateur, 7 novembre 2026. Avant, une question hors sujet se fermait en `levée`
+// avec sa raison : un abus de langage, parce que « on a trouvé la réponse » et « la question ne se
+// posait pas » ne sont pas la même chose. Les confondre rendait la mesure du council illisible — on ne
+// pouvait plus compter combien de ses questions étaient hors sujet, et c'est précisément ce qui dit
+// s'il vaut le coup. Le statut est additif : tous les lecteurs d'une zone filtrent POSITIVEMENT sur
+// `ouverte`, et les portes sur `assumée` — personne ne filtre sur `levée`, donc `sans_objet` sort de
+// tous les filtres exactement comme `levée` en sort déjà. Vérifié avant de l'ajouter.
+test('S136 : « sans objet » porte sa raison, sinon c\'est la sortie commode', () => {
+  const zone = o => ({ document: 'brd', phase: 'define', shadow_zones: [{ id: 'ZO-001', type: 'question', question: 'Faut-il archiver ?', ...o }] });
+  const parle = s => checkState(s).some(f => f.rule === 'S136');
+
+  assert.ok(parle(zone({ status: 'sans_objet' })), 'sans objet sans raison : la règle doit parler');
+  assert.ok(parle(zone({ status: 'sans_objet', resolution: '   ' })), 'une raison blanche n\'est pas une raison');
+  assert.ok(!parle(zone({ status: 'sans_objet', resolution: 'le service n\'archive pas : la loi l\'interdit' })));
+  // Les trois autres statuts ne sont pas concernés : chacun a sa propre règle, ou aucune.
+  for (const status of ['ouverte', 'levée', 'assumée']) {
+    assert.ok(!parle(zone({ status })), `S136 ne porte pas sur « ${status} »`);
+  }
+
+  // Le statut est ADDITIF, et c'est ce qui le rendait sûr : tous les lecteurs d'une zone filtrent
+  // POSITIVEMENT sur `ouverte`, et les portes sur `assumée` — personne ne filtre sur `levée`. Une zone
+  // sans objet sort donc de tous les filtres exactement comme une zone levée en sort déjà. Ce n'est pas
+  // une supposition : la porte de Define rend les mêmes quatre verdicts sur les deux.
+  const zoneAu = (status, extra = {}) => ({ document: 'brd', phase: 'define',
+    shadow_zones: [{ id: 'ZO-001', type: 'question', question: 'q', status, blocking: true, resolution: 'r', ...extra }] });
+  const surLesZones = status => gateConditions(zoneAu(status), 'brd', 'define').conditions.filter(([l]) => /ombre/i.test(l));
+  assert.deepEqual(surLesZones('sans_objet'), surLesZones('levée'),
+    'la porte doit traiter une zone sans objet exactement comme une zone levée');
+  assert.notDeepEqual(surLesZones('sans_objet'), surLesZones('ouverte'),
+    'et pas comme une zone ouverte, sinon le statut ne fermerait rien');
+  assert.ok(surLesZones('sans_objet').every(([, ok]) => ok === true), 'une zone sans objet ne retient aucune porte');
+  // Et le libellé de la porte le dit : il annonçait « levée ou assumée », ce qui était devenu faux.
+  assert.ok(surLesZones('levée').some(([l]) => l === 'chaque zone d\'ombre est levée, assumée ou sans objet'),
+    'le libellé de la porte ne nomme pas le quatrième statut');
+
+  // Et elle ne réclame rien à un dossier qui n'en déclare aucune : facultatif.
+  assert.ok(declarations('S136')[0].facultatif);
+  assert.ok(!abstentions({ document: 'brd', phase: 'define' }).some(x => x.rule === 'S136'));
+
+  // Les quatre documents, parce que les zones d'ombre existent dans les quatre.
+  for (const doc of DOCUMENTS) {
+    assert.ok(checkState({ ...zone({ status: 'sans_objet' }), document: doc }).some(f => f.rule === 'S136'),
+      `S136 doit porter sur un ${doc}`);
+  }
+
+  // Aucun dossier du dépôt ne déclare de zone sans objet : le statut vient de naître.
+  const lire = p => yaml.load(readFileSync(new URL(`../${p}`, import.meta.url).pathname, 'utf8'));
+  for (const p of ['exemple/brd/demo/state.yaml', 'exemple/prd/demo/state.yaml', 'exemple/sad/demo/state.yaml', 'exemple/plan/demo/state.yaml']) {
+    const s = lire(p);
+    assert.ok(!(s.shadow_zones ?? []).some(z => z.status === 'sans_objet'), `${p} : si une zone s'y met, ce test doit être relu`);
+  }
+
+  // Le gabarit des quatre documents l'annonce, et dit la distinction : sans elle, l'agent écrira
+  // `levée` par habitude et le compte du council restera faux.
+  for (const s of ['brd', 'prd', 'sad', 'plan']) {
+    const gabarit = readFileSync(new URL(`../skills/${s}-builder/templates/state.yaml`, import.meta.url).pathname, 'utf8');
+    // L'ÉNUMÉRATION, et pas le mot : la première version de ce test cherchait `sans_objet` n'importe
+    // où dans le fichier, et le commentaire qui explique la distinction suffisait à le satisfaire.
+    // Retirer le statut de la liste des valeurs permises passait donc inaperçu. Éprouvé en le retirant.
+    assert.match(gabarit, /ouverte \| levée \| assumée \| sans_objet/, `${s} : l'énumération du gabarit n'annonce pas le quatrième statut`);
+    assert.match(gabarit, /question ne se posait pas/, `${s} : le gabarit ne dit pas la distinction`);
+  }
+});
+
 // ── Le gâchis d'innovation : une solution prescrite avec la story ────────────
 // « Le gâchis d'innovation survient souvent quand une solution prescrite est fournie avec un élément de
 // backlog » (Rubin, glossaire). C'est le `N` d'INVEST, noté « non mesurable sur un état » dans ce dépôt
@@ -3286,11 +3351,11 @@ test('ce que LECTURES déclare est ce que le code fait : vidée, la règle se ta
       }
     }
   }
-  // 153 déclarations pour 136 règles — quinze règles portent le même numéro dans deux documents, et
+  // 154 déclarations pour 137 règles — quinze règles portent le même numéro dans deux documents, et
   // `S10`, `S53`, `S54`, `S69`, `S79`, `S105`, `S108` lisent ailleurs selon le document. Chacune est
-  // vérifiée document par document, d'où le compte : 18 déclarations transverses qui valent pour les
+  // vérifiée document par document, d'où le compte : 19 déclarations transverses qui valent pour les
   // quatre, 24 qui nomment plusieurs documents, le reste un seul.
-  assert.equal(verifiees, 245, 'chaque déclaration est vérifiée sur chaque document qu\'elle vise');
+  assert.equal(verifiees, 249, 'chaque déclaration est vérifiée sur chaque document qu\'elle vise');
 });
 
 // Les quatorze règles qui ne lisent pas l'état mais ce qui vit à CÔTÉ de lui. Le test ci-dessus les

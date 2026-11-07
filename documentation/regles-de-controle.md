@@ -1,8 +1,8 @@
 # Règles de contrôle, étape par étape
 
-**Ce document est généré par `doc-regles.mjs`. Ne le modifie pas à la main.** Une liste de 144 règles écrite à la main dérive au premier changement du catalogue, et une liste qui dérive est pire qu'une absence de liste : on la croit. Les énoncés ci-dessous sont ceux du catalogue (`skills/*/scripts/lib/rules.mjs`), les conditions de porte celles de `lib/gates.mjs`, les seuils ceux de `COVERAGE_DEFAULTS`. Pour le régénérer : `node doc-regles.mjs`. Pour vérifier qu'il est à jour : `node doc-regles.mjs --verifier`.
+**Ce document est généré par `doc-regles.mjs`. Ne le modifie pas à la main.** Une liste de 145 règles écrite à la main dérive au premier changement du catalogue, et une liste qui dérive est pire qu'une absence de liste : on la croit. Les énoncés ci-dessous sont ceux du catalogue (`skills/*/scripts/lib/rules.mjs`), les conditions de porte celles de `lib/gates.mjs`, les seuils ceux de `COVERAGE_DEFAULTS`. Pour le régénérer : `node doc-regles.mjs`. Pour vérifier qu'il est à jour : `node doc-regles.mjs --verifier`.
 
-Au total : **136 règles de structure** (`S00`–`S135`), **8 règles de rédaction** (`L01`–`L08`), **10 conditions** à la porte de PR, **10** à la porte de release, **6 garde-fous** d'export, et les conditions calculées des portes de phase des cinq documents à phases.
+Au total : **137 règles de structure** (`S00`–`S136`), **8 règles de rédaction** (`L01`–`L08`), **10 conditions** à la porte de PR, **10** à la porte de release, **6 garde-fous** d'export, et les conditions calculées des portes de phase des cinq documents à phases.
 
 ## Comment lire une règle
 
@@ -74,7 +74,7 @@ Un passage de porte s'écrit dans `phase_log` — la phase qui se clôt, celle q
 
 **À toutes les portes de cette étape, en plus :**
 - aucune zone d'ombre bloquante ouverte
-- chaque zone d'ombre est levée ou assumée
+- chaque zone d'ombre est levée, assumée ou sans objet
 - chaque zone d'ombre assumée est emportée par un risque ou une hypothèse
 - chaque zone d'ombre assumée dit pourquoi
 - aucun avertissement ni corrigé ni dérogé (lint.mjs)
@@ -171,7 +171,7 @@ Un passage de porte s'écrit dans `phase_log` — la phase qui se clôt, celle q
 
 **À toutes les portes de cette étape, en plus :**
 - aucune zone d'ombre bloquante ouverte
-- chaque zone d'ombre est levée ou assumée
+- chaque zone d'ombre est levée, assumée ou sans objet
 - chaque zone d'ombre assumée est emportée par un risque ou une hypothèse
 - chaque zone d'ombre assumée dit pourquoi
 - aucun avertissement ni corrigé ni dérogé (lint.mjs)
@@ -257,7 +257,7 @@ Un passage de porte s'écrit dans `phase_log` — la phase qui se clôt, celle q
 
 **À toutes les portes de cette étape, en plus :**
 - aucune zone d'ombre bloquante ouverte
-- chaque zone d'ombre est levée ou assumée
+- chaque zone d'ombre est levée, assumée ou sans objet
 - chaque zone d'ombre assumée est emportée par un risque ou une hypothèse
 - chaque zone d'ombre assumée dit pourquoi
 - aucun avertissement ni corrigé ni dérogé (lint.mjs)
@@ -343,7 +343,7 @@ Un passage de porte s'écrit dans `phase_log` — la phase qui se clôt, celle q
 
 **À toutes les portes de cette étape, en plus :**
 - aucune zone d'ombre bloquante ouverte
-- chaque zone d'ombre est levée ou assumée
+- chaque zone d'ombre est levée, assumée ou sans objet
 - chaque zone d'ombre assumée est emportée par un risque ou une hypothèse
 - chaque zone d'ombre assumée dit pourquoi
 - aucun avertissement ni corrigé ni dérogé (lint.mjs)
@@ -469,7 +469,7 @@ Calculée par `release-matrix.mjs` depuis le plan figé et les rapports collect�
 
 Une exigence non prouvée se corrige, ou s'assume par une dérogation dans `waivers` — qui ne compte que si elle dit **pourquoi** et **qui l'a approuvée**. Le catalogue de règles ne vérifie pas cette étape (`S00`) : un état de tests se vérifie avec `release-matrix.mjs`.
 
-## Règles de structure communes aux quatre documents (40)
+## Règles de structure communes aux quatre documents (41)
 
 Elles s'appliquent au BRD, au PRD, à la conception et au plan. Les étapes 5 et 6 ne reçoivent pas ce catalogue.
 
@@ -515,6 +515,7 @@ Elles s'appliquent au BRD, au PRD, à la conception et au plan. Les étapes 5 et
 | `S126` | contact parti sans que l'autorisation de l'utilisateur soit écrite | autorisation n° … de `contact_autorise` sans dire par quel outil (`outil`) : autoriser « un contact » n'autorise rien de précis — un courriel n'est pas un WhatsApp sur un numéro personnel · autorisation d'écrire par « … » sans date lisible (`le`, AAAA-MM-JJ…) : une autorisation qu'on ne peut pas situer dans le temps ne se vérifie pas, et une décision invérifiable est une case cochée · sollicitée par « … » sans que rien n'autorise de lui écrire par cet outil (`contact_autorise`) : l'option est celle de l'utilisateur, pas celle de la personne au bout, qui n'a rien choisi. Sa décision s'écrit — `- { outil: …, le: "AAAA-MM-JJ" }` — et par OUTIL, parce qu'autoriser un courriel n'autorise pas un message sur un numéro personnel |
 | `S127` | contact disponible, question en attente, et rien n'est jamais parti | joignable par « … », sa coordonnée est dans `contacts.yaml`, … (…) — et aucune sollicitation n'est jamais partie. Tout ce qu'il faut pour écrire est là : `reach-out.mjs --sh …`. Si le script refuse, son refus nomme ce qui manque, et ce qui manque est une question à poser à l'utilisateur, pas une raison de renoncer |
 | `S128` | identifiant cité dans une phrase qui ne mène nulle part, ou attribution qui contredit le registre | cite … dans son texte, et … n'existe pas dans l'état : un renvoi écrit dans la phrase se suit comme les autres, et celui-là ne mène nulle part · attribue … à « … » dans son texte, et … ne porte aucun locuteur (`stakeholders`) : le nom écrit à la main est la seule trace de qui a parlé, et rien ne le confirme · attribue … à « … » dans son texte, quand le registre donne … : la même parole est écrite deux fois, et les deux écritures se contredisent |
+| `S136` | zone sans objet sans dire pourquoi | déclarée « sans objet » sans dire pourquoi la question ne se posait pas (`resolution`) : c'est une affirmation sur le monde, pas une fermeture — et sans sa raison, le statut devient la sortie commode de toute question gênante. Une question écartée après examen n'est pas un échec : elle a fait son travail, celui d'être posée |
 
 ## Garde-fous de l'export (6)
 
@@ -671,3 +672,4 @@ Chaque règle, les étapes où elle s'applique, et la fonction du catalogue qui 
 | `S133` | 2 | périmètre et date figés tous les deux | `checkPrd` |
 | `S134` | 4 | détail dépensé au-delà de l'horizon | `checkPlan` |
 | `S135` | 4 | encours qui sature la relecture | `checkPlan` |
+| `S136` | 1, 2, 3, 4 | zone sans objet sans dire pourquoi | `questionPoseeFindings` |

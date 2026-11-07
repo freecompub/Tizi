@@ -260,8 +260,14 @@ shadow_zones: []
 #                         # passages sans réponse, ce n'est plus une question mais un constat : à
 #                         # assumer avec sa raison, ou à trancher — jamais à reposer (S120). Le seuil
 #                         # se règle par `settings.relance.repetitions`
-#    status: ouverte       # ouverte | levée | assumée
-#    resolution: ""
+#    status: ouverte       # ouverte | levée | assumée | sans_objet
+#                         # `levée` : on a trouvé la réponse. `sans_objet` : la question ne se posait
+#                         # pas. Les deux fermaient la zone de la même façon, et la mesure du council
+#                         # en devenait illisible — on ne pouvait plus compter combien de ses questions
+#                         # étaient hors sujet, alors que c'est ce qui dit s'il vaut le coup. Une
+#                         # question écartée après examen n'est pas un échec : elle a fait son travail.
+#    resolution: ""        # levée : réponse + source ; assumée : raison ; sans_objet : pourquoi la
+#                         # question ne se posait pas
 #    related: []
 
 questions: []              # checklist persistante (voir SKILL.md)

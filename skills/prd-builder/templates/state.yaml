@@ -396,8 +396,14 @@ shadow_zones: []
 #                         # lit ce que l'agent vient de dire et prévient quand la même question
 #                         # repart pour la troisième fois. Il ne bloque pas, et il n'écrit pas ce
 #                         # champ — c'est toujours l'agent qui l'écrit
-#    status: ouverte       # ouverte | levée | assumée
-#    resolution: ""
+#    status: ouverte       # ouverte | levée | assumée | sans_objet
+#                         # `levée` : on a trouvé la réponse. `sans_objet` : la question ne se posait
+#                         # pas. Les deux fermaient la zone de la même façon, et la mesure du council
+#                         # en devenait illisible — on ne pouvait plus compter combien de ses questions
+#                         # étaient hors sujet, alors que c'est ce qui dit s'il vaut le coup. Une
+#                         # question écartée après examen n'est pas un échec : elle a fait son travail.
+#    resolution: ""        # levée : réponse + source ; assumée : raison ; sans_objet : pourquoi la
+#                         # question ne se posait pas
 #    related: []
 
 questions: []             # checklist de questions persistante (voir SKILL.md)

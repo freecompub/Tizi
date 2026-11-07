@@ -1,6 +1,18 @@
 # Zones d'ombre de la conception
 
-Même principe que pour le BRD et le PRD : ce qu'on ne sait pas encore et qui pourrait fausser la conception. Chaque zone indique qui peut la lever et se termine `levée` (avec une source ou une décision) ou `assumée` (avec une raison ; elle devient une hypothèse ou un risque).
+Même principe que pour le BRD et le PRD : ce qu'on ne sait pas encore et qui pourrait fausser la conception. Chaque zone indique qui peut la lever et se termine `levée` (avec une source ou une décision), `assumée` (avec une raison ; elle devient une hypothèse ou un risque), ou `sans_objet` (avec la raison pour laquelle la question ne se posait pas).
+Trois fins possibles, et la troisième est née le 7 novembre 2026 : `levée` (avec sa source), `assumée`
+(avec sa raison ; elle devient une hypothèse ou un risque), ou **`sans_objet`** (avec la raison pour
+laquelle la question ne se posait pas).
+
+Les deux dernières se confondaient : une question hors sujet se fermait en `levée`, ce qui est un abus de
+langage — « on a trouvé la réponse » et « la question ne se posait pas » ne sont pas la même chose. Les
+confondre rendait la mesure du council illisible : on ne pouvait plus compter combien de ses questions
+étaient hors sujet, et c'est précisément ce qui dit s'il vaut le coup. `sans_objet` n'est pas un échec du
+council — une question écartée après examen a fait son travail, celui d'être posée — mais c'est une
+**affirmation sur le monde**, et `S136` en réclame la raison : sans elle, le statut deviendrait la sortie
+commode de toute question gênante.
+
 
 | `type` | Signal typique | Action pour la lever |
 |---|---|---|

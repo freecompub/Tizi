@@ -332,8 +332,15 @@ shadow_zones: []
 #                         # lit ce que l'agent vient de dire et prévient quand la même question
 #                         # repart pour la troisième fois. Il ne bloque pas, et il n'écrit pas ce
 #                         # champ — c'est toujours l'agent qui l'écrit
-#    status: ouverte       # ouverte | levée | assumée
-#    resolution: ""        # levée : réponse + source (SRC-xxx, emplacement) ou décision (DD-xx) ; assumée : raison
+#    status: ouverte       # ouverte | levée | assumée | sans_objet
+#                         # `levée` : on a trouvé la réponse. `sans_objet` : la question ne se posait
+#                         # pas. Les deux fermaient la zone de la même façon, et la mesure du council
+#                         # en devenait illisible — on ne pouvait plus compter combien de ses
+#                         # questions étaient hors sujet, alors que c'est précisément ce qui dit s'il
+#                         # vaut le coup. `sans_objet` n'est pas un échec : une question écartée après
+#                         # examen a fait son travail, celui d'être posée.
+#    resolution: ""        # levée : réponse + source (SRC-xxx, emplacement) ou décision (DD-xx) ;
+#                         # assumée : raison ; sans_objet : pourquoi la question ne se posait pas
 #    related: []           # H-xxx, BC-xxx, SRC-xxx liés
 
 council_runs: []

@@ -162,7 +162,7 @@ function zonesConditions(s) {
   const porteuses = new Set([...arr(s.risks), ...arr(s.hypotheses)].flatMap(x => [x.origin, ...arr(x.related)]).filter(Boolean));
   return [
     sans('aucune zone d\'ombre bloquante ouverte', bloquantes, 'bloquante(s)'),
-    ['chaque zone d\'ombre est levée ou assumée', ouvertes.length === 0,
+    ['chaque zone d\'ombre est levée, assumée ou sans objet', ouvertes.length === 0,
       `${ouvertes.length} encore ouverte(s) (${ids(ouvertes)}) — une question qui reste ouverte à la porte ne sera plus posée`],
     sans('chaque zone d\'ombre assumée est emportée par un risque ou une hypothèse', assumees.filter(z => !porteuses.has(z.id)), 'assumée(s) que rien ne reprend'),
     sans('chaque zone d\'ombre assumée dit pourquoi', assumees.filter(z => !dit(z.resolution)), 'assumée(s) sans raison'),

@@ -2387,6 +2387,22 @@ export function questionPoseeFindings(s) {
   // peut n'en écrire qu'une. L'état se contredit alors en silence : quelqu'un a été sollicité sur une
   // question dont la liste des départs est vide. Aucune devinette ici, deux champs du même état — et
   // c'est la moitié du défaut que `question-guard.mjs` ne peut pas voir, puisqu'elle est par écrit.
+  // ── « La question ne se posait pas » est une affirmation (S136) ──
+  // Quatre statuts depuis le 7 novembre 2026, et c'est une décision de l'utilisateur. Avant, une
+  // question hors sujet se fermait en `levée` avec sa raison : un abus de langage, parce que « on a
+  // trouvé la réponse » et « la question ne se posait pas » ne sont pas la même chose. Les confondre
+  // rendait la mesure du council illisible — on ne pouvait plus compter combien de ses questions
+  // étaient hors sujet, alors que c'est précisément ce qui dit s'il vaut le coup.
+  //
+  // `sans_objet` n'est pas un échec du council : une question écartée après examen a fait son travail,
+  // celui d'être posée. Mais c'est une affirmation sur le monde — « ça ne se posait pas » —, et une
+  // affirmation porte sa raison, comme une dérogation nommée et comme une zone assumée. Sans elle, le
+  // statut devient la sortie commode de toute question gênante, et le compte qu'il permet ne vaut plus
+  // rien : on aurait remplacé un abus de langage par un autre.
+  for (const z of zones) {
+    if (z.status !== 'sans_objet' || ecrit(z.resolution)) continue;
+    out.push({ rule: 'S136', id: z.id, message: 'déclarée « sans objet » sans dire pourquoi la question ne se posait pas (`resolution`) : c\'est une affirmation sur le monde, pas une fermeture — et sans sa raison, le statut devient la sortie commode de toute question gênante. Une question écartée après examen n\'est pas un échec : elle a fait son travail, celui d\'être posée' });
+  }
   const parZone = new Map(zones.map(z => [z.id, z]));
   for (const sh of arr(s?.stakeholders)) {
     for (const zid of zonesSollicitees(sh)) {
@@ -2615,6 +2631,7 @@ export const STRUCT_RULES = {
   S133: 'périmètre et date figés tous les deux',
   S134: 'détail dépensé au-delà de l\'horizon',
   S135: 'encours qui sature la relecture',
+  S136: 'zone sans objet sans dire pourquoi',
   S01: 'objectif non mesurable', S02: 'exigence sans objectif', S03: 'exigence sans besoin sourcé', S04: 'exigence sans critère d\'acceptation',
   S05: 'priorité ou release manquante', S06: 'exigence sans origine', S07: 'Must sans scénario d\'erreur', S08: 'NFR incomplète',
   S09: 'référence inexistante', S10: 'référence vers un élément abandonné', S11: 'règle métier sans source', S12: 'règle sans niveau d\'application',
@@ -2825,6 +2842,8 @@ export const LECTURES = {
   S134: { doc: 'plan', lit: ['stories'], quand: { chemin: 'settings.release', rempli: true } },
   // Le pendant de `S75` au fil de l'eau : même garde, autre unité.
   S135: { doc: 'plan', lit: ['replenishments'], quand: [{ chemin: 'settings.cadence', vaut: ['flux'] }, { chemin: 'settings.attention_capacity', positif: true }] },
+  // Pas de zone déclarée sans objet, pas de raison manquante : rien à surveiller.
+  S136: { doc: '*', facultatif: true, lit: ['shadow_zones'] },
 
   // ── Les règles transverses : elles tournent sur les quatre documents ──
   // `S00` refuse un document que ce catalogue ne sait pas vérifier. Elle n'a donc de déclaration pour
