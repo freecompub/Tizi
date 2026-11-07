@@ -2,7 +2,7 @@
 
 **Version** : 1.0 — **Statut** : baseline — **Mode** : chaîné (BRD v1.0)
 
-> Document généré à partir de `state.yaml` le 2026-10-21. Ne pas le modifier directement : toute correction passe par l'état de session.
+> **Copie de travail** — régénérée depuis `state.yaml` le 2026-11-07, et réécrite à chaque génération. Ne la modifie pas directement : toute correction passe par l'état. Les versions figées, s'il y en a, sont dans `versions/`.
 
 ## Statut du document
 

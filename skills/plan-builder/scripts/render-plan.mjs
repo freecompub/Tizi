@@ -190,7 +190,10 @@ writeOut(join(root, 'plan.md'), out.join('\n') + humanReviewFooter('plan'));
 for (const x of stories) {
   const r = readiness.get(x.id), map = x.example_map ?? {};
   const md = [`# ${x.id} — ${txt(x.title)}`, '', `> Fiche générée à partir de \`state.yaml\` le ${today()}.`, ''];
-  md.push(`**Qui** : ${txt(x.who ?? personaName(x.persona))} · **Quoi** : ${txt(x.what)} · **Pourquoi** : ${txt(x.why)}`, '');
+  // Trois tirets disent moins que rien : la ligne ne s'écrit que s'il y a quelque chose à lire. `S129`
+  // garantit qu'une story de voie normale a toujours de quoi la remplir ; la voie rapide, elle, porte sa
+  // substance dans son origine et sa reproduction, pas dans un qui/quoi/pourquoi.
+  if (x.who || x.persona || x.what || x.why) md.push(`**Qui** : ${txt(x.who ?? personaName(x.persona))} · **Quoi** : ${txt(x.what)} · **Pourquoi** : ${txt(x.why)}`, '');
   md.push(`**Voie** : ${x.lane === 'rapide' ? `rapide — origine : ${txt(x.origin?.type)} (${txt(x.origin?.ref)})` : 'standard'} · **Tâche de la story map** : ${txt(x.map_task)} · **Release** : ${txt(x.release)} · **Taille** : ${txt(x.size)} · **Temps** : ${txt(x.game)}${x.level ? ` · **Niveau** : ${x.level}` : ''}${x.skeleton ? ' · **Walking skeleton**' : ''}`, '');
   md.push(`**Démonstration en revue** : ${txt(x.demo)}`, '');
   md.push(`**Préparation** : ${r.ready ? 'prête' : `non prête — ${r.reasons.join(' ; ')}`}`, '');
@@ -224,7 +227,11 @@ for (const t of tasks) {
     md.push('Un spike produit une **réponse** (confirmée, infirmée, avec mesures), pas du code de production. La durée est bornée par la taille.', '');
   }
   if (st) {
-    md.push('## Story', '', `${st.id} — ${txt(st.title)} (${readyLabel(st.id)})`, '', `Qui : ${txt(st.who)} · Quoi : ${txt(st.what)} · Pourquoi : ${txt(st.why)}`, '');
+    md.push('## Story', '', `${st.id} — ${txt(st.title)} (${readyLabel(st.id)})`, '');
+    // Même ligne que sur la fiche de la story, et même repli sur `persona` : les deux fiches parlaient de
+    // la même story et se contredisaient sur son « qui », celle-ci écrivant « — » là où l'autre nommait
+    // la persona.
+    if (st.who || st.persona || st.what || st.why) md.push(`Qui : ${txt(st.who ?? personaName(st.persona))} · Quoi : ${txt(st.what)} · Pourquoi : ${txt(st.why)}`, '');
     if (st.lane === 'rapide') {
       md.push(`**Voie rapide** — origine : ${txt(st.origin?.type)} (${txt(st.origin?.ref)}). Corriger l'écart sans changer aucune règle métier, aucun critère d'acceptation convenu ni aucun contrat : si c'est nécessaire, s'arrêter et demander.`, '');
       const ex = examples.filter(e => e.story === st.id);

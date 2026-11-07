@@ -2,7 +2,7 @@
 
 **Version** : 1.0 — **Statut** : baseline
 
-> Document généré à partir de `state.yaml` le 2026-10-21. Ne pas le modifier directement : toute correction passe par l'état de session.
+> **Copie de travail** — régénérée depuis `state.yaml` le 2026-11-07, et réécrite à chaque génération. Ne la modifie pas directement : toute correction passe par l'état. Les versions figées, s'il y en a, sont dans `versions/`.
 
 ## Statut du document
 
@@ -209,8 +209,6 @@ _Vérification de forme non bloquante (catalogue `lib/rules.mjs`). Elle ne rempl
 | BR-001 | L02 | critère : points de suspension : l'énumération est incomplète, la rendre exhaustive ou la décrire en intention |
 | BR-001 | S09 | règle métier RG-099 n'existe pas dans l'état |
 | BR-002 | L08 | aucun « doit / doivent / devra » : l'énoncé ne dit pas clairement ce qui est exigé |
-| BR-002 | S04 | exigence validée sans critère d'acceptation |
-| BR-002 | S05 | exigence validée sans priorité |
 | RG-002 | L08 | aucun « doit / doivent / devra » : l'énoncé ne dit pas clairement ce qui est exigé |
 | RG-002 | S11 | règle métier sans source (texte, procédure ou personne qui la détient) |
 | RG-002 | S12 | règle de comportement sans niveau d'application (stricte, dérogation autorisée, dérogation justifiée, indicative) |

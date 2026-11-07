@@ -2,7 +2,7 @@
 
 **Version** : 0.1 — **Statut** : — — **Contexte** : greenfield — **PRD** : v—
 
-> Document généré à partir de `state.yaml` le 2026-10-20. Ne pas le modifier directement : toute correction passe par l'état de session.
+> **Copie de travail** — régénérée depuis `state.yaml` le 2026-11-07, et réécrite à chaque génération. Ne la modifie pas directement : toute correction passe par l'état. Les versions figées, s'il y en a, sont dans `versions/`.
 
 ## Statut du document
 
@@ -137,9 +137,22 @@ _Aucun élément._
 
 _Aucun élément._
 
+## Couverture
+
+| Métrique | Couverts | Taux | Seuil | Statut |
+|---|---|---|---|---|
+| FR allouées à un conteneur ou composant | 1/1 | 100 % | 100 % | atteint |
+| NFR avec une réponse de conception | 0/0 | — | 100 % | _non mesuré_ |
+| Moteurs servis par un ADR accepté ou une réponse | 0/0 | — | 100 % | _non mesuré_ |
+
 ## Annexe — Points de vérification
 
 _Vérification de forme non bloquante (catalogue `lib/rules.mjs`). Elle ne remplace pas le contrôle formel._
 
 _Aucun avertissement._
 
+---
+
+## Relecture humaine
+
+> Ce dossier d’architecture a été produit avec l'assistance d'une IA, à partir de l'état de session et des sources citées. Il ne remplace ni les entretiens, ni l'observation, ni le jugement des personnes concernées. Il doit être relu par les personnes désignées ; seules les approbations déclarées et enregistrées dans l'état font foi, et aucune n'est déduite de la présence de ce document.
