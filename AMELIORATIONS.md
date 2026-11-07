@@ -42,6 +42,8 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
 
 | Piste | Date | Où |
 |---|---|---|
+| **DEEP a donné une règle et non quatre (`S134`), et c'est la mesure qui l'a décidé.** Troisième des cinq grilles. Des quatre lettres, une seule n'avait aucun lecteur. `E` (émergent) n'est pas un défaut qu'un état puisse constater — `iterations` et `replenishments` portent le renouvellement. `E` (estimé) ne peut pas se sur-investir : S, M, L, XL sont toutes aussi grossières, donc une taille posée tôt est exactement ce que Rubin demande. `P` a son véhicule, `game`, dont `S61` vérifie déjà l'ordre. Reste `D` : `S134` constate une story **affinée pour une autre release que celle du plan**. Écrire quatre règles pour quatre lettres aurait été recopier une grille au lieu de la mesurer | 7 novembre 2026 | `deep-un-backlog-trop-pret` |
+| **Le signe retenu coûte des heures, pas une minute.** `S134` ne se déclenche que sur l'**example mapping** — une session tenue avec le métier, le développement et le test, ou des règles écrites. Pas sur la taille ni sur le rang : ceux-là coûtent une minute et la grille les **réclame** à tous les horizons. C'est la distinction qui empêche la règle de reprocher précisément ce que DEEP demande, et une mutation du test le verrouille | 7 novembre 2026 | `deep-un-backlog-trop-pret` |
 | **Deux contraintes figées, et la qualité devient la variable (`S133`).** Deuxième des cinq grilles. Le tableau 18.1 de Rubin marque **non recommandées** deux des quatre combinaisons de contraintes, pour la même raison : « si on sur-contraint les trois, c'est la qualité qui devient la variable » — et c'est la seule des trois que personne ne déclare, donc elle cède en silence. Mesuré avant d'écrire, et **la mesure a trouvé mieux que ce que je cherchais** : le modèle porte DÉJÀ les deux dimensions. `window` (« la fenêtre où elle se joue, quand elle en a une : campagne, rentrée, échéance ») est dans le gabarit du PRD depuis le début et n'était lue par **personne**, comme `learning_goal` et `containment` ; la part de Must se calcule depuis `priority`. Rien ne les croisait. **Aucun champ nouveau** | 7 novembre 2026 | `la-qualite-devient-la-variable` |
 | **Une règle du pouce se lit, elle ne se contrôle pas.** Le même chapitre donne les 60 à 70 % de Must par release. `S133` ne s'en sert PAS comme seuil : elle ne constate que le cas où **rien ne peut céder** — une fenêtre à tenir et pas une exigence qui soit autre chose que Must. Un constat à 70 % rendrait des faux qu'on apprendrait à déroger, et une dérogation qu'on apprend à écrire désarme le contrôle sans laisser de trace. Deux cas du test le verrouillent, à 50 % et à 75 %, parce qu'un seuil à 70 % passait le premier et pas le second | 7 novembre 2026 | `la-qualite-devient-la-variable` |
 | **La Definition of Done est lue (`S131`), et confrontée aux NFR (`S132`).** Première des cinq grilles de l'étape 4. Mesuré avant d'écrire : `definition_of_done` est écrite dans les quatre plans du dépôt, apparaît dans les rendus et les handoffs, et **aucune des 131 règles ne la lisait** — aucune porte ne l'exigeait non plus. Un plan pouvait être figé, livré et revu sans jamais dire ce que « fini » veut dire. `S131` la réclame dès Schedule, pas avant : pendant le découpage son absence n'est pas un trou, c'est une étape pas encore faite. Les quatre plans en ont une, donc aucun constat existant ne bouge | 7 novembre 2026 | `la-definition-of-done-et-les-nfr` |
@@ -384,6 +386,11 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
   Et une troisième voie à ne pas oublier, qui est celle que je recommanderais ensuite : bloquer
   **seulement quand il est sûr** — zone d'ombre reconnue et `posee` vide —, et se contenter de prévenir
   dans les autres cas. Sur la mesure, **trois des quatre** répétitions tombaient dans ce cas sûr.
+- **Le backlog n'a pas d'ordre, au-delà de `game`.** `P` de DEEP dit qu'il est improbable que tout le
+  backlog soit priorisé, et la règle inverse — reprocher une sur-priorisation — n'est pas écrivable :
+  `game` (ouverture, milieu, fin) donne trois classes, pas un rang, et `S61` en vérifie déjà le respect.
+  Un rang explicite rendrait `P` mesurable, et il n'existe pas. À décider, pas à improviser : un rang
+  dans un backlog est un champ que l'utilisateur devra tenir à jour à chaque arbitrage.
 - **La part de Must par release ne se lit nulle part.** `S133` ne constate que le cas extrême, à
   dessein. Le nombre lui-même — la règle du pouce des 60-70 % — mériterait d'être **affiché** sans être
   jugé, et le mécanisme existe déjà : `INDICATIF` dans `gates.mjs`, « cette mesure se lit, elle ne se
@@ -565,7 +572,7 @@ prose.** Écrire le skill d'audit d'abord, c'est écrire ses grilles en Markdown
    jamais une approche contre une autre approche** ; et, du glossaire, « une règle peut être enfreinte
    quand la pragmatique de la situation l'exige » — un écart est une question, pas un défaut.
 4. **Une grille par PR ensuite**, chacune enrichissant l'audit du même coup : ✔ la Definition of Done
-   confrontée aux NFR (`S131`, `S132`, 7 novembre 2026) ; ✔ les contraintes de release (`S133`, 7 novembre 2026) ; les contraintes de release (les deux combinaisons non recommandées, et la
+   confrontée aux NFR (`S131`, `S132`, 7 novembre 2026) ; ✔ les contraintes de release (`S133`, 7 novembre 2026) ; ✔ DEEP au niveau du backlog (`S134`, 7 novembre 2026) ; les contraintes de release (les deux combinaisons non recommandées, et la
    proportion de must-have rendue comme une **mesure** et non comme un reproche, parce que 60-70 % est
    une règle du pouce) ; DEEP au niveau du backlog ; le goulot de compétence ; le gâchis d'innovation.
 
