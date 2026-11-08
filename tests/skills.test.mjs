@@ -995,7 +995,10 @@ test('le point d\'étape dit les phases passées et ce qui reste avant la suivan
   assert.match(out.out, /✗ aucune zone d'ombre bloquante ouverte — 1 bloquante\(s\) : ZO-01/, 'une zone bloquante passe');
   // Une zone non bloquante encore ouverte à la porte est une question que plus personne ne posera :
   // soixante-trois sont parties ainsi du dossier réel, pour zéro risque au BRD.
-  assert.match(out.out, /✗ chaque zone d'ombre est levée ou assumée — 1 encore ouverte\(s\) \(ZO-01\)/, 'une zone ouverte franchit la porte sans destination');
+  // Le libellé nomme les trois destinations depuis le 7 novembre 2026 : il annonçait « levée ou
+  // assumée » alors que le code acceptait déjà `sans_objet`, et un libellé plus étroit que la règle
+  // qu'il décrit apprend à l'agent une contrainte qui n'existe pas.
+  assert.match(out.out, /✗ chaque zone d'ombre est levée, assumée ou sans objet — 1 encore ouverte\(s\) \(ZO-01\)/, 'une zone ouverte franchit la porte sans destination');
   assert.match(out.out, /avertissement\(s\) actif\(s\)/, 'le compte des avertissements n\'est pas repris');
   assert.match(out.out, /condition\(s\) tenue\(s\) sur \d+ mesurée\(s\)/, 'le compte ne distingue pas ce qui est mesuré');
   assert.match(out.out, /Le passage se décide avec l'utilisateur/, 'rien ne dit que la porte ne se franchit pas seul');

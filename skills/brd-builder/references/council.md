@@ -82,4 +82,10 @@ Deux règles qui vont avec :
 
 ### 5. Tracer le passage du council
 
+`scripts/council-report.mjs` agrège ces entrées sur tout un portefeuille et dit ce qu'un passage
+rapporte : questions proposées, retenues, écartées, réservées, et — depuis le quatrième statut de zone
+d'ombre — **la part de celles qui étaient hors sujet**. C'est le seul chiffre qui dise si le council
+vaut le coup. Il dédoublonne les passages partagés, et il refuse de présenter zéro passage comme un
+résultat : l'absence de trace est l'absence de mesure, pas une mesure nulle.
+
 Ajoute une entrée dans `council_runs` de `state.yaml` : date, mode, lentilles utilisées, la **portée** (`initiatives`, si le passage en couvre plusieurs), le nombre de questions renvoyées par les lentilles, et **les questions qui visent cette initiative** — retenues, écartées avec leur raison, et celles mises en réserve pour un prochain council. Le compte mesure l'utilité du council ; les questions permettent de la vérifier. Trois compteurs ne se relisent pas : « 40 proposées, 39 écartées » ne dit pas si c'étaient des doublons, des solutions déguisées, ou de bonnes questions mal arbitrées, et les écartées disparaissent avec la session.

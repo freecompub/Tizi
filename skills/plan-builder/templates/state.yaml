@@ -181,6 +181,10 @@ risks: []                  # - { id: R-01, text: "", likelihood: "", impact: "",
                           # touche : deux échelles, deux questions
 shadow_zones: []
 #  - { id: ZO-001, type: question_story, question: "", story: US-001, ask_to: "", blocking: true, status: ouverte, resolution: "" }
+#                         # status : ouverte | levée | assumée | sans_objet. `levée` dit qu'on a trouvé
+#                         # la réponse, `sans_objet` que la question ne se posait pas — les confondre
+#                         # rend la mesure du council illisible. `resolution` porte la réponse et sa
+#                         # source, la raison d'une zone assumée, ou pourquoi la question ne se posait pas
 #    posee: []            # chaque fois que la question est partie : - { date: "2026-11-04", canal: courriel }
 #                         # La liste s'ajoute. « ouverte » ne distinguait pas une question jamais posée
 #                         # d'une question posée trois fois sans réponse (S119, S120)

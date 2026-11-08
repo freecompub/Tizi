@@ -42,6 +42,9 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
 
 | Piste | Date | Où |
 |---|---|---|
+| **Un quatrième statut de zone d'ombre : `sans_objet` (`S136`).** Décision de l'utilisateur. « On a trouvé la réponse » et « la question ne se posait pas » se fermaient de la même façon, en `levée` — un abus de langage qui rendait la mesure du council illisible. Mesuré avant de l'ajouter, et c'est ce qui l'a rendu sûr : **tous les lecteurs d'une zone filtrent positivement sur `ouverte`**, et les portes sur `assumée` ; personne ne filtre sur `levée`. Le statut est donc additif, et le test le **prouve** — la porte de Define rend les mêmes quatre verdicts sur `sans_objet` et sur `levée`. `S136` en réclame la raison : c'est une affirmation sur le monde, et sans sa raison le statut deviendrait la sortie commode de toute question gênante | 7 novembre 2026 | `la-question-ne-se-posait-pas` |
+| **`council-report.mjs` : les compteurs du council sont enfin lus.** Décision de l'utilisateur : on ajoute un script pour mesurer. Il agrège `council_runs` sur tout un portefeuille et dit ce qu'un passage rapporte — proposées, retenues, écartées, réservées — et surtout **la part de celles qui étaient hors sujet**, qui n'était pas calculable avant le quatrième statut. Il dédoublonne les passages partagés, piège que `council.md` nommait lui-même et qui s'était déjà produit. Et il **refuse de présenter zéro passage comme un résultat** : l'absence de trace est l'absence de mesure, pas une mesure nulle — c'est la même doctrine que les abstentions | 7 novembre 2026 | `la-question-ne-se-posait-pas` |
+| **Deux défauts trouvés par les tests du script, pas par la relecture.** La clé de dédoublonnage ignorait le **document** : le council de préparation du BRD et celui de la planification se fondaient en un seul dès qu'ils portaient la même date. Et les **questions** d'un passage partagé comptaient double, parce que rien n'impose au gabarit de ne garder dans chaque fichier que celles qui visent son initiative. Les deux corrigés, et six mutations éprouvées sur le script les font échouer | 7 novembre 2026 | `la-question-ne-se-posait-pas` |
 | **Le gâchis d'innovation était une divergence entre deux listes.** Cinquième et dernière grille. « Il survient souvent quand une solution prescrite est fournie avec un élément de backlog » (Rubin, glossaire) : c'est le `N` d'INVEST, que ce dépôt notait « non mesurable sur un état ». Il ne l'est pas sur un état — il l'est sur le **texte**, et `L07` le faisait déjà pour les stories. Le trou : `L06` (exigence métier) et `L07` (exigence, critère, story) disent la même chose à deux niveaux et portaient **deux listes de mots séparées**, divergentes de douze motifs. Les sept qui comptent manquaient du côté des stories, et ce sont ceux par lesquels une solution prescrite arrive : `Excel`, `dashboard`, `tableau de bord`, `logiciel`, `progiciel`, `appli mobile`, `formulaire web`. « Un tableau de bord Excel pour le superviseur » dans une story passait sans un mot | 7 novembre 2026 | `une-solution-prescrite-avec-la-story` |
 | **Un seul vocabulaire, deux messages, et un test qui refuse la divergence.** `L06` garde « remonter au besoin », `L07` garde « reformuler en comportement observable » — ce n'est pas le même reproche au même niveau. Mais le vocabulaire est un, et un test compare les deux motifs et échoue s'ils se séparent. Mesuré avant de les réunir : sur les quatre documents du dépôt, le vocabulaire unifié rend **exactement les deux mêmes constats** qu'avant, d'où aucun document d'exemple à régénérer | 7 novembre 2026 | `une-solution-prescrite-avec-la-story` |
 | **Le goulot de compétence : Tizi l'avait déjà, et le trou était ailleurs (`S135`).** Quatrième des cinq grilles. Rubin : un engagement de 150 h qui tient dans 140-197 h et qui est pourtant mauvais, parce qu'une seule personne sait faire l'IHM et n'a que 14-21 h — **un total qui tient ne dit rien de la ressource rare**. Mesuré : la ressource rare de Tizi n'est pas une compétence mais l'**attention humaine**, et `S75` la contrôle depuis longtemps (« la relecture limitera le débit, pas les agents »). Le trou venait de la FORME de la règle : `S75` est en forme d'itération, donc **au fil de l'eau personne ne regardait** — et la limite d'encours de `S49` compte des TÂCHES, ce qui est exactement le total qui tient. Une seule tâche XL confiée à un agent sature la relecture d'une semaine sans dépasser un encours de un. `S135` est le pendant de `S75` au fil de l'eau, sur l'unité du flux | 7 novembre 2026 | `l-attention-limite-aussi-le-fil-de-l-eau` |
@@ -510,28 +513,10 @@ ci-dessus en viennent. Il restait aussi, non corrigé :
 - **Un guide d'entretien annoncé pour deux initiatives à la fois**, alors que le chemin prescrit est
   `brd/<slug>/interviews/guide-<SH-xx>.md` : un guide unique n'a pas d'endroit où vivre.
 
-- **Personne ne lit `council_runs`.** Vérifié : la seule mention de ce bloc dans tous les scripts est une
-  liste d'exclusion (`rules.mjs`, détection d'espaces réservés). Les compteurs ont été écrits « pour
-  mesurer si le council valait le coup », et aucun outil ne les agrège — ni par initiative, ni sur le
-  portefeuille. Le double comptage, corrigé le 25 octobre, ne faussait donc aucun chiffre produit par une
-  machine : il trompait un lecteur. Reste à décider si cette mesure doit exister pour de vrai (un script
-  qui dit, sur un portefeuille, combien de questions un council rapporte par passage) ou si les
-  compteurs doivent disparaître, puisque les questions sont désormais gardées une par une.
-
-### Lecture d'*Essential Scrum* (Rubin) — le plan (7 novembre)
-
-Le livre lu en entier, notes dans `documentation/` à la manière de Patton et de Constantinidis. Il
-confirme plusieurs choix de Tizi, parfois mot pour mot : `S77` (action de rétrospective sans suivi) est
-la pathologie que Rubin tient pour **la plus grave des dix** — « si on ne va pas au bout, ne perdons pas
-notre temps en rétro » — et sa prescription, mettre les actions d'amélioration dans le sprint backlog
-*avant* les features en baissant la capacité d'autant (« ne séparez pas : intégrez »), est exactement ce
-que `S77` rend incontournable. `S76` reprend le retour d'un élément inachevé au backlog au bon rang, sans
-rallonger le sprint. Et les trois verdicts de Tizi ont leur définition au glossaire du livre :
-`assumption` = « une croyance présumée vraie **alors qu'aucun apprentissage validé ne l'établit** »,
-opposée à `validated learning`.
-
-Les trous, mesurés sur le dépôt et non supposés :
-
+- **Personne ne lit `council_runs`** — tranché le 7 novembre 2026 : on ajoute un script pour mesurer.
+  `council-report.mjs` agrège les passages sur un portefeuille et rend ce qu'un passage rapporte, avec
+  la part de hors-sujet que le quatrième statut de zone d'ombre a rendue calculable. Les compteurs
+  restent, et ils sont lus.
 - **Le but d'itération n'est contrôlé par rien.** `iterations[].goal` est imprimé en trois endroits
   (`render-plan.mjs:122`, `sprint-review.mjs:27` et `:40`) et vérifié par **aucune** des 130 règles.
   Vidé celui de IT-2 dans `exemple/plan/demo`, le lint n'a rien dit (0 mention) et la carte s'est rendue
@@ -703,12 +688,10 @@ intention neuve, et le travail de les instruire est à refaire.
   version qui porte le reporter, ou générer une commande compatible 18. Tant que ce n'est pas tranché,
   la configuration proposée peut être inexécutable sur la version minimale annoncée (constat nº 16).
 
-- **Un quatrième statut de zone d'ombre : `sans_objet`.** Depuis que les questions du council
-  s'enregistrent sans tri, une question hors sujet se ferme en `levée` avec la raison dans les mots de
-  l'utilisateur. C'est un abus de langage : « on a trouvé la réponse » et « la question ne se posait
-  pas » ne sont pas la même chose, et les confondre rend la mesure du council illisible — on ne peut
-  plus compter combien de ses questions étaient hors sujet. Un quatrième statut serait plus honnête,
-  mais il touche le gabarit des quatre skills et toutes les règles qui lisent ce champ.
+- **Un quatrième statut de zone d'ombre : `sans_objet`** — tranché le 7 novembre 2026 : on fait la
+  distinction. `S136` en réclame la raison, les quatre gabarits l'annoncent, les trois références le
+  décrivent, et le libellé de la porte le nomme (« levée, assumée ou sans objet » ; il disait « levée ou
+  assumée », plus étroit que la règle qu'il décrivait). C'est ce qui rend la mesure du council possible.
 
 ## Pistes non tranchées
 
