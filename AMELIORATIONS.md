@@ -42,6 +42,8 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
 
 | Piste | Date | Où |
 |---|---|---|
+| **Les trois bloquants de l'audit indépendant du 8 novembre, corrigés.** *B1* — `--skills audit-builder` posait un `/tizi` qui appelait un `adopt.mjs` absent : le script manquait au huitième skill, et la boucle du test d'installation partielle était une liste écrite à la main où il n'avait jamais été ajouté. Elle se lit maintenant depuis `skills/`. *B2* — `audit-builder` recevait l'ordre d'écrire `audit/<slug>/state.yaml` avec `allowed-tools: Read Bash(node:*)`, sans aucun outil d'écriture, et sans `templates/` : le droit d'écrire est accordé, le gabarit livré, et un invariant ajouté — qui a un état à remplir a le droit d'écrire. *B3* — avec `paths.production` vide, ce qu'`adopt.mjs` écrit sur une pile non reconnue, le garde-fou TDD refusait `brd/<slug>/state.yaml` : les dossiers de Tizi sont autorisés explicitement, sauf si la configuration les déclare elle-même comme du code de production. Les trois reproduits par exécution avant correction | 8 novembre 2026 | `trois-mesures-rejouees` |
+| **La liste des fichiers livrés se génère.** Elle était écrite à la main dans le `README` et avait dérivé sur **six** entrées (constat C9) : `lib/rules.mjs` annoncé commun alors qu'il est dans cinq skills, `lib/gates.mjs` présent dans les huit et absent de la liste, `lint.mjs` annoncé propre aux quatre skills de document alors qu'`audit-builder` le porte aussi. `doc-fichiers.mjs` écrit `documentation/fichiers-communs.md`, un test dit s'il a dérivé, et le `README` renvoie à lui. Avec les comptes périmés qui allaient avec — « sept skills et leurs dix points d'entrée » encore dans `marketplace.json` et dans le document de référence, dont la liste des points d'entrée omettait `tizi-audit` —, et un test qui lit la réalité et refuse le mot faux. La licence de `js-yaml` manquait dans `audit-builder` : `vendor/` se compare maintenant par son contenu, parce qu'un fichier **absent** échappe à un test d'identité | 8 novembre 2026 | `trois-mesures-rejouees` |
 | **Un quatrième statut de zone d'ombre : `sans_objet` (`S136`).** Décision de l'utilisateur. « On a trouvé la réponse » et « la question ne se posait pas » se fermaient de la même façon, en `levée` — un abus de langage qui rendait la mesure du council illisible. Mesuré avant de l'ajouter, et c'est ce qui l'a rendu sûr : **tous les lecteurs d'une zone filtrent positivement sur `ouverte`**, et les portes sur `assumée` ; personne ne filtre sur `levée`. Le statut est donc additif, et le test le **prouve** — la porte de Define rend les mêmes quatre verdicts sur `sans_objet` et sur `levée`. `S136` en réclame la raison : c'est une affirmation sur le monde, et sans sa raison le statut deviendrait la sortie commode de toute question gênante | 7 novembre 2026 | `la-question-ne-se-posait-pas` |
 | **`council-report.mjs` : les compteurs du council sont enfin lus.** Décision de l'utilisateur : on ajoute un script pour mesurer. Il agrège `council_runs` sur tout un portefeuille et dit ce qu'un passage rapporte — proposées, retenues, écartées, réservées — et surtout **la part de celles qui étaient hors sujet**, qui n'était pas calculable avant le quatrième statut. Il dédoublonne les passages partagés, piège que `council.md` nommait lui-même et qui s'était déjà produit. Et il **refuse de présenter zéro passage comme un résultat** : l'absence de trace est l'absence de mesure, pas une mesure nulle — c'est la même doctrine que les abstentions | 7 novembre 2026 | `la-question-ne-se-posait-pas` |
 | **Deux défauts trouvés par les tests du script, pas par la relecture.** La clé de dédoublonnage ignorait le **document** : le council de préparation du BRD et celui de la planification se fondaient en un seul dès qu'ils portaient la même date. Et les **questions** d'un passage partagé comptaient double, parce que rien n'impose au gabarit de ne garder dans chaque fichier que celles qui visent son initiative. Les deux corrigés, et six mutations éprouvées sur le script les font échouer | 7 novembre 2026 | `la-question-ne-se-posait-pas` |
@@ -447,11 +449,12 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
   main. Un `exemple/audit/<slug>/` avec un document d'origine plausible et son rapport serait le
   pendant des quatre dossiers existants — il demande une autorisation, et de quoi l'écrire : un vrai
   cahier des charges écrit ailleurs, pas une imitation.
-- **L'audit indépendant du 8 novembre a rendu 35 constats, dont 3 bloquants, et il faut les arbitrer.**
+- **L'audit indépendant du 8 novembre a rendu 35 constats ; les 3 bloquants et dix constats de dérive
+  sont corrigés, le reste est à arbitrer.**
   Rapport : `evals/audit/rapport-2026-11-08-independant.md` ; comparaison avec l'audit mécanique et
   vérifications par exécution : `evals/audit/comparaison-2026-11-08.md`. Les trois bloquants ont été
   **reproduits par exécution** (l'auditeur n'avait pas le droit de lancer Node, il l'a déclaré et a
-  listé les commandes à lancer) :
+  listé les commandes à lancer), **puis corrigés** — ce qui suit est ce qu'ils étaient :
 
   *B1* — `/tizi` installé avec `audit-builder` seul cite un `adopt.mjs` qui n'existe pas ; vérifié sur
   les huit skills un par un, c'est le seul trou, et la boucle du test d'installation partielle
@@ -471,7 +474,8 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
   versionné, modifiable par n'importe quelle PR et hors de la signature de la constitution — c'est le
   constat nº 5 du 22 octobre, toujours ouvert et désormais localisé.
 
-  Et neuf constats de dérive documentaire (C9 à C15, M1, M5, M6) qui se corrigent ensemble : la liste
+  **Corrigés aussi** : les constats de dérive documentaire C9 à C15, M1, M5, M6 et M15, par un tableau
+  de présence généré et deux tests qui refusent un compte faux. Ce qu'ils étaient : la liste
   des « fichiers communs » du `README` est fausse sur six entrées, « sept skills / dix points d'entrée »
   subsiste à trois endroits, la licence de `js-yaml` manque dans `audit-builder`, et un renvoi vers
   `council.md` est mort dans quatre skills. L'auditeur recommande un tableau de présence **généré**,

@@ -224,7 +224,7 @@ au lieu d'être lancé, et le principe candidat « proposé une fois, non demand
 
 | Étape | Pourquoi elle n'engage à rien |
 |---|---|
-| Le **council** (`references/council.md`) | Il ne produit que des questions candidates. Ce qui se décide, c'est leur sort, jamais sa tenue |
+| Le **council**, dans les skills qui en ont un (`references/council.md`) | Il ne produit que des questions candidates. Ce qui se décide, c'est leur sort, jamais sa tenue |
 | Un **principe candidat** (`constitution.mjs --proposer`) | Il entre en `PC-xx`, en attente. Seul le responsable de la constitution l'accepte ou le refuse (`--decider`) |
 | La **suite de la phase**, celle que nomme le point d'étape ou `next-step.mjs` | Elle est prescrite, et tout ce qu'elle produit est soumis avant d'être validé. L'utilisateur interrompt quand il veut : il n'a pas à autoriser d'avance |
 

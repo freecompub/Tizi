@@ -10,7 +10,7 @@
     {
       "name": "tizi",
       "source": "./",
-      "description": "Les sept skills du SDLC et leurs dix points d'entrée : BRD, PRD, conception, planification, application du backlog, implémentation sous garde-fou TDD, vérification de release avec preuves."
+      "description": "Les huit skills du SDLC et leurs onze points d'entrée : BRD, PRD, conception, planification, application du backlog, implémentation sous garde-fou TDD, vérification de release avec preuves, audit d'un document écrit ailleurs."
     }
   ]
 }
