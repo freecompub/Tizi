@@ -9,6 +9,27 @@ import yaml from '../skills/brd-builder/scripts/lib/vendor/js-yaml.mjs';
 const front = f => yaml.load(readFileSync(f, 'utf8').split(/^---$/m)[1]);
 const source = yaml.load(readFileSync(join(ROOT, 'entrypoints/entrypoints.yaml'), 'utf8')).entrypoints;
 
+// Un skill à qui une étape ordonne d'écrire un état doit avoir le droit d'écrire. `audit-builder`
+// déclarait `allowed-tools: Read Bash(node:*)` — aucun outil d'écriture — alors que l'étape 3 de
+// `tizi-audit` lui ordonne « Pose-le dans `audit/<slug>/state.yaml` », qu'aucun script ne crée ce
+// fichier et que les deux étapes suivantes le lisent. Le chemin de travail s'arrêtait là, et aucun test
+// ne le voyait : ceux du skill fabriquent l'état par programme, ce qui prouve que `audit.mjs` lit un
+// état, pas qu'un agent sait en produire un. Bloquant B2 de l'audit indépendant du 8 novembre 2026.
+//
+// `allowed-tools` absent vaut « tous les outils » : seuls les skills qui restreignent sont concernés.
+test('allowed-tools : qui a un état à remplir a le droit d\'écrire', () => {
+  for (const s of readdirSync(join(ROOT, 'skills'))) {
+    const fm = readFileSync(join(ROOT, 'skills', s, 'SKILL.md'), 'utf8').split(/^---$/m)[1];
+    const outils = /^allowed-tools:(.*)$/m.exec(fm)?.[1];
+    if (!outils) continue;
+    const aRemplir = existsSync(join(ROOT, 'skills', s, 'templates', 'state.yaml'));
+    const ordonne = source.filter(e => e.skill === s).some(e => /(Pose|Écris|Crée|pose|écris|crée)[^\n]*state\.yaml/.test(e.body ?? ''));
+    if (!aRemplir && !ordonne) continue;
+    assert.match(outils, /\bWrite\b/,
+      `${s} restreint ses outils à «${outils.trim()}» mais ${aRemplir ? 'porte un gabarit d\'état' : 'reçoit l\'ordre d\'écrire un état'} : le chemin de travail s'arrête là`);
+  }
+});
+
 test('source des points d\'entrée : skills existants, passages vers des entrées connues', () => {
   const names = new Set(source.map(e => e.name));
   for (const e of source) {
