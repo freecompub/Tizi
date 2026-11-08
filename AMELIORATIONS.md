@@ -411,16 +411,18 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
   juge pas », que `coverageRows` rend en `_indicatif_`. Une métrique de couverture `must_share` au seuil
   indicatif suffirait. Pas fait parce qu'elle ajoute une ligne à la table de couverture du PRD **et de
   son handoff**, donc elle régénère deux documents d'`exemple/`, qui est figé par consigne.
-- **La combinaison « tout figé » du tableau 18.1 n'est pas contrôlée.** `S133` couvre la seconde ligne
-  non recommandée — périmètre + date. La première, les trois dimensions figées, demande la **capacité**,
-  qui vit dans le plan (`settings.sprint.capacity`, `iterations[].capacity`) et non dans le PRD. Le plan
-  reçoit les releases par `refs.prd.releases` : la règle y serait donc écrivable, et elle croiserait les
-  trois. À mesurer d'abord — aucun état du dépôt n'a de release avec fenêtre, donc il n'y a pas de corpus.
 - **Trois champs de release que personne ne lit**, trouvés en mesurant celle-ci : `learning_goal`
   (« hypothèse principale testée ») et `containment` (« pilote, feature flag, cohorte… ») n'ont aucun
   lecteur, et `window` n'en avait aucun avant `S133`. Le gabarit les propose, aucun état ne les remplit,
   rien ne les réclame. Ce sont les trois champs qui portent l'apprentissage d'une release, c'est-à-dire
   ce que Rubin appelle le `validated learning` : à décider s'ils doivent être lus ou retirés.
+
+  **Mesuré le 8 novembre 2026, en instruisant la ligne « tout figé » :** deux de ces trois champs ne
+  **traversent même pas le handoff**. `build-handoff.mjs` recopie d'une release `id`, `name`,
+  `learning_goal`, `signal` et ses exigences — `window` et `containment` s'arrêtent au PRD. Donc
+  `learning_goal` traverse et personne ne le lit ; `window` est lue par `S133` et ne traverse pas ;
+  `containment` ne traverse pas et personne ne la lit. Décider de les lire demande donc aussi de décider
+  ce qui passe à l'étape suivante, et le handoff d'`exemple/` est figé par consigne.
 - **Aucune étape de vérification ne désigne l'incrément.** `stage` vaut `tests`, `integration`,
   `recette` ou `exploitation` : les quatre sont en aval. Rubin demande que chaque NFR soit une cible de
   la Definition of Done, c'est-à-dire de ce qu'on fait à **chaque** incrément, et le modèle n'a pas de
@@ -659,6 +661,29 @@ intention neuve, et le travail de les instruire est à refaire.
   `entendues`, le compte des portes, S125), pas que l'agent relise plus souvent. Et pour ce qu'un
   fichier ne peut pas porter au moment où ça arrive, un hook qui lit ce qui vient d'être dit
   (`question-guard.mjs`) — pas un compteur de tours.
+
+- **Une règle sur la combinaison « tout figé » du tableau 18.1** — écartée le **8 novembre 2026**, sur
+  mesure. `S133` couvre la seconde ligne non recommandée de Rubin (périmètre + date figés) ; la première
+  — les trois dimensions figées — demandait la capacité, et l'entrée qui la portait affirmait que « le
+  plan reçoit les releases par `refs.prd.releases`, la règle y serait donc écrivable ». Mesuré : faux,
+  pour deux raisons indépendantes.
+
+  *La fenêtre n'arrive jamais dans le plan.* `build-handoff.mjs` ne recopie d'une release que `id`,
+  `name`, `learning_goal`, `signal` et ses exigences fonctionnelles. `window` et `containment` restent
+  dans l'état du PRD. Le plan reçoit donc des releases **sans fenêtre** : la règle n'a pas sa dimension
+  « date » là où vit la capacité, et aucune des deux ne peut aller chercher l'autre.
+
+  *Et la troisième dimension est figée partout.* Les 27 états du dépôt lus un par un : **une** release
+  (`exemple/prd/demo`), **sans** fenêtre — donc zéro corpus, comme annoncé — et `settings.sprint.capacity`
+  renseignée dans **6 plans sur 6**, toujours à 6. Surtout, rien dans le modèle ne distingue une capacité
+  *contrainte* d'une capacité *estimée* : c'est « la capacité en poids de taille, par itération », un
+  nombre. La troisième condition serait vraie dans tous les plans, et la règle redirait `S133` dans un
+  autre document.
+
+  La raison de fond rejoint une entrée déjà écrite plus haut : dans le modèle de Tizi on n'« ajoute pas
+  de capacité », parce que le travail est fait par des agents et que le goulot est l'attention humaine.
+  Les trois dimensions de Rubin ne sont pas symétriques ici, et une règle qui les croise suppose
+  qu'elles le sont.
 
 - **Faire passer Tizi par Tizi** — écartée le **25 octobre 2026**, après une tentative. Le choix du
   chemin bloque : deux des six questions n'ont pas de réponse sur un dépôt d'outillage. « Le changement
