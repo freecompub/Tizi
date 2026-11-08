@@ -447,6 +447,42 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
   main. Un `exemple/audit/<slug>/` avec un document d'origine plausible et son rapport serait le
   pendant des quatre dossiers existants — il demande une autorisation, et de quoi l'écrire : un vrai
   cahier des charges écrit ailleurs, pas une imitation.
+- **L'audit indépendant du 8 novembre a rendu 35 constats, dont 3 bloquants, et il faut les arbitrer.**
+  Rapport : `evals/audit/rapport-2026-11-08-independant.md` ; comparaison avec l'audit mécanique et
+  vérifications par exécution : `evals/audit/comparaison-2026-11-08.md`. Les trois bloquants ont été
+  **reproduits par exécution** (l'auditeur n'avait pas le droit de lancer Node, il l'a déclaré et a
+  listé les commandes à lancer) :
+
+  *B1* — `/tizi` installé avec `audit-builder` seul cite un `adopt.mjs` qui n'existe pas ; vérifié sur
+  les huit skills un par un, c'est le seul trou, et la boucle du test d'installation partielle
+  (`tests/entrypoints.test.mjs:122`) omet justement ce skill. *B2* — `audit-builder` déclare
+  `allowed-tools: Read Bash(node:*)`, aucun outil d'écriture, alors que l'étape 3 de `tizi-audit` lui
+  ordonne d'écrire `audit/<slug>/state.yaml` qu'aucun script ne crée, et le skill n'a pas de
+  `templates/` : le chemin de travail s'arrête là. *B3* — avec `paths.production` vide, ce qu'`adopt.mjs`
+  écrit sur une pile non reconnue, le garde-fou refuse `brd/<slug>/state.yaml` (code 2, mesuré) : dans un
+  dépôt adopté, l'amont est gelé, et le seul remède offert est une dérogation globale de 60 minutes.
+
+  Quatre autres constats confirmés par exécution, et qui demandent une décision plus qu'un correctif :
+  *C1* le garde-fou s'ancre sur `h.cwd`, donc un `cd` le désactive en silence (le même fichier passe
+  depuis un sous-dossier et est refusé depuis la racine) ; *C2* trois lectures non protégées sortent en
+  code 1, ce qui **ouvre** le garde-fou sous Claude Code et **gèle** le travail sous Copilot, contre la
+  promesse de verdicts identiques ; *C6* `adopt.mjs --inclure fixtures/app .` adopte `fixtures/app` et
+  non la racine ; *C4* la porte de PR exécute en CI des commandes lues dans `impl/config.yaml`, qui est
+  versionné, modifiable par n'importe quelle PR et hors de la signature de la constitution — c'est le
+  constat nº 5 du 22 octobre, toujours ouvert et désormais localisé.
+
+  Et neuf constats de dérive documentaire (C9 à C15, M1, M5, M6) qui se corrigent ensemble : la liste
+  des « fichiers communs » du `README` est fausse sur six entrées, « sept skills / dix points d'entrée »
+  subsiste à trois endroits, la licence de `js-yaml` manque dans `audit-builder`, et un renvoi vers
+  `council.md` est mort dans quatre skills. L'auditeur recommande un tableau de présence **généré**,
+  comme `regles-de-controle.md` — c'est la réponse de fond, parce que la prose se périme et qu'aucun
+  test ne la lit.
+
+  Deux constats de fond à trancher, pas à corriger : *C12* `exemple/plan/demo` et
+  `exemple/repo/plan/demo` sont deux copies **divergentes** du même plan, et ce sont les étapes 5 et 6
+  qui ont tourné contre celle de `repo/` ; *M2* le test censé garantir qu'« un script n'est livré que là
+  où une phase dit de l'appeler » accepte la mention du nom de fichier n'importe où — un test qui ne
+  mord pas.
 - **`main` n'est pas protégée sur GitHub.** `ci-audit.mjs` le signale (« Branch not protected »,
   HTTP 404 avec un jeton sans droit d'administration), et personne ne l'a fait. Celui-là ne dépend pas
   de Tizi : quatre PR ont été fusionnées sur une branche que rien n'empêche de pousser en direct.
@@ -739,4 +775,7 @@ Chacune deviendra une issue à part une fois décidée.
 - [ ] Hook qui protège les listes de contrôle de relecture contre l'écriture par un agent (S80 vérifie
       aujourd'hui après coup ; un hook refuserait avant)
 - [x] Lancer l'audit indépendant (`evals/audit/tizi-auditor.md`) en contexte vierge et le comparer à
-      l'audit mécanique — fait le 23 octobre, à refaire après chaque série de correctifs
+      l'audit mécanique — fait le 23 octobre, **rejoué le 8 novembre** après 30 pull requests
+      (`rapport-2026-11-08-independant.md`, 35 constats ; comparaison et vérifications par exécution
+      dans `comparaison-2026-11-08.md`). À refaire après chaque série de correctifs, et la prochaine
+      fois **avec le droit d'exécuter Node sur une copie** : celui-ci ne l'avait pas
