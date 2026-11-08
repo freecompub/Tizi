@@ -29,6 +29,18 @@ for (const f of COMMON) test(`fichier commun identique partout : ${f}`, () => {
   assert.ok(hashes.length >= 2); assert.equal(new Set(hashes).size, 1, `${f} diverge entre skills`);
 });
 
+// Un fichier commun ABSENT échappe au test ci-dessus, qui ne compare que les copies présentes. C'est
+// ainsi que `js-yaml.LICENSE` a manqué dans `audit-builder` pendant que `js-yaml.mjs` y était identique
+// — un dépôt public sous MIT qui embarque une bibliothèque sans sa licence. Trouvé par l'audit
+// indépendant du 8 novembre 2026. Le dossier `vendor/` se compare donc par son CONTENU, pas fichier
+// par fichier : qui embarque la bibliothèque embarque tout ce qui l'accompagne.
+test('vendor/ : qui embarque js-yaml embarque sa licence', () => {
+  const contenus = skills.map(s => [s, readdirSync(join(SKILLS, s, 'scripts', 'lib', 'vendor')).sort()]);
+  const attendu = contenus[0][1];
+  assert.ok(attendu.includes('js-yaml.LICENSE'), 'la licence de la bibliothèque embarquée doit être livrée avec elle');
+  for (const [s, liste] of contenus) assert.deepEqual(liste, attendu, `${s}/scripts/lib/vendor/ n'a pas le même contenu que les autres`);
+});
+
 // Les références homonymes ne sont pas toutes communes : council.md, lenses.md, phase-govern.md et
 // shadow-zones.md sont propres à chaque skill par construction, et l'invariant par défaut ci-dessous
 // ne porte que sur les scripts. Deux références sont vraiment communes et doivent rester identiques :

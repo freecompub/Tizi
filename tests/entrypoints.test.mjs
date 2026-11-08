@@ -117,9 +117,15 @@ test('étape suivante calculée sur l\'exemple', () => {
 
 // Installation partielle. Le point d'entrée « tizi » n'a pas de skill : install.mjs fait tomber son
 // {scripts} sur brd-builder, sinon sur le premier skill installé. Cela marche parce que les scripts
-// communs qu'il appelle sont dans les sept skills — règle vraie, jamais écrite, jamais vérifiée. Un
-// script commun ajouté à six skills sur sept casserait --skills <le septième> en silence.
-for (const seul of ['backlog-executor', 'brd-builder', 'impl-builder', 'plan-builder', 'prd-builder', 'sad-builder', 'test-builder'])
+// communs qu'il appelle sont dans TOUS les skills — règle vraie, jamais écrite, jamais vérifiée. Un
+// script commun ajouté à sept skills sur huit casserait --skills <le huitième> en silence.
+//
+// Et c'est arrivé : la liste était écrite à la main et le huitième skill, audit-builder, livré le
+// 7 novembre 2026, n'y a jamais été ajouté. Il manquait `adopt.mjs`, que le corps de « tizi » appelle,
+// et `--skills audit-builder` posait donc un /tizi cassé — trouvé par l'audit indépendant du
+// 8 novembre, pas par ce test. La boucle se lit maintenant depuis `skills/` : un neuvième skill est
+// couvert sans que personne y pense.
+for (const seul of readdirSync(join(ROOT, 'skills')))
   test(`installation partielle : --skills ${seul} produit des points d'entrée utilisables`, () => {
     const proj = tempDir(`tizi-part-${seul}`);
     const r = node(join(ROOT, 'install.mjs'), ['--project', proj, '--target', 'claude', '--skills', seul]);
