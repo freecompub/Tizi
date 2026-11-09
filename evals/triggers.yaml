@@ -27,6 +27,11 @@ queries:
   - { query: "Implémente la tâche TK-002 du plan en TDD", expected: impl-builder }
   - { query: "Fais la revue de code de ma branche avant la PR", expected: impl-builder }
   - { query: "Pourquoi mon test unitaire échoue avec une erreur d'import ?", expected: aucun }
+  # audit-builder — ajouté le 8 novembre 2026 : le huitième skill n'avait aucune requête, donc son
+  # déclenchement n'était pas mesuré. Nouveau groupe : les séparations des autres ne bougent pas.
+  - { query: "Relis ce cahier des charges qu'un prestataire nous a livré et dis-moi ce qui y manque", expected: audit-builder }
+  - { query: "Audite la spécification du module de facturation écrite par l'équipe d'à côté", expected: audit-builder }
+  - { query: "Diagnostique ce backlog produit hérité avant qu'on le reprenne", expected: audit-builder }
   # test-builder
   - { query: "Vérifie la release 1.2 : matrice de couverture des exigences et porte de release", expected: test-builder }
   - { query: "Prépare les sessions de tests exploratoires avec leurs chartes pour la version candidate", expected: test-builder }

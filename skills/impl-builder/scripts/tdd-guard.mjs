@@ -17,6 +17,7 @@ import { relative, isAbsolute, join } from 'node:path';
 import yaml from './lib/vendor/js-yaml.mjs';
 import { matchesAny, toPosix } from './lib/testing.mjs';
 import { normalizeHookInput, isWriteTool, writtenPaths, deny } from './lib/agent-io.mjs';
+import { PHASES, dossierDe } from './lib/common.mjs';
 import { understandingDigest } from './lib/impl.mjs';
 import { derogationActive } from './derogation.mjs';
 
@@ -43,9 +44,21 @@ const lastRun = () => {
   return runs.pop();
 };
 
+// Les dossiers de Tizi lui-même ne portent jamais de code de production : un état d'initiative, un
+// document rendu, un rapport d'audit. Ils passaient par le bas — « ni test, ni contrat, ni production »
+// — jusqu'à ce que le refus « périmètre de production vide » soit placé AVANT la classification. Dans un
+// dépôt adopté dont la pile n'est reconnue par rien, l'agent du BRD ne pouvait alors plus écrire son
+// propre état, et le seul remède offert était une dérogation globale de 60 minutes. Reproduit le
+// 8 novembre 2026 (audit indépendant, B3) : code 2 sur `brd/<slug>/state.yaml`. La liste se déduit de
+// PHASES pour ne pas se périmer ; `audit/` n'y est pas (un audit n'a pas de phases) et s'ajoute à la main.
+const DOSSIERS_TIZI = [...Object.keys(PHASES).map(d => `${dossierDe(d)}/**`), 'audit/**'];
+
 function verdict(path) {
   const no = msg => `[tdd-guard] Écriture refusée sur ${path} : ${msg}`;
   if (matchesAny(path, P.always_allowed ?? ['impl/**', '.impl/**'])) return '';
+  // Sauf si la configuration les déclare elle-même comme du code de production : c'est alors un dépôt
+  // qui a choisi d'y mettre son application, et le garde-fou reprend son travail normal.
+  if (matchesAny(path, DOSSIERS_TIZI) && !matchesAny(path, P.production ?? [])) return '';
   // Un garde-fou qui ne sait pas ce qu'est du code de production ne protège rien, et il le faisait en
   // silence : sans `paths.production`, tout fichier tombe dans « ni test, ni contrat, ni production » et
   // passe. `adopt.mjs` laisse cette liste vide quand il ne reconnaît pas la pile — c'est arrivé sur le

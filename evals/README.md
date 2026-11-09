@@ -34,4 +34,19 @@ Un skill ne sert que s'il s'active au bon moment : sa description est la seule c
 
 La séparation **entraînement / test** (60/40, stratifiée par skill attendu) est fixée par une empreinte de la requête : la même requête tombe toujours du même côté. Pour améliorer une description, on ne regarde que les échecs de l'**entraînement**, puis on mesure sur le **test**, dont le rapport ne détaille volontairement pas les échecs. On garde la nouvelle description seulement si le test s'améliore. Méthode reprise de bmad-eval (BMAD-METHOD).
 
+**L'outil qui charge un skill doit être autorisé, sinon la mesure ne mesure rien.** La commande de
+l'agent est dans `agents.yaml`, et sa liste d'outils doit contenir `Skill` : sans lui, l'agent voit les
+descriptions mais ne peut charger aucun corps de `SKILL.md`, donc aucun marqueur n'est jamais imprimé et
+tous les skills sortent à 0,00. C'est ce qui s'était passé jusqu'au 8 novembre 2026 — vérifié sur une
+même requête, zéro activation sans l'outil, le marqueur attendu avec. Un rapport où **tous** les skills
+sont à 0,00 est d'abord un soupçon sur le banc, pas sur les descriptions.
+
+Le marqueur demande aussi à l'agent de **s'arrêter** juste après l'avoir imprimé : ce banc ne juge que le
+déclenchement. Sans ça, chaque passe exécute le skill en entier, dépasse le délai de cinq minutes et
+compte comme une erreur d'intégrité. Le marqueur ne peut s'imprimer que si le corps du `SKILL.md` a été
+chargé, ce qui est exactement la question posée.
+
+Les sorties brutes vont dans `results/`, qui n'est **pas** versionné. Une mesure qu'on veut garder se
+recopie dans `mesures/`, avec ce qu'elle a appris : sinon elle n'existe que sur la machine de son auteur.
+
 Les requêtes les plus utiles sont les **requêtes proches** : même vocabulaire, autre intention (« explique-moi C4 » ne doit pas lancer la conception). `mock-trigger.mjs` est un routeur naïf qui sert à vérifier le banc.

@@ -29,6 +29,18 @@ for (const f of COMMON) test(`fichier commun identique partout : ${f}`, () => {
   assert.ok(hashes.length >= 2); assert.equal(new Set(hashes).size, 1, `${f} diverge entre skills`);
 });
 
+// Un fichier commun ABSENT échappe au test ci-dessus, qui ne compare que les copies présentes. C'est
+// ainsi que `js-yaml.LICENSE` a manqué dans `audit-builder` pendant que `js-yaml.mjs` y était identique
+// — un dépôt public sous MIT qui embarque une bibliothèque sans sa licence. Trouvé par l'audit
+// indépendant du 8 novembre 2026. Le dossier `vendor/` se compare donc par son CONTENU, pas fichier
+// par fichier : qui embarque la bibliothèque embarque tout ce qui l'accompagne.
+test('vendor/ : qui embarque js-yaml embarque sa licence', () => {
+  const contenus = skills.map(s => [s, readdirSync(join(SKILLS, s, 'scripts', 'lib', 'vendor')).sort()]);
+  const attendu = contenus[0][1];
+  assert.ok(attendu.includes('js-yaml.LICENSE'), 'la licence de la bibliothèque embarquée doit être livrée avec elle');
+  for (const [s, liste] of contenus) assert.deepEqual(liste, attendu, `${s}/scripts/lib/vendor/ n'a pas le même contenu que les autres`);
+});
+
 // Les références homonymes ne sont pas toutes communes : council.md, lenses.md, phase-govern.md et
 // shadow-zones.md sont propres à chaque skill par construction, et l'invariant par défaut ci-dessous
 // ne porte que sur les scripts. Deux références sont vraiment communes et doivent rester identiques :
@@ -1149,6 +1161,59 @@ test('les trois noms de l\'étape 6 sont nommés, et le point d\'étape dit où 
   assert.match(sk, /## Trois noms pour une étape/, 'les trois noms ne sont nommés nulle part');
   assert.match(sk, /pas de quatrième nom à chercher/, 'rien ne dit qu\'il n\'y en a pas un de plus');
   for (const nom of [/`qa\/<slug>\/`/, /`document: test`/, /`test-builder`/]) assert.match(sk, nom, `un des trois noms manque : ${nom}`);
+});
+
+// La liste des fichiers livrés SE GÉNÈRE, pour la même raison. Elle était écrite à la main dans le
+// README et avait dérivé sur SIX entrées — `lib/rules.mjs` annoncé commun alors qu'il est dans cinq
+// skills, `lib/gates.mjs` présent dans les huit et absent de la liste, `lint.mjs` annoncé propre aux
+// quatre skills de document alors qu'`audit-builder` le porte aussi. Trouvé par l'audit indépendant du
+// 8 novembre 2026, qui recommandait exactement un tableau de présence généré.
+test('la documentation des fichiers livrés est à jour', () => {
+  const r = node(join(ROOT, 'doc-fichiers.mjs'), ['--verifier'], { cwd: ROOT });
+  assert.equal(r.code, 0, `${r.err}${r.out}`);
+  const doc = readFileSync(join(ROOT, 'documentation', 'fichiers-communs.md'), 'utf8');
+  for (const s of skills) assert.ok(doc.includes(`\`${s}\``), `${s} absent du tableau de présence`);
+  // Les deux fichiers dont l'absence a coûté un bloquant et une licence manquante y sont, à 8.
+  for (const f of ['adopt.mjs', 'lib/vendor/js-yaml.LICENSE'])
+    assert.match(doc, new RegExp(`\\| \\\`${f.replace(/[./]/g, m => '\\' + m)}\\\` \\|[^\n]*\\| 8 \\|`), `${f} n'est pas donné pour présent partout`);
+});
+
+// Les comptes écrits en prose se périment, et personne ne les relit : « sept skills du SDLC et leurs
+// dix points d'entrée » vivait encore dans `marketplace.json` et dans le document de référence le
+// 8 novembre 2026, à la huitième et à la onzième — c'est le constat C14 de l'audit indépendant, qui
+// recommandait « éviter les comptes en prose, ou les faire vérifier par un test qui lit `skills/` et
+// `entrypoints.yaml` ». Ce test lit la réalité et refuse le mot faux. Les documents d'archive
+// (AMELIORATIONS, INCERTITUDES, rapports d'audit) ne sont pas lus : ce qu'ils disent était vrai à leur
+// date, et une archive qu'on réécrit n'est plus une archive.
+test('les comptes écrits en prose disent la vérité', () => {
+  const MOT = { deux: 2, trois: 3, quatre: 4, cinq: 5, six: 6, sept: 7, huit: 8, neuf: 9, dix: 10, onze: 11, douze: 12, treize: 13 };
+  const reel = {
+    skills: skills.length,
+    "points d'entrée": yaml.load(readFileSync(join(ROOT, 'entrypoints/entrypoints.yaml'), 'utf8')).entrypoints.length,
+    // Les sous-agents se comptent par NOM, pas par fichier : `cross-analyzer.md` est livré dans
+    // `prd-builder` et `sad-builder`, à l'identique. Treize fichiers, douze sous-agents — et c'est
+    // la première chose que ce test a trouvée en se trompant lui-même.
+    'sous-agents': new Set(skills.flatMap(s => (existsSync(join(SKILLS, s, 'agents')) ? readdirSync(join(SKILLS, s, 'agents')) : []))).size,
+  };
+  // Seuls les TOTAUX sont vérifiés, et en français un total s'annonce par un article défini : « **les**
+  // huit skills », « **leurs** onze points d'entrée », « communes **aux** huit skills ». Le reste est un
+  // compte partiel ou une comparaison — « **en** deux skills », « **entre** deux skills », « les trois
+  // skills **qui** portent des exigences », « cinq skills **sur** huit », « les quatre skills **de**
+  // construction » — et se vérifie dans le tableau de présence généré, pas ici. « **du** » n'est pas
+  // « de » : « les huit skills **du** SDLC » est bien un total, et reste vérifié. Ces exclusions ont été trouvées en écrivant ce test : il s'est trompé
+  // trois fois, dont une sur son propre compte de sous-agents, avant de mordre au bon endroit.
+  const motif = new RegExp(`\\b(?:les|aux|ses|leurs|des)\\s+(${Object.keys(MOT).join('|')}) (skills|points d'entrée|sous-agents)\\b(?!\\s+(?:qui|sur|de)\\b)`, 'gi');
+  const fichiers = ['README.md', '.claude-plugin/marketplace.json', '.claude-plugin/plugin.json',
+    'documentation/Tizi - un SDLC agentique.md', ...skills.map(s => `skills/${s}/SKILL.md`)];
+  let lus = 0;
+  for (const f of fichiers) {
+    for (const m of readFileSync(join(ROOT, f), 'utf8').matchAll(motif)) {
+      lus += 1;
+      assert.equal(MOT[m[1].toLowerCase()], reel[m[2].toLowerCase()],
+        `${f} : « ${m[0]} » alors qu'il y en a ${reel[m[2].toLowerCase()]}`);
+    }
+  }
+  assert.ok(lus >= 4, `le motif ne trouve plus rien à vérifier (${lus}) : le test ne mord plus`);
 });
 
 // La liste des règles de contrôle SE GÉNÈRE : 117 règles écrites à la main dérivent au premier

@@ -42,6 +42,9 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
 
 | Piste | Date | Où |
 |---|---|---|
+| **Le banc de déclenchement ne pouvait charger aucun skill, et une mesure est enfin versionnée.** `evals/agents.yaml` lançait l'agent sans l'outil `Skill` : il voyait les descriptions et ne pouvait charger aucun corps de `SKILL.md`, donc le marqueur ne pouvait jamais être imprimé. Le « rappel 0,00 pour `impl-builder` » du 24 octobre ne mesurait pas une description, et une passe jouée dans ces conditions le 8 novembre donnait 3 activations sur 22 requêtes. Vérifié sur une même requête : sans l'outil, aucun marqueur ; avec, l'appel `Skill{impl-builder}` puis le marqueur en première ligne. **À retenir : un rapport où _tous_ les skills sont à 0,00 est d'abord un soupçon sur le banc.** Le marqueur demande aussi l'arrêt immédiat — ce banc ne juge que le déclenchement, et sans ça chaque passe dépassait le délai de cinq minutes et comptait comme une erreur d'intégrité (16 à 26 s par passe au lieu du délai). `audit-builder` reçoit ses trois premières requêtes : le huitième skill n'en avait aucune. Mesure refaite à 5 passes et **commitée** dans `evals/mesures/` : précision **1,00 pour les huit skills**, aucun faux positif, les cinq requêtes proches restées sans skill ; rappel 1,00 pour cinq skills, 0,50 pour `sad-builder`, `backlog-executor` et `impl-builder`. Les trois échecs de l'entraînement ne disent pas la même chose — une hésitation entre trois skills de document, un skill à 0,40 juste sous le seuil, et une requête qui n'active **rien** | 9 novembre 2026 | `trois-mesures-rejouees` |
+| **Les trois bloquants de l'audit indépendant du 8 novembre, corrigés.** *B1* — `--skills audit-builder` posait un `/tizi` qui appelait un `adopt.mjs` absent : le script manquait au huitième skill, et la boucle du test d'installation partielle était une liste écrite à la main où il n'avait jamais été ajouté. Elle se lit maintenant depuis `skills/`. *B2* — `audit-builder` recevait l'ordre d'écrire `audit/<slug>/state.yaml` avec `allowed-tools: Read Bash(node:*)`, sans aucun outil d'écriture, et sans `templates/` : le droit d'écrire est accordé, le gabarit livré, et un invariant ajouté — qui a un état à remplir a le droit d'écrire. *B3* — avec `paths.production` vide, ce qu'`adopt.mjs` écrit sur une pile non reconnue, le garde-fou TDD refusait `brd/<slug>/state.yaml` : les dossiers de Tizi sont autorisés explicitement, sauf si la configuration les déclare elle-même comme du code de production. Les trois reproduits par exécution avant correction | 8 novembre 2026 | `trois-mesures-rejouees` |
+| **La liste des fichiers livrés se génère.** Elle était écrite à la main dans le `README` et avait dérivé sur **six** entrées (constat C9) : `lib/rules.mjs` annoncé commun alors qu'il est dans cinq skills, `lib/gates.mjs` présent dans les huit et absent de la liste, `lint.mjs` annoncé propre aux quatre skills de document alors qu'`audit-builder` le porte aussi. `doc-fichiers.mjs` écrit `documentation/fichiers-communs.md`, un test dit s'il a dérivé, et le `README` renvoie à lui. Avec les comptes périmés qui allaient avec — « sept skills et leurs dix points d'entrée » encore dans `marketplace.json` et dans le document de référence, dont la liste des points d'entrée omettait `tizi-audit` —, et un test qui lit la réalité et refuse le mot faux. La licence de `js-yaml` manquait dans `audit-builder` : `vendor/` se compare maintenant par son contenu, parce qu'un fichier **absent** échappe à un test d'identité | 8 novembre 2026 | `trois-mesures-rejouees` |
 | **Un quatrième statut de zone d'ombre : `sans_objet` (`S136`).** Décision de l'utilisateur. « On a trouvé la réponse » et « la question ne se posait pas » se fermaient de la même façon, en `levée` — un abus de langage qui rendait la mesure du council illisible. Mesuré avant de l'ajouter, et c'est ce qui l'a rendu sûr : **tous les lecteurs d'une zone filtrent positivement sur `ouverte`**, et les portes sur `assumée` ; personne ne filtre sur `levée`. Le statut est donc additif, et le test le **prouve** — la porte de Define rend les mêmes quatre verdicts sur `sans_objet` et sur `levée`. `S136` en réclame la raison : c'est une affirmation sur le monde, et sans sa raison le statut deviendrait la sortie commode de toute question gênante | 7 novembre 2026 | `la-question-ne-se-posait-pas` |
 | **`council-report.mjs` : les compteurs du council sont enfin lus.** Décision de l'utilisateur : on ajoute un script pour mesurer. Il agrège `council_runs` sur tout un portefeuille et dit ce qu'un passage rapporte — proposées, retenues, écartées, réservées — et surtout **la part de celles qui étaient hors sujet**, qui n'était pas calculable avant le quatrième statut. Il dédoublonne les passages partagés, piège que `council.md` nommait lui-même et qui s'était déjà produit. Et il **refuse de présenter zéro passage comme un résultat** : l'absence de trace est l'absence de mesure, pas une mesure nulle — c'est la même doctrine que les abstentions | 7 novembre 2026 | `la-question-ne-se-posait-pas` |
 | **Deux défauts trouvés par les tests du script, pas par la relecture.** La clé de dédoublonnage ignorait le **document** : le council de préparation du BRD et celui de la planification se fondaient en un seul dès qu'ils portaient la même date. Et les **questions** d'un passage partagé comptaient double, parce que rien n'impose au gabarit de ne garder dans chaque fichier que celles qui visent son initiative. Les deux corrigés, et six mutations éprouvées sur le script les font échouer | 7 novembre 2026 | `la-question-ne-se-posait-pas` |
@@ -411,16 +414,18 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
   juge pas », que `coverageRows` rend en `_indicatif_`. Une métrique de couverture `must_share` au seuil
   indicatif suffirait. Pas fait parce qu'elle ajoute une ligne à la table de couverture du PRD **et de
   son handoff**, donc elle régénère deux documents d'`exemple/`, qui est figé par consigne.
-- **La combinaison « tout figé » du tableau 18.1 n'est pas contrôlée.** `S133` couvre la seconde ligne
-  non recommandée — périmètre + date. La première, les trois dimensions figées, demande la **capacité**,
-  qui vit dans le plan (`settings.sprint.capacity`, `iterations[].capacity`) et non dans le PRD. Le plan
-  reçoit les releases par `refs.prd.releases` : la règle y serait donc écrivable, et elle croiserait les
-  trois. À mesurer d'abord — aucun état du dépôt n'a de release avec fenêtre, donc il n'y a pas de corpus.
 - **Trois champs de release que personne ne lit**, trouvés en mesurant celle-ci : `learning_goal`
   (« hypothèse principale testée ») et `containment` (« pilote, feature flag, cohorte… ») n'ont aucun
   lecteur, et `window` n'en avait aucun avant `S133`. Le gabarit les propose, aucun état ne les remplit,
   rien ne les réclame. Ce sont les trois champs qui portent l'apprentissage d'une release, c'est-à-dire
   ce que Rubin appelle le `validated learning` : à décider s'ils doivent être lus ou retirés.
+
+  **Mesuré le 8 novembre 2026, en instruisant la ligne « tout figé » :** deux de ces trois champs ne
+  **traversent même pas le handoff**. `build-handoff.mjs` recopie d'une release `id`, `name`,
+  `learning_goal`, `signal` et ses exigences — `window` et `containment` s'arrêtent au PRD. Donc
+  `learning_goal` traverse et personne ne le lit ; `window` est lue par `S133` et ne traverse pas ;
+  `containment` ne traverse pas et personne ne la lit. Décider de les lire demande donc aussi de décider
+  ce qui passe à l'étape suivante, et le handoff d'`exemple/` est figé par consigne.
 - **Aucune étape de vérification ne désigne l'incrément.** `stage` vaut `tests`, `integration`,
   `recette` ou `exploitation` : les quatre sont en aval. Rubin demande que chaque NFR soit une cible de
   la Definition of Done, c'est-à-dire de ce qu'on fait à **chaque** incrément, et le modèle n'a pas de
@@ -445,6 +450,44 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
   main. Un `exemple/audit/<slug>/` avec un document d'origine plausible et son rapport serait le
   pendant des quatre dossiers existants — il demande une autorisation, et de quoi l'écrire : un vrai
   cahier des charges écrit ailleurs, pas une imitation.
+- **L'audit indépendant du 8 novembre a rendu 35 constats ; les 3 bloquants et dix constats de dérive
+  sont corrigés, le reste est à arbitrer.**
+  Rapport : `evals/audit/rapport-2026-11-08-independant.md` ; comparaison avec l'audit mécanique et
+  vérifications par exécution : `evals/audit/comparaison-2026-11-08.md`. Les trois bloquants ont été
+  **reproduits par exécution** (l'auditeur n'avait pas le droit de lancer Node, il l'a déclaré et a
+  listé les commandes à lancer), **puis corrigés** — ce qui suit est ce qu'ils étaient :
+
+  *B1* — `/tizi` installé avec `audit-builder` seul cite un `adopt.mjs` qui n'existe pas ; vérifié sur
+  les huit skills un par un, c'est le seul trou, et la boucle du test d'installation partielle
+  (`tests/entrypoints.test.mjs:122`) omet justement ce skill. *B2* — `audit-builder` déclare
+  `allowed-tools: Read Bash(node:*)`, aucun outil d'écriture, alors que l'étape 3 de `tizi-audit` lui
+  ordonne d'écrire `audit/<slug>/state.yaml` qu'aucun script ne crée, et le skill n'a pas de
+  `templates/` : le chemin de travail s'arrête là. *B3* — avec `paths.production` vide, ce qu'`adopt.mjs`
+  écrit sur une pile non reconnue, le garde-fou refuse `brd/<slug>/state.yaml` (code 2, mesuré) : dans un
+  dépôt adopté, l'amont est gelé, et le seul remède offert est une dérogation globale de 60 minutes.
+
+  Quatre autres constats confirmés par exécution, et qui demandent une décision plus qu'un correctif :
+  *C1* le garde-fou s'ancre sur `h.cwd`, donc un `cd` le désactive en silence (le même fichier passe
+  depuis un sous-dossier et est refusé depuis la racine) ; *C2* trois lectures non protégées sortent en
+  code 1, ce qui **ouvre** le garde-fou sous Claude Code et **gèle** le travail sous Copilot, contre la
+  promesse de verdicts identiques ; *C6* `adopt.mjs --inclure fixtures/app .` adopte `fixtures/app` et
+  non la racine ; *C4* la porte de PR exécute en CI des commandes lues dans `impl/config.yaml`, qui est
+  versionné, modifiable par n'importe quelle PR et hors de la signature de la constitution — c'est le
+  constat nº 5 du 22 octobre, toujours ouvert et désormais localisé.
+
+  **Corrigés aussi** : les constats de dérive documentaire C9 à C15, M1, M5, M6 et M15, par un tableau
+  de présence généré et deux tests qui refusent un compte faux. Ce qu'ils étaient : la liste
+  des « fichiers communs » du `README` est fausse sur six entrées, « sept skills / dix points d'entrée »
+  subsiste à trois endroits, la licence de `js-yaml` manque dans `audit-builder`, et un renvoi vers
+  `council.md` est mort dans quatre skills. L'auditeur recommande un tableau de présence **généré**,
+  comme `regles-de-controle.md` — c'est la réponse de fond, parce que la prose se périme et qu'aucun
+  test ne la lit.
+
+  Deux constats de fond à trancher, pas à corriger : *C12* `exemple/plan/demo` et
+  `exemple/repo/plan/demo` sont deux copies **divergentes** du même plan, et ce sont les étapes 5 et 6
+  qui ont tourné contre celle de `repo/` ; *M2* le test censé garantir qu'« un script n'est livré que là
+  où une phase dit de l'appeler » accepte la mention du nom de fichier n'importe où — un test qui ne
+  mord pas.
 - **`main` n'est pas protégée sur GitHub.** `ci-audit.mjs` le signale (« Branch not protected »,
   HTTP 404 avec un jeton sans droit d'administration), et personne ne l'a fait. Celui-là ne dépend pas
   de Tizi : quatre PR ont été fusionnées sur une branche que rien n'empêche de pousser en direct.
@@ -454,11 +497,6 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
   un exemple qu'on peut lire. Un dossier d'exemple qui n'a jamais franchi de porte ne montre pas ce
   qu'une porte laisse derrière elle — et c'est la seule chronologie de phases que le dépôt pourrait
   avoir. Les quatre dossiers d'`exemple/` sont figés par consigne : à construire ailleurs.
-- **Commiter un résultat d'eval**, même mauvais. `evals/results/` est ignoré par Git : les mesures
-  n'existent que chez leur auteur. La dernière passe de déclenchement (24 octobre, 1 passe) donne un
-  rappel de **0,00 pour `impl-builder`** — il ne s'est déclenché ni sur « Implémente la tâche TK-002 du
-  plan en TDD », ni sur « Écris un test unitaire pour la fonction manquants() ». À rejouer sur
-  plusieurs passes avant de corriger la description, puis à commiter.
 
 ### Premier dossier réel — ce qui reste
 
@@ -660,6 +698,29 @@ intention neuve, et le travail de les instruire est à refaire.
   fichier ne peut pas porter au moment où ça arrive, un hook qui lit ce qui vient d'être dit
   (`question-guard.mjs`) — pas un compteur de tours.
 
+- **Une règle sur la combinaison « tout figé » du tableau 18.1** — écartée le **8 novembre 2026**, sur
+  mesure. `S133` couvre la seconde ligne non recommandée de Rubin (périmètre + date figés) ; la première
+  — les trois dimensions figées — demandait la capacité, et l'entrée qui la portait affirmait que « le
+  plan reçoit les releases par `refs.prd.releases`, la règle y serait donc écrivable ». Mesuré : faux,
+  pour deux raisons indépendantes.
+
+  *La fenêtre n'arrive jamais dans le plan.* `build-handoff.mjs` ne recopie d'une release que `id`,
+  `name`, `learning_goal`, `signal` et ses exigences fonctionnelles. `window` et `containment` restent
+  dans l'état du PRD. Le plan reçoit donc des releases **sans fenêtre** : la règle n'a pas sa dimension
+  « date » là où vit la capacité, et aucune des deux ne peut aller chercher l'autre.
+
+  *Et la troisième dimension est figée partout.* Les 27 états du dépôt lus un par un : **une** release
+  (`exemple/prd/demo`), **sans** fenêtre — donc zéro corpus, comme annoncé — et `settings.sprint.capacity`
+  renseignée dans **6 plans sur 6**, toujours à 6. Surtout, rien dans le modèle ne distingue une capacité
+  *contrainte* d'une capacité *estimée* : c'est « la capacité en poids de taille, par itération », un
+  nombre. La troisième condition serait vraie dans tous les plans, et la règle redirait `S133` dans un
+  autre document.
+
+  La raison de fond rejoint une entrée déjà écrite plus haut : dans le modèle de Tizi on n'« ajoute pas
+  de capacité », parce que le travail est fait par des agents et que le goulot est l'attention humaine.
+  Les trois dimensions de Rubin ne sont pas symétriques ici, et une règle qui les croise suppose
+  qu'elles le sont.
+
 - **Faire passer Tizi par Tizi** — écartée le **25 octobre 2026**, après une tentative. Le choix du
   chemin bloque : deux des six questions n'ont pas de réponse sur un dépôt d'outillage. « Le changement
   crée-t-il ou modifie-t-il une règle métier ? » suppose un client, un processus d'entreprise, une règle
@@ -714,4 +775,7 @@ Chacune deviendra une issue à part une fois décidée.
 - [ ] Hook qui protège les listes de contrôle de relecture contre l'écriture par un agent (S80 vérifie
       aujourd'hui après coup ; un hook refuserait avant)
 - [x] Lancer l'audit indépendant (`evals/audit/tizi-auditor.md`) en contexte vierge et le comparer à
-      l'audit mécanique — fait le 23 octobre, à refaire après chaque série de correctifs
+      l'audit mécanique — fait le 23 octobre, **rejoué le 8 novembre** après 30 pull requests
+      (`rapport-2026-11-08-independant.md`, 35 constats ; comparaison et vérifications par exécution
+      dans `comparaison-2026-11-08.md`). À refaire après chaque série de correctifs, et la prochaine
+      fois **avec le droit d'exécuter Node sur une copie** : celui-ci ne l'avait pas

@@ -43,6 +43,22 @@ test('garde-fou TDD : sans périmètre de production, il refuse au lieu de laiss
   assert.match(r.err, /derogation\.mjs/, 'le message ne dit pas comment écrire malgré tout');
   // Ce qui est toujours autorisé le reste : le garde-fou ne bloque pas l'état de la tâche.
   assert.equal(guard(repo, { tool_name: 'create_file', tool_input: { filePath: 'impl/demo/state.yaml' } }).code, 0);
+  // Et surtout : les dossiers de Tizi lui-même ne sont pas du code de production. Ce refus était placé
+  // avant la classification, donc dans un dépôt adopté dont la pile n'est pas reconnue, l'agent du BRD
+  // ne pouvait plus écrire son propre état — l'amont entier gelé par un garde-fou de code (B3 de l'audit
+  // indépendant du 8 novembre 2026, reproduit par exécution avant d'être corrigé).
+  for (const f of ['brd/demo/state.yaml', 'prd/demo/state.yaml', 'sad/demo/state.yaml', 'plan/demo/state.yaml', 'qa/demo/state.yaml', 'audit/externe/state.yaml'])
+    assert.equal(guard(repo, { tool_name: 'create_file', tool_input: { filePath: f } }).code, 0, `${f} refusé : le garde-fou gèle l'amont`);
+  // Ce qui n'est pas un dossier de Tizi reste refusé : le constat d'origine tient toujours.
+  assert.equal(guard(repo, { tool_name: 'create_file', tool_input: { filePath: 'src/app.js' } }).code, 2);
+  writeFileSync(cfgPath, avant);
+
+  // Un dépôt qui déclare un dossier de Tizi comme son code de production reprend la main : le
+  // contournement est conditionnel, il n'ouvre pas un trou permanent.
+  writeFileSync(cfgPath, avant.replace('production: ["src/**"]', 'production: ["plan/**"]'));
+  assert.equal(guard(repo, { tool_name: 'create_file', tool_input: { filePath: 'plan/demo/state.yaml' } }).code, 2,
+    'déclaré comme production, donc gardé');
+  assert.equal(guard(repo, { tool_name: 'create_file', tool_input: { filePath: 'brd/demo/state.yaml' } }).code, 0);
   writeFileSync(cfgPath, avant);
 });
 

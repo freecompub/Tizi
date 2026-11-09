@@ -1,9 +1,12 @@
 # Commandes non interactives de chaque agent. {prompt} est remplacé par le message (déjà échappé pour le shell).
 # Les options exactes dépendent de la version installée : vérifier avec `claude --help` et `copilot --help`.
+# `Skill` est dans la liste parce que sans lui AUCUN skill ne se déclenche : mesuré le 8 novembre 2026,
+# la même requête donne 0 activation sans cet outil et le marqueur attendu avec. La mesure du 24 octobre
+# (« rappel 0,00 pour impl-builder ») ne mesurait donc pas des descriptions, mais cette liste tronquée.
 claude:
   install_target: claude
-  first: "claude -p {prompt} --permission-mode acceptEdits --allowedTools \"Read Write Edit Glob Grep Bash(node:*)\""
-  next:  "claude -p --continue {prompt} --permission-mode acceptEdits --allowedTools \"Read Write Edit Glob Grep Bash(node:*)\""
+  first: "claude -p {prompt} --permission-mode acceptEdits --allowedTools \"Skill Read Write Edit Glob Grep Bash(node:*)\""
+  next:  "claude -p --continue {prompt} --permission-mode acceptEdits --allowedTools \"Skill Read Write Edit Glob Grep Bash(node:*)\""
 copilot:
   install_target: copilot
   first: "copilot -p {prompt} --allow-all-tools"

@@ -1,0 +1,66 @@
+# État d'un audit — le document ÉTRANGER posé dans la forme de Tizi, et rien de plus.
+#
+# Ce gabarit n'est pas celui d'un document qu'on écrit : c'est celui d'un document qu'on a reçu. La
+# discipline est donc inverse de celle des quatre autres skills — on ne remplit pas, on recopie ce que
+# le document porte, et **ce qu'on ne peut pas établir reste absent**. Un champ absent fait dire à la
+# règle « je n'ai rien eu à lire », ce qui est vrai et se voit dans le rapport ; un champ deviné lui
+# fait rendre un verdict sur une invention. C'est tout l'écart entre les deux.
+#
+# Les scripts : `lint.mjs audit/<slug>/state.yaml` (relire les lignes « non mesurée » avant de rendre),
+# puis `audit.mjs audit/<slug>/state.yaml`, qui écrit `audit/<slug>/audit.md` à trois colonnes.
+
+document: brd            # brd | prd | sad | plan — et ce choix COMMANDE quelles règles s'appliquent.
+                         # Premier choix de l'import, et il se décide avec l'utilisateur : auditer un
+                         # backlog contre les règles du BRD ne rend que du bruit. Un document étranger
+                         # qui couvre deux niveaux à la fois — un « cahier des charges » qui mélange
+                         # besoins métier et spécifications, ce qui est fréquent — peut valoir DEUX
+                         # audits, pas un audit moyen. `audit.mjs` refuse toute autre valeur.
+phase: define            # la phase que le document ATTEINT, dans la table du document choisi (brd :
+                         # assess, discover, define, govern ; prd : frame, specify, govern ; sad :
+                         # explore, design, govern ; plan : slice, refine, schedule, govern, review).
+                         # Elle décide des règles applicables : un document qu'on vient de recevoir
+                         # n'est pas un document gouverné, et le dire trop haut invente des reproches
+initiative:
+  name: ""               # le sujet, tel que le document le nomme
+  slug: ""               # le dossier : audit/<slug>/
+
+# ── Ce que l'import n'a pas pu établir, et ce que l'équipe fait autrement ──
+# Les deux listes sortent dans leurs propres sections du rapport, JAMAIS mêlées aux constats.
+audit:
+  title: ""              # ce que le document dit être
+  source: ""             # d'où il vient : nom du fichier, qui l'a remis, quand. Sans ça, un rapport
+                         # d'audit ne se relit pas six mois plus tard
+  uncertain: []          # ce qu'on ne peut pas établir. Une liste VIDE sur un document écrit ailleurs
+                         # est suspecte, et le rapport le dit : sur un document qui n'a pas été
+                         # fabriqué avec Tizi, il y a presque toujours quelque chose qu'on ne peut pas
+                         # établir. Ne la vide pas pour faire propre
+  #  - what: ""          # ce qui n'est pas établi
+  #    why: ""           # pourquoi on ne peut pas l'établir depuis le document
+  #    resolve: ""       # ce qui le lèverait : une question, un autre document, une personne
+  ecarts: []             # une PRATIQUE tenue par une autre APPROCHE. Rubin distingue les deux
+                         # (ch. 23) : la pratique est obligatoire, l'approche est locale et
+                         # intransposable — son exemple est l'élan en peluche qu'une équipe de
+                         # Vancouver se passait en rétrospective. On n'audite jamais une approche
+                         # contre une autre approche. Un écart est une question à poser à l'équipe,
+                         # pas un défaut, et le glossaire ajoute la clause : « une règle peut être
+                         # enfreinte quand la pragmatique de la situation l'exige »
+  #  - pratique: ""      # ce que la règle demande
+  #    approche: ""      # comment l'équipe le fait
+  #    question: ""      # ce qu'on leur demande, au lieu de le compter contre eux
+
+# ── Le reste de l'état prend la forme du document audité ──
+#
+# Au-delà de ce qui précède, un état d'audit est un état de BRD, de PRD, de conception ou de plan : les
+# mêmes clés, lues par les mêmes règles. Le gabarit à suivre est donc celui du skill correspondant
+# (`brd-builder/templates/state.yaml`, `prd-builder/…`, `sad-builder/…`, `plan-builder/…`), et il est
+# commenté champ par champ. On n'en recopie ici aucun extrait : deux copies d'un même gabarit divergent,
+# et un gabarit qui diverge fait écrire un état que les règles ne lisent pas.
+#
+# Ce qui ne s'importe PAS, parce que ça n'appartient pas au document audité : `governance` (les portes
+# franchies CHEZ NOUS), `session`, `questions`, `council_runs`. Un document étranger n'a pas franchi nos
+# portes, et lui en prêter une est la pire invention possible — elle ferait passer pour tenue une
+# pratique dont on n'a aucune trace.
+#
+# Et si une liste reste vide parce que le document ne la porte pas, laisse-la vide : `lint.mjs` dira
+# « non mesurée » et nommera ce qu'il aurait fallu lire. C'est la troisième colonne du rapport, celle
+# qui rend l'audit honnête — ne pas savoir n'est pas constater.

@@ -17,7 +17,7 @@ Tizi est un cycle de développement outillé par des agents IA, de l'évaluation
 - **Zéro confiance aveugle** : rien de ce que produit un agent n'est accepté sans vérification.
 - **Itératif** : on peut revenir dans la vallée précédente ; les cols se repassent.
 
-Point de départ : `/tizi` dans Claude Code, ou l'agent `tizi` dans Copilot.
+Point de départ : `/tizi` dans Claude Code après `install.mjs`, `/tizi:tizi` en installation par plugin, ou l'agent `tizi` dans Copilot.
 
 ## documentation/
 
@@ -29,6 +29,8 @@ Le document de référence, la liste générée des règles de contrôle, et les
 | `regles-de-controle.md` | **Généré** par `doc-regles.mjs` : toutes les règles de contrôle, étape par étape — règles de structure et de rédaction avec leur énoncé, conditions calculées de chaque porte de phase, métriques de couverture et seuils, portes de PR et de release, garde-fous d'export, et un index. Ne pas le modifier à la main : `node doc-regles.mjs` le régénère, `--verifier` dit s'il a dérivé (un test du dépôt le vérifie) |
 | `notes-Constantinidis-et-BABOK-v3.md` | Notes de lecture de Constantinidis, *Expression des besoins pour le SI* (2010), et du *BABOK v3* (IIBA, 2015), lus en entier |
 | `notes-Patton-User-Story-Mapping.md` | Notes de lecture de Jeff Patton, *User Story Mapping* (O'Reilly, 2014), lu en entier |
+| `fichiers-communs.md` | **Généré** par `doc-fichiers.mjs` : quel fichier est livré dans quel skill, scripts, références, gabarits et sous-agents. Même discipline que ci-dessus — `--verifier` dit s'il a dérivé |
+| `notes-hve-entretiens.md` | Notes de lecture sur la conduite d'entretien, dont sont tirées la posture des questions et la mesure du garde-fou de répétition |
 | `notes-Rubin-Essential-Scrum.md` | Notes de lecture de Kenneth S. Rubin, *Essential Scrum* (Addison-Wesley, 2012), lu en entier. Les lignes `→ TIZI` portent les rapprochements, et plusieurs sont devenues des pistes d'`AMELIORATIONS.md` |
 
 Les notes sont découpées par **tranches de lecture**, dans l'ordre des chapitres, annexes et glossaires compris. Elles ne sont pas un résumé à lire d'affilée : ce sont les traces qui permettent de retrouver d'où vient chaque pratique, et de vérifier une correspondance du tableau des sources sans rouvrir les livres. Elles portent aussi les rapprochements relevés à la lecture — les « zones d'ombre » du chapitre 4 de Constantinidis portent déjà ce nom, et les *Perspectives* du BABOK sont nos lentilles.
@@ -69,9 +71,12 @@ commités pour qu'un clone suffise. Ils ne s'éditent pas à la main : un test l
 octet par octet. `claude plugin validate . --strict` reste le contrôle qui fait foi.
 
 **Deux choses à savoir avant d'installer.** La racine du dépôt est la racine du plugin, pour que les
-skills ne soient pas recopiés — mais tout le dépôt part donc avec, soit **7 Mo installés dont un peu
-plus de la moitié ne sert jamais** au plugin (le PDF de la documentation, l'exemple, les évaluations,
-les tests). Pour ne prendre que l'utile :
+skills ne soient pas recopiés — mais tout le dépôt part donc avec, soit **environ 7,5 Mo installés
+dont à peu près un quart ne sert jamais** au plugin (l'exemple, les évaluations, les tests, les notes
+de lecture). Mesuré le 8 novembre 2026 : `skills/` 5,3 Mo, qui sont l'essentiel, contre 1,8 Mo pour le
+reste du contenu suivi. La phrase disait « un peu plus de la moitié » et nommait le PDF de la
+documentation, qui n'est plus suivi depuis le 4 novembre — à re-mesurer plutôt qu'à croire :
+`git ls-files | tr '\n' '\0' | xargs -0 du -cb --apparent-size | tail -1`. Pour ne prendre que l'utile :
 
 ```
 claude plugin marketplace add freecompub/Tizi --sparse .claude-plugin skills commands agents hooks com.github.copilot
@@ -125,7 +130,7 @@ L'installateur pose aussi les **points d'entrée**, générés depuis une source
 
 **Instructions du dépôt.** `sync-agent-instructions.mjs` écrit dans `AGENTS.md` un bloc délimité, tiré des états de Tizi : règles des ADR, dossiers de chaque composant, contrats, données sensibles, commandes de test. `CLAUDE.md` l'importe. Ce sont les consignes que lisent les agents qui ne passent pas par Tizi. Le reste du fichier n'est jamais touché, et `--check` signale un bloc périmé ou un dossier disparu.
 
-Ce sont des coquilles : chacune charge son skill, qui reste la seule source des règles. Les agents Copilot n'ont que les outils de leur étape (l'entrée `tizi` et `tizi-backlog` ne peuvent pas éditer de fichiers) et proposent des boutons de passage vers l'étape suivante. Les sous-agents internes (critiques du council, perspectives de revue, vérificateur) portent la marque `user-invocable: false` des deux côtés : **Copilot les exclut** de la liste de l'utilisateur ; **Claude Code les affiche encore**, d'où la mention « ne pas utiliser directement » dans leur description. Un test vérifie la marque et la mention sur les deux cibles.
+Ce sont des coquilles : chacune charge son skill, qui reste la seule source des règles. Les agents Copilot n'ont que les outils de leur étape (trois entrées sur onze n'éditent aucun fichier : `tizi`, `tizi-bug` et `tizi-backlog`) et proposent des boutons de passage vers l'étape suivante. Les sous-agents internes (critiques du council, perspectives de revue, vérificateur) portent la marque `user-invocable: false` des deux côtés : **Copilot les exclut** de la liste de l'utilisateur ; **Claude Code les affiche encore**, d'où la mention « ne pas utiliser directement » dans leur description. Un test vérifie la marque et la mention sur les deux cibles.
 
 Options : `--ci` ajoute trois workflows GitHub Actions : `tizi-pr-gate.yml` rejoue la porte de PR sur chaque pull request ; `tizi-preuves.yml` produit les preuves de release sur le commit lui-même, avec leur manifeste de provenance ; `tizi-sprint-review.yml` prépare chaque jour ouvré les sprint reviews dues et ouvre une issue (droits : lecture du dépôt, et écriture des issues pour ce dernier). `ci-audit.mjs` vérifie ensuite la configuration de la CI ; `--skills brd-builder,prd-builder` pour n'en installer qu'une partie, `--user` pour les skills et agents personnels, `--dry-run` pour voir sans écrire. La commande est idempotente. Il faut Node.js 18 ou plus ; aucune dépendance n'est à installer.
 
@@ -142,7 +147,7 @@ L'artefact de CI expire : la copie qui fait foi est l'archive, commitée dans le
 
 ## skills/
 
-Les huit skills, au format ouvert Agent Skills (validés par `skills-ref`), utilisables avec Claude Code et GitHub Copilot. Chaque dossier contient son `SKILL.md`, ses références (`references/`), son modèle d'état (`templates/`) et ses scripts Node (`scripts/`, sans installation : `js-yaml` est embarqué).
+Les huit skills, au format ouvert Agent Skills (validés par `skills-ref`), utilisables avec Claude Code et GitHub Copilot. Chaque dossier contient son `SKILL.md`, ses références (`references/`), son modèle d'état (`templates/` — sauf `backlog-executor`, qui ne tient aucun état de document et applique un plan déjà écrit) et ses scripts Node (`scripts/`, sans installation : `js-yaml` est embarqué).
 
 | Skill | Étape | Rôle |
 |---|---|---|
@@ -159,7 +164,7 @@ Chaque skill sait reprendre une session interrompue (`references/sessions.md`) :
 
 Deux **références** sont communes aux huit skills et vérifiées identiques : `references/sessions.md` (reprendre une session interrompue) et `references/questions.md` (la forme d'une question selon ce qu'on cherche — choix fermé avec recommandation, arbitrage avec ses conséquences mais sans recommandation, élicitation en question ouverte). Les autres références homonymes — `council.md`, `lenses.md`, `phase-govern.md`, `shadow-zones.md` — sont propres à chaque skill par construction.
 
-Fichiers communs, identiques d'un skill à l'autre, dont `scripts/lib/agent-io.mjs` qui adapte les hooks à Claude Code, à Copilot et à VS Code : `scripts/lib/common.mjs`, `scripts/lib/rules.mjs` (catalogue de vérification), `scripts/lib/sessions.mjs`, `scripts/lib/checklists.mjs`, `scripts/session-capture.mjs`, `scripts/session-search.mjs`, `scripts/session-start.mjs`, `scripts/status.mjs`, `scripts/next-step.mjs`, `scripts/choose-path.mjs`, `scripts/sync-agent-instructions.mjs`, `scripts/adopt.mjs`, `scripts/block.mjs`, `scripts/due-reviews.mjs`, `scripts/constitution.mjs`, `scripts/ask-five.mjs`, `scripts/review-checklist.mjs`, `scripts/cross-context.mjs`, `scripts/cross-merge.mjs`. Trois autres sont communs aux seuls skills qui produisent un document — `brd-builder`, `prd-builder`, `sad-builder`, `plan-builder` : `scripts/lint.mjs`, `scripts/freeze-version.mjs`, `scripts/verify-handoff.mjs` (ce dernier également dans `impl-builder` et `test-builder`). `scripts/lib/testing.mjs` sert aux étapes 5 et 6. Toute modification de l'un d'eux se recopie dans tous les skills qui l'ont.
+**Quel fichier est livré dans quel skill** : `documentation/fichiers-communs.md`, **généré** par `node doc-fichiers.mjs` (un test du dépôt dit s'il a dérivé). Dix-huit fichiers sont présents dans les huit skills, dont `scripts/lib/agent-io.mjs`, qui adapte les hooks à Claude Code, à Copilot et à VS Code ; les autres ne le sont que là où une phase les appelle. La liste était écrite ici à la main et avait dérivé sur six entrées — c'est pour ça qu'elle se génère. Toute modification d'un fichier porté par plusieurs skills se recopie dans tous : les tests comparent les empreintes.
 
 ## tests/
 

@@ -2,7 +2,7 @@
 name: audit-builder
 description: "Auditeur de documents écrits ailleurs : lit un cahier des charges, une spécification, un dossier de conception ou un backlog produit hors de Tizi, le pose dans la forme d'état sans rien déduire sans preuve, puis le confronte au catalogue de règles de Tizi et rend un rapport à trois colonnes — constaté faux, constaté vrai, non mesurable et pourquoi. Il n'écrit ni ne corrige le document audité, ne donne aucune note, et ne juge jamais une manière de travailler : une pratique est obligatoire, l'approche qui la réalise est locale. À utiliser quand l'utilisateur veut auditer, relire, évaluer ou diagnostiquer un document d'exigences, de spécification, d'architecture ou un backlog existant, le sien ou celui d'un tiers, ou savoir ce qui y manque avant de le reprendre."
 compatibility: "Claude Code et GitHub Copilot (agent de VS Code, CLI, agent cloud). Scripts Node.js 18 ou plus, sans dépendance à installer."
-allowed-tools: Read Bash(node:*)
+allowed-tools: Read Write Edit Bash(node:*)
 ---
 
 # Audit Builder
@@ -52,9 +52,11 @@ comme « il manque quinze choses ».
 2. **Lis le document en entier.** Pas un résumé, pas les titres : la moitié des règles portent sur ce qui
    est écrit dans les énoncés. Un document trop gros pour un seul passage se lit en plusieurs, et
    l'avancement se note dans `session.next_action`.
-3. **Pose-le dans `audit/<slug>/state.yaml`**, sans rien déduire sans preuve. Ce que tu ne peux pas
-   établir reste **absent** de l'état et va dans `audit.uncertain`, avec ce qui le lèverait. Ce que
-   l'équipe fait autrement va dans `audit.ecarts`. Le protocole donne la forme exacte.
+3. **Pose-le dans `audit/<slug>/state.yaml`**, à partir de `templates/state.yaml`, sans rien déduire
+   sans preuve. Au-delà du bloc `audit`, l'état prend la forme du document choisi : le gabarit du skill
+   correspondant (`brd-builder/templates/state.yaml`, et ainsi de suite) est commenté champ par champ.
+   Ce que tu ne peux pas établir reste **absent** de l'état et va dans `audit.uncertain`, avec ce qui le
+   lèverait. Ce que l'équipe fait autrement va dans `audit.ecarts`. Le protocole donne la forme exacte.
 4. **Vérifie ce que tu as posé** : `node <chemin-du-skill>/scripts/lint.mjs audit/<slug>/state.yaml`.
    Les avertissements portent sur le document audité, et les lignes « non mesurée » te disent ce que
    l'import n'a pas pu remplir. Relis-les avant de rendre le rapport : certaines sont une vraie absence

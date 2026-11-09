@@ -24,9 +24,9 @@ constats — jamais mêlés à eux.
 
 ## 2. L'import : rien n'est déduit sans preuve
 
-Tu poses le document étranger dans la forme d'état de Tizi (`audit/<slug>/state.yaml`), avec la même
-discipline qu'`adopt.mjs` : **ce que tu ne peux pas établir, tu ne l'écris pas** — tu le déclares dans
-`audit.uncertain`.
+Tu poses le document étranger dans la forme d'état de Tizi (`audit/<slug>/state.yaml`, à partir de
+`templates/state.yaml`), avec la même discipline qu'`adopt.mjs` : **ce que tu ne peux pas établir, tu ne
+l'écris pas** — tu le déclares dans `audit.uncertain`.
 
 - Un champ que le document ne porte pas reste **absent**. Ne devine pas, n'interpole pas, ne mets pas
   une valeur « raisonnable ». Un champ absent fait dire à la règle « je n'ai rien eu à lire », ce qui est

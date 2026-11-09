@@ -47,7 +47,11 @@ for (const s of readdirSync(skillsDir)) {
   const p = join(skillsDir, s, 'SKILL.md');
   const text = readFileSync(p, 'utf8');
   const end = text.indexOf('\n---', 4) + 4;
-  writeFileSync(p, `${text.slice(0, end)}\n\n> Mesure de déclenchement : ta toute première ligne de réponse doit être exactement \`${MARK} ${s}\`.\n${text.slice(end)}`);
+  // Le marqueur demande aussi de s'arrêter : ce banc ne mesure que le DÉCLENCHEMENT. Sans ça, chaque
+  // passe fait le travail du skill en entier, dépasse le délai de 5 minutes et compte comme une erreur
+  // d'intégrité — une mesure qui coûte une heure et se perd. Le marqueur ne s'imprime que si le CORPS du
+  // SKILL.md a été chargé, qui est précisément ce qu'on mesure ; s'arrêter après n'y change rien.
+  writeFileSync(p, `${text.slice(0, end)}\n\n> Mesure de déclenchement : ta toute première ligne de réponse doit être exactement \`${MARK} ${s}\`, puis arrête-toi sans rien faire d'autre — cette mesure ne juge que le déclenchement, pas l'exécution.\n${text.slice(end)}`);
 }
 if (args.includes('--dry-run')) { console.log(`(simulation) dépôt prêt : ${ws} — ${queries.length} requêtes, ${queries.filter(q => q.split === 'test').length} en test.`); process.exit(0); }
 
