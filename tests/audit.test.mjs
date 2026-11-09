@@ -13,7 +13,7 @@ import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import yaml from '../skills/brd-builder/scripts/lib/vendor/js-yaml.mjs';
 import { ROOT, script, node, tempDir } from './helpers.mjs';
-import { verdicts, STRUCT_RULES, LECTURES, checkState, abstentions } from '../skills/audit-builder/scripts/lib/rules.mjs';
+import { verdicts, STRUCT_RULES, TEXT_RULES, ZONES_TYPES, LECTURES, checkState, abstentions } from '../skills/audit-builder/scripts/lib/rules.mjs';
 
 // Ce que Tizi tient de sa propre fabrication, et qu'un document étranger ne porte jamais.
 const TRACE = ['sources', 'stakeholders', 'decision_rights', 'phase_log', 'council_runs', 'session',
@@ -143,7 +143,19 @@ test('audit.mjs : le rapport dit les trois verdicts, et ce qu\'il n\'a pas pu é
   const colonne = md.slice(md.indexOf('## Non mesurable'), md.indexOf('## Constaté vrai'));
   assert.ok(colonne.split('\n').filter(l => l.startsWith('| `')).length <= 6,
     'vingt-six règles non mesurées doivent se dire en quelques lignes, groupées par lecture');
-  assert.match(colonne, /`S19`, `S83`/, 'les règles qui partagent une lecture vide se citent ensemble');
+  assert.match(colonne, /`S19` — [^|<]+<br\/>`S83` — /,
+    'les règles qui partagent une lecture vide se citent ensemble, et chacune porte son libellé');
+
+  // Un code seul ne dit rien à qui lit le rapport : « L08 » n'est clair que pour qui tient le
+  // catalogue, et l'utilisateur l'a dit en lisant le premier rapport rendu sur un vrai document.
+  // Toute ligne qui nomme une règle doit nommer au moins un libellé.
+  const LIB = { ...STRUCT_RULES, ...Object.fromEntries(TEXT_RULES.map(x => [x.id, x.name.replace(/_/g, ' ')])) };
+  for (const ligne of md.split('\n')) {
+    const codes = [...ligne.matchAll(/`([SL]\d{2,3})`/g)].map(m => m[1]).filter(c => c in LIB);
+    if (!codes.length) continue;
+    assert.ok(codes.some(c => ligne.includes(LIB[c])),
+      `une règle est nommée sans son libellé : ${ligne.slice(0, 120)}`);
+  }
 });
 
 test('audit.mjs : une liste d\'incertitudes vide est signalée, pas tue', () => {
@@ -179,4 +191,101 @@ test('le skill d\'audit ne recopie aucune grille : ce sont les règles', () => {
   assert.match(ref, /on n'audite jamais une approche contre une autre approche/i);
   assert.match(ref, /Rien n'est déduit sans preuve/i);
   assert.match(ref, /Ne pas savoir n'est pas constater/i);
+});
+
+// Un état d'audit minimal, pour mesurer la PORTÉE d'un constat : trois règles métier sans responsable
+// et trois exigences qui tiennent toutes la même forme non normative.
+const minimal = extra => ({
+  document: 'brd', phase: 'define', initiative: { name: 'Import', slug: 'import' },
+  audit: { title: 'Document reçu', source: 'un cahier des charges remis par un prestataire' },
+  problem: { statement: 'Les dossiers se perdent entre deux services.' },
+  objectives: [{ id: 'OM-1', statement: 'Réduire le délai', indicator: 'délai moyen', target: '5 jours', status: 'proposé' }],
+  business_requirements: [1, 2, 3].map(n => ({ id: `EX-00${n}`, statement: `Disposer du dossier complet à l'entrée, afin de trancher plus vite (${n})`, objectives: ['OM-1'], priority: 'must', status: 'proposé' })),
+  business_rules: [1, 2, 3].map(n => ({ id: `RG-00${n}`, statement: `Un dossier incomplet doit être refusé à l'entrée (${n}).`, kind: 'comportement', enforcement: 'stricte', status: 'proposé' })),
+  ...extra,
+});
+
+test('audit.mjs : une absence qui porte sur toute une famille se dit une fois, avec sa portée', () => {
+  // Mesuré sur un vrai BRD le 9 novembre 2026 : 141 constats, dont 125 venus de quatre règles qui
+  // répétaient la même chose. « Aucune des 34 règles métier n'a de responsable » est un constat grave
+  // sur un corpus de règles de souscription ; l'écrire 34 fois le transforme en bruit.
+  const dir = dossier(minimal());
+  const r = node(script('audit-builder', 'audit.mjs'), [join(dir, 'state.yaml')]);
+  assert.equal(r.code, 0, r.err);
+  const md = readFileSync(join(dir, 'audit.md'), 'utf8');
+
+  const manque = md.slice(md.indexOf('## Ce qui manque'), md.indexOf('## Les zones d\'ombre'));
+  assert.match(manque, /règle sans responsable \| \*\*3 `RG-xxx` sur 3\*\* \| `S13`/,
+    'l\'absence doit être dite une fois, avec sa portée et la famille du document audité');
+  // Et elle ne se répète pas élément par élément dans les constats.
+  const constats = md.slice(md.indexOf('## Constaté faux'));
+  assert.ok(!constats.includes('RG-002'), 'une absence de méthode ne se répète pas dans les constats');
+  // Une famille d'un seul élément n'est pas une méthode : c'est un cas, et il reste un constat.
+  const seul = dossier(minimal({ business_rules: [{ id: 'RG-001', statement: 'Un dossier incomplet doit être refusé.', kind: 'comportement', enforcement: 'stricte', status: 'proposé' }] }));
+  node(script('audit-builder', 'audit.mjs'), [join(seul, 'state.yaml')]);
+  const md2 = readFileSync(join(seul, 'audit.md'), 'utf8');
+  assert.ok(!md2.slice(md2.indexOf('## Ce qui manque'), md2.indexOf('## Les zones')).includes('`S13`'),
+    'un seul élément ne fait pas une absence de méthode');
+  assert.ok(md2.slice(md2.indexOf('## Constaté faux')).includes('RG-001'), 'il reste un constat ponctuel');
+});
+
+test('audit.mjs : une forme tenue partout est un choix d\'écriture, pas une série de fautes', () => {
+  // La première version enfreignait la clause qu'elle affiche en tête : `L08` exigeait « doit / devra »
+  // sur 17 énoncés sur 17, alors que le document tenait parfaitement la forme BABOK « Disposer de…
+  // afin de… ». Une règle de RÉDACTION qui parle sur tout un corpus décrit un style, pas un défaut.
+  const dir = dossier(minimal());
+  node(script('audit-builder', 'audit.mjs'), [join(dir, 'state.yaml')]);
+  const md = readFileSync(join(dir, 'audit.md'), 'utf8');
+  const style = md.slice(md.indexOf('## Choix d\'écriture'), md.indexOf('## Constaté faux'));
+  assert.ok(style.includes('`L08`'), 'L08 parle sur les trois exigences sur trois : c\'est une forme, pas trois fautes');
+  assert.match(style, /\*\*3 `EX-xxx` sur 3\*\*/);
+  assert.match(style, /cette forme est-elle délibérée \?/, 'un choix d\'écriture se pose en question');
+  // Et elle n'est plus comptée comme un défaut à reprendre.
+  const reprendre = md.slice(md.indexOf('## À reprendre'), md.indexOf('## En un coup'));
+  assert.ok(!reprendre.includes('`L08`'), 'un choix d\'écriture n\'est pas un point à reprendre');
+  // L'asymétrie est voulue : la même mesure sur une règle de STRUCTURE reste un trou.
+  assert.ok(md.slice(md.indexOf('## Ce qui manque'), md.indexOf('## Les zones')).includes('`S13`'));
+});
+
+test('audit.mjs : les zones d\'ombre jamais ouvertes viennent de la typologie du document', () => {
+  // Ce que le premier rapport ne disait pas, et que l'utilisateur a demandé : non pas les questions que
+  // le document pose, mais celles qu'il NE pose PAS. Sur le document réel du 9 novembre 2026, le trou
+  // criant était `partie_prenante_non_entendue` — onze questions ouvertes, et jamais celle de savoir si
+  // quelqu'un avait parlé à un souscripteur, alors qu'aucune des huit parties prenantes ne l'avait été.
+  const dir = dossier(minimal({ shadow_zones: [{ id: 'ZO-001', type: 'perimetre_flou', question: 'Le service des archives est-il concerné ?', status: 'ouverte' }] }));
+  node(script('audit-builder', 'audit.mjs'), [join(dir, 'state.yaml')]);
+  const md = readFileSync(join(dir, 'audit.md'), 'utf8');
+  const bloc = md.slice(md.indexOf('## Les zones d\'ombre jamais ouvertes'), md.indexOf('## À reprendre'));
+  assert.ok(bloc.includes(`${ZONES_TYPES.brd.length - 1} type(s) sur ${ZONES_TYPES.brd.length}`),
+    'un type ouvert sur dix laisse neuf types jamais ouverts');
+  assert.ok(bloc.includes('`partie_prenante_non_entendue`'), 'le type jamais ouvert se nomme');
+  assert.ok(bloc.includes('Entretien'), 'et il porte ce qui le lèverait');
+  assert.ok(!bloc.includes('`perimetre_flou`'), 'un type ouvert n\'est pas dit jamais ouvert');
+  assert.match(bloc, /Ce n'est pas un défaut/, 'un type jamais ouvert est une question, pas une faute');
+});
+
+test('ZONES_TYPES dit la même chose que les références des quatre skills', () => {
+  // La typologie n'existait QU'EN PROSE, donc aucun script ne pouvait la lire. Elle est maintenant dans
+  // le catalogue, et les libellés ont été générés depuis les références — pas recopiés à la main. Ce
+  // test est le verrou : deux sources de vérité dérivent toujours, et ce dépôt le refuse partout.
+  const SRC = {
+    brd: 'skills/brd-builder/references/phase-discover.md',
+    prd: 'skills/prd-builder/references/shadow-zones.md',
+    sad: 'skills/sad-builder/references/shadow-zones.md',
+    plan: 'skills/plan-builder/references/shadow-zones.md',
+  };
+  for (const [doc, chemin] of Object.entries(SRC)) {
+    const lignes = readFileSync(join(ROOT, chemin), 'utf8').split('\n');
+    const i = lignes.findIndex(l => l.startsWith('| Type (`type`)') || l.startsWith('| `type`'));
+    assert.notEqual(i, -1, `${chemin} ne porte plus de table de types`);
+    const rows = [];
+    for (const l of lignes.slice(i + 2)) {
+      if (!l.startsWith('|')) break;
+      const c = l.trim().replace(/^\||\|$/g, '').split('|').map(x => x.trim());
+      const m = /^`([a-z_]+)`$/.exec(c[0]);
+      if (!m) break;
+      rows.push({ type: m[1], signal: c[1], action: c[2] });
+    }
+    assert.deepEqual(ZONES_TYPES[doc], rows, `${chemin} et ZONES_TYPES ne disent plus la même chose`);
+  }
 });

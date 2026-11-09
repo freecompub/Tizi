@@ -78,6 +78,34 @@ learning`. Une règle qui s'est tue faute de matière n'a pas dit que tout allai
 la compterait parmi les règles tenues mentirait — c'est précisément ce que faisait Tizi avant le
 7 novembre 2026, et ce qui empêchait d'écrire ce skill.
 
+### Ce que le rapport met AVANT les trois verdicts
+
+Les trois colonnes sont le fondement du rapport, pas sa lecture. Mesuré le 9 novembre 2026 sur un vrai
+BRD de 500 lignes écrit par un autre outil : **141 constats**, dont 125 venus de quatre règles qui
+répétaient la même chose. « Aucune des 34 règles métier n'a de responsable » est un constat grave sur un
+corpus de règles de souscription ; l'écrire 34 fois le transforme en bruit. Le rapport s'ouvre donc sur :
+
+- **Ce qui manque** — une règle de structure qui parle sur **tous** les éléments d'une famille ne dit
+  pas N oublis, elle dit une pratique que le document ne tient pas. Dite une fois, avec sa portée, et la
+  famille nommée par le préfixe d'identifiant du document audité : c'est son vocabulaire, pas le nôtre.
+- **Les zones d'ombre jamais ouvertes** — les types de question que le document **ne pose pas**, pris
+  dans la typologie du document audité (`ZONES_TYPES`). C'est la seule partie du rapport qui ne vient
+  pas de ce qui est écrit, mais de ce qui ne l'est pas, et c'est ce qu'un relecteur extérieur apporte de
+  plus précieux : le document mesuré posait onze questions ouvertes et ne se demandait jamais si
+  quelqu'un avait parlé à un souscripteur, alors qu'aucune de ses huit parties prenantes ne l'avait été.
+- **À reprendre, dans cet ordre** — l'ordre est **mécanique** et il est écrit dans le rapport : une
+  absence de méthode avant un cas isolé, la structure avant la forme, la portée décroissante. Aucune
+  gravité n'est écrite à la main : un second catalogue de gravités dériverait du premier.
+- **Choix d'écriture, pas défauts** — une règle de **rédaction** qui parle sur tous les énoncés d'une
+  famille décrit une forme que le document tient partout. La compter comme une série de fautes, ce
+  serait auditer une approche contre une autre approche. Sur le document mesuré, `L08` exigeait
+  « doit / devra » sur 17 énoncés sur 17, alors qu'il tenait parfaitement la forme BABOK « Disposer
+  de… afin de… ». L'asymétrie avec la structure est voulue : une forme tenue partout est un choix, une
+  structure absente partout est un trou.
+
+Et une règle d'écriture du rapport : **un code de règle ne se livre jamais nu**. « L08 » n'est clair que
+pour qui tient le catalogue, et un rapport se lit sans lui.
+
 Mesuré sur le dossier d'exemple du dépôt, privé de toute trace de sa fabrication par Tizi : **32 constats
 et 26 règles non mesurables**, là où le même dossier complet en avait 2. Un document écrit ailleurs ne
 récolte donc pas des accusations, il récolte des **abstentions** — et c'est le comportement voulu.
