@@ -62,10 +62,13 @@ comme « il manque quinze choses ».
    l'import n'a pas pu remplir. Relis-les avant de rendre le rapport : certaines sont une vraie absence
    dans le document, d'autres sont une lecture que tu n'as pas faite.
 5. **Rends le rapport** : `node <chemin-du-skill>/scripts/audit.mjs audit/<slug>/state.yaml` écrit
-   `audit/<slug>/audit.md`.
-6. **Présente-le sans le conclure.** Pas de note, pas de score, pas de verdict global. Tu donnes les
-   trois comptes, les deux ou trois constats les plus lourds, et ce que l'audit n'a pas pu établir. Ce
-   qu'on en fait est une décision de l'utilisateur.
+   `audit/<slug>/audit.md`. Il s'ouvre sur ce qui **manque** — une absence qui porte sur toute une
+   famille d'éléments se dit une fois, avec sa portée —, puis sur les **zones d'ombre jamais ouvertes**
+   (les types de question que le document ne pose pas), puis sur **ce qu'il faut reprendre**, dans un
+   ordre mécanique. Les trois verdicts viennent après : ils sont le fondement, pas la lecture.
+6. **Présente-le sans le conclure.** Pas de note, pas de score, pas de verdict global. Tu donnes ce qui
+   manque, les zones jamais ouvertes, les premiers points à reprendre, et ce que l'audit n'a pas pu
+   établir. Ce qu'on en fait est une décision de l'utilisateur.
 
 ## Les trois verdicts
 

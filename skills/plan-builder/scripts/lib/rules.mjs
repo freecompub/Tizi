@@ -2599,6 +2599,72 @@ export function checkState(s, ctx = {}) {
 }
 
 // Libellés des règles de structure, pour les rapports.
+// Les types de zone d'ombre, par document, avec leur signal typique et ce qui les lève. Cette table
+// n'existait QU'EN PROSE — `brd-builder/references/phase-discover.md` pour le BRD, les trois
+// `references/shadow-zones.md` pour les autres —, donc aucun script ne pouvait la lire. L'audit en a
+// besoin : un type qu'AUCUNE question du document n'ouvre est une zone d'ombre jamais explorée, et
+// c'est ce qu'un relecteur extérieur apporte de plus précieux — le document audité du 9 novembre 2026
+// posait onze questions ouvertes et ne se demandait jamais si quelqu'un avait parlé à un souscripteur,
+// alors que ses huit parties prenantes sur huit n'avaient jamais été contactées.
+//
+// Les libellés ne sont pas recopiés à la main : ils ont été générés depuis les références, et un test
+// vérifie que les deux disent la même chose. Les références restent lisibles là où elles sont.
+export const ZONES_TYPES = {
+  brd: [
+    { type: 'probleme_flou', signal: 'Symptômes décrits, mais cause ou impact non établis', action: 'Entretien avec qui subit le problème, données existantes' },
+    { type: 'partie_prenante_non_entendue', signal: 'Profil identifié, statut `à interroger`', action: 'Entretien' },
+    { type: 'profil_manquant', signal: 'Rôle probable jamais cité (support, juridique, exploitation…)', action: 'Question à l\'utilisateur, puis cartographie' },
+    { type: 'succes_non_mesurable', signal: 'Objectif sans indicateur ni signal observable', action: 'Question au sponsor' },
+    { type: 'contradiction', signal: 'Deux sources disent l\'inverse', action: 'Entretien croisé ou atelier' },
+    { type: 'hypothese_non_verifiee', signal: 'Affirmation reposant sur une hypothèse `H-xxx` sans source', action: 'Document, donnée ou entretien' },
+    { type: 'solution_deguisee', signal: 'Un « besoin » **ou un signal de succès** qui décrit un moyen', action: 'Remontée au besoin ou au résultat, avec l\'auteur' },
+    { type: 'perimetre_flou', signal: 'On ne sait pas si un sujet est inclus ou exclu', action: 'Décision du sponsor' },
+    { type: 'attendu_implicite', signal: 'Aucune source ne couvre ce que l\'existant fait « sans que personne n\'y pense »', action: 'Question directe, analyse de l\'existant, observation' },
+    { type: 'arbitre_inconnu', signal: 'Un conflit d\'intérêts n\'a pas de décideur identifié', action: 'Question au sponsor, complétée dans `decision_rights`' },
+  ],
+  prd: [
+    { type: 'cas_limite', signal: 'Parcours décrit seulement dans le cas nominal', action: 'Question au métier, observation' },
+    { type: 'etat_erreur', signal: 'Ce qui se passe en cas d\'échec n\'est pas spécifié', action: 'Question au métier, revue avec la qualité' },
+    { type: 'comportement_ambigu', signal: 'Deux lectures possibles d\'une exigence', action: 'Exemple concret validé par l\'utilisateur' },
+    { type: 'nfr_non_mesurable', signal: 'Exigence de qualité sans cible chiffrée', action: 'Donnée existante, décision du product owner' },
+    { type: 'objectif_non_mesurable', signal: 'Objectif produit sans KPI ou valeur de référence', action: 'Analytics, décision du sponsor' },
+    { type: 'persona_non_fonde', signal: 'Persona sans preuve', action: 'Entretien, données d\'usage' },
+    { type: 'exigence_sans_origine', signal: 'FR sans BR ni source ni décision', action: 'Justification ou abandon ; demande de changement au BRD' },
+    { type: 'br_non_couverte', signal: 'Exigence du BRD sans FR ni NFR', action: 'Spécifier, ou justifier l\'absence' },
+    { type: 'conflit_amont', signal: 'Le produit contredit le BRD, ou le BRD est muet', action: 'Demande de changement au BRD' },
+    { type: 'dependance_inconnue', signal: 'Système, équipe ou donnée externe non confirmée', action: 'Contact du responsable' },
+    { type: 'hypothese_non_verifiee', signal: 'Affirmation sans source', action: 'Test utilisateur, donnée, entretien' },
+    { type: 'attendu_implicite', signal: 'Ce que l\'existant fait « sans que personne n\'y pense » n\'est couvert par aucune exigence', action: 'Question directe, analyse de l\'existant, observation (`references/elicitation-patterns.md`)' },
+    { type: 'regle_non_couverte', signal: 'Règle métier décidée `automatisée` sans exigence fonctionnelle', action: 'Spécifier, ou revenir sur la décision d\'automatisation' },
+    { type: 'conflit_interets', signal: 'Deux parties prenantes demandent des comportements incompatibles', action: 'Décision de l\'arbitre désigné dans `decision_rights`' },
+    { type: 'arbitre_inconnu', signal: 'Un conflit d\'intérêts n\'a pas de décideur identifié', action: 'Question au sponsor ou au product owner' },
+    { type: 'perimetre_non_tranche', signal: 'Une tâche est gardée dans une release malgré un critère du MVP, ou un objet entré sans irritant derrière', action: 'Décision du décideur du périmètre (`decision_rights`)' },
+  ],
+  sad: [
+    { type: 'driver_non_mesurable', signal: 'Moteur sans mesure chiffrée', action: 'Cible demandée au product owner (elle appartient au PRD)' },
+    { type: 'hypothese_technique', signal: 'Une option repose sur une affirmation non prouvée', action: 'Spike, mesure, documentation du fournisseur' },
+    { type: 'existant_non_prouve', signal: 'Élément ou relation de l\'existant supposé sans preuve', action: 'Lecture du code, de la configuration, question à l\'équipe propriétaire' },
+    { type: 'frontiere_floue', signal: 'Contexte, agrégat ou propriétaire d\'une donnée incertain', action: 'Atelier Event Storming, décision' },
+    { type: 'fr_non_allouee', signal: 'FR sans conteneur ni composant', action: 'Allocation, ou question sur la FR' },
+    { type: 'nfr_sans_reponse', signal: 'NFR sans tactique ni vérification', action: 'Proposition de réponse, ADR' },
+    { type: 'contrat_ambigu', signal: 'Opération dont le comportement ou les données ne sont pas clairs', action: 'Exemple concret, question au consommateur' },
+    { type: 'menace_non_traitee', signal: 'Menace identifiée sans traitement décidé', action: 'Proposition de mesures, décision d\'acceptation' },
+    { type: 'dependance_inconnue', signal: 'Système externe dont le contrat, la disponibilité ou les quotas ne sont pas confirmés', action: 'Contact du responsable, documentation' },
+    { type: 'conflit_amont', signal: 'La conception contredit le PRD ou le BRD, ou ils sont muets', action: 'Demande de changement au PRD ou au BRD' },
+    { type: 'conflit_interets', signal: 'Deux parties prenantes veulent des choix incompatibles', action: 'Décision de l\'arbitre désigné dans `decision_rights`' },
+    { type: 'arbitre_inconnu', signal: 'Personne n\'est désigné pour trancher', action: 'Question au sponsor' },
+  ],
+  plan: [
+    { type: 'question_story', signal: 'Carte rouge d\'un example mapping', action: 'Réponse de la personne désignée ; la story reste non prête' },
+    { type: 'fr_sans_story', signal: 'FR de la release couverte par aucune story', action: 'Nouvelle story, ou question au product owner' },
+    { type: 'regle_absente_amont', signal: 'Une règle apparue en séance n\'existe ni dans le BRD ni dans le PRD', action: 'Demande de changement au BRD ou au PRD' },
+    { type: 'mesure_non_planifiee', signal: 'Mesure de sécurité ou vérification de NFR sans tâche', action: 'Nouvelle tâche, ou report justifié' },
+    { type: 'dependance_externe', signal: 'Une tâche attend une autre équipe ou un tiers', action: 'Contact du responsable, date d\'engagement' },
+    { type: 'capacite_inconnue', signal: 'L\'équipe n\'a pas fixé sa capacité ou sa limite d\'encours', action: 'Question à l\'équipe' },
+    { type: 'conflit_amont', signal: 'Le plan révèle une incohérence du PRD ou de la conception', action: 'Demande de changement' },
+  ],
+};
+
 export const STRUCT_RULES = {
   S00: 'document hors du catalogue',
   S100: 'porte de phase franchie sans trace', S101: 'passage de phase sans décideur, date ou source',
