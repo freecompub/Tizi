@@ -489,6 +489,23 @@ une intention, une incertitude est un fait qu'on croit sans l'avoir vu.
   qui ont tourné contre celle de `repo/` ; *M2* le test censé garantir qu'« un script n'est livré que là
   où une phase dit de l'appeler » accepte la mention du nom de fichier n'importe où — un test qui ne
   mord pas.
+- **Aucun recueil du tout ne se constate nulle part, et c'est l'audit d'un vrai document qui l'a
+  montré.** Mesuré le 9 novembre 2026 sur un BRD de 500 lignes écrit par un autre outil : ses **huit
+  sources sont des documents**, aucune n'est une parole, et **aucune de ses huit parties prenantes n'a
+  été contactée**. Or `S83` est rendue **« constatée vraie »**. Son détecteur ne parle que si
+  `entendus.length && !util.length` — « des besoins recueillis, et aucun utilisateur direct entendu ».
+  Quand il n'y a **aucun** recueil, `entendus` est vide et la règle se tait ; elle tombe donc dans la
+  liste des règles qui avaient de quoi lire et n'ont rien trouvé, parce que `stakeholders` n'est pas
+  vide. Le cas le plus grave — personne n'a parlé à personne — est le seul qu'aucune règle ne dit.
+
+  Deux issues, et c'est une décision : ajouter le cas à `S83` (un registre de parties prenantes
+  renseigné, et zéro source de parole), ou le faire tomber dans « non mesurable » plutôt que dans
+  « constaté vrai » — ce qui demande d'ajouter à sa déclaration la lecture qui lui manque. La première
+  nomme le défaut, la seconde dit seulement qu'on ne sait pas. Sur ce document, la première serait
+  juste : le silence n'est pas une absence de matière, c'est une absence d'entretien.
+
+  Ce qui l'a rattrapé en attendant : la section **« zones d'ombre jamais ouvertes »** du rapport, qui
+  sort `partie_prenante_non_entendue` — mais qualitativement, et sans la preuve chiffrée.
 - **`main` n'est pas protégée sur GitHub.** `ci-audit.mjs` le signale (« Branch not protected »,
   HTTP 404 avec un jeton sans droit d'administration), et personne ne l'a fait. Celui-là ne dépend pas
   de Tizi : quatre PR ont été fusionnées sur une branche que rien n'empêche de pousser en direct.
