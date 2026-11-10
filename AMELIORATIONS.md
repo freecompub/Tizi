@@ -682,6 +682,115 @@ déclarées : il a décidé, et il dit non. Dix-neuf règles sont sorties des ab
 elles ne demandent pas un mot de plus dans le vocabulaire — elles demandent que le silence d'une règle sans
 objet soit lu comme un constat, ce qu'il est désormais. Trois verdicts suffisent.
 
+### Ce qu'un autre outil sait et que Tizi ignore : le métier (10 novembre)
+
+Lu en entier `.agent/skills/business-analysis` du kit
+[`kienhaminh/anti-chaotic`](https://github.com/kienhaminh/anti-chaotic/tree/HEAD/.agent%2Fskills%2Fbusiness-analysis)
+— un kit d'agents pour **Antigravity**, pas pour Claude Code (ses `allowed-tools` nomment `read_file`,
+`write_to_file`, `search_web`, `browser_subagent`), 12 skills, et 1 174 lignes pour celui d'analyse
+d'affaires contre 14 247 pour notre seul `brd-builder`. Ce n'est pas une question de volume : c'est un
+autre axe. Lui pose du **savoir** devant le modèle et parie sur sa docilité ; nous posons un état que des
+règles vérifient. Les deux défauts sont symétriques, et c'est le leur qui nomme le nôtre.
+
+**Ce qui manque chez nous, et la preuve.** Dix fiches de domaine — fintech, healthtech, e-commerce,
+marketplace, F&B, EdTech, SaaS, outils internes, blockchain, produits IA — chacune avec son glossaire,
+ses entités, ses workflows typiques et sa checklist réglementaire. Le healthtech donne `PHI`, HIPAA,
+FHIR, `mrn`, `npi`, la note SOAP, les codes ICD-10, et « pas de PII dans l'objet du mail ». Nos
+137 règles sont **aveugles au métier** : un `grep` sur `fintech|healthtech|marketplace|secteur
+d'activité|domaine métier` dans `skills/` ne rend **aucun** fichier (le seul résultat du dépôt est la
+documentation d'intention). Elles savent qu'une exigence doit porter une source et un critère
+mesurable ; elles ne savent pas que sur un parcours de souscription, l'absence du droit de rétractation
+est un trou. C'est exactement ce qui a manqué au rapport rendu sur le BRD réel du 9 novembre : ses zones
+d'ombre jamais ouvertes sont typées **par méthode** (`partie_prenante_non_entendue`), jamais par métier.
+
+**Ce que ça pourrait donner, et ce qu'il faut mesurer avant.** Un type de zone d'ombre par domaine, avec
+son signal et ce qui le lève, dans `ZONES_TYPES` — l'audit dirait alors « aucune question n'a ouvert la
+conformité réglementaire sur un document d'assurance ». Ce n'est **pas** un copier-coller de leurs
+fiches, et surtout pas un second catalogue écrit à la main : il faut d'abord savoir combien de types par
+domaine survivent à l'épreuve d'un vrai document, et si un type non ouvert se distingue d'un type sans
+objet — sur un outil interne, « conformité réglementaire » ne veut rien dire. À mesurer sur deux
+documents de deux secteurs, pas à improviser.
+
+**Deux ajouts plus petits.** La **spécification de cas d'utilisation** (acteurs, déclencheur,
+préconditions, postconditions, flux principal en tableau *action / réponse système*, flux alternatifs
+ancrés sur un numéro d'étape, exceptions, règles métier associées) : du BABOK classique, et `grep` sur
+« cas d'utilisation » dans `skills/` ne rend rien — il nous manque ce niveau entre l'exigence et le user
+story. Et la **forme** du change request (impact technique, effort, coût, délai, décision
+approuver/reporter/rejeter) : le fond est déjà chez nous — versions figées, packs de revue, changelog par
+identifiant — mais pas cette table-là. Leurs points de jonction entre skills, eux, sont déjà couverts en
+règles ; ce qui est bon à prendre, c'est leur **formulation en questions de relecture** (« les codes
+d'erreur de l'API couvrent-ils les chemins négatifs ? »).
+
+**Ce qu'il ne faut pas prendre, et ce que ça confirme.** Leur « Simulation Mode » demande au BA de
+**simuler** l'architecte, le designer et le PM quand ces skills ne sont pas actifs : un seul modèle qui
+porte cinq chapeaux dans le même contexte produit un accord, pas une revue — l'inverse exact de ce que la
+mesure du council a montré. Et rien chez eux ne vérifie rien : `npm test` vaut littéralement
+`echo "Error: no test specified" && exit 1`, et le seul script valide la syntaxe des **diagrammes**
+(équilibre des accolades). Le prix se voit tout de suite — **trois références du `SKILL.md` pointent dans
+le vide** : `references/best-practices/gap-analysis.md`, annoncée comme bonne pratique à lire alors que
+l'analyse d'écart est le **point 1** de leur doctrine ; `requirements_questionnaire.md`, « patron à
+utiliser si le périmètre est large » ; et `references/templates/`, mauvais chemin pour `templates/`. Nos
+tests de points d'entrée font tomber les trois au premier `npm test`. C'est l'argument le plus net en
+faveur de ce qu'on fait — et la raison de ne reprendre d'eux que la **connaissance**, jamais la méthode.
+
+### Évaluer une US : la taille est déclarée, pas calculée (10 novembre)
+
+Lu en entier la moitié backlog de
+[`SebastienDegodez/skraft-plugin`, branche `integration/v2-next`](https://github.com/SebastienDegodez/skraft-plugin/tree/integration%2Fv2-next)
+— `plugins/skraft-backlog`, 116 fichiers, ~20 160 lignes, 34 fichiers de test et ~340 cas pour le seul
+backlog, en multi-hôte réel (deux arbres d'agents, Claude Code et Copilot, synchronisés et vérifiés).
+C'est le dépôt le plus proche de Tizi rencontré à ce jour, et il couvre la phase où nous sommes les plus
+faibles. La comparaison a fait apparaître **deux trous vérifiés chez nous**, et la machine pour en
+combler un existe déjà un étage plus bas.
+
+**Ce qu'on évalue déjà, pour ne pas s'alarmer à tort.** `storyReadiness()` est une Definition of Ready
+**calculée**, avec dix raisons de ne pas être prête (aucune FR, aucune tâche de story map, example
+mapping non fait, aucune règle, *n* règles sans exemple, *n* questions ouvertes, demande de changement en
+attente, spike non terminé, taille XL, et pour la voie rapide : origine non observée ou aucun exemple).
+Douze règles mordent sur la story : `S129`, `S37`, `S38`, `S62`, `S41`, `S50`, `S52`, `S09`, `S39`,
+`S40`, `S42`, `S43`. Sur un point nous sommes même devant : `S52` refuse une règle inventée dans la
+story, sans référence amont — chez eux rien ne l'attrape.
+
+**Trou 1 : `size` est un champ libre.** `S43` ne se déclenche que sur `XL`, c'est-à-dire **uniquement
+quand l'agent avoue lui-même**, et le seul compteur est `S42` (plus de `max_rules_per_story`, 4 par
+défaut, règles dans l'example map). Chez eux l'échelle **n'a pas de case** pour une grosse story
+(`EFFORTS = [1,2,3,5,8]`, au-dessus de 8 c'est un refus, l'échelle est ancrée en heures de travail
+assisté), et quatre compteurs servent de procuration à la taille : critères d'acceptation (> 5, refus,
+antipattern « Giant Story »), FR portées (> 4), intégrations externes distinctes (> 1, détectées par une
+liste gelée de onze expressions), stories par epic (> 12). Ils ne jugent jamais la taille : ils comptent
+des symptômes qu'un script ne rate pas. Or **nous avons déjà `riskSize()`** — huit facteurs lus dans
+l'état, et `S74` qui mord quand la taille retenue s'écarte de deux crans de la taille calculée. Mais
+seulement **sur les tâches**, alors que trois des huit facteurs sont déjà lus depuis la story.
+
+**Trou 2, plus grave : `S42` s'auto-satisfait par suppression.** La façon la moins chère, pour un agent,
+de satisfaire « 5 règles : probablement à scinder » est de supprimer une règle de l'example map. Rien ne
+le voit : `S52` vérifie qu'une règle *présente* porte une référence amont, `S39` qu'une FR de la release
+a une story, et `upstreamFindings` ne regarde que le statut baseline des handoffs. **Aucune règle ne
+vérifie qu'une RG amont est portée par l'example map d'une story.** C'est exactement ce que `skraft`
+empêche avec le seul `correction: true` de ses 35 vérifications — « the map fixes the scope, so only a
+correction a human accepts can lift it » : si le constat « scinde-la » repart chez le modèle qui a écrit
+la story, il raccourcit au lieu de découper, la story paraît petite et le périmètre est perdu sans trace.
+Leur principe, emprunté à BMAD : **« split never shrink »**.
+
+**Les trois pistes, par coût croissant.** (1) Étendre `riskSize` à la story et faire mordre `S74`
+dessus : aucun seuil nouveau à inventer, ceux de `riskSize` sont écrits et testés — la taille déclarée
+devient vérifiable au lieu d'être crue. (2) Une règle sur la RG amont de la release portée par l'example
+map d'aucune story, qui ferme l'auto-satisfaction de `S42`. (3) Marquer les règles que l'agent ne doit
+pas « corriger » seul : `S42` et `S43` remontent à qui tient la story map. La dérogation nommée dit
+*pourquoi* une règle est levée ; il manque **qui a le droit** de la lever.
+
+**Et la mesure d'abord**, avant toute ligne : sur `exemple/plan/demo` et `exemple/plan/green`, combien de
+stories verraient leur taille contestée par `riskSize`, et combien de RG amont ne sont portées par aucun
+example map. Si la réponse est zéro, les deux premières pistes ne valent rien et il faut le savoir avant
+d'écrire. Lecture seule sur `exemple/`.
+
+**Ce qui n'est pas repris de chez eux.** Leurs pondérations de verdict (`completeness: 0.3`,
+`quality: 0.15`…) sont calculées, affichées, testées — et **absentes du calcul du verdict** : un constat
+`medium` sur la qualité donne le même `NEEDS_REWORK` qu'un sur la complétude. C'est délibéré de leur part
+et c'est le bon choix, mais le nombre affiché fait croire à une gravité qui ne décide rien. Et `technical-ac`
+est un refus par regex sans dérogation inscrite dans la story : sur un produit dont le domaine EST l'API,
+« Alors la réponse est 422 » est un critère légitime, refusé. C'est le défaut `L08` à l'identique.
+
 ## Écartées
 
 Décidées, et écartées. Elles restent écrites : sans ça, elles reviennent dans six mois comme une
