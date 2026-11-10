@@ -134,6 +134,51 @@ test('brd : chaque forme documentée du gabarit se rend dans le document', () =>
 // comprise : « Document généré à partir de state.yaml le <date> ». Rien ne disait lequel était figé et
 // lequel allait dériver à la prochaine modification de l'état — et qui ouvrait l'un croyait lire ce qui
 // était parti en revue. Vu sur le deuxième dossier réel, où la question est venue de l'utilisateur.
+// `settings.story_format` ne change que la LECTURE : `who`/`persona`, `what` et `why` restent les trois
+// mêmes champs, et la phrase se génère depuis eux. Cinq choses à tenir, et la troisième est la raison
+// d'être du reste : la forme par défaut ne bouge pas (sinon tous les dossiers existants changent de
+// rendu sans qu'on l'ait demandé), la phrase sort avec ses élisions parce qu'un document français ne
+// s'autorise pas « afin de éviter », une partie manquante fait retomber la ligne en champs — « En tant
+// que —, je veux — » dirait moins que rien et cacherait le trou que `S129` constate —, une valeur
+// inconnue arrête le rendu au lieu de choisir à la place de l'équipe, et les deux fiches qui parlent
+// d'une même story disent la même chose (elles se sont déjà contredites une fois sur le « qui »).
+test('story_format : la phrase « En tant que » se génère depuis les trois champs, jamais à leur place', () => {
+  const dir = sandbox();
+  const sp = join(dir, 'plan/demo/state.yaml');
+  const lire = f => readFileSync(join(dir, 'plan/demo', f), 'utf8');
+  const rendre = () => node(script('plan-builder', 'render-plan.mjs'), ['plan/demo/state.yaml'], { cwd: dir });
+  const regler = valeur => writeFileSync(sp, readFileSync(sp, 'utf8').replace(/^  release: REL-1$/m, `  release: REL-1\n  story_format: ${valeur}`));
+
+  assert.equal(rendre().code, 0);
+  assert.match(lire('stories/US-001.md'), /\*\*Qui\*\* : Chloé · \*\*Quoi\*\* : être bloquée/, 'la forme par défaut a changé');
+
+  regler('phrase');
+  assert.equal(rendre().code, 0);
+  assert.match(lire('stories/US-001.md'), /\*\*En tant que\*\* Chloé, \*\*je veux\*\* être bloquée si le justificatif manque, \*\*afin de\*\* ne pas transmettre un dossier incomplet\./);
+  assert.match(lire('stories/US-002.md'), /\*\*afin d'\*\*éviter les relances\./, '« afin de éviter » n\'est pas du français');
+  assert.doesNotMatch(lire('stories/US-001.md'), /\*\*Qui\*\* :/, 'les deux formes sortent en même temps');
+
+  // Le « qui » s'élide aussi : « En tant qu'agent », et le nom vient de `who` comme de `persona`.
+  writeFileSync(sp, readFileSync(sp, 'utf8').replace('    persona: PER-01\n    what: "être bloquée', '    persona: PER-01\n    who: "agente d\'accueil"\n    what: "être bloquée'));
+  assert.equal(rendre().code, 0);
+  assert.match(lire('stories/US-001.md'), /\*\*En tant qu'\*\*agente d'accueil,/);
+
+  // Les deux fiches d'une même story disent la même chose, sans gras sur celle de la tâche.
+  assert.match(lire('tasks/TK-002.md'), /^En tant qu'agente d'accueil, je veux être bloquée si le justificatif manque, afin de ne pas transmettre un dossier incomplet\.$/m);
+
+  // Une partie manquante : la phrase ne se forme pas, et le trou reste lisible.
+  writeFileSync(sp, readFileSync(sp, 'utf8').replace('    why: "ne pas transmettre un dossier incomplet"', '    why: ""'));
+  assert.equal(rendre().code, 0);
+  assert.match(lire('stories/US-001.md'), /\*\*Qui\*\* : agente d'accueil · \*\*Quoi\*\* : être bloquée si le justificatif manque · \*\*Pourquoi\*\* : —/);
+  assert.doesNotMatch(lire('stories/US-001.md'), /^\*\*En tant qu/m, 'une phrase à trou s\'est écrite quand même');
+
+  // Une valeur inconnue arrête le rendu, et le message dit ce qui était attendu.
+  writeFileSync(sp, readFileSync(sp, 'utf8').replace('  story_format: phrase', '  story_format: Phrase'));
+  const r = rendre();
+  assert.notEqual(r.code, 0, 'une valeur hors énumération a été rendue quand même');
+  assert.match(r.err + r.out, /story_format.*Phrase.*champs \| phrase/s);
+});
+
 test('le document du dossier se dit copie de travail, la version figée se dit figée', () => {
   const dir = sandbox();
   const sp = join(dir, 'brd', 'demo', 'state.yaml');

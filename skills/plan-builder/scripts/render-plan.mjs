@@ -47,6 +47,38 @@ const thIndex = new Map(arr(sad.security_measures).map(m => [m.threat, m]));
 const spikeIndex = new Map(arr(sad.spikes).map(h => [h.id, h]));
 const ruleText = r => (r.ref ? `${r.ref} — ${txt(rgIndex.get(r.ref)?.statement ?? frIndex.get(r.ref)?.statement ?? acIndex.get(r.ref)?.scenario ?? r.text)}` : `${txt(r.text)} *(sans référence amont)*`);
 const adrsFor = t => arr(sad.decisions).filter(a => arr(a.elements).some(e => arr(t.elements).includes(e)));
+// ── Comment une story se LIT ─────────────────────────────────────────────────
+// `settings.story_format` choisit la forme, et rien d'autre : `who`/`persona`, `what` et `why` restent
+// les trois mêmes champs. La phrase « En tant que…, je veux…, afin de… » est une MISE EN MOTS de ces
+// trois champs, jamais une place où écrire. Si elle le devenait, elle reproduirait le défaut mesuré sur
+// les 36 stories du dépôt : les deux qui rangeaient tout dans la phrase rendaient « Quoi : — ·
+// Pourquoi : — ». `references/phase-slice.md` le dit autrement — « un bon démarreur de conversation,
+// pas une obligation » —, et le titre reste court dans les deux formes.
+const FORMATS = ['champs', 'phrase'];
+const storyFormat = settings.story_format ?? 'champs';
+if (!FORMATS.includes(storyFormat)) fail(`settings.story_format : « ${storyFormat} » n'existe pas (attendu : ${FORMATS.join(' | ')})`, 2);
+// Devant une voyelle, « que » et « de » s'élident : « En tant qu'agent », « afin d'éviter les relances ».
+// Un document généré en français ne s'autorise pas « afin de éviter ». Le h aspiré demanderait un
+// dictionnaire — « afin d'habiliter » est juste, « en tant qu'héros » ne l'est pas — et la règle
+// s'arrête donc aux voyelles, là où elle ne se trompe pas.
+const VOYELLE = /^[aàâäeéèêëiîïoôöuùûüy]/i;
+const amorce = (mot, valeur, gras) => {
+  const g = x => (gras ? `**${x}**` : x);
+  const v = String(valeur).trim();
+  return /(?:que|de)$/.test(mot) && VOYELLE.test(v) ? `${g(`${mot.slice(0, -1)}'`)}${v}` : `${g(mot)} ${v}`;
+};
+// En phrase, une partie manquante rend la ligne en champs : « En tant que —, je veux — » dirait moins
+// que rien, et le trou que `S129` constate doit rester lisible. Les deux fiches — celle de la story et
+// celle de la tâche — passent par ici : elles se contredisaient déjà une fois sur le « qui ».
+const identite = (x, gras = true) => {
+  const g = t_ => (gras ? `**${t_}**` : t_);
+  const qui = x.who ?? personaName(x.persona);
+  if (storyFormat === 'phrase' && [qui, x.what, x.why].every(v => String(v ?? '').trim())) {
+    return `${amorce('En tant que', qui, gras)}, ${amorce('je veux', x.what, gras)}, ${amorce('afin de', x.why, gras)}.`;
+  }
+  return `${g('Qui')} : ${txt(qui)} · ${g('Quoi')} : ${txt(x.what)} · ${g('Pourquoi')} : ${txt(x.why)}`;
+};
+
 const gherkin = list_ => ['```gherkin', list_.map(e => [`Scénario: ${e.id} — ${txt(e.title)}`, `  Étant donné ${txt(e.given)}`, `  Quand ${txt(e.when)}`, `  Alors ${txt(e.then)}`].join('\n')).join('\n\n'), '```'].join('\n');
 
 // ── plan.md ──────────────────────────────────────────────────────────────────
@@ -195,7 +227,7 @@ for (const x of stories) {
   // Trois tirets disent moins que rien : la ligne ne s'écrit que s'il y a quelque chose à lire. `S129`
   // garantit qu'une story de voie normale a toujours de quoi la remplir ; la voie rapide, elle, porte sa
   // substance dans son origine et sa reproduction, pas dans un qui/quoi/pourquoi.
-  if (x.who || x.persona || x.what || x.why) md.push(`**Qui** : ${txt(x.who ?? personaName(x.persona))} · **Quoi** : ${txt(x.what)} · **Pourquoi** : ${txt(x.why)}`, '');
+  if (x.who || x.persona || x.what || x.why) md.push(identite(x), '');
   md.push(`**Voie** : ${x.lane === 'rapide' ? `rapide — origine : ${txt(x.origin?.type)} (${txt(x.origin?.ref)})` : 'standard'} · **Tâche de la story map** : ${txt(x.map_task)} · **Release** : ${txt(x.release)} · **Taille** : ${txt(x.size)} · **Temps** : ${txt(x.game)}${x.level ? ` · **Niveau** : ${x.level}` : ''}${x.skeleton ? ' · **Walking skeleton**' : ''}`, '');
   md.push(`**Démonstration en revue** : ${txt(x.demo)}`, '');
   md.push(`**Préparation** : ${r.ready ? 'prête' : `non prête — ${r.reasons.join(' ; ')}`}`, '');
@@ -233,7 +265,7 @@ for (const t of tasks) {
     // Même ligne que sur la fiche de la story, et même repli sur `persona` : les deux fiches parlaient de
     // la même story et se contredisaient sur son « qui », celle-ci écrivant « — » là où l'autre nommait
     // la persona.
-    if (st.who || st.persona || st.what || st.why) md.push(`Qui : ${txt(st.who ?? personaName(st.persona))} · Quoi : ${txt(st.what)} · Pourquoi : ${txt(st.why)}`, '');
+    if (st.who || st.persona || st.what || st.why) md.push(identite(st, false), '');
     if (st.lane === 'rapide') {
       md.push(`**Voie rapide** — origine : ${txt(st.origin?.type)} (${txt(st.origin?.ref)}). Corriger l'écart sans changer aucune règle métier, aucun critère d'acceptation convenu ni aucun contrat : si c'est nécessaire, s'arrêter et demander.`, '');
       const ex = examples.filter(e => e.story === st.id);
