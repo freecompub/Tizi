@@ -41,6 +41,15 @@ sources_handoff:
 settings:
   cadence: sprint          # sprint | flux — choisi par projet (references/cadence.md)
   release: REL-1           # release visée par ce plan
+  story_format: champs     # champs | phrase — comment une story se LIT dans les documents générés.
+                           # `champs` : « Qui : … · Quoi : … · Pourquoi : … ».
+                           # `phrase` : « En tant que …, je veux …, afin de … ».
+                           # Les DONNÉES ne changent pas : `who`/`persona`, `what` et `why` restent les
+                           # trois mêmes champs, et la phrase n'est qu'une mise en mots. Ne range jamais
+                           # la story dans la phrase et les champs vides : c'est le défaut mesuré sur les
+                           # 36 stories du dépôt, où deux rendaient « Quoi : — · Pourquoi : — ». En
+                           # `phrase`, une partie manquante fait retomber la ligne en `champs`, pour que
+                           # le trou que `S129` constate reste lisible.
   sizes: { S: 1, M: 2, L: 3, XL: 5 }   # poids pour la capacité ; XL signale une tâche à découper
   max_rules_per_story: 4   # au-delà, la story est probablement à scinder
   agent_max_size: M        # taille maximale d'une tâche confiée à un agent
