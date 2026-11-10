@@ -682,6 +682,57 @@ déclarées : il a décidé, et il dit non. Dix-neuf règles sont sorties des ab
 elles ne demandent pas un mot de plus dans le vocabulaire — elles demandent que le silence d'une règle sans
 objet soit lu comme un constat, ce qu'il est désormais. Trois verdicts suffisent.
 
+### Ce qu'un autre outil sait et que Tizi ignore : le métier (10 novembre)
+
+Lu en entier `.agent/skills/business-analysis` du kit
+[`kienhaminh/anti-chaotic`](https://github.com/kienhaminh/anti-chaotic/tree/HEAD/.agent%2Fskills%2Fbusiness-analysis)
+— un kit d'agents pour **Antigravity**, pas pour Claude Code (ses `allowed-tools` nomment `read_file`,
+`write_to_file`, `search_web`, `browser_subagent`), 12 skills, et 1 174 lignes pour celui d'analyse
+d'affaires contre 14 247 pour notre seul `brd-builder`. Ce n'est pas une question de volume : c'est un
+autre axe. Lui pose du **savoir** devant le modèle et parie sur sa docilité ; nous posons un état que des
+règles vérifient. Les deux défauts sont symétriques, et c'est le leur qui nomme le nôtre.
+
+**Ce qui manque chez nous, et la preuve.** Dix fiches de domaine — fintech, healthtech, e-commerce,
+marketplace, F&B, EdTech, SaaS, outils internes, blockchain, produits IA — chacune avec son glossaire,
+ses entités, ses workflows typiques et sa checklist réglementaire. Le healthtech donne `PHI`, HIPAA,
+FHIR, `mrn`, `npi`, la note SOAP, les codes ICD-10, et « pas de PII dans l'objet du mail ». Nos
+137 règles sont **aveugles au métier** : un `grep` sur `fintech|healthtech|marketplace|secteur
+d'activité|domaine métier` dans `skills/` ne rend **aucun** fichier (le seul résultat du dépôt est la
+documentation d'intention). Elles savent qu'une exigence doit porter une source et un critère
+mesurable ; elles ne savent pas que sur un parcours de souscription, l'absence du droit de rétractation
+est un trou. C'est exactement ce qui a manqué au rapport rendu sur le BRD réel du 9 novembre : ses zones
+d'ombre jamais ouvertes sont typées **par méthode** (`partie_prenante_non_entendue`), jamais par métier.
+
+**Ce que ça pourrait donner, et ce qu'il faut mesurer avant.** Un type de zone d'ombre par domaine, avec
+son signal et ce qui le lève, dans `ZONES_TYPES` — l'audit dirait alors « aucune question n'a ouvert la
+conformité réglementaire sur un document d'assurance ». Ce n'est **pas** un copier-coller de leurs
+fiches, et surtout pas un second catalogue écrit à la main : il faut d'abord savoir combien de types par
+domaine survivent à l'épreuve d'un vrai document, et si un type non ouvert se distingue d'un type sans
+objet — sur un outil interne, « conformité réglementaire » ne veut rien dire. À mesurer sur deux
+documents de deux secteurs, pas à improviser.
+
+**Deux ajouts plus petits.** La **spécification de cas d'utilisation** (acteurs, déclencheur,
+préconditions, postconditions, flux principal en tableau *action / réponse système*, flux alternatifs
+ancrés sur un numéro d'étape, exceptions, règles métier associées) : du BABOK classique, et `grep` sur
+« cas d'utilisation » dans `skills/` ne rend rien — il nous manque ce niveau entre l'exigence et le user
+story. Et la **forme** du change request (impact technique, effort, coût, délai, décision
+approuver/reporter/rejeter) : le fond est déjà chez nous — versions figées, packs de revue, changelog par
+identifiant — mais pas cette table-là. Leurs points de jonction entre skills, eux, sont déjà couverts en
+règles ; ce qui est bon à prendre, c'est leur **formulation en questions de relecture** (« les codes
+d'erreur de l'API couvrent-ils les chemins négatifs ? »).
+
+**Ce qu'il ne faut pas prendre, et ce que ça confirme.** Leur « Simulation Mode » demande au BA de
+**simuler** l'architecte, le designer et le PM quand ces skills ne sont pas actifs : un seul modèle qui
+porte cinq chapeaux dans le même contexte produit un accord, pas une revue — l'inverse exact de ce que la
+mesure du council a montré. Et rien chez eux ne vérifie rien : `npm test` vaut littéralement
+`echo "Error: no test specified" && exit 1`, et le seul script valide la syntaxe des **diagrammes**
+(équilibre des accolades). Le prix se voit tout de suite — **trois références du `SKILL.md` pointent dans
+le vide** : `references/best-practices/gap-analysis.md`, annoncée comme bonne pratique à lire alors que
+l'analyse d'écart est le **point 1** de leur doctrine ; `requirements_questionnaire.md`, « patron à
+utiliser si le périmètre est large » ; et `references/templates/`, mauvais chemin pour `templates/`. Nos
+tests de points d'entrée font tomber les trois au premier `npm test`. C'est l'argument le plus net en
+faveur de ce qu'on fait — et la raison de ne reprendre d'eux que la **connaissance**, jamais la méthode.
+
 ## Écartées
 
 Décidées, et écartées. Elles restent écrites : sans ça, elles reviennent dans six mois comme une
